@@ -1,0 +1,20 @@
+import { execFile, spawn } from 'node:child_process';
+import os from 'node:os';
+import { promisify } from 'node:util';
+const execFileAsync=promisify(execFile);
+
+const ps=async(script)=>{const {stdout}=await execFileAsync('powershell.exe',['-NoProfile','-NonInteractive','-Command',script],{windowsHide:true,timeout:20000,maxBuffer:2_000_000});return stdout.trim();};
+const result=(name,success,message,data=null)=>({tool_name:name,success,message,data});
+
+export const tools={
+  get_system_info:{risk:'read',description:'Read basic Windows/system information',schema:{type:'object',properties:{},required:[]},run:async()=>result('get_system_info',true,'System information read',{platform:os.platform(),release:os.release(),arch:os.arch(),totalRamGB:+(os.totalmem()/1073741824).toFixed(1),freeRamGB:+(os.freemem()/1073741824).toFixed(1)})},
+  list_processes:{risk:'read',description:'List running processes',schema:{type:'object',properties:{filter:{type:'string'}},required:[]},run:async({filter=''})=>{const raw=await ps("Get-Process | Select-Object -First 120 Name,Id | ConvertTo-Json -Compress");let data=JSON.parse(raw||'[]');if(!Array.isArray(data))data=[data];if(filter)data=data.filter(x=>x.Name?.toLowerCase().includes(filter.toLowerCase()));return result('list_processes',true,'Processes listed',data);}},
+  find_app:{risk:'read',description:'Find installed application shortcuts by name',schema:{type:'object',properties:{name:{type:'string'}},required:['name']},run:async({name})=>{const q=String(name).replaceAll("'","''");const raw=await ps(`$p=@($env:ProgramData+'\\Microsoft\\Windows\\Start Menu\\Programs',$env:APPDATA+'\\Microsoft\\Windows\\Start Menu\\Programs'); Get-ChildItem $p -Recurse -Filter *.lnk -ErrorAction SilentlyContinue | Where-Object {$_.BaseName -like '*${q}*'} | Select-Object -First 20 BaseName,FullName | ConvertTo-Json -Compress`);const data=raw?JSON.parse(raw):[];return result('find_app',true,'Search completed',Array.isArray(data)?data:[data]);}},
+  launch_app:{risk:'low',description:'Launch an installed application by Start Menu shortcut search',schema:{type:'object',properties:{name:{type:'string'}},required:['name']},run:async({name})=>{const q=String(name).replaceAll("'","''");const raw=await ps(`$p=@($env:ProgramData+'\\Microsoft\\Windows\\Start Menu\\Programs',$env:APPDATA+'\\Microsoft\\Windows\\Start Menu\\Programs'); $x=Get-ChildItem $p -Recurse -Filter *.lnk -ErrorAction SilentlyContinue | Where-Object {$_.BaseName -like '*${q}*'} | Select-Object -First 1; if($x){Start-Process $x.FullName; $x.FullName}`);if(!raw)return result('launch_app',false,'Application not found');return result('launch_app',true,'Launch requested',{shortcut:raw});}},
+  open_url:{risk:'low',description:'Open an http/https URL in the default browser',schema:{type:'object',properties:{url:{type:'string'}},required:['url']},run:async({url})=>{const u=new URL(url);if(!['http:','https:'].includes(u.protocol))throw new Error('Only http/https URLs are allowed');spawn('cmd.exe',['/c','start','',u.href],{detached:true,windowsHide:true});return result('open_url',true,'URL opened',{url:u.href});}},
+  shutdown_pc:{risk:'sensitive',description:'Shut down Windows after explicit user confirmation',schema:{type:'object',properties:{},required:[]},run:async()=>{spawn('shutdown.exe',['/s','/t','0'],{detached:true,windowsHide:true});return result('shutdown_pc',true,'Shutdown requested');}},
+  restart_pc:{risk:'sensitive',description:'Restart Windows after explicit user confirmation',schema:{type:'object',properties:{},required:[]},run:async()=>{spawn('shutdown.exe',['/r','/t','0'],{detached:true,windowsHide:true});return result('restart_pc',true,'Restart requested');}}
+};
+
+export function ollamaTools(){return Object.entries(tools).map(([name,t])=>({type:'function',function:{name,description:t.description,parameters:t.schema}}));}
+export async function runTool(name,args={}){const t=tools[name];if(!t)throw new Error(`Unknown tool: ${name}`);return t.run(args);}
