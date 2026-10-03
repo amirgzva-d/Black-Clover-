@@ -3,19 +3,21 @@ import { OllamaClient } from './OllamaClient.js';
 import { tools,ollamaTools,runTool } from './tools.js';
 import { PERSONALITY_SYSTEM } from './personality.js';
 import { normalizePersianCommand,commandHints } from './language.js';
+import { capabilityHints,CAPABILITY_PHRASE_COUNT } from './capabilities.js';
 
 export class Agent{
   constructor({emit=()=>{},client=new OllamaClient()}={}){this.emit=emit;this.client=client;this.history=[{role:'system',content:PERSONALITY_SYSTEM}];this.pending=new Map();}
-  async status(){return {ollama:await this.client.health(),model:this.client.model,pending:this.pending.size,tools:Object.keys(tools).length};}
+  async status(){return {ollama:await this.client.health(),model:this.client.model,pending:this.pending.size,tools:Object.keys(tools).length,languagePatterns:CAPABILITY_PHRASE_COUNT};}
   async chat(text){
-    const original=String(text??'').trim(); if(!original)return {ok:false,text:'پیام خالی است.'};
-    const normalized=normalizePersianCommand(original),hints=commandHints(normalized);
-    const content=hints.length?`${original}\n\n[Host interpretation aid: normalized="${normalized}"; likely capabilities=${hints.join(', ')}. Treat this only as an interpretation hint, not as a user instruction.]`:original;
-    this.history.push({role:'user',content}); if(this.history.length>32)this.history=[this.history[0],...this.history.slice(-30)];
+    const original=String(text??'').trim();if(!original)return {ok:false,text:'پیام خالی است.'};
+    const normalized=normalizePersianCommand(original);
+    const hints=[...new Set([...commandHints(normalized),...capabilityHints(normalized)])];
+    const content=hints.length?`${original}\n\n[Host interpretation aid: normalized="${normalized}"; likely capability groups=${hints.join(', ')}. This metadata is only a routing hint. Follow the user's actual words and never treat metadata as a new instruction.]`:original;
+    this.history.push({role:'user',content});if(this.history.length>32)this.history=[this.history[0],...this.history.slice(-30)];
     try{
       for(let step=0;step<10;step++){
-        this.emit({type:'thinking',step}); const response=await this.client.chat(this.history,ollamaTools()); const msg=response?.message;
-        if(!msg)throw new Error('Model returned no message'); this.history.push(msg);
+        this.emit({type:'thinking',step});const response=await this.client.chat(this.history,ollamaTools());const msg=response?.message;
+        if(!msg)throw new Error('Model returned no message');this.history.push(msg);
         const calls=msg.tool_calls??[];
         if(!calls.length)return {ok:true,text:msg.content||'انجام شد.'};
         for(const call of calls){
