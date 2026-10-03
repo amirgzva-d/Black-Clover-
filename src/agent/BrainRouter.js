@@ -1,8 +1,8 @@
 import { OllamaClient } from './OllamaClient.js';
 import { onlineBrainFromEnv } from './OnlineBrainClient.js';
 
-const ping=async(url,timeoutMs=3500)=>{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);try{const r=await fetch(url,{method:'GET',cache:'no-store',signal:controller.signal});return r.ok||r.status===204;}catch{return false;}finally{clearTimeout(timer);}};
-export async function internetAvailable(){for(const u of ['https://www.msftconnecttest.com/connecttest.txt','https://www.google.com/generate_204'])if(await ping(u))return true;return false;}
+const ping=async(url,timeoutMs=3000)=>{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);try{const r=await fetch(url,{method:'GET',cache:'no-store',signal:controller.signal});return r.ok||r.status===204;}catch{return false;}finally{clearTimeout(timer);}};
+export async function internetAvailable(){const checks=await Promise.all(['https://www.msftconnecttest.com/connecttest.txt','https://www.google.com/generate_204'].map(u=>ping(u)));return checks.some(Boolean);}
 
 export class BrainRouter{
   constructor({local=new OllamaClient(),online=onlineBrainFromEnv()}={}){this.local=local;this.online=online;this.lastMode='local';this.networkState=null;this.lastFallbackReason='';}
