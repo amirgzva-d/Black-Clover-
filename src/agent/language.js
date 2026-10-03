@@ -21,7 +21,7 @@ const RULES=[
   [/(بازش کن|بیارش بالا|اجراش کن)/g,'آن را باز کن'],[/(ببندش|بندازش بیرون)/g,'آن را ببند'],
   [/(پاکش کن|حذفش کن)/g,'آن را حذف کن'],[/(نصبش کن|دانلود و نصبش کن)/g,'آن را نصب کن'],
   [/(آپدیت ویندوز|ویندوزو آپدیت کن|برو آپدیت ویندوز)/g,'Windows Update را باز کن'],
-  [/(عکس از صفحه|عکس صفحه|اسکرین بگیر|اسکرین شات بگیر)/g,'از صفحه screenshot بگیر'],
+  [/(عکس از صفحه|عکس صفحه|اسکرین بگیر|اسکرین شات بگیر|اسکرین‌شات بگیر|اسکرینشات بگیر)/g,'از صفحه screenshot بگیر'],
   [/(کپی کن|بریز تو کلیپ بورد|بذار تو کلیپ بورد)/g,'در clipboard کپی کن']
 ];
 export function normalizePersianCommand(input=''){
@@ -30,14 +30,14 @@ export function normalizePersianCommand(input=''){
   return text.trim();
 }
 const CATEGORIES=[
- ['volume',/صدا|ولوم|mute|unmute|میوت/],['brightness',/نور صفحه|روشنایی|brightness/],['media',/موسیقی|آهنگ|ترک|pause|play|بعدی|قبلی/],
+ ['volume',/صدا|ولوم|mute|unmute|میوت/],['brightness',/نور(?: صفحه)?|روشنایی|brightness/],['media',/موسیقی|آهنگ|ترک|pause|play|بعدی|قبلی/],
  ['power',/خاموش|ریستارت|خواب|اسلیپ|قفل|sign.?out|خروج از حساب/],['packages',/نصب|حذف برنامه|پاک.*برنامه|winget|برنامه.*پاک/],
- ['web',/گوگل|google|یوتیوب|youtube|وب|اینترنت|سرچ|جستجو|جست و جو/],['files',/فایل|پوشه|فولدر|دایرکتوری|کلیپ.?بورد|clipboard|اسکرین.?شات|screenshot/],
+ ['web',/گوگل|google|یوتیوب|youtube|وب|اینترنت|سرچ|جستجو|جست و جو/],['files',/فایل|پوشه|فولدر|دایرکتوری|کلیپ.?بورد|clipboard|اسکرین.?شات|اسکرینشات|screenshot/],
  ['apps',/باز کن|اجرا کن|ببند|برنامه|chrome|firefox|edge|telegram|whatsapp|discord|code|notepad|excel/],['settings',/تنظیمات|settings|آپدیت|update|بلوتوث|wifi|وای فای|نمایشگر|display/]
 ];
 export function commandHints(text=''){
   const t=normalizePersianCommand(text).toLowerCase();return CATEGORIES.filter(([,re])=>re.test(t)).map(([name])=>name);
 }
 export function looksLikeComputerAction(text=''){
-  const t=normalizePersianCommand(text);return commandHints(t).length>0&&/(کن|بزن|ببر|بیار|باز|ببند|نصب|حذف|پاک|جستجو|سرچ|بگرد|پخش|نگه دار|خاموش|ریستارت|قفل|خواب|آپدیت|کپی|اسکرین)/i.test(t);
+  const t=normalizePersianCommand(text);return commandHints(t).length>0&&/(کن|بزن|بگیر|ببر|بیار|باز|ببند|نصب|حذف|پاک|جستجو|سرچ|بگرد|پخش|نگه دار|خاموش|ریستارت|قفل|خواب|آپدیت|کپی|اسکرین|screenshot)/i.test(t);
 }
