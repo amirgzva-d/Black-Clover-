@@ -1,11 +1,10 @@
 import crypto from 'node:crypto';
 import { OllamaClient } from './OllamaClient.js';
 import { tools,ollamaTools,runTool } from './tools.js';
-
-const SYSTEM=`You are Black Clover, a local Windows desktop assistant. Answer primarily in the user's language. Use tools when the user asks for a computer action. Never claim an action succeeded until a tool result confirms it. You may plan multiple steps. Ask a concise clarification when essential information is missing. Sensitive or irreversible actions require confirmation and will be handled by the host. Do not invent tools or pretend to have capabilities that are not listed.`;
+import { PERSONALITY_SYSTEM } from './personality.js';
 
 export class Agent{
-  constructor({emit=()=>{},client=new OllamaClient()}={}){this.emit=emit;this.client=client;this.history=[{role:'system',content:SYSTEM}];this.pending=new Map();}
+  constructor({emit=()=>{},client=new OllamaClient()}={}){this.emit=emit;this.client=client;this.history=[{role:'system',content:PERSONALITY_SYSTEM}];this.pending=new Map();}
   async status(){return {ollama:await this.client.health(),model:this.client.model,pending:this.pending.size};}
   async chat(text){
     const clean=text.trim(); if(!clean)return {ok:false,text:'پیام خالی است.'};
@@ -28,12 +27,12 @@ export class Agent{
           this.history.push({role:'tool',content:JSON.stringify(out),tool_name:name});
         }
       }
-      return {ok:false,text:'تعداد مراحل این درخواست از حد فعلی بیشتر شد. درخواست را کمی کوچک‌تر کن.'};
-    }catch(e){return {ok:false,text:`ارتباط با مغز محلی یا اجرای Agent ناموفق بود: ${e.message}`};}
+      return {ok:false,text:'این کار مراحل زیادی داشت. بهتره به دو بخش تقسیمش کنیم.'};
+    }catch(e){return {ok:false,text:`فعلاً نتونستم به مغز محلی یا ابزار لازم وصل بشم: ${e.message}`};}
   }
   async confirm({id,approved}){
     const p=this.pending.get(id); if(!p)return {ok:false,text:'درخواست تأیید پیدا نشد یا منقضی شده است.'}; this.pending.delete(id);
-    if(!approved){this.history.push({role:'tool',content:JSON.stringify({success:false,cancelled:true}),tool_name:p.name});return {ok:true,text:'عملیات لغو شد.'};}
+    if(!approved){this.history.push({role:'tool',content:JSON.stringify({success:false,cancelled:true}),tool_name:p.name});return {ok:true,text:'باشه، لغوش کردم.'};}
     try{const out=await runTool(p.name,p.args);this.history.push({role:'tool',content:JSON.stringify(out),tool_name:p.name});return {ok:true,text:out.message??'انجام شد.',result:out};}catch(e){return {ok:false,text:e.message};}
   }
 }
