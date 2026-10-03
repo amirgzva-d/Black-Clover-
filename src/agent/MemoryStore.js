@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
+import crypto from 'node:crypto';
 
 const words=text=>[...new Set(String(text||'').toLowerCase().replace(/[^\p{L}\p{N}_\s-]/gu,' ').split(/\s+/).filter(x=>x.length>1))];
 const defaultDir=()=>process.env.BLACK_CLOVER_DATA_DIR||path.join(process.env.APPDATA||path.join(os.homedir(),'.black-clover'),'BlackClover');
@@ -16,3 +17,5 @@ export class MemoryStore{
   async clear(){this.items=[];this.loaded=true;await this.save();}
   async maybeRememberUserStatement(text){const s=String(text||'').trim();if(!s)return null;const explicit=/(یادت باشه|یادت بمونه|به خاطر بسپار|فراموش نکن|من دوست دارم|من ترجیح میدم|ترجیح می‌دم|اسم من|اسمم|همیشه برام|از این به بعد)/i.test(s);if(!explicit)return null;return this.remember(s,{kind:'user_preference',importance:.85});}
 }
+
+export const memory=new MemoryStore();
