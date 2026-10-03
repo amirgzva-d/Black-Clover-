@@ -12,11 +12,11 @@ export class BrainRouter{
       const connected=await internetAvailable();this.networkState=connected;
       if(connected){try{const out=await this.online.chat(messages,tools);this.lastMode='online';this.lastFallbackReason='';return out;}catch(e){this.lastFallbackReason=e.message;}}
       else this.lastFallbackReason='internet-offline';
-      const notice=this.lastFallbackReason==='internet-offline'?'[HOST NOTICE: Internet connection is unavailable. Briefly acknowledge this once in Maria’s natural Persian/isekaI style (for example a short «やれやれ… باز اینترنت پرید»), then continue the user request with the local brain. Do not pretend online research succeeded.]':'[HOST NOTICE: The configured online AI brain failed, so you are continuing locally. Mention this only if relevant and never claim online data was fetched.]';
-      const fallback=[...messages,{role:'system',content:notice}];this.lastMode='local';return this.local.chat(fallback,tools);
+      const notice=this.lastFallbackReason==='internet-offline'?'[HOST NOTICE: Internet connection is unavailable. Briefly acknowledge this once in Maria’s natural Persian/isekai style (for example a short «やれやれ… باز اینترنت پرید»), then continue the user request with the local brain. Do not pretend online research succeeded.]':'[HOST NOTICE: The configured online AI brain failed, so you are continuing locally. Mention this only if relevant and never claim online data was fetched.]';
+      this.lastMode='local';return this.local.chat([...messages,{role:'system',content:notice}],tools);
     }
-    this.networkState=await internetAvailable();this.lastMode='local';return this.local.chat(messages,tools);
+    this.lastMode='local';return this.local.chat(messages,tools);
   }
-  async health(){return {local:await this.local.health(),onlineConfigured:Boolean(this.online?.configured),online:await this.online?.health?.()||false,internet:this.networkState??await internetAvailable(),mode:this.lastMode,provider:this.online?.provider||null,model:this.model,fallbackReason:this.lastFallbackReason};}
+  async health(){const internet=await internetAvailable();this.networkState=internet;return {local:await this.local.health(),onlineConfigured:Boolean(this.online?.configured),online:await this.online?.health?.()||false,internet,mode:this.lastMode,provider:this.online?.provider||null,model:this.model,fallbackReason:this.lastFallbackReason};}
   async models(){return this.local.models();}
 }
