@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { OllamaClient } from './OllamaClient.js';
-import { tools,ollamaTools,runTool } from './tools.js';
+import { tools,ollamaTools,runTool } from './toolRegistry.js';
 import { PERSONALITY_SYSTEM } from './personality.js';
 import { normalizePersianCommand,commandHints } from './language.js';
 import { capabilityHints,CAPABILITY_PHRASE_COUNT } from './capabilities.js';
