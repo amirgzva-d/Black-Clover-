@@ -53,4 +53,4 @@ ipcMain.handle('system:get-startup',()=>startupStatus());
 ipcMain.handle('system:set-startup',(_e,enabled)=>setStartup(enabled));
 ipcMain.handle('speech:status',()=>speech.status());
 ipcMain.handle('speech:transcribe',(_e,payload)=>speech.transcribe(payload?.bytes??payload,{language:payload?.language||'fa'}));
-ipcMain.handle('speech:synthesize',(_e,payload)=>speech.synthesize(payload?.text,{rate:payload?.rate,volume:payload?.volume}));
+ipcMain.handle('speech:synthesize',(_e,payload)=>speech.synthesize(payload?.text,{rate:payload?.rate,volume:payload?.volume,pitch:payload?.pitch}));
