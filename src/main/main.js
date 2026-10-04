@@ -6,13 +6,14 @@ import { promisify } from 'node:util';
 import { Agent } from '../agent/Agent.js';
 import { reminders } from '../agent/ReminderStore.js';
 import { pinnedNotes } from '../agent/PinnedNoteStore.js';
+import { dataVault } from '../agent/DataVault.js';
 import { DependencyManager } from './DependencyManager.js';
 import { SpecialistModelManager } from './SpecialistModelManager.js';
 import { SpeechService } from './SpeechService.js';
 import { SystemPresence } from './SystemPresence.js';
 
 const execFileAsync=promisify(execFile),__dirname=path.dirname(fileURLToPath(import.meta.url));
-let win=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false;
+let win=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,vaultTimer=null,autoProvisionStarted=false,provisioning=false;
 const send=event=>{if(win&&!win.isDestroyed())win.webContents.send('agent:event',event);};
 const agent=new Agent({emit:send}),deps=new DependencyManager({emit:send}),specialists=new SpecialistModelManager({emit:send}),speech=new SpeechService(),presence=new SystemPresence({emit:e=>{send(e);if(e.type==='break-reminder'&&Notification.isSupported())new Notification({title:'Maria • Black Clover',body:e.text,silent:true}).show();}});
 async function dependencyStatus(){const base=await deps.status(),special=await specialists.status(),extra=[special.coder,special.reasoner];return {...base,items:[...(base.items||[]),...extra],specialists:special,fullReady:Boolean(base.fullReady&&extra.every(x=>x.installed))};}
@@ -31,16 +32,18 @@ function startupStatus(){const s=app.getLoginItemSettings();return {openAtLogin:
 function setStartup(enabled){if(!app.isPackaged)return {ok:false,message:'Start-with-Windows is enabled after installing the packaged app.',...startupStatus()};app.setLoginItemSettings({openAtLogin:Boolean(enabled),path:process.execPath,args:[]});return {ok:true,...startupStatus()};}
 function startReminderPump(){if(reminderTimer)return;reminderTimer=setInterval(async()=>{try{for(const item of await reminders.takeDue()){const event={type:'reminder',item,text:item.message};send(event);if(Notification.isSupported())new Notification({title:item.title||'یادآوری ماریا',body:item.message}).show();}}catch(e){console.warn('Reminder pump:',e.message);}},5000);}
 function startIdleLearningPump(){if(learningTimer)return;learningTimer=setInterval(async()=>{try{if(provisioning)return;const idle=presence.status().idleSeconds;if(!Number.isFinite(idle)||idle<300)return;const dependencyState=await deps.status();if(!dependencyState.recommendedReady)return;await agent.improveOne({allowCurriculum:true});}catch(e){console.warn('Idle learning:',e.message);}},10*60*1000);}
+async function backupVault(){try{await dataVault.backup({keep:12});const cfg=await dataVault.config();if(cfg.syncDirectory)await dataVault.sync();}catch(e){console.warn('Data vault backup:',e.message);}}
+function startVaultPump(){if(vaultTimer)return;setTimeout(backupVault,20000);vaultTimer=setInterval(backupVault,6*60*60*1000);}
 const gotLock=app.requestSingleInstanceLock();if(!gotLock){app.quit();}else app.on('second-instance',showAssistant);
-app.whenReady().then(()=>{createWindow();createTray();presence.start();startReminderPump();startIdleLearningPump();globalShortcut.register('CommandOrControl+Shift+Space',toggleAssistant);app.on('activate',showAssistant);});
+app.whenReady().then(()=>{createWindow();createTray();presence.start();startReminderPump();startIdleLearningPump();startVaultPump();globalShortcut.register('CommandOrControl+Shift+Space',toggleAssistant);app.on('activate',showAssistant);});
 app.on('before-quit',()=>{quitting=true;});
-app.on('will-quit',()=>{globalShortcut.unregisterAll();presence.stop();if(reminderTimer)clearInterval(reminderTimer);if(learningTimer)clearInterval(learningTimer);});
+app.on('will-quit',()=>{globalShortcut.unregisterAll();presence.stop();if(reminderTimer)clearInterval(reminderTimer);if(learningTimer)clearInterval(learningTimer);if(vaultTimer)clearInterval(vaultTimer);});
 app.on('window-all-closed',()=>{});
 ipcMain.handle('agent:chat',(_e,text)=>agent.chat(String(text??'')));
 ipcMain.handle('agent:confirm',(_e,payload)=>agent.confirm(payload));
 ipcMain.handle('agent:status',()=>agent.status());
 ipcMain.handle('assistant:toggle',()=>{toggleAssistant();return true;});
-ipcMain.handle('system:diagnostics',async()=>({dependencies:await dependencyStatus(),speech:await speech.status(),presence:presence.status(),startup:startupStatus(),admin:await isAdmin(),packaged:app.isPackaged,version:app.getVersion()}));
+ipcMain.handle('system:diagnostics',async()=>({dependencies:await dependencyStatus(),speech:await speech.status(),presence:presence.status(),vault:await dataVault.status(),startup:startupStatus(),admin:await isAdmin(),packaged:app.isPackaged,version:app.getVersion()}));
 ipcMain.handle('system:install-dependency',(_e,id)=>installDependency(id));
 ipcMain.handle('system:install-all-dependencies',()=>installFullSetup());
 ipcMain.handle('system:restart-admin',()=>restartElevated());
