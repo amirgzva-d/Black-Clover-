@@ -1,6 +1,6 @@
 {
   "name": "black-clover-desktop-agent",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "private": true,
   "type": "module",
   "description": "Maria / Black Clover — hybrid local-first Windows AI desktop companion and agent",
@@ -48,7 +48,9 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Black Clover Maria"
+      "shortcutName": "Black Clover Maria",
+      "runAfterFinish": true,
+      "deleteAppDataOnUninstall": false
     }
   }
 }
