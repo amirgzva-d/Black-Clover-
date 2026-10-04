@@ -4,7 +4,9 @@ import os from 'node:os';
 
 const destructiveTools=new Set([
   'delete_path','uninstall_app','shutdown_pc','restart_pc','sleep_pc','sign_out',
-  'forget_memory','clear_memories','unprotect_resource'
+  'forget_memory','clear_memories','unprotect_resource','remove_pinned_note','remove_reminder',
+  'empty_recycle_bin','cleanup_user_temp','project_apply_replacements','project_create_file',
+  'project_restore_backup','git_commit_files','git_restore_files'
 ]);
 const destructiveWords=/(حذف|پاک|فرمت|فرمتش|آن.?اینستال|uninstall|remove|delete|wipe|shutdown|خاموش|ری.?استارت|restart|sleep|sign.?out)/i;
 const protectPattern=/(?:هیچ.?وقت|هرگز)\s+(.+?)\s+(?:رو|را)?\s*(?:حذف|پاک|آن.?اینستال|remove|delete)\s*(?:نکن|نکنید)/i;
@@ -13,7 +15,7 @@ const defaultDir=()=>process.env.BLACK_CLOVER_DATA_DIR||path.join(process.env.AP
 const norm=v=>String(v??'').trim().toLowerCase().replace(/[\s\\/]+/g,' ');
 
 export class PermissionPolicy{
-  constructor({directory=defaultDir()}={}){this.directory=directory;this.file=path.join(directory,'permissions.json');this.loaded=false;this.state={version:1,profile:'autonomous',protectedResources:[],updatedAt:null};}
+  constructor({directory=defaultDir()}={}){this.directory=directory;this.file=path.join(directory,'permissions.json');this.loaded=false;this.state={version:2,profile:'autonomous',protectedResources:[],updatedAt:null};}
   async load(){if(this.loaded)return this.state;this.loaded=true;try{const raw=JSON.parse(await fs.readFile(this.file,'utf8'));this.state={...this.state,...raw,protectedResources:Array.isArray(raw?.protectedResources)?raw.protectedResources:[]};}catch(e){if(e.code!=='ENOENT')console.warn('Permission policy load failed:',e.message);}return this.state;}
   async save(){await fs.mkdir(this.directory,{recursive:true});this.state.updatedAt=new Date().toISOString();const tmp=`${this.file}.tmp`;await fs.writeFile(tmp,JSON.stringify(this.state,null,2),'utf8');await fs.rename(tmp,this.file);return this.state;}
   async setProfile(profile){await this.load();if(!['autonomous','balanced','cautious'].includes(profile))throw new Error('Unknown permission profile');this.state.profile=profile;await this.save();return profile;}
