@@ -29,11 +29,27 @@ test('execution modes are surfaced to the brain routing hints',()=>{
   assert.ok(hints.includes('execution'));
   assert.ok(hints.includes('mode-creative'));
   assert.ok(hints.includes('mode-apps'));
+  assert.ok(hints.some(x=>x.startsWith('mode-info-creative:')));
 });
 
 test('multi-app workflow exposes bridge, Excel, messaging and UI tools',()=>{
   const tools=selectToolNames('اکسل گزارش رو باز کن عکس های داخلش رو بردار و بعد با تلگرام بفرست');
   for(const name of ['excel_collect_images','messenger_stage_files','vision_inspect_screen','invoke_ui_element','global_find_files'])assert.ok(tools.includes(name),name);
+});
+
+test('software management can fall back to web and GUI execution',()=>{
+  const tools=selectToolNames('این برنامه رو آپدیت کن اگر نشد نسخه جدیدش رو از اینترنت پیدا کن');
+  for(const name of ['list_winget_upgrades','upgrade_app','web_search','vision_inspect_screen','invoke_ui_element'])assert.ok(tools.includes(name),name);
+});
+
+test('diagnostics can inspect Windows, research errors and operate the app UI',()=>{
+  const tools=selectToolNames('این برنامه مشکل داره بررسی کن خطاش کجاست و درستش کن');
+  for(const name of ['recent_system_errors','list_processes','web_search','vision_inspect_screen','invoke_ui_element'])assert.ok(tools.includes(name),name);
+});
+
+test('Windows settings and update requests can continue through visible UI',()=>{
+  const tools=selectToolNames('برو Windows Update و آپدیت سیستم رو بررسی کن');
+  for(const name of ['check_windows_update','vision_inspect_screen','invoke_ui_element'])assert.ok(tools.includes(name),name);
 });
 
 test('named local media can use the direct fast path',()=>{
