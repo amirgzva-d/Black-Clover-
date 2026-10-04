@@ -1,4 +1,4 @@
-import { actionIntent } from './ActionIntent.js';
+import { actionIntent, actionModeDetails } from './ActionIntent.js';
 
 // Language coverage for common ways a Persian-speaking user may describe the same goal.
 // These are routing hints, not executable commands. The model still selects validated tools.
@@ -40,7 +40,12 @@ export function capabilityHints(text=''){
   const t=norm(text),out=[];
   for(const [group,phrases] of CAPABILITY_GROUPS){if(phrases.some(p=>t.includes(norm(p))))out.push(group);}
   const intent=actionIntent(t);
-  if(intent.action){out.push('execution');for(const mode of intent.modes)out.push(`mode-${mode}`);if(intent.multiStep)out.push('multi-step-workflow');}
+  if(intent.action){
+    out.push('execution');
+    for(const mode of intent.modes)out.push(`mode-${mode}`);
+    for(const mode of actionModeDetails(t))out.push(`mode-info-${mode.id}:${mode.title} — ${mode.description}`);
+    if(intent.multiStep)out.push('multi-step-workflow');
+  }
   return [...new Set(out)];
 }
 export const CAPABILITY_PHRASE_COUNT=CAPABILITY_GROUPS.reduce((n,[,p])=>n+p.length,0);
