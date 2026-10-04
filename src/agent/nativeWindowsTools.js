@@ -1,5 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { systemDeepTools } from './systemDeepTools.js';
 const execFileAsync=promisify(execFile);
 const result=(name,success,message,data=null)=>({tool_name:name,success,message,data});
 const tool=(risk,description,schema,run)=>({risk,description,schema,run});
@@ -9,5 +10,6 @@ async function ps(script){const {stdout}=await execFileAsync('powershell.exe',['
 export const nativeWindowsTools={
   get_volume:tool('read','Read Windows default multimedia endpoint master volume through CoreAudio',{type:'object',properties:{},required:[]},async()=>{const raw=await ps(`${coreAudio} [pscustomobject]@{percent=[math]::Round([BCAudio]::Get()*100);muted=[BCAudio]::Muted()}|ConvertTo-Json -Compress`);return result('get_volume',true,'Master volume read',JSON.parse(raw));}),
   set_volume:tool('low','Set Windows default multimedia endpoint master volume through CoreAudio',{type:'object',properties:{percent:{type:'number'}},required:['percent']},async({percent})=>{const n=Math.round(clamp(percent,0,100));await ps(`${coreAudio} [BCAudio]::Set(${n}/100.0)`);return result('set_volume',true,`Volume set to ${n}%`,{percent:n});}),
-  toggle_mute:tool('low','Toggle Windows default audio endpoint mute through CoreAudio',{type:'object',properties:{},required:[]},async()=>{const raw=await ps(`${coreAudio} $m=[BCAudio]::Muted();[BCAudio]::Mute(!$m); (!$m).ToString().ToLower()`);return result('toggle_mute',true,'Mute toggled',{muted:raw==='true'});})
+  toggle_mute:tool('low','Toggle Windows default audio endpoint mute through CoreAudio',{type:'object',properties:{},required:[]},async()=>{const raw=await ps(`${coreAudio} $m=[BCAudio]::Muted();[BCAudio]::Mute(!$m); (!$m).ToString().ToLower()`);return result('toggle_mute',true,'Mute toggled',{muted:raw==='true'});}),
+  ...systemDeepTools
 };
