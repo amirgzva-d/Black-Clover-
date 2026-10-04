@@ -13,6 +13,15 @@ contextBridge.exposeInMainWorld('blackClover',{
   speechStatus:()=>ipcRenderer.invoke('speech:status'),
   transcribeAudio:(bytes,language='fa')=>ipcRenderer.invoke('speech:transcribe',{bytes,language}),
   synthesizeSpeech:(text,options={})=>ipcRenderer.invoke('speech:synthesize',{text,...options}),
+  remindersList:(includeDone=false)=>ipcRenderer.invoke('dashboard:reminders-list',Boolean(includeDone)),
+  reminderUpdate:(id,patch)=>ipcRenderer.invoke('dashboard:reminder-update',{id,patch}),
+  reminderSnooze:(id,minutes=10)=>ipcRenderer.invoke('dashboard:reminder-snooze',{id,minutes}),
+  reminderComplete:id=>ipcRenderer.invoke('dashboard:reminder-complete',id),
+  reminderCancel:id=>ipcRenderer.invoke('dashboard:reminder-cancel',id),
+  notesList:(includeArchived=false)=>ipcRenderer.invoke('dashboard:notes-list',Boolean(includeArchived)),
+  noteCreate:payload=>ipcRenderer.invoke('dashboard:note-create',payload),
+  noteUpdate:(id,patch)=>ipcRenderer.invoke('dashboard:note-update',{id,patch}),
+  noteArchive:id=>ipcRenderer.invoke('dashboard:note-archive',id),
   onEvent:fn=>{const h=(_e,v)=>fn(v);ipcRenderer.on('agent:event',h);return()=>ipcRenderer.removeListener('agent:event',h);},
   onFocusInput:fn=>{const h=()=>fn();ipcRenderer.on('assistant:focus-input',h);return()=>ipcRenderer.removeListener('assistant:focus-input',h);}
 });
