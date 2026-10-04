@@ -4,7 +4,7 @@ const n=s=>Number(digits(String(s)).replace(/[^0-9]/g,''));
 const clamp=x=>Math.max(0,Math.min(100,Number(x)));
 
 const appAliases=[
-  [/\bchrome\b|کروم/i,'Google Chrome'],[/firefox|فایرفاکس/i,'Firefox'],[/edge|اج\b|مایکروسافت اج/i,'Microsoft Edge'],[/telegram|تلگرام/i,'Telegram'],[/whatsapp|واتساپ/i,'WhatsApp'],[/rubika|روبیکا/i,'Rubika'],[/instagram|اینستاگرام/i,'Instagram'],[/discord|دیسکورد/i,'Discord'],[/vscode|vs code|وی.?اس.?کد/i,'Visual Studio Code'],[/photoshop|فتوشاپ/i,'Adobe Photoshop'],[/illustrator|ایلوستریتور/i,'Adobe Illustrator'],[/excel|اکسل/i,'Excel'],[/word|ورد/i,'Word'],[/powerpoint|پاورپوینت/i,'PowerPoint'],[/spotify|اسپاتیفای/i,'Spotify'],[/vlc/i,'VLC media player'],[/notepad|نوت.?پد/i,'Notepad'],[/calculator|ماشین.?حساب/i,'Calculator'],[/explorer|فایل اکسپلورر|اکسپلورر/i,'File Explorer']
+  [/\bchrome\b|کروم/i,'Google Chrome'],[/firefox|فایرفاکس/i,'Firefox'],[/edge|اج\b|مایکروسافت اج/i,'Microsoft Edge'],[/telegram|تلگرام/i,'Telegram'],[/whatsapp|واتساپ/i,'WhatsApp'],[/rubika|روبیکا/i,'Rubika'],[/instagram|اینستاگرام/i,'Instagram'],[/discord|دیسکورد/i,'Discord'],[/vscode|vs code|وی.?اس.?کد/i,'Visual Studio Code'],[/photoshop|فتوشاپ/i,'Adobe Photoshop'],[/illustrator|ایلوستریتور/i,'Adobe Illustrator'],[/excel|اکسل/i,'Excel'],[/word|ورد/i,'Word'],[/powerpoint|پاورپوینت/i,'PowerPoint'],[/spotify|اسپاتیفای/i,'Spotify'],[/vlc/i,'vlc'],[/notepad|نوت.?پد/i,'Notepad'],[/calculator|ماشین.?حساب/i,'Calculator'],[/explorer|فایل اکسپلورر|اکسپلورر/i,'File Explorer']
 ];
 const has=(s,re)=>re.test(s);
 const audio=/صدا|ولوم|volume|اسپیکر|speaker/i;
