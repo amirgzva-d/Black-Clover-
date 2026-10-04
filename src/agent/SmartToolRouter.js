@@ -1,3 +1,4 @@
+import { actionIntent } from './ActionIntent.js';
 const uniq=a=>[...new Set(a)];
 const groups={
   memory:['remember_fact','recall_memory','list_recent_memories','update_memory','forget_memory','permission_status','protect_resource','unprotect_resource'],
@@ -53,16 +54,14 @@ const patterns=[
   ['permissions',/(مجوز|دسترسی|permission|محافظت|حذف نکن|پاک نکن)/i],
   ['system',/(سیستم|رم|پردازنده|process|فرایند|زمان|ساعت|تاریخ|cpu|gpu)/i]
 ];
-const contextualAction=/(انجام|بازش|باز کن|بیارش|بیار بالا|بنداز بالا|اجراش|اجرا|راهش بنداز|راه بنداز|ببندش|ببند|پخش|کمتر|کم کن|زیاد|بیشتر|بالا|پایین|ببر|بیار|برو|کنترل|درست کن|تعمیر|بساز|همونو|همین رو|اونو|اون رو|بزن|بذار|بردار|در بیار|بفرست|ارسال|کپی|منتقل|جابه|تغییر|عوض|ویرایش|بنویس|تایپ|کلیک|دانلود|نصب|حذف|پاک|آپدیت|به.?روز|مرتب|ذخیره|سیو|فول|ماکس|تهش|آخرش|انتهاش|نهایت)/i;
-const multiStepAction=/(بعدش|بعد از اون|بعد از آن|سپس|و بعد|اول .* بعد|از .* بردار.*بفرست|باز کن.*(?:بعد|و).*|پیدا کن.*(?:بعد|و).*)/i;
 const factualQuestion=/(؟|\?|چیست|چیه|چی هست|کیه|کی هست|کجاست|کجا هست|چرا|چطور|چگونه|چه کسی|چه زمانی|چه موقع|چند تا|فرق .* چیه|تفاوت .* چیه|معنی .* چیه|what\b|who\b|where\b|when\b|why\b|how\b)/i;
 const personalSmallTalk=/(حالت چطوره|خوبی|چه خبر|اسم من|من کی.?ام|منو می.?شناسی|من را می.?شناسی|یادت میاد|یادت هست|دوستم داری|خسته.?ای|سلام|صبح بخیر|شب بخیر)/i;
 export function selectToolNames(text,hints=[]){
-  const selected=[],s=String(text||'');
+  const selected=[],s=String(text||''),intent=actionIntent(s);
   for(const [group,re] of patterns)if(re.test(s))selected.push(...(groups[group]||[]));
   for(const hint of hints){const key=String(hint).toLowerCase();for(const [group,names] of Object.entries(groups))if(key.includes(group))selected.push(...names);}
-  if(contextualAction.test(s)&&multiStepAction.test(s))selected.push(...groups.workflowBridge);
-  if(!selected.length&&contextualAction.test(s))selected.push(...groups.workflowBridge,...groups.audio,...groups.display,...groups.power,...groups.apps,...groups.web,...groups.storage,...groups.screen,...groups.system);
+  if(intent.multiStep)selected.push(...groups.workflowBridge);
+  if(!selected.length&&intent.action)selected.push(...groups.workflowBridge,...groups.audio,...groups.display,...groups.power,...groups.apps,...groups.web,...groups.storage,...groups.screen,...groups.system);
   if(!selected.length&&factualQuestion.test(s)&&!personalSmallTalk.test(s))selected.push(...groups.knowledge);
   return uniq(selected).slice(0,60);
 }
