@@ -1,4 +1,5 @@
 import './style.css';
+import './avatarPicker.css';
 import { mountAvatar } from './avatar.js';
 import { voice } from './voice.js';
 import { detectEmotion,emotionDuration } from './emotion.js';
