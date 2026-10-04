@@ -1,0 +1,16 @@
+import JSZip from 'jszip';
+const DB_NAME='black-clover-motions',STORE='motions',META='meta';
+const PACK_MAP={VRMA_01:'fullbody',VRMA_02:'greeting',VRMA_03:'peace',VRMA_04:'shoot',VRMA_05:'spin',VRMA_06:'model',VRMA_07:'squat'};
+function openDb(){return new Promise((resolve,reject)=>{const r=indexedDB.open(DB_NAME,1);r.onupgradeneeded=()=>{const db=r.result;if(!db.objectStoreNames.contains(STORE))db.createObjectStore(STORE,{keyPath:'id'});if(!db.objectStoreNames.contains(META))db.createObjectStore(META);};r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error||new Error('Motion database failed'));});}
+async function transaction(storeName,mode,fn){const db=await openDb();try{return await new Promise((resolve,reject)=>{const tx=db.transaction(storeName,mode),store=tx.objectStore(storeName);let value;Promise.resolve().then(()=>fn(store)).then(v=>value=v).catch(reject);tx.oncomplete=()=>resolve(value);tx.onerror=()=>reject(tx.error||new Error('Motion database transaction failed'));tx.onabort=()=>reject(tx.error||new Error('Motion database transaction aborted'));});}finally{db.close();}}
+const req=r=>new Promise((resolve,reject)=>{r.onsuccess=()=>resolve(r.result);r.onerror=()=>reject(r.error);});
+const normalizedId=name=>{const stem=String(name).replace(/\.vrma$/i,'').split(/[\\/]/).pop();const known=PACK_MAP[stem.toUpperCase()];return known||stem.toLowerCase().replace(/[^a-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'')||`motion-${Date.now()}`;};
+export async function importMotionPack(file){if(!file)throw new Error('فایل انتخاب نشده.');const name=String(file.name||'').toLowerCase(),entries=[];
+  if(name.endsWith('.zip')){const zip=await JSZip.loadAsync(await file.arrayBuffer());for(const [pathName,entry] of Object.entries(zip.files)){if(entry.dir||!pathName.toLowerCase().endsWith('.vrma'))continue;const bytes=await entry.async('arraybuffer');entries.push({name:pathName.split('/').pop(),bytes});}}
+  else if(name.endsWith('.vrma'))entries.push({name:file.name,bytes:await file.arrayBuffer()});else throw new Error('فقط VRMA یا ZIP شامل VRMA پشتیبانی می‌شود.');
+  if(!entries.length)throw new Error('هیچ فایل VRMA داخل بسته پیدا نشد.');const records=entries.map((x,i)=>({id:normalizedId(x.name),name:x.name,order:i,size:x.bytes.byteLength,bytes:x.bytes,updatedAt:Date.now()}));
+  await transaction(STORE,'readwrite',async store=>{for(const record of records)store.put(record);});await transaction(META,'readwrite',store=>{store.put({name:file.name,count:records.length,updatedAt:Date.now()},'currentPack');});return records.map(({bytes,...x})=>x);
+}
+export async function listMotions(){return transaction(STORE,'readonly',async store=>{const all=await req(store.getAll());return (all||[]).sort((a,b)=>(a.order??99)-(b.order??99)).map(({bytes,...x})=>x);});}
+export async function getMotionUrl(id){return transaction(STORE,'readonly',async store=>{const record=await req(store.get(id));if(!record?.bytes)return null;const url=URL.createObjectURL(new Blob([record.bytes],{type:'model/gltf-binary'}));return {url,info:{id:record.id,name:record.name,size:record.size},revoke:()=>URL.revokeObjectURL(url)};});}
+export async function clearMotions(){await transaction(STORE,'readwrite',store=>store.clear());await transaction(META,'readwrite',store=>store.clear());}
