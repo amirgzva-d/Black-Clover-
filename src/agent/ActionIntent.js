@@ -11,7 +11,7 @@ export const ACTION_MODES=[
   {id:'media',title:'پخش رسانه',description:'پخش و کنترل آهنگ، فیلم و ویدیو',pattern:/(آهنگ|موزیک|موسیقی|فیلم|ویدیو|کلیپ|ترک|media|movie|video|play|pause|پخش)/i},
   {id:'apps',title:'برنامه‌ها',description:'پیدا کردن، باز کردن و کنترل برنامه‌های نصب‌شده',pattern:/(برنامه|نرم.?افزار|اپ|chrome|کروم|firefox|edge|telegram|تلگرام|whatsapp|واتساپ|rubika|روبیکا|discord|vscode|vs code|نوت.?پد|calculator)/i},
   {id:'web',title:'وب و جستجو',description:'مرورگر، گوگل، یوتیوب و وب',pattern:/(گوگل|google|وب|اینترنت|مرورگر|سایت|لینک|youtube|یوتیوب|سرچ|جستجو|بگرد)/i},
-  {id:'files',title:'فایل و حافظه',description:'جستجو و کار با فایل‌ها، پوشه‌ها و درایوها',pattern:/(فایل|پوشه|فولدر|دایرکتوری|مسیر|درایو|هارد|حافظه|desktop|دسکتاپ|downloads|دانلود|rename|کپی|جابه.?جا)/i},
+  {id:'files',title:'فایل و حافظه',description:'جستجو و کار با فایل‌ها، پوشه‌ها، تصاویر و درایوها',pattern:/(فایل|پوشه|فولدر|دایرکتوری|مسیر|درایو|هارد|حافظه|عکس|تصویر|desktop|دسکتاپ|downloads|دانلود|rename|کپی|جابه.?جا)/i},
   {id:'spreadsheet',title:'Excel',description:'خواندن، استخراج و ویرایش فایل‌های Excel',pattern:/(اکسل|excel|xlsx|xlsm|xls\b|workbook|worksheet|شیت|سلول|ردیف|ستون|فرمول)/i},
   {id:'social',title:'پیام‌رسان',description:'Telegram، WhatsApp، Rubika و ارسال فایل/پیام',pattern:/(تلگرام|telegram|واتساپ|whatsapp|روبیکا|rubika|اینستاگرام|instagram|discord|پیام|بفرست|ارسال)/i},
   {id:'creative',title:'Adobe و طراحی',description:'کار با Photoshop، Illustrator و گردش‌کارهای طراحی',pattern:/(فتوشاپ|photoshop|ایلوستریتور|illustrator|طراحی|ادیت عکس|ویرایش عکس|طرح|پوستر|بنر)/i},
