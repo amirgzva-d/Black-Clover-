@@ -16,6 +16,16 @@ test('successful multi-tool workflows become reusable procedural skills',async()
   await fs.rm(dir,{recursive:true,force:true});
 });
 
+test('user-taught workflows stay out of online-eligible automatic recall',async()=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'bc-taught-')),store=new SkillStore({file:path.join(dir,'skills.json')});
+  await store.teach({title:'کار خصوصی',intent:'فایل مخصوص من را از مسیر شخصی باز کن',steps:[{tool:'open_file',args:{path:'C:/private/example.txt'}}]});
+  assert.equal((await store.recall('فایل مخصوص من')).length,0);
+  const local=await store.recall('فایل مخصوص من',{includePrivate:true});
+  assert.equal(local.length,1);
+  assert.equal(local[0].private,true);
+  await fs.rm(dir,{recursive:true,force:true});
+});
+
 test('unresolved public tasks are queued without duplicates',async()=>{
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),'bc-learnq-')),store=new SkillStore({file:path.join(dir,'skills.json')});
   await store.queueImprovement('با برنامه نمونه فرم را پر کن',{tool:'invoke_ui_element',error:'button not found'});
