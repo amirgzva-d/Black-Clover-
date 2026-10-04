@@ -11,8 +11,8 @@ const groups={
   spreadsheet:['global_find_files','open_named_file','excel_status','excel_list_sheets','excel_read_range','excel_set_cells','excel_append_rows','excel_add_image','excel_list_hyperlinks','excel_collect_images','copy_files_to_clipboard','search_learned_skills'],
   clipboard:['copy_to_clipboard','read_clipboard','copy_files_to_clipboard'],
   screen:['take_screenshot','list_windows','focus_window','inspect_ui','vision_inspect_screen','invoke_ui_element','set_ui_value','type_text','press_key','move_mouse','mouse_click','mouse_scroll','search_learned_skills'],
-  audio:['get_volume','set_volume','volume_up','volume_down','toggle_mute','media_play_pause','media_next','media_previous'],
-  display:['get_brightness','set_brightness','open_display_settings','turn_off_display'],
+  audio:['get_volume','set_volume','volume_up','volume_down','set_mute','toggle_mute','media_play_pause','media_next','media_previous'],
+  display:['get_brightness','set_brightness','brightness_up','brightness_down','open_display_settings','turn_off_display'],
   settings:['open_display_settings','open_sound_settings','open_bluetooth_settings','open_network_settings','open_apps_settings','open_storage_settings','open_privacy_settings','open_windows_security','check_windows_update'],
   power:['lock_pc','sleep_pc','shutdown_pc','restart_pc','sign_out','get_power_plan','get_battery_status'],
   social:['messenger_open','messenger_stage_files','copy_files_to_clipboard','open_social_web','global_find_files','excel_collect_images','inspect_ui','vision_inspect_screen','invoke_ui_element','set_ui_value','type_text','press_key','focus_window','list_windows','search_learned_skills'],
@@ -36,12 +36,12 @@ const patterns=[
   ['files',/(فایل|پوشه|دایرکتوری|مسیر|rename|copy|move|جابه.?جا|کپی|دانلود|دسکتاپ|documents)/i],
   ['clipboard',/(کلیپ.?بورد|clipboard|کپی کن|متن کپی)/i],
   ['screen',/(صفحه|اسکرین|پنجره|کلیک|موس|ماوس|کیبورد|تایپ|دکمه|ببین چی روی صفحه|چی می.?بینی|screen|window|click|mouse|keyboard|vision)/i],
-  ['audio',/(صدا|ولوم|بی.?صدا|موزیک|آهنگ|پخش|volume|mute|media)/i],
+  ['audio',/(صدا|ولوم|بی.?صدا|اسپیکر|موزیک|آهنگ|پخش|volume|mute|media)/i],
   ['display',/(نور|روشنایی|brightness|نمایشگر|مانیتور|صفحه.*خاموش)/i],
   ['settings',/(تنظیمات|بلوتوث|شبکه|وای.?فای|storage|privacy|security|windows update)/i],
   ['power',/(خاموش|ری.?استارت|قفل|اسلیپ|خواب|خروج از حساب|shutdown|restart|sleep|lock|باتری|power plan)/i],
   ['social',/(تلگرام|telegram|واتساپ|whatsapp|روبیکا|rubika|اینستاگرام|instagram|دیسکورد|discord|پیام بده|پیام بفرست|بفرست.*(?:فایل|عکس|تصویر)|ارسال.*(?:فایل|عکس|تصویر))/i],
-  ['web',/(گوگل|یوتیوب|youtube|نقشه|maps|سایت|لینک|مرورگر|search|سرچ)/i],
+  ['web',/(گوگل|یوتیوب|youtube|نقشه|maps|سایت|لینک|مرورگر|search|سرچ|جستجو|بگرد)/i],
   ['coding',/(کد|برنامه.?نویسی|پروژه|npm|build|test|گیت|git|سایت بساز|بازی بساز|اپ بساز|coding|کدنویس|کد نویس|vscode|vs code|باگ|خطای کد|refactor)/i],
   ['scheduler',/(یادآور|یادم بنداز|ساعت .* بگو|فردا .* یاد|remind|schedule|زمان.?بندی)/i],
   ['wellbeing',/(استراحت|خسته|چشم|نشستن|حالت بدن|آب بخور|هیدرات|تمرکز|وقفه|گردن|مچ|کمر|خواب|سلامت|wellbeing|break)/i],
@@ -49,5 +49,12 @@ const patterns=[
   ['permissions',/(مجوز|دسترسی|permission|محافظت|حذف نکن|پاک نکن)/i],
   ['system',/(سیستم|رم|پردازنده|process|فرایند|زمان|ساعت|تاریخ|cpu|gpu)/i]
 ];
-export function selectToolNames(text,hints=[]){const selected=[],s=String(text||'');for(const [group,re] of patterns)if(re.test(s))selected.push(...(groups[group]||[]));for(const hint of hints){const key=String(hint).toLowerCase();for(const [group,names] of Object.entries(groups))if(key.includes(group))selected.push(...names);}if(!selected.length&&/(انجام|باز کن|ببند|کم کن|زیاد کن|برو|اجرا|کنترل|درست کن|بساز|راه بنداز)/i.test(s))selected.push(...groups.system,...groups.apps,...groups.screen,...groups.learning);return uniq(selected).slice(0,52);}
+const contextualAction=/(انجام|بازش|باز کن|ببندش|ببند|کمتر|کم کن|زیاد|بیشتر|بالا|پایین|ببر|بیار|برو|اجرا|کنترل|درست کن|بساز|راه بنداز|همونو|همین رو|اونو|اون رو)/i;
+export function selectToolNames(text,hints=[]){
+  const selected=[],s=String(text||'');
+  for(const [group,re] of patterns)if(re.test(s))selected.push(...(groups[group]||[]));
+  for(const hint of hints){const key=String(hint).toLowerCase();for(const [group,names] of Object.entries(groups))if(key.includes(group))selected.push(...names);}
+  if(!selected.length&&contextualAction.test(s))selected.push(...groups.audio,...groups.display,...groups.power,...groups.apps,...groups.web,...groups.storage,...groups.screen,...groups.system);
+  return uniq(selected).slice(0,52);
+}
 export const TOOL_GROUPS=groups;
