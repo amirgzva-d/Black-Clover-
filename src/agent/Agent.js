@@ -17,6 +17,7 @@ const skillContext=items=>items?.length?`\n\n[LEARNED EXPERIENCE — prior reusa
 const toolMessage=(name,out,callId,isPrivate=false)=>({role:'tool',content:JSON.stringify(out),tool_name:name,...(callId?{tool_call_id:callId}:{}),_private:isPrivate});
 const publicFields=m=>{const x={role:m.role,content:m.content??''};if(m.tool_calls)x.tool_calls=m.tool_calls;if(m.tool_name)x.tool_name=m.tool_name;if(m.tool_call_id)x.tool_call_id=m.tool_call_id;return x;};
 const parseArgs=raw=>{if(typeof raw!=='string')return raw??{};try{return JSON.parse(raw||'{}');}catch{return {};}};
+const soundsUnfamiliar=text=>/(نمی.?تونم|نمی.?توانم|نمی.?دونم|نمی.?دانم|بلد نیستم|ابزار(?:ش|ش رو)? ندارم|قابلیت(?:ش|ش رو)? ندارم|can(?:not|'t)|don.?t know|not supported)/i.test(String(text||''));
 
 export class Agent{
   constructor({emit=()=>{},client=new BrainRouter()}={}){this.emit=emit;this.client=client;this.history=[{role:'system',content:PERSONALITY_SYSTEM,_private:false}];this.pending=new Map();this.improving=false;}
@@ -39,6 +40,7 @@ export class Agent{
   async finishTurn(turn,reply){
     const successes=turn.trace.filter(x=>x.success).length,failures=turn.trace.filter(x=>!x.success).length;
     if(!turn.private&&successes>=2&&failures===0){try{const learned=await skills.learnFromTrace(turn.original,turn.trace);if(learned)this.emit({type:'learning',action:'workflow-learned',title:learned.title});}catch{}}
+    if(!turn.private&&soundsUnfamiliar(reply)){try{await skills.queueImprovement(turn.original,{error:'Model reported an unfamiliar or unsupported task'});this.emit({type:'learning',action:'gap-queued',title:turn.original});}catch{}}
     return {ok:true,text:reply,brain:{mode:this.client.lastMode,model:this.client.model,privacy:turn.private?'local-private':'online-eligible'},toolsRouted:turn.routeNames?.length||0,learned:!turn.private&&successes>=2&&failures===0};
   }
   async drive({routeNames,turn,queuedCalls=[],startStep=0}={}){
