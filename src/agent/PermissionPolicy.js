@@ -13,6 +13,7 @@ const persistentWriteTools=new Set(['install_app','excel_set_cells','excel_appen
 const destructiveWords=/(حذف|پاک|فرمت|فرمتش|آن.?اینستال|uninstall|remove|delete|wipe|shutdown|خاموش|ری.?استارت|restart|sleep|sign.?out)/i;
 const protectPattern=/(?:هیچ.?وقت|هرگز)\s+(.+?)\s+(?:رو|را)?\s*(?:حذف|پاک|آن.?اینستال|remove|delete)\s*(?:نکن|نکنید)/i;
 const unprotectPattern=/(?:دیگه|حالا)?\s*(.+?)\s+(?:رو|را)?\s*(?:از محافظت دربیار|محافظتش رو بردار|می.?تونی حذف کنی|اجازه حذف داری)/i;
+const saveWords=/(^|\b|\s)(save|save as|ذخیره|ذخیره کن|سیو|سیو کن)(\b|\s|$)/i;
 const defaultDir=()=>process.env.BLACK_CLOVER_DATA_DIR||path.join(process.env.APPDATA||path.join(os.homedir(),'.black-clover'),'BlackClover');
 const norm=v=>String(v??'').trim().toLowerCase().replace(/[\s\\/]+/g,' ');
 
@@ -32,7 +33,12 @@ export class PermissionPolicy{
   async parseUserRule(text){await this.load();const s=String(text||'').trim();const p=s.match(protectPattern);if(p?.[1])return {type:'protected',item:await this.protect(p[1],{note:'natural-language never-delete rule'})};const u=s.match(unprotectPattern);if(u?.[1]&&destructiveWords.test(s))return {type:'unprotected',resource:u[1],changed:await this.unprotect(u[1])};return null;}
   _argsText(args={}){return norm(Object.values(args).filter(v=>['string','number'].includes(typeof v)).join(' '));}
   async protectedMatch(name,args={}){await this.load();if(!destructiveTools.has(name)&&!/(delete|uninstall|remove)/i.test(name))return null;const hay=this._argsText(args);if(!hay)return null;return this.state.protectedResources.find(x=>hay.includes(x.key)||x.key.includes(hay))||null;}
-  async isProtectedDocumentSave(name,args={}){if(name!=='press_key'||String(args?.key||'').toUpperCase()!=='CTRL+S')return false;const app=await foregroundProcess();return /(photoshop|illustrator|excel)/i.test(app);}
+  async isProtectedDocumentSave(name,args={}){
+    const app=await foregroundProcess();if(!/(photoshop|illustrator|excel)/i.test(app))return false;
+    if(name==='press_key'&&/^(CTRL\+S|CTRL\+SHIFT\+S)$/i.test(String(args?.key||'')))return true;
+    if(['invoke_ui_element','mouse_click'].includes(name)&&saveWords.test(this._argsText(args)))return true;
+    return false;
+  }
   async assertAllowed(name,args={}){const match=await this.protectedMatch(name,args);if(match)throw new Error(`این مورد با قانون دائمی شما محافظت شده و حذف/پاک نمی‌شود: ${match.label}`);return true;}
   async shouldConfirm(name,tool,args={}){
     await this.load();
@@ -43,7 +49,7 @@ export class PermissionPolicy{
     if(this.state.profile==='balanced')return tool?.risk==='sensitive'&&/(install|upgrade|write|move|copy|type|click)/i.test(name);
     return false;
   }
-  async status(){await this.load();return {profile:this.state.profile,protectedResources:this.state.protectedResources.map(x=>({label:x.label,note:x.note})),destructiveTools:[...destructiveTools],alwaysConfirm:[...persistentWriteTools,'CTRL+S in Photoshop/Illustrator/Excel']};}
+  async status(){await this.load();return {profile:this.state.profile,protectedResources:this.state.protectedResources.map(x=>({label:x.label,note:x.note})),destructiveTools:[...destructiveTools],alwaysConfirm:[...persistentWriteTools,'Save/Save As in Photoshop/Illustrator/Excel']};}
 }
 
 export const permissions=new PermissionPolicy();
