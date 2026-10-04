@@ -1,0 +1,14 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+const execFileAsync=promisify(execFile);
+const result=(name,success,message,data=null)=>({tool_name:name,success,message,data});
+const tool=(risk,description,schema,run)=>({risk,description,schema,run});
+const resolveDir=d=>path.resolve(String(d||process.cwd()));
+async function run(cmd,args,cwd,timeout=600000){const {stdout,stderr}=await execFileAsync(cmd,args,{cwd,windowsHide:true,timeout,maxBuffer:12_000_000,env:process.env});return {stdout:stdout.slice(-30000),stderr:stderr.slice(-12000)};}
+async function projectFiles(root,limit=300){const out=[],skip=new Set(['node_modules','.git','dist','build','coverage','.next','.cache']);async function walk(dir,depth=0){if(depth>5||out.length>=limit)return;let entries=[];try{entries=await fs.readdir(dir,{withFileTypes:true});}catch{return;}for(const e of entries){if(skip.has(e.name))continue;const p=path.join(dir,e.name),rel=path.relative(root,p);out.push({path:rel,type:e.isDirectory()?'directory':'file'});if(e.isDirectory())await walk(p,depth+1);if(out.length>=limit)break;}}await walk(root);return out;}
+export const codingTools={
+  inspect_project:tool('read','Inspect a local coding project structure and package metadata without executing arbitrary shell text',{type:'object',properties:{directory:{type:'string'},limit:{type:'number'}},required:['directory']},async({directory,limit=250})=>{const root=resolveDir(directory),files=await projectFiles(root,Math.max(50,Math.min(Number(limit)||250,500)));let packageJson=null;try{packageJson=JSON.parse(await fs.readFile(path.join(root,'package.json'),'utf8'));}catch{}return result('inspect_project',true,'Project inspected',{root,files,package:packageJson?{name:packageJson.name,scripts:packageJson.scripts,dependencies:packageJson.dependencies,devDependencies:packageJson.devDependencies}:null});}),
+  run_project_task:tool('sensitive','Run a safe allowlisted coding task in a project: npm install/test/build, git status/diff/log. Arbitrary shell commands are intentionally not accepted',{type:'object',properties:{directory:{type:'string'},task:{type:'string',enum:['npm_install','npm_test','npm_build','git_status','git_diff','git_log']}},required:['directory','task']},async({directory,task})=>{const cwd=resolveDir(directory);const map={npm_install:['npm.cmd',['install']],npm_test:['npm.cmd',['test','--','--runInBand']],npm_build:['npm.cmd',['run','build']],git_status:['git.exe',['status','--short','--branch']],git_diff:['git.exe',['diff','--stat']],git_log:['git.exe',['log','-10','--oneline','--decorate']]};let [cmd,args]=map[task]||[];if(!cmd)return result('run_project_task',false,'Unsupported task');if(task==='npm_test')args=['test'];const out=await run(cmd,args,cwd);return result('run_project_task',true,`${task} completed`,out);})
+};
