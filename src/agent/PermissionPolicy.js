@@ -5,8 +5,9 @@ import os from 'node:os';
 const destructiveTools=new Set([
   'delete_path','uninstall_app','shutdown_pc','restart_pc','sleep_pc','sign_out',
   'forget_memory','clear_memories','unprotect_resource','remove_pinned_note','remove_reminder',
-  'empty_recycle_bin','cleanup_user_temp','project_apply_replacements','project_create_file',
-  'project_restore_backup','git_commit_files','git_restore_files'
+  'empty_recycle_bin','cleanup_user_temp','repair_windows_image','repair_system_files',
+  'project_apply_replacements','project_create_file','project_restore_backup','git_commit_files',
+  'git_restore_files','self_dev_reset_to_main'
 ]);
 const destructiveWords=/(حذف|پاک|فرمت|فرمتش|آن.?اینستال|uninstall|remove|delete|wipe|shutdown|خاموش|ری.?استارت|restart|sleep|sign.?out)/i;
 const protectPattern=/(?:هیچ.?وقت|هرگز)\s+(.+?)\s+(?:رو|را)?\s*(?:حذف|پاک|آن.?اینستال|remove|delete)\s*(?:نکن|نکنید)/i;
