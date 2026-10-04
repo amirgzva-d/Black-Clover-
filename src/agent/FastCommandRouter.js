@@ -4,15 +4,16 @@ const n=s=>Number(digits(String(s)).replace(/[^0-9]/g,''));
 const clamp=x=>Math.max(0,Math.min(100,Number(x)));
 
 const appAliases=[
-  [/\bchrome\b|کروم/i,'Google Chrome'],[/firefox|فایرفاکس/i,'Firefox'],[/edge|اج\b|مایکروسافت اج/i,'Microsoft Edge'],[/telegram|تلگرام/i,'Telegram'],[/whatsapp|واتساپ/i,'WhatsApp'],[/rubika|روبیکا/i,'Rubika'],[/instagram|اینستاگرام/i,'Instagram'],[/discord|دیسکورد/i,'Discord'],[/vscode|vs code|وی.?اس.?کد/i,'Visual Studio Code'],[/photoshop|فتوشاپ/i,'Adobe Photoshop'],[/excel|اکسل/i,'Excel'],[/word|ورد/i,'Word'],[/powerpoint|پاورپوینت/i,'PowerPoint'],[/notepad|نوت.?پد/i,'Notepad'],[/calculator|ماشین.?حساب/i,'Calculator'],[/explorer|فایل اکسپلورر|اکسپلورر/i,'File Explorer']
+  [/\bchrome\b|کروم/i,'Google Chrome'],[/firefox|فایرفاکس/i,'Firefox'],[/edge|اج\b|مایکروسافت اج/i,'Microsoft Edge'],[/telegram|تلگرام/i,'Telegram'],[/whatsapp|واتساپ/i,'WhatsApp'],[/rubika|روبیکا/i,'Rubika'],[/instagram|اینستاگرام/i,'Instagram'],[/discord|دیسکورد/i,'Discord'],[/vscode|vs code|وی.?اس.?کد/i,'Visual Studio Code'],[/photoshop|فتوشاپ/i,'Adobe Photoshop'],[/illustrator|ایلوستریتور/i,'Adobe Illustrator'],[/excel|اکسل/i,'Excel'],[/word|ورد/i,'Word'],[/powerpoint|پاورپوینت/i,'PowerPoint'],[/spotify|اسپاتیفای/i,'Spotify'],[/vlc/i,'vlc'],[/notepad|نوت.?پد/i,'Notepad'],[/calculator|ماشین.?حساب/i,'Calculator'],[/explorer|فایل اکسپلورر|اکسپلورر/i,'File Explorer']
 ];
 const has=(s,re)=>re.test(s);
 const audio=/صدا|ولوم|volume|اسپیکر|speaker/i;
 const bright=/نور|روشنایی|brightness/i;
-const increase=/زیاد|بیشتر|بالا|ببر بالا|بیار بالا|بالاتر|تقویت|قوی.?تر/i;
-const decrease=/کم|کمتر|پایین|بیار پایین|ببر پایین|پایین.?تر|آروم.?تر/i;
-const maximum=/تا آخر|تا ته|تهش|حداکثر|max|maximum|صد درصد|100 درصد|روی 100|روی ۱۰۰|فول/i;
-const minimum=/صفر|0 درصد|روی 0|روی صفر|کامل قطع/i;
+const increase=/زیاد|بیشتر|بالا|ببر بالا|بیار بالا|بکش بالا|بالاتر|بلندتر|تقویت|قوی.?تر/i;
+const decrease=/کم|کمتر|پایین|بیار پایین|ببر پایین|پایین.?تر|آروم.?تر|آرام.?تر/i;
+const maximum=/تا آخر|تا ته|تهش|انتهاش|انتها|تا نهایت|نهایت|سقف|آخرین حد|حداکثر|max|maximum|صد درصد|100 درصد|روی 100|روی ۱۰۰|فول/i;
+const minimum=/صفر|0 درصد|روی 0|روی صفر|کامل قطع|ته پایین|حداقل|min|minimum/i;
+const launchVerb=/(?:باز کن|بازش کن|اجرا کن|اجراش کن|راه بنداز|راهش بنداز|بالا بیار|بیارش بالا|بنداز بالا|بیار بالا)/i;
 
 function extractPercent(s,keywordRe){
   const t=digits(s),m=t.match(new RegExp(`(?:${keywordRe.source}).{0,30}?(\\d{1,3})\\s*(?:درصد|%|$)`,'i'))||t.match(new RegExp(`(\\d{1,3})\\s*(?:درصد|%)?.{0,20}(?:${keywordRe.source})`,'i'));
@@ -20,7 +21,7 @@ function extractPercent(s,keywordRe){
 }
 function genericAppName(s){
   if(/فایل|پوشه|فولدر|سایت|لینک|تنظیمات/i.test(s))return null;
-  let m=s.match(/^(?:لطفا\s*)?(.+?)\s*(?:رو|را)?\s*(?:باز کن|اجرا کن|راه بنداز|بالا بیار)$/i);
+  let m=s.match(/^(?:لطفا\s*)?(.+?)\s*(?:رو|را)?\s*(?:باز کن|بازش کن|اجرا کن|اجراش کن|راه بنداز|راهش بنداز|بالا بیار|بیارش بالا|بنداز بالا|بیار بالا)$/i);
   if(!m)return null;
   return m[1].replace(/^(?:برنامه|اپ|نرم افزار)\s+/i,'').trim();
 }
@@ -30,7 +31,7 @@ export function matchFastCommand(input){
   if(!s)return null;
 
   if(has(s,audio)){
-    if(has(s,maximum)&&has(s,/(?:زیاد|بالا|ببر|بیار|کن|بذار|تنظیم|فول)/i))return {name:'set_volume',args:{percent:100},reply:'صدا رو تا آخر بردم بالا، رئیس.'};
+    if(has(s,maximum)&&has(s,/(?:زیاد|بالا|ببر|بیار|بکش|کن|بذار|تنظیم|فول|سقف|نهایت|انتها)/i))return {name:'set_volume',args:{percent:100},reply:'صدا رو تا آخر بردم بالا، رئیس.'};
     if(has(s,minimum)&&has(s,/(?:کم|پایین|ببر|بیار|کن|بذار|تنظیم|قطع)/i))return {name:'set_volume',args:{percent:0},reply:'صدا رو روی صفر گذاشتم.'};
     const percent=extractPercent(s,audio);if(percent!==null)return {name:'set_volume',args:{percent},reply:`صدا رو روی ${percent}٪ تنظیم کردم.`};
     if(/(?:از\s*)?(?:بی.?صدا|سایلنت|mute).*(?:در.?بیار|بردار|خاموش کن)|صدا رو (?:وصل|فعال) کن|unmute/i.test(s))return {name:'set_mute',args:{muted:false},reply:'صدا دوباره وصله.'};
@@ -57,7 +58,7 @@ export function matchFastCommand(input){
   if(/(?:قفلش کن|قفل کن|lock)/i.test(s))return {name:'lock_pc',args:{},reply:'سیستم قفل شد.'};
   if(/(?:آپدیت ویندوز|windows update|به.?روزرسانی ویندوز)/i.test(s))return {name:'check_windows_update',args:{},reply:'Windows Update رو باز کردم.'};
 
-  if(/(?:باز کن|اجرا کن|راه بنداز|بالا بیار)/i.test(s)){
+  if(launchVerb.test(s)){
     for(const [re,name] of appAliases)if(re.test(s))return {name:'launch_app',args:{name},reply:`${name} رو باز کردم.`};
     const name=genericAppName(s);if(name&&name.length<80)return {name:'launch_app',args:{name},reply:`${name} رو باز کردم.`};
   }
