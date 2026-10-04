@@ -59,7 +59,24 @@ const patterns=[
   ['system',/(سیستم|رم|پردازنده|process|فرایند|زمان|ساعت|تاریخ|cpu|gpu)/i]
 ];
 const MODE_TO_GROUPS={
-  audio:['audio'],display:['display'],media:['media','audio','storage','files'],apps:['apps','screen'],web:['web','screen'],files:['storage','files'],spreadsheet:['spreadsheet','storage','screen'],social:['social','screen'],creative:['creative','files','screen'],coding:['coding','apps','files'],software:['apps','windowsAdmin'],diagnostics:['windowsAdmin','system','apps'],personalization:['personalization','files'],settings:['settings'],power:['power'],scheduler:['scheduler'],ui:['screen'],ai:['aiBrains','web','screen']
+  audio:['audio'],
+  display:['display','settings'],
+  media:['media','audio','storage','files'],
+  apps:['apps','screen'],
+  web:['web','screen'],
+  files:['storage','files'],
+  spreadsheet:['spreadsheet','storage','screen'],
+  social:['social','screen','files'],
+  creative:['creative','files','screen','web'],
+  coding:['coding','apps','files','web'],
+  software:['apps','windowsAdmin','web','screen'],
+  diagnostics:['windowsAdmin','system','apps','web','screen'],
+  personalization:['personalization','files','screen'],
+  settings:['settings','screen'],
+  power:['power'],
+  scheduler:['scheduler'],
+  ui:['screen'],
+  ai:['aiBrains','web','screen']
 };
 const factualQuestion=/(؟|\?|چیست|چیه|چی هست|کیه|کی هست|کجاست|کجا هست|چرا|چطور|چگونه|چه کسی|چه زمانی|چه موقع|چند تا|فرق .* چیه|تفاوت .* چیه|معنی .* چیه|what\b|who\b|where\b|when\b|why\b|how\b)/i;
 const personalSmallTalk=/(حالت چطوره|خوبی|چه خبر|اسم من|من کی.?ام|منو می.?شناسی|من را می.?شناسی|یادت میاد|یادت هست|دوستم داری|خسته.?ای|سلام|صبح بخیر|شب بخیر)/i;
