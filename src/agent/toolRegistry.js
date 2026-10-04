@@ -9,7 +9,10 @@ import { policyTools } from './policyTools.js';
 import { nativeWindowsTools } from './nativeWindowsTools.js';
 import { visionTools } from './visionTools.js';
 import { learningTools } from './learningTools.js';
+import { storageTools } from './storageTools.js';
+import { spreadsheetTools } from './spreadsheetTools.js';
+import { messengerSupportTools } from './messengerSupportTools.js';
 
-export const tools=Object.freeze({...coreTools,...powerTools,...researchTools,...memoryTools,...automationTools,...codingTools,...schedulerTools,...policyTools,...nativeWindowsTools,...visionTools,...learningTools});
+export const tools=Object.freeze({...coreTools,...powerTools,...researchTools,...memoryTools,...automationTools,...codingTools,...schedulerTools,...policyTools,...nativeWindowsTools,...visionTools,...learningTools,...storageTools,...spreadsheetTools,...messengerSupportTools});
 export function ollamaTools(names=null){const allow=Array.isArray(names)?new Set(names):null;return Object.entries(tools).filter(([name])=>allow===null||allow.has(name)).map(([name,t])=>({type:'function',function:{name,description:t.description,parameters:t.schema}}));}
 export async function runTool(name,args={}){const t=tools[name];if(!t)throw new Error(`Unknown tool: ${name}`);return t.run(args);}
