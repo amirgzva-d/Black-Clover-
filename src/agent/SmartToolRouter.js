@@ -1,7 +1,8 @@
 const uniq=a=>[...new Set(a)];
 const groups={
-  memory:['remember_fact','recall_memory','list_recent_memories','update_memory','forget_memory','permission_status','protect_resource','unprotect_resource'],
+  memory:['remember_fact','recall_memory','list_recent_memories','update_memory','forget_memory','permission_status','protect_resource','unprotect_resource','data_vault_status','backup_maria_data'],
   notes:['create_pinned_note','list_pinned_notes','search_pinned_notes','update_pinned_note','remove_pinned_note'],
+  vault:['data_vault_status','backup_maria_data','configure_data_sync_folder','sync_maria_data'],
   learning:['search_learned_skills','learning_status','teach_skill','forget_learned_skill','research_topic','live_web_search','read_web_page'],
   research:['live_web_search','read_web_page','wikipedia_search','research_topic','web_search','open_url','search_learned_skills'],
   apps:['find_app','list_installed_apps','launch_app','close_app','winget_search','install_app','uninstall_app','list_winget_upgrades','upgrade_app','search_learned_skills'],
@@ -22,6 +23,7 @@ const groups={
   adminui:['open_task_manager','open_device_manager','open_services_manager','open_event_viewer','open_disk_management','open_power_options'],
   system:['get_system_info','get_time','list_processes','list_windows','storage_overview','performance_snapshot','battery_status','environment_summary','windows_locale','time_zone_status'],
   coding:['inspect_project','project_read_file','project_search_text','project_apply_replacements','project_create_file','project_restore_backup','list_project_scripts','run_project_task','git_create_branch','git_switch_branch','git_commit_files','git_restore_files','node_check_file','global_find_files','live_web_search','read_web_page','research_topic','search_learned_skills'],
+  selfdev:['self_dev_status','self_dev_prepare','self_dev_workspace','self_dev_reset_to_main','inspect_project','project_read_file','project_search_text','project_apply_replacements','project_create_file','project_restore_backup','list_project_scripts','run_project_task','git_create_branch','git_switch_branch','git_commit_files','git_restore_files','node_check_file','research_topic','search_learned_skills'],
   scheduler:['get_time','create_reminder','list_reminders','update_reminder','snooze_reminder','complete_reminder','cancel_reminder','remove_reminder'],
   wellbeing:['wellbeing_catalog','schedule_wellbeing','list_wellbeing_schedules','create_reminder','list_reminders'],
   permissions:['permission_status','set_permission_profile','protect_resource','unprotect_resource']
@@ -29,6 +31,8 @@ const groups={
 const patterns=[
   ['memory',/(یاد|حافظه|remember|فراموش|ترجیح|اسمم|هیچ.?وقت|هرگز)/i],
   ['notes',/(متن مهم|یادداشت|نوت|پین|prompt|پرامپت|note)/i],
+  ['vault',/(بکاپ|پشتیبان|فضای ابری|ابر|cloud|sync|سینک|وان.?درایو|onedrive|dropbox|google drive)/i],
+  ['selfdev',/(خودت رو|خودتو|خودت را).*(بهبود|ارتقا|آپدیت|تغییر|کدنویسی)|(?:سورس|کد)\s+(?:خودت|ماریا).*(?:تغییر|بهبود|درست)/i],
   ['learning',/(یاد بگیر|بلد نیست|بلدی|مهارت|روش انجام|چطور انجام|خودت یاد|learn|skill|workflow|نمی.?دونی|نمی.?دانی)/i],
   ['research',/(جدیدترین|آخرین\s+(?:خبر|اطلاعات|نسخه|قیمت|وضعیت)|خبر(?:های)?\s+(?:امروز|جدید)|تحقیق|منبع|اینترنت|آنلاین|research|latest|current\s+(?:news|info|version|price)|وب)/i],
   ['apps',/(برنامه|نرم.?افزار|اپ|نصب|حذف برنامه|آپدیت برنامه|winget|install|uninstall|upgrade|chrome|firefox|telegram|واتساپ|روبیکا|discord|vscode|فتوشاپ|photoshop)/i],
