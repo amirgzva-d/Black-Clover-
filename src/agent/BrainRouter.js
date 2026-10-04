@@ -5,20 +5,23 @@ const ping=async(url,timeoutMs=2500)=>{const controller=new AbortController(),ti
 export async function internetAvailable(){const checks=await Promise.all(['https://www.msftconnecttest.com/connecttest.txt','https://www.google.com/generate_204'].map(u=>ping(u)));return checks.some(Boolean);}
 
 export class BrainRouter{
-  constructor({local=new OllamaClient(),online=onlineBrainFromEnv(),networkTtlMs=15000}={}){this.local=local;this.online=online;this.networkTtlMs=networkTtlMs;this.lastMode='local';this.networkState=null;this.networkCheckedAt=0;this.lastFallbackReason='';}
-  get model(){return this.lastMode==='online'&&this.online?.model?this.online.model:this.local.model;}
+  constructor({local=new OllamaClient(),coder=new OllamaClient({model:process.env.BLACK_CLOVER_CODER_MODEL||'qwen2.5-coder:7b',timeoutMs:240000}),reasoner=new OllamaClient({model:process.env.BLACK_CLOVER_REASONING_MODEL||'deepseek-r1:7b',timeoutMs:240000}),online=onlineBrainFromEnv(),networkTtlMs=15000}={}){this.local=local;this.coder=coder;this.reasoner=reasoner;this.online=online;this.networkTtlMs=networkTtlMs;this.lastMode='local';this.lastProfile='general';this.lastModel=local.model;this.networkState=null;this.networkCheckedAt=0;this.lastFallbackReason='';}
+  get model(){return this.lastModel||this.local.model;}
+  localFor(profile='general'){if(profile==='coding')return this.coder;if(profile==='reasoning')return this.reasoner;return this.local;}
   async network({fresh=false}={}){const now=Date.now();if(!fresh&&this.networkState!==null&&now-this.networkCheckedAt<this.networkTtlMs)return this.networkState;this.networkState=await internetAvailable();this.networkCheckedAt=now;return this.networkState;}
-  async chat(messages,tools=[],{allowOnline=true,privacyReason=''}={}){
+  async localChat(messages,tools,profile){const preferred=this.localFor(profile);try{const out=await preferred.chat(messages,tools);this.lastModel=preferred.model;return out;}catch(e){if(preferred===this.local)throw e;this.lastFallbackReason=`specialist-local-failed: ${preferred.model}: ${e.message}`;const out=await this.local.chat(messages,tools);this.lastModel=this.local.model;return out;}}
+  async chat(messages,tools=[],{allowOnline=true,privacyReason='',profile='general'}={}){
+    this.lastProfile=profile;
     if(this.online?.configured&&allowOnline){
       const connected=await this.network();
-      if(connected){try{const out=await this.online.chat(messages,tools);this.lastMode='online';this.lastFallbackReason='';return out;}catch(e){this.lastFallbackReason=`online-failed: ${e.message}`;}}
+      if(connected){try{const out=await this.online.chat(messages,tools,{profile});this.lastMode='online';this.lastModel=this.online.model||out?.model||this.local.model;this.lastFallbackReason='';return out;}catch(e){this.lastFallbackReason=`online-failed: ${e.message}`;}}
       else this.lastFallbackReason='internet-offline';
       const notice=this.lastFallbackReason==='internet-offline'?'[HOST NOTICE: Internet is unavailable. Briefly acknowledge this once in Maria’s natural Persian/isekaI style, then continue locally. Never claim online research succeeded.]':'[HOST NOTICE: The configured online brain failed. Continue with the local brain and mention the fallback only if relevant.]';
-      this.lastMode='local';return this.local.chat([...messages,{role:'system',content:notice}],tools);
+      this.lastMode='local';return this.localChat([...messages,{role:'system',content:notice}],tools,profile);
     }
     if(this.online?.configured&&!allowOnline)this.lastFallbackReason=`privacy-local${privacyReason?`: ${privacyReason}`:''}`;
-    this.lastMode='local';return this.local.chat(messages,tools);
+    this.lastMode='local';return this.localChat(messages,tools,profile);
   }
-  async health(){const internet=await this.network({fresh:true});return {local:await this.local.health(),onlineConfigured:Boolean(this.online?.configured),online:this.online?.configured&&internet?await this.online.health():false,internet,mode:this.lastMode,provider:this.online?.provider||null,model:this.model,fallbackReason:this.lastFallbackReason};}
+  async health(){const internet=await this.network({fresh:true}),models=await this.local.models();return {local:await this.local.health(),onlineConfigured:Boolean(this.online?.configured),online:this.online?.configured&&internet?await this.online.health():false,internet,mode:this.lastMode,profile:this.lastProfile,provider:this.online?.provider||null,model:this.model,installedModels:models,specialists:{general:this.local.model,coding:this.coder.model,reasoning:this.reasoner.model,coderInstalled:models.some(x=>x.startsWith(this.coder.model.split(':')[0]+':')||x===this.coder.model),reasonerInstalled:models.some(x=>x.startsWith(this.reasoner.model.split(':')[0]+':')||x===this.reasoner.model)},fallbackReason:this.lastFallbackReason};}
   async models(){return this.local.models();}
 }
