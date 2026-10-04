@@ -7,29 +7,8 @@ import { codingTools } from './codingTools.js';
 import { schedulerTools } from './schedulerTools.js';
 import { policyTools } from './policyTools.js';
 import { nativeWindowsTools } from './nativeWindowsTools.js';
+import { visionTools } from './visionTools.js';
 
-export const tools=Object.freeze({
-  ...coreTools,
-  ...powerTools,
-  ...researchTools,
-  ...memoryTools,
-  ...automationTools,
-  ...codingTools,
-  ...schedulerTools,
-  ...policyTools,
-  ...nativeWindowsTools
-});
-
-export function ollamaTools(names=null){
-  const allow=Array.isArray(names)&&names.length?new Set(names):null;
-  return Object.entries(tools).filter(([name])=>!allow||allow.has(name)).map(([name,t])=>({
-    type:'function',
-    function:{name,description:t.description,parameters:t.schema}
-  }));
-}
-
-export async function runTool(name,args={}){
-  const t=tools[name];
-  if(!t)throw new Error(`Unknown tool: ${name}`);
-  return t.run(args);
-}
+export const tools=Object.freeze({...coreTools,...powerTools,...researchTools,...memoryTools,...automationTools,...codingTools,...schedulerTools,...policyTools,...nativeWindowsTools,...visionTools});
+export function ollamaTools(names=null){const allow=Array.isArray(names)&&names.length?new Set(names):null;return Object.entries(tools).filter(([name])=>!allow||allow.has(name)).map(([name,t])=>({type:'function',function:{name,description:t.description,parameters:t.schema}}));}
+export async function runTool(name,args={}){const t=tools[name];if(!t)throw new Error(`Unknown tool: ${name}`);return t.run(args);}
