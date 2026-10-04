@@ -4,6 +4,7 @@ const groups={
   notes:['create_pinned_note','list_pinned_notes','update_pinned_note','recall_memory'],
   learning:['search_learned_skills','learning_status','teach_skill','forget_learned_skill','research_topic','live_web_search','read_web_page'],
   research:['live_web_search','read_web_page','wikipedia_search','research_topic','web_search','open_url','search_learned_skills'],
+  knowledge:['live_web_search','read_web_page','wikipedia_search','research_topic'],
   aiBrains:['ai_provider_status','open_ai_portal','search_learned_skills'],
   apps:['find_app','list_installed_apps','launch_app','close_app','winget_search','install_app','uninstall_app','list_winget_upgrades','upgrade_app','search_learned_skills'],
   storage:['storage_overview','global_find_files','open_named_file','reveal_named_file','list_directory','file_info','open_folder','open_file','search_files','search_learned_skills'],
@@ -49,12 +50,15 @@ const patterns=[
   ['permissions',/(مجوز|دسترسی|permission|محافظت|حذف نکن|پاک نکن)/i],
   ['system',/(سیستم|رم|پردازنده|process|فرایند|زمان|ساعت|تاریخ|cpu|gpu)/i]
 ];
-const contextualAction=/(انجام|بازش|باز کن|ببندش|ببند|کمتر|کم کن|زیاد|بیشتر|بالا|پایین|ببر|بیار|برو|اجرا|کنترل|درست کن|بساز|راه بنداز|همونو|همین رو|اونو|اون رو)/i;
+const contextualAction=/(انجام|بازش|باز کن|ببندش|ببند|کمتر|کم کن|زیاد|بیشتر|بالا|پایین|ببر|بیار|برو|اجرا|کنترل|درست کن|بساز|راه بنداز|همونو|همین رو|اونو|اون رو|بزن|بذار|بردار|وصل|قطع|فول|ماکس|تهش|آخرش)/i;
+const factualQuestion=/(؟|\?|چیست|چیه|چی هست|کیه|کی هست|کجاست|کجا هست|چرا|چطور|چگونه|چه کسی|چه زمانی|چه موقع|چند تا|فرق .* چیه|تفاوت .* چیه|معنی .* چیه|what\b|who\b|where\b|when\b|why\b|how\b)/i;
+const personalSmallTalk=/(حالت چطوره|خوبی|چه خبر|اسم من|من کی.?ام|منو می.?شناسی|من را می.?شناسی|یادت میاد|یادت هست|دوستم داری|خسته.?ای|سلام|صبح بخیر|شب بخیر)/i;
 export function selectToolNames(text,hints=[]){
   const selected=[],s=String(text||'');
   for(const [group,re] of patterns)if(re.test(s))selected.push(...(groups[group]||[]));
   for(const hint of hints){const key=String(hint).toLowerCase();for(const [group,names] of Object.entries(groups))if(key.includes(group))selected.push(...names);}
   if(!selected.length&&contextualAction.test(s))selected.push(...groups.audio,...groups.display,...groups.power,...groups.apps,...groups.web,...groups.storage,...groups.screen,...groups.system);
+  if(!selected.length&&factualQuestion.test(s)&&!personalSmallTalk.test(s))selected.push(...groups.knowledge);
   return uniq(selected).slice(0,52);
 }
 export const TOOL_GROUPS=groups;
