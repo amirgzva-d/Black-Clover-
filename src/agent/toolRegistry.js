@@ -2,11 +2,27 @@ import { tools as coreTools } from './tools.js';
 import { powerTools } from './powerTools.js';
 import { researchTools } from './researchTools.js';
 import { memoryTools } from './memoryTools.js';
+import { automationTools } from './automationTools.js';
+import { codingTools } from './codingTools.js';
+import { schedulerTools } from './schedulerTools.js';
+import { policyTools } from './policyTools.js';
+import { nativeWindowsTools } from './nativeWindowsTools.js';
 
-export const tools = Object.freeze({ ...coreTools, ...powerTools, ...researchTools, ...memoryTools });
+export const tools=Object.freeze({
+  ...coreTools,
+  ...powerTools,
+  ...researchTools,
+  ...memoryTools,
+  ...automationTools,
+  ...codingTools,
+  ...schedulerTools,
+  ...policyTools,
+  ...nativeWindowsTools
+});
 
-export function ollamaTools(){
-  return Object.entries(tools).map(([name,t])=>({
+export function ollamaTools(names=null){
+  const allow=Array.isArray(names)&&names.length?new Set(names):null;
+  return Object.entries(tools).filter(([name])=>!allow||allow.has(name)).map(([name,t])=>({
     type:'function',
     function:{name,description:t.description,parameters:t.schema}
   }));
@@ -14,6 +30,6 @@ export function ollamaTools(){
 
 export async function runTool(name,args={}){
   const t=tools[name];
-  if(!t) throw new Error(`Unknown tool: ${name}`);
+  if(!t)throw new Error(`Unknown tool: ${name}`);
   return t.run(args);
 }
