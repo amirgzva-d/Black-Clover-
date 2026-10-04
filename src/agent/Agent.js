@@ -6,6 +6,8 @@ import { normalizePersianCommand,commandHints } from './language.js';
 import { capabilityHints,CAPABILITY_PHRASE_COUNT } from './capabilities.js';
 import { memory } from './MemoryStore.js';
 import { skills } from './SkillStore.js';
+import { reminders } from './ReminderStore.js';
+import { pinnedNotes } from './PinnedNoteStore.js';
 import { permissions } from './PermissionPolicy.js';
 import { selectToolNames } from './SmartToolRouter.js';
 import { isPrivateRequest,toolMakesContextPrivate } from './PrivacyClassifier.js';
@@ -23,7 +25,7 @@ export class Agent{
   constructor({emit=()=>{},client=new BrainRouter()}={}){this.emit=emit;this.client=client;this.history=[{role:'system',content:PERSONALITY_SYSTEM,_private:false}];this.pending=new Map();this.improving=false;}
   trimHistory(){if(this.history.length>MAX_TURNS)this.history=[this.history[0],...this.history.slice(-(MAX_TURNS-1))];}
   modelHistory({allowOnline}){const source=allowOnline?this.history.filter(m=>!m._private):this.history;return source.map(publicFields);}
-  async status(){const [brain,policy,memories,learning]=await Promise.all([this.client.health(),permissions.status(),memory.list(500),skills.stats()]);return {ollama:brain.local,brain,model:this.client.model,models:await this.client.models(),pending:this.pending.size,tools:Object.keys(tools).length,languagePatterns:CAPABILITY_PHRASE_COUNT,memoryItems:memories.length,permissions:policy,learning};}
+  async status(){const [brain,policy,memories,learning,activeReminders,notes]=await Promise.all([this.client.health(),permissions.status(),memory.list(500),skills.stats(),reminders.list(),pinnedNotes.list({limit:100})]);return {ollama:brain.local,brain,model:this.client.model,models:await this.client.models(),pending:this.pending.size,tools:Object.keys(tools).length,languagePatterns:CAPABILITY_PHRASE_COUNT,memoryItems:memories.length,permissions:policy,learning,personal:{reminders:activeReminders,notes}};}
   async executeToolCall(call,turn){
     const name=call.function?.name,args=parseArgs(call.function?.arguments),tool=tools[name],callId=call.id;
     if(!tool){const out={success:false,error:'Unknown tool'};this.history.push(toolMessage(name,out,callId,turn.private));turn.trace.push({name,args,success:false,error:out.error});if(!turn.private)await skills.queueImprovement(turn.original,{tool:name,error:out.error});return {continue:true};}
@@ -81,7 +83,8 @@ export class Agent{
       this.emit({type:'tool',name});await permissions.assertAllowed(name,args);let out;try{out=await runTool(name,args);}catch(e){out={tool_name:name,success:false,error:e.message};}
       const privateTool=toolMakesContextPrivate(name);if(privateTool){turn.private=true;if(turn.assistantMessage)turn.assistantMessage._private=true;}const success=out?.success!==false;turn.trace.push({name,args,success,error:success?'':String(out?.error||out?.message||'').slice(0,700)});if(!success&&!turn.private)await skills.queueImprovement(turn.original,{tool:name,error:out?.error||out?.message||'tool failed'});this.history.push(toolMessage(name,out,callId,turn.private||privateTool));this.trimHistory();
       return await this.drive({routeNames,turn,queuedCalls:remainingCalls,startStep});
-    }catch(e){return {ok:false,text:`نتونستم این بخش رو اجرا کنم: ${e.message}`};}
+    }catch(e){return {ok:false,text:`نتونستم این بخش رو اجرا کنم: ${e.message}`};
+    }
   }
   async improveOne({allowCurriculum=true}={}){
     if(this.improving)return {ok:false,skipped:'already-running'};this.improving=true;
@@ -94,7 +97,7 @@ export class Agent{
       const research=await runTool('research_topic',{query,sources:4});if(research?.success===false||!research?.data?.sources?.length){if(pending)await skills.markImprovement(pending.id,{status:'pending',error:'No research sources available'});return {ok:false,skipped:'no-sources'};}
       const sources=research.data.sources.slice(0,4),evidence=sources.map((s,i)=>`SOURCE ${i+1}: ${s.title}\nURL: ${s.url}\n${String(s.text||s.snippet||'').slice(0,2400)}`).join('\n\n');
       const prompt=[{role:'system',content:'You are the private skill-learning subsystem for a Windows desktop AI agent. Extract only practical, reusable, verifiable operational knowledge from the provided public sources. Do not invent capabilities, credentials, APIs, commands, selectors, or facts. Do not propose disabling Windows security. Return a concise implementation-oriented note with prerequisites, reliable procedure, failure modes, and what must be verified at execution time.'},{role:'user',content:`Learning topic: ${topic}\n\n${evidence}`}];
-      const response=await this.client.chat(prompt,[],{allowOnline:true}),summary=cleanReply(response?.message?.content);if(!summary)throw new Error('Learning brain returned no summary');
+      const response=await this.client.chat(prompt,[],{allowOnline:true,profile:'research'}),summary=cleanReply(response?.message?.content);if(!summary)throw new Error('Learning brain returned no summary');
       const note=await skills.saveKnowledge({title:topic,query,summary,sources,kind:pending?'failure-research':'curriculum'});if(pending)await skills.markImprovement(pending.id,{status:'done',noteId:note.id});await skills.markIdleLearning();this.emit({type:'self-improvement',state:'learned',topic,noteId:note.id});return {ok:true,topic,noteId:note.id};
     }catch(e){this.emit({type:'self-improvement',state:'error',error:e.message});return {ok:false,error:e.message};}finally{this.improving=false;}
   }
