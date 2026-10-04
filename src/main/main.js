@@ -5,14 +5,14 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { Agent } from '../agent/Agent.js';
 import { reminders } from '../agent/ReminderStore.js';
-import { DependencyManager } from './DependencyManager.js';
+import { Phase1DependencyManager } from './Phase1DependencyManager.js';
 import { SpeechService } from './SpeechService.js';
 import { SystemPresence } from './SystemPresence.js';
 
 const execFileAsync=promisify(execFile),__dirname=path.dirname(fileURLToPath(import.meta.url));
 let win=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false;
 const send=event=>{if(win&&!win.isDestroyed())win.webContents.send('agent:event',event);};
-const agent=new Agent({emit:send}),deps=new DependencyManager({emit:send}),speech=new SpeechService(),presence=new SystemPresence({emit:e=>{send(e);if(e.type==='break-reminder'&&Notification.isSupported())new Notification({title:'Maria • Black Clover',body:e.text,silent:true}).show();}});
+const agent=new Agent({emit:send}),deps=new Phase1DependencyManager({emit:send}),speech=new SpeechService(),presence=new SystemPresence({emit:e=>{send(e);if(e.type==='break-reminder'&&Notification.isSupported())new Notification({title:'Maria • Black Clover',body:e.text,silent:true}).show();}});
 
 async function beginAutoProvision(){if(autoProvisionStarted||!app.isPackaged||process.platform!=='win32')return;autoProvisionStarted=true;try{if(!await deps.needsProvisioning())return;provisioning=true;send({type:'provision',state:'needed',message:'Full Setup ماریا در حال آماده‌سازی است'});await deps.installAll({includeOptional:true});}catch(e){console.warn('Auto provision:',e.message);send({type:'provision',state:'partial',message:`آماده‌سازی کامل نشد: ${e.message}`});}finally{provisioning=false;}}
 function createWindow(){
