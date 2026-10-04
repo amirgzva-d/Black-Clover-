@@ -23,16 +23,18 @@ import { browserTools } from './browserTools.js';
 import { actionBookTools } from './actionBookTools.js';
 import { adobeTools } from './adobeTools.js';
 import { downloadTools } from './downloadTools.js';
+import { windowsUpdateTools } from './windowsUpdateTools.js';
 
 const autonomousExtension=pack=>Object.fromEntries(Object.entries(pack).filter(([,t])=>t?.risk==='read'||t?.risk==='low'));
 const safeAdvanced=autonomousExtension(windowsAdvancedTools);
 const safeNotes=Object.fromEntries(Object.entries(noteTools).filter(([,t])=>t?.risk!=='critical'));
-export const tools=Object.freeze({...coreTools,...powerTools,...researchTools,...memoryTools,...automationTools,...codingTools,...codingWorkspaceTools,...schedulerTools,...policyTools,...nativeWindowsTools,...safeAdvanced,...visionTools,...learningTools,...storageTools,...spreadsheetTools,...messengerSupportTools,...safeNotes,...wellbeingTools,...aiPortalTools,...appDiscoveryTools,...desktopManagementTools,...browserTools,...actionBookTools,...adobeTools,...downloadTools});
+export const tools=Object.freeze({...coreTools,...powerTools,...researchTools,...memoryTools,...automationTools,...codingTools,...codingWorkspaceTools,...schedulerTools,...policyTools,...nativeWindowsTools,...safeAdvanced,...visionTools,...learningTools,...storageTools,...spreadsheetTools,...messengerSupportTools,...safeNotes,...wellbeingTools,...aiPortalTools,...appDiscoveryTools,...desktopManagementTools,...browserTools,...actionBookTools,...adobeTools,...downloadTools,...windowsUpdateTools});
 export function ollamaTools(names=null){
   const allow=Array.isArray(names)?new Set(names):null;
   if(allow&&(allow.has('vision_inspect_screen')||allow.has('launch_any_app'))){allow.add('adobe_status');allow.add('photoshop_open_document');allow.add('illustrator_open_document');}
   if(allow&&(allow.has('chrome_open_service')||allow.has('messenger_open')||allow.has('messenger_stage_files'))){allow.add('list_recent_downloads');allow.add('wait_for_new_download');}
   if(allow&&allow.has('search_learned_skills'))allow.add('learning_gap_report');
+  if(allow&&allow.has('check_windows_update')){allow.add('windows_update_scan');allow.add('windows_update_history');}
   return Object.entries(tools).filter(([name])=>allow===null||allow.has(name)).map(([name,t])=>({type:'function',function:{name,description:t.description,parameters:t.schema}}));
 }
 export async function runTool(name,args={}){const t=tools[name];if(!t)throw new Error(`Unknown tool: ${name}`);return t.run(args);}
