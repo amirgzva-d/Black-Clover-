@@ -9,6 +9,20 @@ const PRESETS={
   natural:{label:'طبیعی و متعادل',rate:1.02,pitch:1.02,volume:1}
 };
 
+const SPOKEN_JAPANESE=new Map([
+  ['あらあら','آرا آرا'],['やれやれ','یاره یاره'],['もう','موو'],['はい','های'],['よし','یوشی'],
+  ['えっ','اِ'],['なるほど','نارو هودو'],['お疲れ','اوتسوکاره'],['大丈夫','دایجوبو'],['すごい','سوگوی'],
+  ['ばか','باکا'],['うん','اون'],['なんで','نانده'],['どこ','دوکو']
+]);
+const pronounceJapanese=text=>{
+  let out=String(text??'');
+  for(const [jp,spoken] of SPOKEN_JAPANESE)out=out.split(jp).join(spoken);
+  return out;
+};
+
+const originalSpeak=voice.speak.bind(voice);
+voice.speak=text=>originalSpeak(pronounceJapanese(text));
+
 const $=q=>document.querySelector(q);
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,Number(v)));
 const savedPreset=()=>localStorage.getItem('blackClover:voicePreset')||'playful';
@@ -55,7 +69,7 @@ function mount(){
     row('حال‌وهوای صدا',preset,'بازیگوش، آرام، خنک، پرانرژی یا سفارشی'),
     row('موتور صدا',engine,'پیشنهاد: خودکار؛ اینترنت = Dilara، آفلاین = Piper'),
     row('سرعت',rate,'ریتم حرف‌زدن ماریا'),
-    row('زیر و بمی',pitch,'برای حس دخترانه/جدی‌تر'),
+    row('زیر و بمی',pitch,'برای حس دخترانه/جدی‌تر؛ روی صدای Windows اثر بیشتری دارد'),
     row('بلندی',volume,'صدای خروجی')
   );
 
