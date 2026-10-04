@@ -28,8 +28,8 @@ export class SkillStore{
   async load(){if(this.state)return this.state;try{const raw=await fs.readFile(this.file,'utf8'),parsed=JSON.parse(raw);this.state={...defaultState(),...parsed,meta:{...defaultState().meta,...(parsed.meta||{})}};}catch{this.state=defaultState();}return this.state;}
   async save(){const state=await this.load();this.writeChain=this.writeChain.then(async()=>{await fs.mkdir(path.dirname(this.file),{recursive:true});const tmp=`${this.file}.tmp`;await fs.writeFile(tmp,JSON.stringify(state,null,2),'utf8');await fs.rename(tmp,this.file);});return this.writeChain;}
   async stats(){const s=await this.load();return {skills:s.skills.length,knowledge:s.knowledge.length,pending:s.queue.filter(x=>x.status==='pending').length,lastIdleLearning:s.meta.lastIdleLearning};}
-  async recall(query,{limit=5}={}){const s=await this.load(),q=clean(query);const candidates=[
-    ...s.skills.map(x=>({...x,_kind:'skill',_score:overlap(`${x.title} ${x.intent} ${(x.triggers||[]).join(' ')}`,q)+(x.successes||0)*.015-(x.failures||0)*.01})),
+  async recall(query,{limit=5,includePrivate=false}={}){const s=await this.load(),q=clean(query);const candidates=[
+    ...s.skills.filter(x=>includePrivate||!x.private).map(x=>({...x,_kind:'skill',_score:overlap(`${x.title} ${x.intent} ${(x.triggers||[]).join(' ')}`,q)+(x.successes||0)*.015-(x.failures||0)*.01})),
     ...s.knowledge.map(x=>({...x,_kind:'knowledge',private:false,_score:overlap(`${x.title} ${x.query} ${x.summary}`,q)+.03}))
   ].filter(x=>x._score>.08).sort((a,b)=>b._score-a._score).slice(0,Math.max(1,Math.min(Number(limit)||5,10)));
   return candidates;}
