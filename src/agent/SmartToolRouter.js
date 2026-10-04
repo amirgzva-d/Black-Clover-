@@ -14,7 +14,7 @@ const groups={
   web:['open_url','web_search','youtube_search','google_maps_search','open_web_search_in_service','live_web_search','read_web_page','research_topic'],
   system:['get_system_info','get_time','list_processes','list_windows'],
   coding:['inspect_project','run_project_task','read_text_file','write_text_file','create_text_file','append_text_file','search_files','list_directory','file_info','live_web_search','read_web_page','research_topic'],
-  scheduler:['create_reminder','list_reminders','cancel_reminder'],
+  scheduler:['get_time','create_reminder','list_reminders','cancel_reminder'],
   permissions:['permission_status','set_permission_profile','protect_resource','unprotect_resource']
 };
 const patterns=[
