@@ -6,7 +6,8 @@ import path from 'node:path';
 import { ReminderStore } from '../src/agent/ReminderStore.js';
 import { searchActionBook,ACTION_BOOK } from '../src/agent/ActionBook.js';
 import { selectToolNames } from '../src/agent/SmartToolRouter.js';
-import { tools } from '../src/agent/toolRegistry.js';
+import { tools,ollamaTools } from '../src/agent/toolRegistry.js';
+import { PermissionPolicy } from '../src/agent/PermissionPolicy.js';
 
 test('action book contains reusable cross-app recipes',()=>{
   assert.ok(ACTION_BOOK.length>=30);
@@ -30,7 +31,7 @@ test('scheduled actions execute through registered agent executor instead of bec
     await store.createAction({instruction:'تحقیق کن و گزارش بساز',label:'تحقیق',dueAt:new Date(Date.now()-1000).toISOString()});
     const reminders=await store.takeDue(Date.now());
     assert.equal(reminders.length,0);
-    await new Promise(r=>setTimeout(r,80));
+    await new Promise(r=>setTimeout(r,120));
     assert.deepEqual(seen,['تحقیق کن و گزارش بساز']);
     const active=await store.list();
     assert.ok(active.some(x=>x.kind==='reminder'&&/اجرا شد/.test(x.message)));
@@ -47,14 +48,40 @@ test('Chrome-specific workflows are routed for web messengers and AI sites',()=>
   assert.ok(ai.includes('set_ui_value'));
 });
 
+test('messenger tool surface automatically includes exact download tracking',()=>{
+  const routed=selectToolNames('آخرین عکس تلگرام وب رو دانلود کن و بعد تو روبیکا بفرست');
+  const exposed=ollamaTools(routed).map(x=>x.function.name);
+  assert.ok(exposed.includes('wait_for_new_download'));
+  assert.ok(exposed.includes('list_recent_downloads'));
+});
+
 test('direct Adobe bridge is available alongside UI and vision fallback',()=>{
   for(const name of ['adobe_status','photoshop_open_document','illustrator_open_document'])assert.ok(tools[name],name);
   const names=selectToolNames('فتوشاپ رو باز کن این عکس رو ادیت کن');
+  const exposed=ollamaTools(names).map(x=>x.function.name);
   assert.ok(names.includes('vision_inspect_screen'));
   assert.ok(names.includes('invoke_ui_element'));
+  assert.ok(exposed.includes('photoshop_open_document'));
+});
+
+test('Windows Update routing includes WUA scan and history helpers',()=>{
+  const names=selectToolNames('برو Windows Update و آپدیت های سیستم رو بررسی کن');
+  const exposed=ollamaTools(names).map(x=>x.function.name);
+  assert.ok(exposed.includes('windows_update_scan'));
+  assert.ok(exposed.includes('windows_update_history'));
+  assert.ok(exposed.includes('vision_inspect_screen'));
 });
 
 test('complex messaging recipe keeps file, messenger, UI and vision tools together',()=>{
   const names=selectToolNames('آخرین عکس چت شرکت در تلگرام وب رو دانلود کن و برای شرکت تو روبیکا وب کروم بفرست');
   for(const name of ['chrome_open_service','global_find_files','copy_files_to_clipboard','vision_inspect_screen','invoke_ui_element','search_action_book'])assert.ok(names.includes(name),name);
+});
+
+test('downloaded installer execution cannot bypass install confirmation',async()=>{
+  const dir=await fs.mkdtemp(path.join(os.tmpdir(),'bc-install-policy-'));
+  try{
+    const policy=new PermissionPolicy({directory:dir});
+    assert.equal(await policy.shouldConfirm('open_file',{risk:'low'},{file:'C:\\Users\\User\\Downloads\\setup.exe'}),true);
+    assert.equal(await policy.shouldConfirm('open_file',{risk:'low'},{file:'C:\\Users\\User\\Downloads\\photo.png'}),false);
+  }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
