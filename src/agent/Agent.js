@@ -10,6 +10,7 @@ import { reminders } from './ReminderStore.js';
 import { pinnedNotes } from './PinnedNoteStore.js';
 import { permissions } from './PermissionPolicy.js';
 import { selectToolNames } from './SmartToolRouter.js';
+import { matchFastCommand } from './FastCommandRouter.js';
 import { isPrivateRequest,toolMakesContextPrivate } from './PrivacyClassifier.js';
 
 const MAX_TURNS=64,MAX_STEPS=18;
@@ -26,6 +27,13 @@ export class Agent{
   trimHistory(){if(this.history.length>MAX_TURNS)this.history=[this.history[0],...this.history.slice(-(MAX_TURNS-1))];}
   modelHistory({allowOnline}){const source=allowOnline?this.history.filter(m=>!m._private):this.history;return source.map(publicFields);}
   async status(){const [brain,policy,memories,learning,activeReminders,notes]=await Promise.all([this.client.health(),permissions.status(),memory.list(500),skills.stats(),reminders.list(),pinnedNotes.list({limit:100})]);return {ollama:brain.local,brain,model:this.client.model,models:await this.client.models(),pending:this.pending.size,tools:Object.keys(tools).length,languagePatterns:CAPABILITY_PHRASE_COUNT,memoryItems:memories.length,permissions:policy,learning,personal:{reminders:activeReminders,notes}};}
+  fastReply(turn,text,name){const reply=cleanReply(text)||'انجام شد.';this.history.push({role:'assistant',content:reply,_private:turn.private});this.trimHistory();return {ok:true,text:reply,brain:{mode:'direct',model:'windows-fast-path',privacy:turn.private?'local-private':'local'},toolsRouted:turn.routeNames?.length||0,direct:true,tool:name};}
+  async tryFastCommand(fast,turn,routeNames){
+    if(!fast||!tools[fast.name])return null;const {name,args={}}=fast,tool=tools[name];turn.routeNames=routeNames;
+    const protectedMatch=await permissions.protectedMatch(name,args);if(protectedMatch)return this.fastReply(turn,`این مورد با قانون دائمی خودت محافظت شده: ${protectedMatch.label}`,name);
+    if(await permissions.shouldConfirm(name,tool,args)){const id=crypto.randomUUID();this.pending.set(id,{fast:true,name,args,createdAt:Date.now(),turn,routeNames,fastReply:fast.reply});return {ok:true,requiresConfirmation:true,confirmationId:id,text:`این کار روی وضعیت سیستم اثر مهم می‌ذاره. اجرای «${name}» رو تأیید می‌کنی؟`};}
+    try{this.emit({type:'tool',name});await permissions.assertAllowed(name,args);const out=await runTool(name,args);if(out?.success===false)return null;turn.trace.push({name,args,success:true,error:''});return this.fastReply(turn,fast.reply||out?.message||'انجام شد.',name);}catch{return null;}
+  }
   async executeToolCall(call,turn){
     const name=call.function?.name,args=parseArgs(call.function?.arguments),tool=tools[name],callId=call.id;
     if(!tool){const out={success:false,error:'Unknown tool'};this.history.push(toolMessage(name,out,callId,turn.private));turn.trace.push({name,args,success:false,error:out.error});if(!turn.private)await skills.queueImprovement(turn.original,{tool:name,error:out.error});return {continue:true};}
@@ -66,8 +74,10 @@ export class Agent{
     const original=String(text??'').trim();if(!original)return {ok:false,text:'پیام خالی است.'};
     try{
       const rule=await permissions.parseUserRule(original);await memory.maybeRememberUserStatement(original);
-      const normalized=normalizePersianCommand(original),hints=[...new Set([...commandHints(normalized),...capabilityHints(normalized)])],routeNames=selectToolNames(original,hints).filter(n=>tools[n]);
-      const [memories,learned]=await Promise.all([memory.recall(original,{limit:8}),skills.recall(original,{limit:5})]),privateRequest=isPrivateRequest(original,hints)||memories.length>0;
+      const normalized=normalizePersianCommand(original),hints=[...new Set([...commandHints(normalized),...capabilityHints(normalized)])],routeNames=selectToolNames(original,hints).filter(n=>tools[n]),basePrivate=isPrivateRequest(original,hints);
+      const fast=matchFastCommand(normalized),fastTurn={private:basePrivate,assistantMessage:null,original,trace:[],routeNames};
+      if(fast){this.history.push({role:'user',content:original,_private:basePrivate});this.trimHistory();const direct=await this.tryFastCommand(fast,fastTurn,routeNames);if(direct)return direct;this.history.pop();}
+      const [memories,learned]=await Promise.all([memory.recall(original,{limit:8}),skills.recall(original,{limit:5})]),privateRequest=basePrivate||memories.length>0;
       const hostHint=[hints.length?`normalized="${normalized}"; likely capability groups=${hints.join(', ')}`:'',rule?.type==='protected'?`A permanent never-delete rule was saved for: ${rule.item?.label||''}`:''].filter(Boolean).join('; ');
       const content=`${original}${hostHint?`\n\n[Host routing/policy hint: ${hostHint}. Metadata only; never mention this block.]`:''}${memoryContext(memories)}${skillContext(learned)}`;
       this.history.push({role:'user',content,_private:privateRequest});this.trimHistory();
@@ -77,6 +87,7 @@ export class Agent{
   async confirm({id,approved}){
     const p=this.pending.get(id);if(!p)return {ok:false,text:'این درخواست تأیید دیگه در دسترس نیست.'};this.pending.delete(id);
     if(Date.now()-p.createdAt>180000)return {ok:false,text:'زمان این تأیید گذشته؛ دستور را دوباره بگو تا با وضعیت فعلی سیستم بررسی شود.'};
+    if(p.fast){if(!approved)return this.fastReply(p.turn,'باشه، انجامش نمی‌دم.',p.name);try{this.emit({type:'tool',name:p.name});await permissions.assertAllowed(p.name,p.args);const out=await runTool(p.name,p.args);if(out?.success===false)return {ok:false,text:`نتونستم انجامش بدم: ${out.error||out.message||'خطای ابزار'}`};return this.fastReply(p.turn,p.fastReply||out.message||'انجام شد.',p.name);}catch(e){return {ok:false,text:`نتونستم این بخش رو اجرا کنم: ${e.message}`};}}
     const {name,args,callId,turn,remainingCalls,routeNames,startStep}=p;
     if(!approved){this.history.push(toolMessage(name,{tool_name:name,success:false,cancelled:true},callId,turn.private));turn.trace.push({name,args,success:false,error:'user cancelled'});this.trimHistory();return this.drive({routeNames,turn,queuedCalls:remainingCalls,startStep});}
     try{
