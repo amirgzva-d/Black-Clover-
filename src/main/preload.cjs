@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('blackClover',{
   toggle:()=>ipcRenderer.invoke('assistant:toggle'),
   diagnostics:()=>ipcRenderer.invoke('system:diagnostics'),
   installDependency:id=>ipcRenderer.invoke('system:install-dependency',id),
+  provisionAll:()=>ipcRenderer.invoke('system:install-all-dependencies'),
   restartAsAdmin:()=>ipcRenderer.invoke('system:restart-admin'),
   getStartup:()=>ipcRenderer.invoke('system:get-startup'),
   setStartup:enabled=>ipcRenderer.invoke('system:set-startup',Boolean(enabled)),
