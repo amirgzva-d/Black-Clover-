@@ -430,7 +430,7 @@ $('#startupToggle').onclick = async () => {
   await refreshSetup();
 };
 $('#installRecommended').onclick = async () => {
-  const order = ['ollama', 'qwen', 'qwen_vl', 'ffmpeg', 'whisper_runtime', 'whisper_model', 'python', 'piper', 'piper_voice', 'git', 'vscode'];
+  const order = ['ollama', 'qwen', 'vision', 'ffmpeg', 'whisper_runtime', 'whisper_model', 'python', 'piper', 'piper_voice', 'git', 'vscode'];
   $('#installRecommended').disabled = true;
   try {
     for (const id of order) {
