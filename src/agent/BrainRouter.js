@@ -27,7 +27,7 @@ const scoreModel=(name,profile='general')=>{
   return score;
 };
 export function pickBestLocalModel(models=[],profile='general'){
-  return [...new Set((models||[]).map(String).filter(Boolean))].sort((a,b)=>scoreModel(b,profile)-scoreModel(a,profile)||a.localeCompare(b))[0]||null;
+  return [...new Set((models||[]).map(String).filter(Boolean))].map(name=>({name,score:scoreModel(name,profile)})).filter(x=>x.score>-500).sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name))[0]?.name||null;
 }
 export async function internetAvailable(){const checks=await Promise.all(['https://www.msftconnecttest.com/connecttest.txt','https://www.google.com/generate_204'].map(u=>ping(u)));return checks.some(Boolean);}
 
