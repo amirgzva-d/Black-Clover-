@@ -52,6 +52,11 @@ test('Windows settings and update requests can continue through visible UI',()=>
   for(const name of ['check_windows_update','vision_inspect_screen','invoke_ui_element'])assert.ok(tools.includes(name),name);
 });
 
+test('Rubika messenger workflow has a web fallback',async()=>{
+  const source=await fs.readFile(new URL('../src/agent/messengerSupportTools.js',import.meta.url),'utf8');
+  assert.match(source,/rubika:'https:\/\/web\.rubika\.ir\/'/);
+});
+
 test('named local media can use the direct fast path',()=>{
   const video=matchFastCommand('فیلم ماتریکس رو پخش کن');
   assert.equal(video.name,'open_named_file');
