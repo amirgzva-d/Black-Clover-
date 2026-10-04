@@ -49,7 +49,7 @@ export class PermissionPolicy{
     if(this.state.profile==='balanced')return tool?.risk==='sensitive'&&/(install|upgrade|write|move|copy|type|click)/i.test(name);
     return false;
   }
-  async status(){await this.load();return {profile:this.state.profile,protectedResources:this.state.protectedResources.map(x=>({label:x.label,note:x.note})),destructiveTools:[...destructiveTools],alwaysConfirm:[...persistentWriteTools,'Save/Save As in Photoshop/Illustrator/Excel']};}
+  async status(){await this.load();return {profile:this.state.profile,protectedResources:this.state.protectedResources.map(x=>({label:x.label,note:x.note})),destructiveTools:[...destructiveTools],alwaysConfirm:[...persistentWriteTools,'CTRL+S / CTRL+SHIFT+S / Save / Save As in Photoshop/Illustrator/Excel']};}
 }
 
 export const permissions=new PermissionPolicy();
