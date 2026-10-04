@@ -14,6 +14,7 @@ const destructiveWords=/(حذف|پاک|فرمت|فرمتش|آن.?اینستال|
 const protectPattern=/(?:هیچ.?وقت|هرگز)\s+(.+?)\s+(?:رو|را)?\s*(?:حذف|پاک|آن.?اینستال|remove|delete)\s*(?:نکن|نکنید)/i;
 const unprotectPattern=/(?:دیگه|حالا)?\s*(.+?)\s+(?:رو|را)?\s*(?:از محافظت دربیار|محافظتش رو بردار|می.?تونی حذف کنی|اجازه حذف داری)/i;
 const saveWords=/(^|\b|\s)(save|save as|ذخیره|ذخیره کن|سیو|سیو کن)(\b|\s|$)/i;
+const installerFile=/\.(exe|msi|msix|appx|appxbundle|msixbundle)(?:\s|$)/i;
 const defaultDir=()=>process.env.BLACK_CLOVER_DATA_DIR||path.join(process.env.APPDATA||path.join(os.homedir(),'.black-clover'),'BlackClover');
 const norm=v=>String(v??'').trim().toLowerCase().replace(/[\s\\/]+/g,' ');
 
@@ -36,20 +37,22 @@ export class PermissionPolicy{
   async isProtectedDocumentSave(name,args={}){
     const app=await foregroundProcess();if(!/(photoshop|illustrator|excel)/i.test(app))return false;
     if(name==='press_key'&&/^(CTRL\+S|CTRL\+SHIFT\+S)$/i.test(String(args?.key||'')))return true;
-    if(['invoke_ui_element','mouse_click'].includes(name)&&saveWords.test(this._argsText(args)))return true;
+    if(name==='invoke_ui_element'&&saveWords.test(this._argsText(args)))return true;
     return false;
   }
+  isInstallerExecution(name,args={}){return ['open_file','open_named_file'].includes(name)&&installerFile.test(this._argsText(args));}
   async assertAllowed(name,args={}){const match=await this.protectedMatch(name,args);if(match)throw new Error(`این مورد با قانون دائمی شما محافظت شده و حذف/پاک نمی‌شود: ${match.label}`);return true;}
   async shouldConfirm(name,tool,args={}){
     await this.load();
     if(await this.protectedMatch(name,args))return true;
     if(destructiveTools.has(name)||persistentWriteTools.has(name))return true;
+    if(this.isInstallerExecution(name,args))return true;
     if(await this.isProtectedDocumentSave(name,args))return true;
     if(this.state.profile==='cautious')return tool?.risk==='sensitive';
     if(this.state.profile==='balanced')return tool?.risk==='sensitive'&&/(install|upgrade|write|move|copy|type|click)/i.test(name);
     return false;
   }
-  async status(){await this.load();return {profile:this.state.profile,protectedResources:this.state.protectedResources.map(x=>({label:x.label,note:x.note})),destructiveTools:[...destructiveTools],alwaysConfirm:[...persistentWriteTools,'CTRL+S / CTRL+SHIFT+S / Save/Save As in Photoshop/Illustrator/Excel']};}
+  async status(){await this.load();return {profile:this.state.profile,protectedResources:this.state.protectedResources.map(x=>({label:x.label,note:x.note})),destructiveTools:[...destructiveTools],alwaysConfirm:[...persistentWriteTools,'opening downloaded installer files (.exe/.msi/.msix/.appx)','CTRL+S / CTRL+SHIFT+S / Save/Save As in Photoshop/Illustrator/Excel']};}
 }
 
 export const permissions=new PermissionPolicy();
