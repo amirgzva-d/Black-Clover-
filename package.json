@@ -1,6 +1,6 @@
 {
   "name": "black-clover-desktop-agent",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "private": true,
   "type": "module",
   "description": "Maria / Black Clover — hybrid local-first Windows AI desktop companion and agent",
