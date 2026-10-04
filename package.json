@@ -1,25 +1,53 @@
 {
   "name": "black-clover-desktop-agent",
-  "version": "0.1.0",
+  "version": "0.5.0",
   "private": true,
   "type": "module",
-  "description": "Local-first Windows AI desktop assistant with VRM avatar",
+  "description": "Maria / Black Clover — hybrid local-first Windows AI desktop companion and agent",
   "main": "src/main/main.js",
   "scripts": {
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron .\"",
     "build": "vite build",
     "start": "electron .",
-    "test": "node --test tests/*.test.js"
+    "test": "node --test tests/*.test.js",
+    "pack": "npm run build && electron-builder --dir",
+    "dist": "npm run build && electron-builder --win nsis"
   },
   "dependencies": {
     "@pixiv/three-vrm": "^3.5.5",
+    "@pixiv/three-vrm-animation": "^3.5.5",
+    "jszip": "^3.10.2",
     "three": "^0.180.0",
     "zod": "^3.24.2"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",
-    "electron": "^35.1.4",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
     "vite": "^6.2.2",
     "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.blackclover.maria",
+    "productName": "Black Clover Maria",
+    "asar": true,
+    "files": [
+      "dist/**/*",
+      "src/main/**/*",
+      "src/agent/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": ["nsis"],
+      "requestedExecutionLevel": "asInvoker",
+      "artifactName": "Black-Clover-Maria-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "Black Clover Maria"
+    }
   }
 }
