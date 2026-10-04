@@ -5,11 +5,23 @@ on:
 jobs:
   test:
     runs-on: windows-latest
+    timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - run: npm install
       - run: npm test
       - run: npm run build
+      - run: npm run dist
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: black-clover-maria-windows
+          path: |
+            dist/*.exe
+            dist/*.blockmap
+          if-no-files-found: error
+          retention-days: 7
