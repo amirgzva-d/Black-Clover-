@@ -1,6 +1,6 @@
 const norm=s=>String(s??'').normalize('NFKC').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\u200c/g,' ').replace(/\s+/g,' ').trim().toLowerCase();
 
-const actionWords=/(باز|اجرا|راه بنداز|راهش بنداز|بیار|بیاور|بنداز|بزن|بده|بکن|کن|ببند|پخش|کم|زیاد|بالا|پایین|تنظیم|برو|بگرد|سرچ|جستجو|پیدا|بردار|ور دار|بگیر|بفرست|ارسال|کپی|منتقل|جابه|تغییر|عوض|ویرایش|بنویس|تایپ|کلیک|دانلود|نصب|حذف|پاک|آپدیت|به.?روز|درست|تعمیر|بررسی|چک|بساز|کدنویسی|مرتب|ذخیره|سیو|rename|open|launch|play|search|find|send|copy|move|edit|install|uninstall|update|fix|build|save)/i;
+const actionWords=/(باز|اجرا|راه بنداز|راهش بنداز|بیار|بیاور|بنداز|بزن|بده|بکن|بذار|بگذار|ببند|پخش|کم|زیاد|بالا|پایین|تنظیم|برو|بگرد|سرچ|جستجو|پیدا|بردار|ور دار|بگیر|بفرست|ارسال|کپی|منتقل|جابه|تغییر|عوض|ویرایش|بنویس|تایپ|کلیک|دانلود|نصب|حذف|پاک|آپدیت|به.?روز|درست|تعمیر|بررسی|چک|بساز|کدنویسی|مرتب|ذخیره|سیو|rename|open|launch|play|search|find|send|copy|move|edit|install|uninstall|update|fix|build|save)/i;
 const multiStepWords=/(بعدش|بعد از اون|بعد از آن|سپس|و بعد|بعدش هم|اول .* بعد|از .* بردار.*بفرست|باز کن.*(?:بعد|و).*|پیدا کن.*(?:بعد|و).*)/i;
 const guiApps=/(فتوشاپ|photoshop|ایلوستریتور|illustrator|کروم|chrome|تلگرام|telegram|واتساپ|whatsapp|روبیکا|rubika|اکسل|excel|ورد|word|پاورپوینت|powerpoint|vscode|vs code|مرورگر)/i;
 const fileLike=/(فایل|پوشه|فولدر|دسکتاپ|desktop|دانلود|downloads|اکسل|xlsx|xlsm|عکس|تصویر|ویدیو|فیلم|آهنگ|موزیک)/i;
