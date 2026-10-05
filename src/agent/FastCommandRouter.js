@@ -14,6 +14,9 @@ const decrease=/کم|کمتر|پایین|بیار پایین|ببر پایین|�
 const maximum=/تا آخر|تا ته|تهش|ته ته|آخرش|انتهاش|انتها|تا نهایت|نهایت|تا سقف|سقف|آخرین حد|آخرین درجه|بیشترین|max|maximum|صد درصد|100 درصد|روی 100|روی ۱۰۰|صدش کن|فول|کامل بالا/i;
 const minimum=/صفر|0 درصد|روی 0|روی صفر|کامل قطع|ته پایین|تا کف|کف|کمترین|کامل پایین|حداقل|min|minimum/i;
 const launchVerb=/(?:باز کن|بازش کن|اجرا کن|اجراش کن|راه بنداز|راهش بنداز|بالا بیار|بیارش بالا|بنداز بالا|بیار بالا|بیاورش|بیارش|بزن بالا)/i;
+const factualQuestion=/(چیست|چیه|چی هست|کیه|کی هست|کجاست|کجا هست|چرا|چطور|چگونه|چه کسی|چه زمانی|چه موقع|چند تا|فرق .* چیه|تفاوت .* چیه|معنی .* چیه|what\b|who\b|where\b|when\b|why\b|how\b)/i;
+const personalSmallTalk=/(حالت چطوره|خوبی|چه خبر|اسم من|من کی.?ام|منو می.?شناسی|من را می.?شناسی|یادت میاد|یادت هست|دوستم داری|خسته.?ای|سلام|صبح بخیر|شب بخیر)/i;
+const computerProblem=/(سیستم|ویندوز|برنامه|فایل|پوشه|صدا|نور|کروم|تلگرام|واتساپ|روبیکا|اکسل|فتوشاپ|ایلوستریتور|نصب|حذف|آپدیت|ارور|خطا|مشکل|کند)/i;
 
 function extractPercent(s,keywordRe){
   const t=digits(s),m=t.match(new RegExp(`(?:${keywordRe.source}).{0,30}?(\\d{1,3})\\s*(?:درصد|%|$)`,'i'))||t.match(new RegExp(`(\\d{1,3})\\s*(?:درصد|%)?.{0,20}(?:${keywordRe.source})`,'i'));
@@ -79,5 +82,6 @@ export function matchFastCommand(input){
   const genericSearch=s.match(/^(?:لطفا\s*)?(?:سرچ|جستجو|بگرد)\s+(?:کن\s+)?(?:درباره\s+)?(.+)/i)||s.match(/^(.+?)\s+(?:رو|را)?\s*(?:سرچ|جستجو)(?: کن)?$/i);
   if(genericSearch?.[1]?.trim()&&!/فایل|پوشه|سیستم/i.test(genericSearch[1]))return {name:'web_search',args:{query:genericSearch[1].trim()},reply:'برات سرچ کردم.'};
 
+  if(factualQuestion.test(s)&&!personalSmallTalk.test(s)&&!computerProblem.test(s))return {name:'grounded_factual_answer',args:{query:input}};
   return null;
 }
