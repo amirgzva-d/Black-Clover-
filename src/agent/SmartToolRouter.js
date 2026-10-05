@@ -1,4 +1,5 @@
 import { actionIntent } from './ActionIntent.js';
+import { canonicalizeCommand } from './SemanticCanonicalizer.js';
 const uniq=a=>[...new Set(a)];
 const groups={
   memory:['remember_fact','recall_memory','list_recent_memories','update_memory','forget_memory','permission_status','protect_resource','unprotect_resource'],
@@ -12,7 +13,7 @@ const groups={
   files:['global_find_files','open_named_file','reveal_named_file','open_named_folder','list_directory','file_info','read_text_file','create_folder','write_text_file','delete_path','open_folder','open_file','search_files','rename_path','move_path','copy_path','create_text_file','append_text_file','open_downloads','open_desktop','search_action_book','search_learned_skills'],
   spreadsheet:['global_find_files','open_named_file','excel_status','excel_list_sheets','excel_read_range','excel_set_cells','excel_append_rows','excel_add_image','excel_list_hyperlinks','excel_collect_images','copy_files_to_clipboard','search_action_book','search_learned_skills'],
   clipboard:['copy_to_clipboard','read_clipboard','copy_files_to_clipboard'],
-  screen:['take_screenshot','list_windows','focus_window','inspect_ui','vision_inspect_screen','invoke_ui_element','set_ui_value','type_text','press_key','move_mouse','mouse_click','mouse_scroll','search_learned_skills'],
+  screen:['take_screenshot','list_windows','focus_window','minimize_foreground_window','maximize_foreground_window','restore_foreground_window','show_desktop','inspect_ui','vision_inspect_screen','invoke_ui_element','set_ui_value','type_text','press_key','move_mouse','mouse_click','mouse_scroll','search_learned_skills'],
   audio:['get_volume','set_volume','volume_up','volume_down','set_mute','toggle_mute','media_play_pause','media_next','media_previous'],
   media:['global_find_files','open_named_file','open_file','launch_any_app','find_any_app','youtube_search','chrome_search','web_search','media_play_pause','media_next','media_previous','search_action_book','search_learned_skills'],
   display:['get_brightness','set_brightness','brightness_up','brightness_down','open_display_settings','turn_off_display'],
@@ -23,6 +24,7 @@ const groups={
   creative:['find_any_app','launch_any_app','global_find_files','open_named_file','copy_files_to_clipboard','list_windows','focus_window','inspect_ui','vision_inspect_screen','invoke_ui_element','set_ui_value','type_text','press_key','move_mouse','mouse_click','mouse_scroll','search_action_book','search_learned_skills','live_web_search'],
   web:['chrome_status','chrome_open_url','chrome_search','chrome_open_service','open_url','web_search','youtube_search','google_maps_search','open_web_search_in_service','live_web_search','read_web_page','research_topic','search_action_book','search_learned_skills'],
   system:['get_system_info','get_time','list_processes','list_windows','storage_overview','get_battery_status','get_cpu_details','get_gpu_details','get_memory_details','list_fixed_disks'],
+  diagnosticsCore:['get_system_info','list_processes','list_windows','recent_system_errors','recent_system_warnings','get_disk_health','get_network_configuration','get_defender_status','web_search','research_topic','find_any_app','launch_any_app','focus_window','inspect_ui','vision_inspect_screen','invoke_ui_element','set_ui_value','press_key','search_action_book','search_learned_skills'],
   windowsAdmin:['get_disk_health','list_network_adapters','get_network_configuration','list_wifi_profiles','flush_dns_cache','renew_network_lease','get_firewall_status','get_defender_status','run_defender_quick_scan','list_services','start_service','stop_service','restart_service','list_startup_commands','list_scheduled_tasks','recent_system_errors','recent_system_warnings','get_power_plan','set_power_mode_balanced','set_power_mode_high_performance','open_task_manager','open_device_manager','open_event_viewer','open_services_console','open_system_information','open_disk_management','open_resource_monitor','run_sfc_scan','run_dism_health_scan','run_dism_restore_health','clean_user_temp_files','empty_recycle_bin','list_optional_features'],
   coding:['inspect_project','run_project_task','project_search_text','read_project_file','replace_project_text','write_project_file','project_quality_task','git_create_branch','git_commit_changes','global_find_files','list_directory','file_info','live_web_search','read_web_page','research_topic','search_action_book','search_learned_skills','ai_provider_status','find_any_app','launch_any_app'],
   scheduler:['get_time','create_reminder','create_scheduled_action','list_reminders','cancel_reminder','search_action_book'],
@@ -54,15 +56,16 @@ const patterns=[
   ['coding',/(کد|برنامه.?نویسی|پروژه|npm|build|test|گیت|git|سایت بساز|بازی بساز|اپ بساز|coding|کدنویس|کد نویس|vscode|vs code|باگ|خطای کد|refactor)/i],
   ['scheduler',/(یادآور|یادم بنداز|ساعت .* (?:بگو|انجام|بفرست|تحقیق|باز|اجرا)|فردا .* (?:یاد|انجام|بفرست|تحقیق)|remind|schedule|زمان.?بندی|بعداً.*انجام|سر وقت.*انجام)/i],
   ['wellbeing',/(استراحت|خسته|چشم|نشستن|حالت بدن|آب بخور|هیدرات|تمرکز|وقفه|گردن|مچ|کمر|خواب|سلامت|wellbeing|break)/i],
-  ['windowsAdmin',/(خراب|مشکل ویندوز|مشکل برنامه|سیستم کند|بهبود سیستم|سلامت سیستم|تعمیر ویندوز|repair|defender|فایروال|firewall|سرویس|service|startup|استارت.?آپ|event log|لاگ خطا|خطاهای سیستم|دیسک|disk health|شبکه.*مشکل|dns|task manager|device manager|عیب.?یابی|سطل.?زباله|recycle.?bin|فایل.?موقت|temporary|temp)/i],
+  ['diagnosticsCore',/(خراب|مشکل ویندوز|مشکل برنامه|سیستم کند|بهبود سیستم|سلامت سیستم|تعمیر ویندوز|repair|عیب.?یابی|خطاهای سیستم|لاگ خطا)/i],
+  ['windowsAdmin',/(defender|ویندوز دیفندر|فایروال|firewall|سرویس|service|startup|استارت.?آپ|event log|دیسک|disk health|شبکه.*مشکل|dns|task manager|device manager|سطل.?زباله|recycle.?bin|فایل.?موقت|temporary|temp|sfc|dism|power plan)/i],
   ['permissions',/(مجوز|دسترسی|permission|محافظت|حذف نکن|پاک نکن)/i],
   ['system',/(سیستم|رم|پردازنده|process|فرایند|زمان|ساعت|تاریخ|cpu|gpu)/i]
 ];
-const MODE_TO_GROUPS={audio:['audio'],display:['display','settings'],media:['media','audio','storage','files'],apps:['apps','screen'],web:['web','screen'],files:['storage','files'],spreadsheet:['spreadsheet','storage','screen'],social:['social','screen','files','web'],creative:['creative','files','screen','web'],coding:['coding','apps','files','web'],software:['apps','windowsAdmin','web','screen'],diagnostics:['windowsAdmin','system','apps','web','screen'],personalization:['personalization','files','screen'],settings:['settings','screen'],power:['power'],scheduler:['scheduler'],ui:['screen'],ai:['aiBrains','web','screen']};
+const MODE_TO_GROUPS={audio:['audio'],display:['display','settings'],media:['media','audio','storage','files'],apps:['apps','screen'],web:['web','screen'],files:['storage','files'],spreadsheet:['spreadsheet','storage','screen'],social:['social','screen','files','web'],creative:['creative','files','screen','web'],coding:['coding','apps','files','web'],software:['apps','windowsAdmin','web','screen'],diagnostics:['diagnosticsCore','apps','web','screen'],personalization:['personalization','files','screen'],settings:['settings','screen'],power:['power'],scheduler:['scheduler'],ui:['screen'],ai:['aiBrains','web','screen']};
 const factualQuestion=/(؟|\?|چیست|چیه|چی هست|کیه|کی هست|کجاست|کجا هست|چرا|چطور|چگونه|چه کسی|چه زمانی|چه موقع|چند تا|فرق .* چیه|تفاوت .* چیه|معنی .* چیه|what\b|who\b|where\b|when\b|why\b|how\b)/i;
 const personalSmallTalk=/(حالت چطوره|خوبی|چه خبر|اسم من|من کی.?ام|منو می.?شناسی|من را می.?شناسی|یادت میاد|یادت هست|دوستم داری|خسته.?ای|سلام|صبح بخیر|شب بخیر)/i;
 export function selectToolNames(text,hints=[]){
-  const selected=[],s=String(text||''),intent=actionIntent(s);
+  const selected=[],s=canonicalizeCommand(text),intent=actionIntent(s);
   for(const [group,re] of patterns)if(re.test(s))selected.push(...(groups[group]||[]));
   for(const mode of intent.modes)for(const group of MODE_TO_GROUPS[mode]||[])selected.push(...(groups[group]||[]));
   for(const hint of hints){const key=String(hint).toLowerCase();for(const [group,names] of Object.entries(groups))if(key.includes(group))selected.push(...names);}

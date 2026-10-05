@@ -1,65 +1,91 @@
-﻿import './luxuryUI.css';
+import './luxuryUI.css';
+import { listMotions } from './motionStorage.js';
+import { importAsset,listAssets,getAssetFile,removeAsset } from './assetLibrary.js';
 
 const ready=fn=>document.readyState==='loading'?document.addEventListener('DOMContentLoaded',fn,{once:true}):fn();
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const svg=d=>`<svg viewBox="0 0 24 24" aria-hidden="true">${d}</svg>`;
+const ICON={
+  chat:svg('<path d="M5 6h14v9H9l-4 3V6Z"/><path d="M8 10h8M8 13h5"/>'),
+  pin:svg('<path d="m9 3 6 2-1 5 3 3-5 1-4 7 1-8-3-3 4-1-1-6Z"/>'),
+  reminder:svg('<circle cx="12" cy="13" r="7"/><path d="M12 9v4l3 2M9 3h6"/>'),
+  wardrobe:svg('<path d="M9 6a3 3 0 1 1 5.5 1.7L20 11l-8 9-8-9 5.5-3.3"/>'),
+  motion:svg('<circle cx="8" cy="6" r="2"/><path d="m9 9 4 3 3-2M11 11l-2 5-4 3M13 12l2 5 4 2"/>'),
+  avatar:svg('<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'),
+  settings:svg('<circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.12-1.3l2-1.55-2-3.46-2.43 1A7 7 0 0 0 14.2 5.4L14 3h-4l-.2 2.4a7 7 0 0 0-2.25 1.3l-2.43-1-2 3.46 2 1.55A7 7 0 0 0 5 12c0 .44.04.87.12 1.3l-2 1.55 2 3.46 2.43-1a7 7 0 0 0 2.25 1.3L10 21h4l.2-2.4a7 7 0 0 0 2.25-1.3l2.43 1 2-3.46-2-1.55c.08-.43.12-.86.12-1.3Z"/>'),
+  hide:svg('<path d="M4 12h16"/>'),
+  close:svg('<path d="m7 7 10 10M17 7 7 17"/>'),
+  sparkle:svg('<path d="m12 3 1.5 4.5L18 9l-4.5 1.5L12 15l-1.5-4.5L6 9l4.5-1.5L12 3Z"/>')
+};
+
+function localDateTimeValue(date=new Date()){
+  const d=new Date(date.getTime()-date.getTimezoneOffset()*60000);
+  return d.toISOString().slice(0,16);
+}
+function fmtDate(value){try{return new Intl.DateTimeFormat('fa-IR',{dateStyle:'medium',timeStyle:'short'}).format(new Date(value));}catch{return String(value||'');}}
+let catalogPromise=null;
+async function loadCatalog(){if(!catalogPromise)catalogPromise=fetch('/library/catalog.json').then(r=>r.ok?r.json():{}).catch(()=>({}));return catalogPromise;}
+
+async function mountDataSurface(surface){
+  document.body.classList.add('utility-surface');
+  const shell=document.createElement('section');shell.className='utility-shell';
+  shell.innerHTML=`<header class="utility-head"><div><small>MARIA</small><h2>${surface==='pins'?'پین‌شده‌ها':'یادآورها و کارهای زمان‌بندی‌شده'}</h2></div><div class="window-actions"><button class="window-btn minimize" title="کمینه">${ICON.hide}</button><button class="window-btn close" title="بستن">${ICON.close}</button></div></header><div class="utility-content"></div>`;
+  document.body.append(shell);
+  shell.querySelector('.close').onclick=()=>surface==='pins'?window.blackClover.hidePins():window.blackClover.hideReminders();
+  shell.querySelector('.minimize').onclick=()=>window.blackClover.minimizeSurface(surface);
+  const host=shell.querySelector('.utility-content');
+
+  if(surface==='pins'){
+    host.innerHTML=`<form class="data-form" id="pinForm"><input id="pinTitle" placeholder="عنوان پین"><textarea id="pinText" rows="4" placeholder="متن، لینک، پرامپت یا هر چیزی که می‌خواهی نگه داری…" required></textarea><div class="form-actions"><button class="panel-primary" type="submit">افزودن پین</button><button class="ghost-btn" type="button" id="pinCancel" hidden>لغو ویرایش</button></div></form><div class="data-toolbar"><b>پین‌های من</b><span id="pinCount"></span></div><div class="data-list" id="pinList"></div>`;
+    let editing=null;
+    const form=host.querySelector('#pinForm'),title=host.querySelector('#pinTitle'),text=host.querySelector('#pinText'),cancel=host.querySelector('#pinCancel'),list=host.querySelector('#pinList');
+    const reset=()=>{editing=null;form.reset();cancel.hidden=true;form.querySelector('[type=submit]').textContent='افزودن پین';};
+    const refresh=async()=>{const items=await window.blackClover.listPins();host.querySelector('#pinCount').textContent=`${items.length} مورد`;list.innerHTML=items.map(x=>`<article class="data-card" data-id="${esc(x.id)}"><div><b>${esc(x.title)}</b><p>${esc(x.text)}</p><small>${fmtDate(x.updatedAt)}</small></div><div class="card-actions"><button data-edit>ویرایش</button><button data-delete>حذف</button></div></article>`).join('')||'<div class="empty-state">هنوز چیزی پین نشده.</div>';};
+    form.onsubmit=async e=>{e.preventDefault();const payload={title:title.value.trim(),text:text.value.trim(),pinned:true};if(!payload.text)return;if(editing)await window.blackClover.updatePin({id:editing,...payload});else await window.blackClover.createPin(payload);reset();await refresh();};
+    cancel.onclick=reset;
+    list.onclick=async e=>{const card=e.target.closest('[data-id]');if(!card)return;const id=card.dataset.id;if(e.target.closest('[data-delete]')){await window.blackClover.removePin(id);if(editing===id)reset();await refresh();return;}if(e.target.closest('[data-edit]')){const items=await window.blackClover.listPins(),item=items.find(x=>x.id===id);if(!item)return;editing=id;title.value=item.title;text.value=item.text;cancel.hidden=false;form.querySelector('[type=submit]').textContent='ذخیره تغییرات';text.focus();}};
+    window.blackClover.onEvent?.(e=>{if(e.type==='data-changed'&&e.store==='pins')refresh();});
+    window.addEventListener('focus',refresh);await refresh();
+    return;
+  }
+
+  host.innerHTML=`<form class="data-form" id="reminderForm"><div class="form-row"><select id="reminderKind"><option value="reminder">فقط یادآوری کن</option><option value="action">سر وقت خودش انجام بده</option></select><select id="reminderRepeat"><option value="0">بدون تکرار</option><option value="15">هر ۱۵ دقیقه</option><option value="30">هر ۳۰ دقیقه</option><option value="60">هر ساعت</option><option value="1440">هر روز</option></select></div><textarea id="reminderText" rows="3" placeholder="مثلاً ساعت ۸ Chrome را باز کن و درباره…" required></textarea><input id="reminderAt" type="datetime-local" required><button class="panel-primary" type="submit">افزودن</button></form><div class="data-toolbar"><b>برنامه‌های فعال</b><span id="reminderCount"></span></div><div class="data-list" id="reminderList"></div>`;
+  const form=host.querySelector('#reminderForm'),kind=host.querySelector('#reminderKind'),text=host.querySelector('#reminderText'),at=host.querySelector('#reminderAt'),repeat=host.querySelector('#reminderRepeat'),list=host.querySelector('#reminderList');
+  at.value=localDateTimeValue(new Date(Date.now()+10*60*1000));
+  const refresh=async()=>{const items=await window.blackClover.listReminders();host.querySelector('#reminderCount').textContent=`${items.length} فعال`;list.innerHTML=items.map(x=>`<article class="data-card reminder-card" data-id="${esc(x.id)}"><div><div class="kind-badge ${x.kind==='action'?'action':''}">${x.kind==='action'?'انجام خودکار':'یادآوری'}</div><b>${esc(x.label||x.message||x.instruction)}</b><small>${fmtDate(x.dueAt)}${x.intervalMinutes?` • تکرار ${x.intervalMinutes} دقیقه`:''}</small>${x.lastResult?`<p class="last-result">آخرین نتیجه: ${esc(x.lastResult.text||'انجام شد')}</p>`:''}</div><div class="card-actions"><button data-cancel>لغو</button></div></article>`).join('')||'<div class="empty-state">هیچ یادآور فعالی نداری.</div>';};
+  form.onsubmit=async e=>{e.preventDefault();const due=new Date(at.value);if(!text.value.trim()||Number.isNaN(due.getTime()))return;const intervalMinutes=Number(repeat.value)||0;if(kind.value==='action')await window.blackClover.createReminder({kind:'action',instruction:text.value.trim(),label:text.value.trim(),dueAt:due.toISOString(),intervalMinutes});else await window.blackClover.createReminder({kind:'reminder',message:text.value.trim(),dueAt:due.toISOString(),intervalMinutes});text.value='';at.value=localDateTimeValue(new Date(Date.now()+10*60*1000));await refresh();};
+  list.onclick=async e=>{const card=e.target.closest('[data-id]');if(card&&e.target.closest('[data-cancel]')){await window.blackClover.cancelReminder(card.dataset.id);await refresh();}};
+  window.blackClover.onEvent?.(e=>{if((e.type==='data-changed'&&e.store==='reminders')||e.type==='reminder'||e.type==='scheduled-action')refresh();});
+  window.addEventListener('focus',refresh);await refresh();
+}
 
 ready(()=>{
   const surface=new URLSearchParams(location.search).get('surface')||'avatar';
   const isAvatar=surface==='avatar',isChat=surface==='chat';
   document.body.classList.add('luxury-ui',`surface-${surface}`);
-  const chatShell=document.querySelector('.chat-shell'),chat=document.querySelector('.chat'),header=chat?.querySelector('header'),input=document.querySelector('#input'),form=document.querySelector('#form');
+  const chatShell=document.querySelector('.chat-shell'),chat=document.querySelector('.chat'),header=chat?.querySelector('header'),input=document.querySelector('#input'),form=document.querySelector('#form'),avatarRoot=document.querySelector('#avatar3d');
+  if(surface==='pins'||surface==='reminders'){mountDataSurface(surface).catch(console.error);return;}
   if(!chatShell||!chat||!header)return;
 
   if(isAvatar)chatShell.classList.add('chat-hidden');else chatShell.classList.remove('chat-hidden','chat-minimized');
-
-  const windowActions=document.createElement('div');
-  windowActions.className='window-actions';
-  windowActions.innerHTML='<button class="window-btn minimize" type="button" title="کمینه">−</button><button class="window-btn close" type="button" title="بستن چت">×</button>';
-  header.querySelector('.header-actions')?.append(windowActions);
-  windowActions.querySelector('.close').onclick=e=>{e.stopPropagation();if(isChat)window.blackClover?.hideChat?.();else chatShell.classList.add('chat-hidden');};
-  windowActions.querySelector('.minimize').onclick=e=>{e.stopPropagation();if(isChat)window.blackClover?.minimizeChat?.();else chatShell.classList.toggle('chat-minimized');};
-
-  if(isAvatar){
-    const dock=document.createElement('nav');
-    dock.className='maria-dock';
-    dock.setAttribute('aria-label','Maria quick controls');
-    dock.innerHTML=`
-      <button class="dock-btn dock-core" data-action="chat" data-tip="چت">✦</button>
-      <button class="dock-btn" data-action="mic" data-tip="صحبت">◉</button>
-      <span class="dock-sep"></span>
-      <button class="dock-btn" data-action="pins" data-tip="پین‌ها">⌖</button>
-      <button class="dock-btn" data-action="reminders" data-tip="یادآورها">◷</button>
-      <button class="dock-btn" data-action="motions" data-tip="حرکت‌ها">◇</button>
-      <button class="dock-btn" data-action="avatar" data-tip="کاراکتر">♙</button>
-      <button class="dock-btn" data-action="settings" data-tip="تنظیمات">⚙</button>`;
-    document.body.append(dock);
-
-    const quick=document.createElement('section');
-    quick.className='quick-panel';
-    quick.innerHTML='<div class="quick-head"><b>Maria</b><span>دسترسی سریع</span></div><div class="quick-actions"></div>';
-    document.body.append(quick);
-    let panelMode='';
-    const showQuick=mode=>{
-      if(panelMode===mode&&quick.classList.contains('open')){quick.classList.remove('open');panelMode='';return;}
-      panelMode=mode;const actions=quick.querySelector('.quick-actions'),title=quick.querySelector('.quick-head b');
-      if(mode==='pins'){title.textContent='پین‌شده‌ها';actions.innerHTML='<button class="quick-action" data-prompt="پین‌های من رو نشون بده">نمایش پین‌ها</button><button class="quick-action" data-prompt="آخرین چیزی که پین کردم رو باز کن">آخرین پین</button>';}
-      else{title.textContent='یادآورها';actions.innerHTML='<button class="quick-action" data-prompt="یادآوری‌های فعال من رو نشون بده">یادآوری‌های فعال</button><button class="quick-action" data-prompt="کارهای زمان‌بندی‌شده من رو نشون بده">کارهای زمان‌بندی‌شده</button>';}
-      quick.classList.add('open');
-    };
-    dock.addEventListener('click',e=>{
-      const button=e.target.closest('[data-action]');if(!button)return;const action=button.dataset.action;
-      if(action==='chat')window.blackClover?.showChat?.();
-      if(action==='mic')document.querySelector('#mic')?.click();
-      if(action==='pins'||action==='reminders')showQuick(action);
-      if(action==='motions'){document.body.classList.add('avatar-tools');document.querySelector('#motionPick')?.click();setTimeout(()=>document.body.classList.remove('avatar-tools'),800);}
-      if(action==='avatar'){document.body.classList.add('avatar-tools');document.querySelector('#avatarPick')?.click();setTimeout(()=>document.body.classList.remove('avatar-tools'),800);}
-      if(action==='settings')window.blackClover?.openSettings?.();
-    });
-    quick.addEventListener('click',e=>{const p=e.target.closest('[data-prompt]')?.dataset.prompt;if(p){quick.classList.remove('open');window.blackClover?.prompt?.(p);}});
-    window.blackClover?.onEvent?.(event=>{if(event.type==='reminder'||event.type==='break-reminder'){const btn=dock.querySelector('[data-action="reminders"]');btn?.animate([{transform:'scale(1)'},{transform:'scale(1.16)'},{transform:'scale(1)'}],{duration:700});}});
-  }
-
   if(isChat){
-    window.blackClover?.onOpenSettings?.(()=>document.querySelector('#settings')?.click());
-    window.blackClover?.onPrefillPrompt?.(payload=>{const text=payload?.text||'';if(!text||!input||!form)return;input.value=text;if(payload.submit)form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));});
+    const actions=document.createElement('div');actions.className='window-actions';actions.innerHTML=`<button class="window-btn minimize" type="button" title="کمینه">${ICON.hide}</button><button class="window-btn close" type="button" title="بستن چت">${ICON.close}</button>`;header.querySelector('.header-actions')?.append(actions);
+    actions.querySelector('.close').onclick=e=>{e.stopPropagation();window.blackClover?.hideChat?.();};actions.querySelector('.minimize').onclick=e=>{e.stopPropagation();window.blackClover?.minimizeChat?.();};
+    window.blackClover?.onOpenSettings?.(()=>document.querySelector('#settings')?.click());window.blackClover?.onPrefillPrompt?.(payload=>{const text=payload?.text||'';if(!text||!input||!form)return;input.value=text;if(payload.submit)form.dispatchEvent(new Event('submit',{bubbles:true,cancelable:true}));});return;
   }
+
+  const chrome=document.createElement('div');chrome.className='maria-avatar-chrome';chrome.innerHTML=`<div class="avatar-drag"><span class="chrome-dot"></span><span>MARIA</span></div><button class="avatar-hide" title="مخفی کردن ماریا">${ICON.hide}</button>`;document.body.append(chrome);chrome.querySelector('.avatar-hide').onclick=()=>window.blackClover?.hideAvatar?.();
+  const dock=document.createElement('nav');dock.className='maria-dock';dock.innerHTML=`<button class="dock-btn dock-core" data-action="chat" data-tip="چت">${ICON.sparkle}</button><button class="dock-btn" data-action="pins" data-tip="پین‌ها">${ICON.pin}</button><button class="dock-btn" data-action="reminders" data-tip="یادآورها">${ICON.reminder}</button><span class="dock-sep"></span><button class="dock-btn" data-action="wardrobe" data-tip="لباس و وسایل">${ICON.wardrobe}</button><button class="dock-btn" data-action="motions" data-tip="حرکت‌ها">${ICON.motion}</button><button class="dock-btn" data-action="avatar" data-tip="کاراکتر">${ICON.avatar}</button><button class="dock-btn" data-action="settings" data-tip="تنظیمات">${ICON.settings}</button>`;document.body.append(dock);
+  const panel=document.createElement('section');panel.className='quick-panel';panel.innerHTML='<div class="quick-head"><div><b>Maria</b><span>دسترسی سریع</span></div><button class="panel-close">×</button></div><div class="quick-body"></div>';document.body.append(panel);panel.querySelector('.panel-close').onclick=()=>panel.classList.remove('open');
+  const body=panel.querySelector('.quick-body'),title=panel.querySelector('.quick-head b'),sub=panel.querySelector('.quick-head span');let mode='';
+  const openPanel=async next=>{if(mode===next&&panel.classList.contains('open')){panel.classList.remove('open');mode='';return;}mode=next;panel.classList.add('open');body.innerHTML='<div class="panel-loading">در حال آماده‌سازی…</div>';const catalog=await loadCatalog();
+    if(next==='avatar'){title.textContent='کاراکتر';sub.textContent='مدل و ظاهر اصلی';const av=(catalog.avatars||[]).filter(x=>x.publicUrl);body.innerHTML=`<div class="asset-hero"><b>Character Library • ${av.length}</b><span>مدل‌های VRM آماده مستقیم قابل انتخاب هستند.</span></div><div class="action-grid">${av.map(x=>`<button class="quick-action" data-built-avatar="${esc(x.publicUrl)}"><b>${esc(x.name)}</b><small>${esc(x.format||'vrm')}</small></button>`).join('')}<button class="quick-action wide" data-native="avatar"><b>＋ افزودن VRM</b></button></div>`;}
+    else if(next==='motions'){title.textContent='حرکت‌ها';sub.textContent='Animation Library';const items=await listMotions().catch(()=>[]),pending=catalog.animations||[],expressions=catalog.expressions||[],previews=catalog.previews||[];body.innerHTML=`<div class="asset-hero"><b>${items.length} حرکت مستقیم • ${pending.length} انیمیشن استخراج‌شده</b><span>VRMAها همین الان اجرا می‌شوند؛ Unity .animها استخراج شده‌اند و برای پخش روی VRM نیاز به Retarget/Conversion دارند.</span></div>${previews.length?`<div class="preview-grid">${previews.map(x=>`<img src="${esc(x.publicUrl)}" title="${esc(x.name)}" loading="lazy">`).join('')}</div>`:''}<div class="section-label">قابل اجرا</div><div class="asset-list">${items.map(x=>`<button class="asset-row" data-motion="${esc(x.id)}"><span>${esc(x.name)}</span><b>▶</b></button>`).join('')||'<div class="empty-state">هنوز حرکت VRMA نصب نشده.</div>'}</div><div class="section-label">Unity / در صف تبدیل • ${pending.length}</div><div class="asset-list pending-list">${pending.map(x=>`<div class="asset-row static pending"><span><b>${esc(x.name)}</b><small>${esc(x.package||'Unity')} • ${esc(x.format||'anim')}</small></span><em>تبدیل لازم</em></div>`).join('')}</div><div class="section-label">Face / Expression • ${expressions.length}</div><div class="asset-list pending-list">${expressions.map(x=>`<div class="asset-row static pending"><span><b>${esc(x.name)}</b><small>${esc(x.package||'Expression')}</small></span><em>Mapping لازم</em></div>`).join('')}</div><button class="panel-primary" data-native="motion">＋ افزودن Motion Pack</button>`;}
+    else if(next==='wardrobe'){title.textContent='لباس و وسایل';sub.textContent='Wardrobe & Accessories';const items=await listAssets('wardrobe').catch(()=>[]),packed=catalog.wardrobe||[];body.innerHTML=`<div class="asset-hero"><b>کمد ماریا • ${packed.length+items.length} مورد</b><span>EvilFall Armor، Wolfchan XWear، Sea Accessories و Textureها استخراج و فهرست شده‌اند. VRM کامل مستقیم قابل پوشیدن است؛ FBX/XWear/VRoid texture برای اتصال به اسکلت/متریال فعلی نیاز به تبدیل دارند.</span></div><div class="asset-list">${items.map(x=>`<div class="asset-row static"><span><b>${esc(x.name)}</b><small>${x.direct==='avatar'?'قابل استفاده مستقیم':'واردشده توسط کاربر'}</small></span><div>${x.direct==='avatar'?`<button data-wear="${esc(x.id)}">پوشیدن</button>`:''}<button data-remove-asset="${esc(x.id)}">×</button></div></div>`).join('')}${packed.map(x=>`<div class="asset-row static pending"><span><b>${esc(x.name)}</b><small>${esc(x.package||'Asset Pack')} • ${esc(x.format||'asset')}</small></span><em>${x.status==='needs-vroid-attachment'?'VRoid/Material':'تبدیل/اتصال لازم'}</em></div>`).join('')||'<div class="empty-state">هنوز موردی وارد نشده.</div>'}</div><button class="panel-primary" data-add-wardrobe>＋ افزودن لباس / اکسسوری</button>`;}
+    else if(next==='settings'){title.textContent='تنظیمات';sub.textContent='ظاهر و رفتار';const st=await window.blackClover?.windowState?.().catch(()=>null),voicebank=(catalog.voice||[])[0];body.innerHTML=`<div class="settings-cards"><button class="setting-row" data-toggle-top><span><b>همیشه روی پنجره‌ها</b><small>Maria بالای برنامه‌ها بماند</small></span><i class="switch ${st?.alwaysOnTop?'on':''}"></i></button><button class="setting-row" data-open-full-settings><span><b>تنظیمات کامل</b><small>صدا، مدل‌ها و وابستگی‌ها</small></span><b>›</b></button>${voicebank?`<div class="setting-row static-setting"><span><b>Voicebank: ${esc(voicebank.name)}</b><small>${voicebank.wavCount||0} WAV وارد شده • برای TTS مستقیم نیازمند موتور UTAU/VC است</small></span><b>VOICE</b></div>`:''}<div class="setting-row static-setting"><span><b>Asset Library</b><small>${(catalog.animations||[]).length} Animation • ${(catalog.wardrobe||[]).length} Wardrobe • ${(catalog.previews||[]).length} Preview</small></span><b>READY</b></div><button class="setting-row danger-lite" data-hide-avatar><span><b>مخفی کردن ماریا</b><small>از Tray دوباره نمایش داده می‌شود</small></span><b>—</b></button></div>`;}
+  };
+  const wardrobeInput=document.createElement('input');wardrobeInput.type='file';wardrobeInput.hidden=true;wardrobeInput.accept='.vrm,.xwear,.unitypackage,.zip,.fbx,.glb,.gltf,.png,.jpg,.jpeg,.webp';document.body.append(wardrobeInput);wardrobeInput.onchange=async()=>{const f=wardrobeInput.files?.[0];wardrobeInput.value='';if(!f)return;const item=await importAsset(f,'wardrobe');if(item.direct==='avatar')avatarRoot?.dispatchEvent(new CustomEvent('blackclover:wardrobe-file',{detail:{file:f}}));mode='';await openPanel('wardrobe');};
+  dock.onclick=e=>{const b=e.target.closest('[data-action]');if(!b)return;const a=b.dataset.action;if(a==='chat')window.blackClover?.showChat?.();else if(a==='pins')window.blackClover?.showPins?.();else if(a==='reminders')window.blackClover?.showReminders?.();else openPanel(a);};
+  panel.onclick=async e=>{const builtin=e.target.closest('[data-built-avatar]')?.dataset.builtAvatar;if(builtin){avatarRoot?.dispatchEvent(new CustomEvent('blackclover:load-built-in',{detail:{url:builtin}}));panel.classList.remove('open');return;}const native=e.target.closest('[data-native]')?.dataset.native;if(native==='avatar'){document.querySelector('#avatarPick')?.click();return;}if(native==='motion'){document.querySelector('#motionPick')?.click();return;}if(e.target.closest('[data-add-wardrobe]')){wardrobeInput.click();return;}const motion=e.target.closest('[data-motion]')?.dataset.motion;if(motion){avatarRoot?.dispatchEvent(new CustomEvent('blackclover:motion',{detail:{id:motion}}));return;}const wear=e.target.closest('[data-wear]')?.dataset.wear;if(wear){const f=await getAssetFile(wear);if(f)avatarRoot?.dispatchEvent(new CustomEvent('blackclover:wardrobe-file',{detail:{file:f}}));return;}const remove=e.target.closest('[data-remove-asset]')?.dataset.removeAsset;if(remove){await removeAsset(remove);mode='';await openPanel('wardrobe');return;}if(e.target.closest('[data-toggle-top]')){await window.blackClover?.toggleTop?.();mode='';await openPanel('settings');return;}if(e.target.closest('[data-open-full-settings]')){window.blackClover?.openSettings?.();panel.classList.remove('open');return;}if(e.target.closest('[data-hide-avatar]'))window.blackClover?.hideAvatar?.();};
+  window.blackClover?.onEvent?.(event=>{if(event.type==='reminder'||event.type==='break-reminder')dock.querySelector('[data-action="reminders"]')?.animate([{transform:'scale(1)'},{transform:'scale(1.16)'},{transform:'scale(1)'}],{duration:700});});
 });

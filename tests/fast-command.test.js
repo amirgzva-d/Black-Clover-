@@ -52,3 +52,12 @@ test('fast router recognizes important power actions',()=>{
   assert.equal(matchFastCommand('سیستم رو قفل کن').name,'lock_pc');
   assert.equal(matchFastCommand('لپتاپ رو ببر حالت خواب').name,'sleep_pc');
 });
+
+test('fast router covers practical Windows maintenance and window commands',()=>{
+  assert.equal(matchFastCommand('سطل زباله رو خالی کن').name,'empty_recycle_bin');
+  assert.equal(matchFastCommand('تسک منیجر رو باز کن').name,'open_task_manager');
+  assert.equal(matchFastCommand('تنظیمات بلوتوث رو باز کن').name,'open_bluetooth_settings');
+  assert.equal(matchFastCommand('کش dns رو پاک کن').name,'flush_dns_cache');
+  assert.equal(matchFastCommand('این پنجره رو کمینه کن').name,'minimize_foreground_window');
+  assert.equal(matchFastCommand('دسکتاپ رو مرتب کن').name,'organize_desktop');
+});

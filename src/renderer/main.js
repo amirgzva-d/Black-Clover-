@@ -163,6 +163,8 @@ avatarPick.onclick = () => avatarFile.click();
 avatarFile.onchange = () => useAvatarFile(avatarFile.files?.[0]);
 motionPick.onclick = () => motionFile.click();
 motionFile.onchange = () => useMotionFile(motionFile.files?.[0]);
+avatarRoot.addEventListener('blackclover:load-built-in',async event=>{const url=event.detail?.url;if(!url)return;try{const controller=await avatarControllerPromise;await controller?.loadBuiltIn?.(url);status.textContent='شخصیت آماده است';}catch(error){bubble('bot',`مدل آماده لود نشد: ${error.message||error}`);}});
+avatarRoot.addEventListener('blackclover:wardrobe-file',event=>useAvatarFile(event.detail?.file));
 avatarPanel.addEventListener('dragover', event => { event.preventDefault(); avatarPanel.classList.add('dragging'); });
 avatarPanel.addEventListener('dragleave', () => avatarPanel.classList.remove('dragging'));
 avatarPanel.addEventListener('drop', event => {
@@ -178,7 +180,22 @@ avatarRoot.addEventListener('blackclover:avatar-loaded', event => {
   const name = meta.name || meta.title || meta.meta?.title;
   avatarPick.title = name ? `مدل فعلی: ${name}` : 'تغییر کاراکتر VRM';
 });
-listMotions().then(items => { if (items.length) motionPick.textContent = `حرکت‌ها • ${items.length}`; }).catch(() => {});
+listMotions().then(async items => {
+  let available=items;
+  if (!available.length && IS_AVATAR) {
+    try {
+      const response=await fetch('/assets/VRMA_MotionPack.zip');
+      if (response.ok) {
+        const blob=await response.blob(),file=new File([blob],'VRMA_MotionPack.zip',{type:'application/zip'});
+        available=await importMotionPack(file);
+      }
+    } catch {}
+  }
+  if(available.length){
+    motionPick.textContent=`حرکت‌ها • ${available.length}`;
+    if(IS_AVATAR){try{const controller=await avatarControllerPromise;const idle=available.find(x=>x.id==='fullbody')?.id||available[0].id;await controller.setIdleMotion?.(idle);}catch{}}
+  }
+}).catch(() => {});
 
 function setSpeaker() {
   speaker.innerHTML = icon(voice.enabled ? 'sound' : 'mute');
@@ -211,35 +228,50 @@ const presence = new PresenceManager({
 });
 if (IS_AVATAR) presence.start();
 
-async function send(text) {
-  text = String(text || '').trim();
-  if (!text) return;
+const chatQueue=[];
+let chatQueueRunning=false;
+function enqueueMessage(text){
+  text=String(text||'').trim();
+  if(!text)return;
   voice.stop('user-input');
-  bubble('user', text);
-  input.disabled = true;
-  setActivity('در حال فکر کردن…');
-  status.textContent = 'در حال فکر…';
-  try {
-    const response = await window.blackClover.chat(text);
+  if(IS_CHAT)bubble('user',text);
+  chatQueue.push(text);
+  input.disabled=false;
+  input.focus();
+  pumpChatQueue();
+}
+async function pumpChatQueue(){
+  if(chatQueueRunning)return;
+  chatQueueRunning=true;
+  try{
+    while(chatQueue.length){
+      const text=chatQueue.shift();
+      setActivity(chatQueue.length?`در حال انجام • ${chatQueue.length} پیام در صف`:'در حال فکر کردن…');
+      status.textContent='در حال انجام…';
+      try{
+        const response=await window.blackClover.chat(text);
+        if(IS_CHAT)bubble('bot',response.text);
+        if(!voice.enabled)status.textContent='آماده';
+        if(response.requiresConfirmation)showConfirm(response.confirmationId,response.text);
+      }catch(error){
+        if(IS_CHAT)bubble('bot',`خطا: ${error.message||error}`);
+        status.textContent='خطا';
+      }
+    }
+  }finally{
+    chatQueueRunning=false;
     setActivity('');
-    if (IS_CHAT) bubble('bot', response.text);
-    if (!voice.enabled) status.textContent = 'آماده';
-    if (response.requiresConfirmation) showConfirm(response.confirmationId, response.text);
-  } catch (error) {
-    setActivity('');
-    bubble('bot', `خطا: ${error.message || error}`);
-    status.textContent = 'خطا';
-  } finally {
-    input.disabled = false;
+    if(!voice.speaking)status.textContent='آماده';
+    input.disabled=false;
     input.focus();
   }
 }
 
-form.addEventListener('submit', async event => {
+form.addEventListener('submit',event=>{
   event.preventDefault();
-  const text = input.value;
-  input.value = '';
-  await send(text);
+  const text=input.value;
+  input.value='';
+  enqueueMessage(text);
 });
 
 function showConfirm(id, text) {

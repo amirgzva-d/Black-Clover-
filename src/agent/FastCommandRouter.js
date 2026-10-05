@@ -1,3 +1,4 @@
+import { canonicalizeCommand } from './SemanticCanonicalizer.js';
 const normalize=s=>String(s||'').toLowerCase().normalize('NFKC').replace(/[؟?!.،,]+/g,' ').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\s+/g,' ').trim();
 const digits=s=>String(s).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 const n=s=>Number(digits(String(s)).replace(/[^0-9]/g,''));
@@ -43,7 +44,8 @@ function namedFileCommand(raw){
   const folder=text.match(/(?:پوشه|فولدر)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i)?.[1]?.trim();
   if(folder&&!/^(?:رو|را)$/i.test(folder))return {name:'open_named_folder',args:{name:folder},reply:`پوشه ${folder} رو پیدا کردم و بازش کردم.`};
   const extName=text.match(/([^\s"'،؟]+\.[a-z0-9]{1,8})/i)?.[1];
-  const pathHint=text.match(/(?:پروژه|داخل پوشه|توی پوشه|در پوشه)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i)?.[1]?.trim()||'';
+  let pathHint=text.match(/(?:پروژه|داخل پوشه|توی پوشه|در پوشه)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i)?.[1]?.trim()||'';
+  if(!pathHint)pathHint=text.match(/(?:پروژه|داخل پوشه|توی پوشه|در پوشه)\s+([^\s،؟]+)(?=\s+(?:رو|را|پیدا|بگرد|باز|کجاست|کجا))/i)?.[1]?.trim()||'';
   let name=extName||text.match(/(?:فایل|پرونده)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i)?.[1]?.trim();
   let extensions=[];
   if(!name){const excel=text.match(/(?:اکسل|excel)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i),candidate=excel?.[1]?.trim();if(candidate&&!/^(?:رو|را)$/i.test(candidate)){name=candidate;extensions=['xlsx','xlsm','xls'];}}
@@ -52,6 +54,7 @@ function namedFileCommand(raw){
 }
 
 export function matchFastCommand(input){
+  input=canonicalizeCommand(input);
   const s=normalize(input);
   if(!s)return null;
 
@@ -85,6 +88,20 @@ export function matchFastCommand(input){
   if(/(?:آپدیت ویندوز|windows update|به.?روزرسانی ویندوز)/i.test(s))return {name:'check_windows_update',args:{},reply:'Windows Update رو باز کردم.'};
   if(/(?:سطل(?: زباله)?|recycle ?bin).*(?:خالی|پاک|تمیز)|(?:خالی|پاک|تمیز).*(?:سطل(?: زباله)?|recycle ?bin)/i.test(s))return {name:'empty_recycle_bin',args:{},reply:'سطل زباله رو خالی کردم.'};
   if(/(?:فایل(?:های)? موقت|temp|temporary).*(?:پاک|تمیز|خالی)|(?:پاک|تمیز).*(?:temp|فایل(?:های)? موقت)/i.test(s))return {name:'clean_user_temp_files',args:{older_than_hours:24},reply:'فایل‌های موقت قدیمی رو پاک‌سازی کردم.'};
+  if(/(?:تسک ?منیجر|task ?manager).*(?:باز|اجرا)|(?:باز|اجرا).*(?:تسک ?منیجر|task ?manager)/i.test(s))return {name:'open_task_manager',args:{},reply:'Task Manager رو باز کردم.'};
+  if(/(?:دیوایس ?منیجر|device ?manager).*(?:باز|اجرا)|(?:باز|اجرا).*(?:دیوایس ?منیجر|device ?manager)/i.test(s))return {name:'open_device_manager',args:{},reply:'Device Manager رو باز کردم.'};
+  if(/(?:event ?viewer|رویدادهای ویندوز|لاگ ویندوز).*(?:باز|نشون)|(?:باز|نشون).*(?:event ?viewer|رویدادهای ویندوز)/i.test(s))return {name:'open_event_viewer',args:{},reply:'Event Viewer رو باز کردم.'};
+  if(/(?:دسکتاپ|desktop).*(?:مرتب|دسته.?بندی|جمع و جور)/i.test(s))return {name:'organize_desktop',args:{},reply:'دسکتاپ رو مرتب کردم.'};
+  if(/(?:دانلودها|downloads).*(?:باز|نشون)|(?:باز|نشون).*(?:دانلودها|downloads)/i.test(s))return {name:'open_downloads',args:{},reply:'پوشه دانلودها رو باز کردم.'};
+  if(/(?:بلوتوث|bluetooth).*(?:باز|تنظیمات)|(?:تنظیمات).*(?:بلوتوث|bluetooth)/i.test(s))return {name:'open_bluetooth_settings',args:{},reply:'تنظیمات Bluetooth رو باز کردم.'};
+  if(/(?:وای.?فای|wifi|شبکه|network).*(?:تنظیمات|باز)/i.test(s))return {name:'open_network_settings',args:{},reply:'تنظیمات شبکه رو باز کردم.'};
+  if(/(?:dns).*(?:پاک|خالی|flush)|(?:flush).*(?:dns)/i.test(s))return {name:'flush_dns_cache',args:{},reply:'کش DNS رو پاک کردم.'};
+  if(/(?:defender|ویندوز دیفندر).*(?:وضعیت|status|روشن|فعاله)/i.test(s))return {name:'get_defender_status',args:{}};
+  if(/(?:defender|ویندوز دیفندر).*(?:اسکن سریع|quick scan)|(?:اسکن سریع|quick scan).*(?:defender|ویندوز)/i.test(s))return {name:'run_defender_quick_scan',args:{},reply:'اسکن سریع Defender رو اجرا کردم.'};
+  if(/(?:پنجره|window).*(?:کوچیک|کمینه|minimize)|(?:کمینه|minimize).*(?:پنجره|window)/i.test(s))return {name:'minimize_foreground_window',args:{},reply:'پنجره رو کمینه کردم.'};
+  if(/(?:پنجره|window).*(?:بزرگ|maximize)|(?:بزرگ|maximize).*(?:پنجره|window)/i.test(s))return {name:'maximize_foreground_window',args:{},reply:'پنجره رو بزرگ کردم.'};
+  if(/(?:دسکتاپ رو نشون بده|show desktop|همه پنجره.?ها رو جمع کن)/i.test(s))return {name:'show_desktop',args:{},reply:'دسکتاپ رو نشون دادم.'};
+  const closeNamed=s.match(/^(.{1,60}?)\s*(?:رو|را)?\s*(?:ببند|ببندش|close کن)$/i);if(closeNamed&&!/(سیستم|کامپیوتر|ویندوز|پنجره)/i.test(closeNamed[1]))return {name:'close_app',args:{name:closeNamed[1].trim()},reply:`${closeNamed[1].trim()} رو بستم.`};
 
   const fileCommand=namedFileCommand(input);if(fileCommand)return fileCommand;
 

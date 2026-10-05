@@ -13,6 +13,8 @@ import { selectToolNames } from './SmartToolRouter.js';
 import { matchFastCommand } from './FastCommandRouter.js';
 import { isPrivateRequest,toolMakesContextPrivate } from './PrivacyClassifier.js';
 import { shouldGroundKnowledge,groundedKnowledgeAnswer } from './GroundedKnowledge.js';
+import { canonicalizeCommand } from './SemanticCanonicalizer.js';
+import { matchSmallTalk } from './SmallTalkRouter.js';
 
 const MAX_TURNS=64,MAX_STEPS=32;
 const cleanReply=text=>String(text??'').replace(/\n{3,}/g,'\n\n').trim();
@@ -80,9 +82,10 @@ export class Agent{
     const original=String(text??'').trim();if(!original)return {ok:false,text:'پیام خالی است.'};
     try{
       const rule=await permissions.parseUserRule(original);await memory.maybeRememberUserStatement(original);
-      const normalized=normalizePersianCommand(original),hints=[...new Set([...commandHints(normalized),...capabilityHints(normalized)])],routeNames=selectToolNames(original,hints).filter(n=>tools[n]),basePrivate=isPrivateRequest(original,hints);
+      const canonical=canonicalizeCommand(original),normalized=normalizePersianCommand(canonical),hints=[...new Set([...commandHints(normalized),...capabilityHints(normalized)])],routeNames=selectToolNames(canonical,hints).filter(n=>tools[n]),basePrivate=isPrivateRequest(original,hints);
       const fast=matchFastCommand(normalized),fastTurn={private:basePrivate,assistantMessage:null,original,trace:[],routeNames};
       if(fast){this.history.push({role:'user',content:original,_private:basePrivate});this.trimHistory();const direct=await this.tryFastCommand(fast,fastTurn,routeNames);if(direct)return direct;this.history.pop();}
+      if(!routeNames.length){const small=matchSmallTalk(original);if(small){this.history.push({role:'user',content:original,_private:basePrivate},{role:'assistant',content:small,_private:basePrivate});this.trimHistory();return {ok:true,text:small,brain:{mode:'direct-smalltalk',model:'maria-local',privacy:basePrivate?'local-private':'local'},toolsRouted:0,direct:true};}}
       if(!basePrivate&&shouldGroundKnowledge(original)){
         try{
           this.emit({type:'thinking',kind:'grounded-research'});
