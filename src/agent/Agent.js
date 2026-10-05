@@ -12,6 +12,7 @@ import { permissions } from './PermissionPolicy.js';
 import { selectToolNames } from './SmartToolRouter.js';
 import { matchFastCommand } from './FastCommandRouter.js';
 import { isPrivateRequest,toolMakesContextPrivate } from './PrivacyClassifier.js';
+import { shouldGroundKnowledge,groundedKnowledgeAnswer } from './GroundedKnowledge.js';
 
 const MAX_TURNS=64,MAX_STEPS=32;
 const cleanReply=text=>String(text??'').replace(/\n{3,}/g,'\n\n').trim();
@@ -82,6 +83,16 @@ export class Agent{
       const normalized=normalizePersianCommand(original),hints=[...new Set([...commandHints(normalized),...capabilityHints(normalized)])],routeNames=selectToolNames(original,hints).filter(n=>tools[n]),basePrivate=isPrivateRequest(original,hints);
       const fast=matchFastCommand(normalized),fastTurn={private:basePrivate,assistantMessage:null,original,trace:[],routeNames};
       if(fast){this.history.push({role:'user',content:original,_private:basePrivate});this.trimHistory();const direct=await this.tryFastCommand(fast,fastTurn,routeNames);if(direct)return direct;this.history.pop();}
+      if(!basePrivate&&shouldGroundKnowledge(original)){
+        try{
+          this.emit({type:'thinking',kind:'grounded-research'});
+          const grounded=await groundedKnowledgeAnswer(original,{client:this.client,runTool});
+          if(grounded?.answer){
+            this.history.push({role:'user',content:original,_private:false},{role:'assistant',content:grounded.answer,_private:false});this.trimHistory();
+            return {ok:true,text:grounded.answer,brain:{mode:'grounded-research',model:this.client.model,privacy:'public'},sources:grounded.sources,toolsRouted:routeNames.length};
+          }
+        }catch{}
+      }
       const [memories,learned]=await Promise.all([memory.recall(original,{limit:8}),skills.recall(original,{limit:7})]),privateRequest=basePrivate||memories.length>0;
       const hostHint=[hints.length?`normalized="${normalized}"; likely capability groups=${hints.join(', ')}`:'',rule?.type==='protected'?`A permanent never-delete rule was saved for: ${rule.item?.label||''}`:''].filter(Boolean).join('; ');
       const content=`${original}${hostHint?`\n\n[Host routing/policy hint: ${hostHint}. Metadata only; never mention this block.]`:''}${memoryContext(memories)}${skillContext(learned)}`;
