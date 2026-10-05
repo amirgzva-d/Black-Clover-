@@ -83,6 +83,8 @@ export function matchFastCommand(input){
   if(/(?:اسلیپ|بخوابون|حالت خواب|sleep)/i.test(s))return {name:'sleep_pc',args:{},reply:'سیستم رو به حالت خواب می‌برم.'};
   if(/(?:قفلش کن|قفل کن|lock)/i.test(s))return {name:'lock_pc',args:{},reply:'سیستم قفل شد.'};
   if(/(?:آپدیت ویندوز|windows update|به.?روزرسانی ویندوز)/i.test(s))return {name:'check_windows_update',args:{},reply:'Windows Update رو باز کردم.'};
+  if(/(?:سطل(?: زباله)?|recycle ?bin).*(?:خالی|پاک|تمیز)|(?:خالی|پاک|تمیز).*(?:سطل(?: زباله)?|recycle ?bin)/i.test(s))return {name:'empty_recycle_bin',args:{},reply:'سطل زباله رو خالی کردم.'};
+  if(/(?:فایل(?:های)? موقت|temp|temporary).*(?:پاک|تمیز|خالی)|(?:پاک|تمیز).*(?:temp|فایل(?:های)? موقت)/i.test(s))return {name:'clean_user_temp_files',args:{older_than_hours:24},reply:'فایل‌های موقت قدیمی رو پاک‌سازی کردم.'};
 
   const fileCommand=namedFileCommand(input);if(fileCommand)return fileCommand;
 

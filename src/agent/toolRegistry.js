@@ -26,10 +26,8 @@ import { adobeTools } from './adobeTools.js';
 import { downloadTools } from './downloadTools.js';
 import { windowsUpdateTools } from './windowsUpdateTools.js';
 
-const autonomousExtension=pack=>Object.fromEntries(Object.entries(pack).filter(([,t])=>t?.risk==='read'||t?.risk==='low'));
-const safeAdvanced=autonomousExtension(windowsAdvancedTools);
 const safeNotes=Object.fromEntries(Object.entries(noteTools).filter(([,t])=>t?.risk!=='critical'));
-export const tools=Object.freeze({...coreTools,...powerTools,...researchTools,...groundedKnowledgeTools,...memoryTools,...automationTools,...codingTools,...codingWorkspaceTools,...schedulerTools,...policyTools,...nativeWindowsTools,...safeAdvanced,...visionTools,...learningTools,...storageTools,...spreadsheetTools,...messengerSupportTools,...safeNotes,...wellbeingTools,...aiPortalTools,...appDiscoveryTools,...desktopManagementTools,...browserTools,...actionBookTools,...adobeTools,...downloadTools,...windowsUpdateTools});
+export const tools=Object.freeze({...coreTools,...powerTools,...researchTools,...groundedKnowledgeTools,...memoryTools,...automationTools,...codingTools,...codingWorkspaceTools,...schedulerTools,...policyTools,...nativeWindowsTools,...windowsAdvancedTools,...visionTools,...learningTools,...storageTools,...spreadsheetTools,...messengerSupportTools,...safeNotes,...wellbeingTools,...aiPortalTools,...appDiscoveryTools,...desktopManagementTools,...browserTools,...actionBookTools,...adobeTools,...downloadTools,...windowsUpdateTools});
 export function ollamaTools(names=null){
   const allow=Array.isArray(names)?new Set(names):null;
   if(allow&&(allow.has('vision_inspect_screen')||allow.has('launch_any_app'))){allow.add('adobe_status');allow.add('photoshop_open_document');allow.add('illustrator_open_document');}

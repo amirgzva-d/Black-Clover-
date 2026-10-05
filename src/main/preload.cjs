@@ -1,9 +1,14 @@
-const { contextBridge,ipcRenderer }=require('electron');
+﻿const { contextBridge,ipcRenderer }=require('electron');
 contextBridge.exposeInMainWorld('blackClover',{
   chat:text=>ipcRenderer.invoke('agent:chat',text),
   confirm:(id,approved)=>ipcRenderer.invoke('agent:confirm',{id,approved}),
   getStatus:()=>ipcRenderer.invoke('agent:status'),
   toggle:()=>ipcRenderer.invoke('assistant:toggle'),
+  showChat:()=>ipcRenderer.invoke('assistant:show-chat'),
+  hideChat:()=>ipcRenderer.invoke('assistant:hide-chat'),
+  minimizeChat:()=>ipcRenderer.invoke('assistant:minimize-chat'),
+  openSettings:()=>ipcRenderer.invoke('assistant:open-settings'),
+  prompt:text=>ipcRenderer.invoke('assistant:prompt',text),
   diagnostics:()=>ipcRenderer.invoke('system:diagnostics'),
   installDependency:id=>ipcRenderer.invoke('system:install-dependency',id),
   provisionAll:()=>ipcRenderer.invoke('system:install-all-dependencies'),
@@ -14,5 +19,8 @@ contextBridge.exposeInMainWorld('blackClover',{
   transcribeAudio:(bytes,language='fa')=>ipcRenderer.invoke('speech:transcribe',{bytes,language}),
   synthesizeSpeech:(text,options={})=>ipcRenderer.invoke('speech:synthesize',{text,...options}),
   onEvent:fn=>{const h=(_e,v)=>fn(v);ipcRenderer.on('agent:event',h);return()=>ipcRenderer.removeListener('agent:event',h);},
-  onFocusInput:fn=>{const h=()=>fn();ipcRenderer.on('assistant:focus-input',h);return()=>ipcRenderer.removeListener('assistant:focus-input',h);}
+  onFocusInput:fn=>{const h=()=>fn();ipcRenderer.on('assistant:focus-input',h);return()=>ipcRenderer.removeListener('assistant:focus-input',h);},
+  onAssistantResponse:fn=>{const h=(_e,v)=>fn(v);ipcRenderer.on('assistant:response',h);return()=>ipcRenderer.removeListener('assistant:response',h);},
+  onOpenSettings:fn=>{const h=()=>fn();ipcRenderer.on('assistant:open-settings',h);return()=>ipcRenderer.removeListener('assistant:open-settings',h);},
+  onPrefillPrompt:fn=>{const h=(_e,v)=>fn(v);ipcRenderer.on('assistant:prefill-prompt',h);return()=>ipcRenderer.removeListener('assistant:prefill-prompt',h);}
 });

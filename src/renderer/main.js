@@ -7,6 +7,11 @@ import { voice } from './voice.js';
 import { detectEmotion, emotionDuration } from './emotion.js';
 import { PresenceManager } from './presence.js';
 
+const SURFACE=new URLSearchParams(location.search).get('surface')||'avatar';
+const IS_AVATAR=SURFACE==='avatar';
+const IS_CHAT=SURFACE==='chat';
+document.body.classList.add(`surface-${SURFACE}`);
+
 const icon = name => ({
   mic: '<svg viewBox="0 0 24 24"><path d="M12 15a4 4 0 0 0 4-4V5a4 4 0 1 0-8 0v6a4 4 0 0 0 4 4Z"/><path d="M19 11a7 7 0 0 1-14 0M12 18v4M8 22h8"/></svg>',
   send: '<svg viewBox="0 0 24 24"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>',
@@ -68,7 +73,7 @@ const setup = $('#setup');
 const depList = $('#depList');
 const setupSummary = $('#setupSummary');
 
-const avatarControllerPromise = mountAvatar(avatarRoot);
+const avatarControllerPromise = IS_AVATAR ? mountAvatar(avatarRoot) : Promise.resolve(null);
 let diagnostics = null;
 let lastMotionAt = 0;
 let localRecording = null;
@@ -204,7 +209,7 @@ const presence = new PresenceManager({
     status.textContent = localOk ? `${onlineBrain ? 'آنلاین' : 'محلی'} • ${state.model}${internet ? '' : ' • بدون اینترنت'}` : 'Ollama در دسترس نیست';
   }
 });
-presence.start();
+if (IS_AVATAR) presence.start();
 
 async function send(text) {
   text = String(text || '').trim();
@@ -217,8 +222,7 @@ async function send(text) {
   try {
     const response = await window.blackClover.chat(text);
     setActivity('');
-    bubble('bot', response.text);
-    voice.speak(response.text);
+    if (IS_CHAT) bubble('bot', response.text);
     if (!voice.enabled) status.textContent = 'آماده';
     if (response.requiresConfirmation) showConfirm(response.confirmationId, response.text);
   } catch (error) {
@@ -267,8 +271,7 @@ function showConfirm(id, text) {
     setActivity('در حال ادامه کار…');
     const response = await window.blackClover.confirm(id, approved);
     setActivity('');
-    bubble('bot', response.text);
-    voice.speak(response.text);
+    if (IS_CHAT) bubble('bot', response.text);
     if (response.requiresConfirmation) showConfirm(response.confirmationId, response.text);
   };
   yes.onclick = () => done(true);
@@ -459,7 +462,7 @@ window.blackClover.onEvent(event => {
   }
   if (event.type === 'break-reminder' || event.type === 'reminder') {
     const text = event.text || event.item?.message;
-    if (text) { bubble('bot', text); voice.speak(text); }
+    if (text) { if (IS_CHAT) bubble('bot', text); if (IS_AVATAR) { const emotion=showEmotion(text); contextualMotion(text,emotion); voice.speak(text); } }
   }
 });
 
@@ -470,6 +473,7 @@ window.blackClover.onFocusInput?.(() => {
 });
 
 setTimeout(async () => {
+  if (!IS_CHAT) return;
   try {
     const result = await window.blackClover.diagnostics();
     diagnostics = result;
@@ -478,5 +482,11 @@ setTimeout(async () => {
   } catch {}
 }, 700);
 
-input.focus();
-window.addEventListener('beforeunload', () => presence.stop());
+if (IS_CHAT) input.focus();
+window.blackClover.onAssistantResponse?.(response=>{
+  if (!IS_AVATAR || !response?.text) return;
+  const emotion=showEmotion(response.text);
+  contextualMotion(response.text,emotion);
+  voice.speak(response.text);
+});
+window.addEventListener('beforeunload', () => { if (IS_AVATAR) presence.stop(); });
