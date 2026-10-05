@@ -1,5 +1,5 @@
 export class OllamaClient {
-  constructor({baseUrl=process.env.OLLAMA_URL||'http://127.0.0.1:11434',model=process.env.BLACK_CLOVER_MODEL||'qwen3:4b-instruct',timeoutMs=90000,keepAlive='15m',numCtx=4096,temperature=.5,think=false,numPredict=640}={}){this.baseUrl=baseUrl.replace(/\/$/,'');this.model=model;this.timeoutMs=timeoutMs;this.keepAlive=keepAlive;this.numCtx=numCtx;this.temperature=temperature;this.think=think;this.numPredict=numPredict;}
+  constructor({baseUrl=process.env.OLLAMA_URL||'http://127.0.0.1:11434',model=process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',timeoutMs=90000,keepAlive='15m',numCtx=4096,temperature=.5,think=false,numPredict=640}={}){this.baseUrl=baseUrl.replace(/\/$/,'');this.model=model;this.timeoutMs=timeoutMs;this.keepAlive=keepAlive;this.numCtx=numCtx;this.temperature=temperature;this.think=think;this.numPredict=numPredict;}
   async request(path,options={}){
     const controller=new AbortController();const timer=setTimeout(()=>controller.abort(),this.timeoutMs);
     try{const r=await fetch(`${this.baseUrl}${path}`,{...options,signal:controller.signal});if(!r.ok)throw new Error(`Ollama HTTP ${r.status}`);return r;}catch(e){if(e?.name==='AbortError')throw new Error('Ollama response timed out');throw e;}finally{clearTimeout(timer);}
