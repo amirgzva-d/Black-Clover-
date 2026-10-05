@@ -14,16 +14,18 @@ const scoreModel=(name,profile='general')=>{
     else if(/deepseek[-.:]?coder/.test(n))score+=100;
     else if(/coder|code/.test(n))score+=55;
   }
-  if(/qwen3\.5/.test(n))score+=96;
-  else if(/qwen3/.test(n))score+=92;
-  else if(/qwen2\.5/.test(n))score+=82;
+  // On the target 8GB Windows machine Qwen3/Qwen3.5 tags expose thinking-only output
+  // through the installed Ollama build. Prefer stable non-thinking chat models for execution.
+  if(/qwen2\.5/.test(n))score+=98;
   else if(/llama3/.test(n))score+=76;
-  else if(/gemma3/.test(n))score+=72;
+  else if(/gemma3/.test(n))score+=74;
+  else if(/qwen3\.5/.test(n))score+=72;
+  else if(/qwen3/.test(n))score+=68;
   else if(/mistral/.test(n))score+=66;
   else if(/deepseek/.test(n))score+=64;
   if(/instruct|chat/.test(n))score+=18;
-  if(/thinking|reasoning/.test(n)&&profile!=='coding')score-=10;
-  const size=n.match(/(?:^|[:_-])(\d+(?:\.\d+)?)b(?:$|[-_:])/i);if(size){const b=Number(size[1]);if(Number.isFinite(b)){if(b>=4&&b<=14)score+=Math.min(16,b);else if(b<2)score-=18;else if(b>32)score-=12;}}
+  if(/thinking|reasoning/.test(n)&&profile!=='coding')score-=20;
+  const size=n.match(/(?:^|[:_-])(\d+(?:\.\d+)?)b(?:$|[-_:])/i);if(size){const b=Number(size[1]);if(Number.isFinite(b)){if(b>=2&&b<=14)score+=Math.min(12,b);else if(b<1.5)score-=18;else if(b>32)score-=12;}}
   return score;
 };
 export function pickBestLocalModel(models=[],profile='general'){
@@ -33,14 +35,14 @@ export async function internetAvailable(){const checks=await Promise.all(['https
 
 export class BrainRouter{
   constructor({
-    local=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen3:4b-instruct',keepAlive:'15m',numCtx:8192,temperature:.5,timeoutMs:90000,think:false,numPredict:900}),
-    legacyLocal=new OllamaClient({model:process.env.BLACK_CLOVER_LEGACY_MODEL||'qwen3:4b',keepAlive:'2m',numCtx:6144,temperature:.42,timeoutMs:120000,think:false,numPredict:640}),
+    local=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:4096,temperature:.38,timeoutMs:60000,think:false,numPredict:640}),
+    legacyLocal=new OllamaClient({model:process.env.BLACK_CLOVER_LEGACY_MODEL||'qwen2.5:1.5b',keepAlive:'2m',numCtx:4096,temperature:.35,timeoutMs:60000,think:false,numPredict:480}),
     codingLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CODING_MODEL||'qwen2.5-coder:3b',keepAlive:'2m',numCtx:8192,temperature:.28,timeoutMs:180000,think:false,numPredict:1200}),
     online=onlineBrainPoolFromEnv(),networkTtlMs=15000
   }={}){this.local=local;this.legacyLocal=legacyLocal;this.codingLocal=codingLocal;this.online=online;this.networkTtlMs=networkTtlMs;this.lastMode='local';this.lastProfile='general';this.networkState=null;this.networkCheckedAt=0;this.lastFallbackReason='';this.lastProvider=null;this.lastModel=local.model;this.adaptiveLocal=null;}
   get model(){return this.lastModel||this.local.model;}
   async network({fresh=false}={}){const now=Date.now();if(!fresh&&this.networkState!==null&&now-this.networkCheckedAt<this.networkTtlMs)return this.networkState;this.networkState=await internetAvailable();this.networkCheckedAt=now;return this.networkState;}
-  cloneLocal(base,model){return new OllamaClient({baseUrl:base?.baseUrl,model,timeoutMs:base?.timeoutMs||120000,keepAlive:base?.keepAlive||'10m',numCtx:base?.numCtx||8192,temperature:base?.temperature??.5,think:false,numPredict:base?.numPredict||900});}
+  cloneLocal(base,model){return new OllamaClient({baseUrl:base?.baseUrl,model,timeoutMs:base?.timeoutMs||120000,keepAlive:base?.keepAlive||'10m',numCtx:base?.numCtx||4096,temperature:base?.temperature??.4,think:false,numPredict:base?.numPredict||640});}
   async chooseLocal(profile){
     if(profile==='coding'&&await this.codingLocal.hasModel())return this.codingLocal;
     if(await this.local.hasModel())return this.local;
@@ -54,7 +56,7 @@ export class BrainRouter{
     profile=inferProfile(tools,profile);this.lastProfile=profile;const policy=String(process.env.BLACK_CLOVER_BRAIN_POLICY||'online-first').toLowerCase();const wantsOnline=allowOnline&&this.online?.configured&&(policy==='online-first'||profile==='coding'||profile==='research'||profile==='complex');
     if(wantsOnline){const connected=await this.network();if(connected){try{const out=await this.online.chat(messages,tools,{profile});this.lastMode='online';this.lastProvider=out.provider||this.online.provider;this.lastModel=out.model||this.online.model;this.lastFallbackReason='';return out;}catch(e){this.lastFallbackReason=`online-failed: ${e.message}`;}}else this.lastFallbackReason='internet-offline';}
     if(this.online?.configured&&!allowOnline)this.lastFallbackReason=`privacy-local${privacyReason?`: ${privacyReason}`:''}`;
-    const local=await this.chooseLocal(profile),notice=this.lastFallbackReason==='internet-offline'?'[HOST NOTICE: Internet is unavailable. Briefly acknowledge this once in Maria’s natural Persian/isekaI style if relevant, then continue locally. Never claim online research succeeded.]':this.lastFallbackReason.startsWith('online-failed')?'[HOST NOTICE: Online brains failed. Continue with the local brain and mention fallback only if relevant.]':this.lastFallbackReason==='primary-local-model-missing'?'[HOST NOTICE: The preferred fast local instruct model is not installed. A compatible local fallback is active.]':this.lastFallbackReason.startsWith('adaptive-local-model:')?`[HOST NOTICE: The preferred local model is unavailable. You are running on ${this.lastFallbackReason.slice('adaptive-local-model: '.length)}. Continue normally and do not bother the user unless quality is affected.]`:'';
+    const local=await this.chooseLocal(profile),notice=this.lastFallbackReason==='internet-offline'?'[HOST NOTICE: Internet is unavailable. Briefly acknowledge this once in Maria’s natural Persian/isekaI style if relevant, then continue locally. Never claim online research succeeded.]':this.lastFallbackReason.startsWith('online-failed')?'[HOST NOTICE: Online brains failed. Continue with the local brain and mention fallback only if relevant.]':this.lastFallbackReason==='primary-local-model-missing'?'[HOST NOTICE: The preferred fast local non-thinking model is not installed. A compatible local fallback is active.]':this.lastFallbackReason.startsWith('adaptive-local-model:')?`[HOST NOTICE: The preferred local model is unavailable. You are running on ${this.lastFallbackReason.slice('adaptive-local-model: '.length)}. Continue normally and do not bother the user unless quality is affected.]`:'';
     this.lastMode=profile==='coding'&&local===this.codingLocal?'local-coding':local===this.legacyLocal?'local-legacy':local===this.adaptiveLocal?'local-adaptive':'local';this.lastProvider='ollama';this.lastModel=local.model;return local.chat(notice?[...messages,{role:'system',content:notice}]:messages,tools);
   }
   async health(){
