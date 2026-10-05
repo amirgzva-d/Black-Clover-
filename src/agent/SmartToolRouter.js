@@ -64,15 +64,17 @@ const patterns=[
 const MODE_TO_GROUPS={audio:['audio'],display:['display','settings'],media:['media','audio','storage','files'],apps:['apps','screen'],web:['web','screen'],files:['storage','files'],spreadsheet:['spreadsheet','storage','screen'],social:['social','screen','files','web'],creative:['creative','files','screen','web'],coding:['coding','apps','files','web'],software:['apps','windowsAdmin','web','screen'],diagnostics:['diagnosticsCore','apps','web','screen'],personalization:['personalization','files','screen'],settings:['settings','screen'],power:['power'],scheduler:['scheduler'],ui:['screen'],ai:['aiBrains','web','screen']};
 const factualQuestion=/(؟|\?|چیست|چیه|چی هست|کیه|کی هست|کجاست|کجا هست|چرا|چطور|چگونه|چه کسی|چه زمانی|چه موقع|چند تا|فرق .* چیه|تفاوت .* چیه|معنی .* چیه|what\b|who\b|where\b|when\b|why\b|how\b)/i;
 const personalSmallTalk=/(حالت چطوره|خوبی|چه خبر|اسم من|من کی.?ام|منو می.?شناسی|من را می.?شناسی|یادت میاد|یادت هست|دوستم داری|خسته.?ای|سلام|صبح بخیر|شب بخیر)/i;
+const needsLiveKnowledge=/(پایتخت|جدیدترین|آخرین|امروز|فعلی|تحقیق|بررسی کن|منبع|از وب|از اینترنت|از گوگل|سرچ کن|جستجو کن|latest|current|today|research|source|google)/i;
 export function selectToolNames(text,hints=[]){
   const selected=[],s=canonicalizeCommand(text),intent=actionIntent(s);
+  if(factualQuestion.test(s)&&!personalSmallTalk.test(s)&&!needsLiveKnowledge.test(s)&&!intent.action)return [];
   for(const [group,re] of patterns)if(re.test(s))selected.push(...(groups[group]||[]));
   for(const mode of intent.modes)for(const group of MODE_TO_GROUPS[mode]||[])selected.push(...(groups[group]||[]));
   for(const hint of hints){const key=String(hint).toLowerCase();for(const [group,names] of Object.entries(groups))if(key.includes(group))selected.push(...names);}
   if(intent.action)selected.push('search_action_book','search_learned_skills');
   if(intent.multiStep)selected.push(...groups.workflowBridge);
   if(!selected.length&&intent.action)selected.push(...groups.workflowBridge,...groups.audio,...groups.display,...groups.power,...groups.apps,...groups.web,...groups.storage,...groups.screen,...groups.system);
-  if(!selected.length&&factualQuestion.test(s)&&!personalSmallTalk.test(s))selected.push(...groups.knowledge);
+  if(!selected.length&&factualQuestion.test(s)&&!personalSmallTalk.test(s)&&needsLiveKnowledge.test(s))selected.push(...groups.knowledge);
   return uniq(selected).slice(0,72);
 }
 export const TOOL_GROUPS=groups;

@@ -249,7 +249,8 @@ async function pumpChatQueue(){
       setActivity(chatQueue.length?`در حال انجام • ${chatQueue.length} پیام در صف`:'در حال فکر کردن…');
       status.textContent='در حال انجام…';
       try{
-        const response=await window.blackClover.chat(text);
+        const selectedModel=localStorage.getItem('blackClover:selectedModel')||'auto';
+        const response=await window.blackClover.chat(text,selectedModel==='auto'?{}:{modelOverride:selectedModel});
         if(IS_CHAT)bubble('bot',response.text);
         if(!voice.enabled)status.textContent='آماده';
         if(response.requiresConfirmation)showConfirm(response.confirmationId,response.text);
@@ -352,7 +353,7 @@ async function recordLocal() {
       const bytes = new Uint8Array(await new Blob(chunks, { type: mime }).arrayBuffer());
       const result = await window.blackClover.transcribeAudio(bytes, 'fa');
       setActivity('');
-      if (result?.text) await send(result.text);
+      if (result?.text) enqueueMessage(result.text);
     } catch (error) {
       setActivity('');
       bubble('bot', `Whisper محلی نتونست صدا رو بخونه: ${error.message || error}`);
@@ -388,7 +389,7 @@ function setupBrowserRecognition() {
   recognition.interimResults = false;
   recognition.continuous = false;
   recognition.maxAlternatives = 1;
-  recognition.onresult = event => send(event.results[0][0].transcript);
+  recognition.onresult = event => enqueueMessage(event.results[0][0].transcript);
   recognition.onerror = event => {
     listening(false);
     status.textContent = event.error === 'no-speech' ? 'صدایی نشنیدم' : `خطای میکروفن: ${event.error}`;

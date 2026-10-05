@@ -41,4 +41,6 @@ test('desktop UI has independent chat pins reminders and nonblocking queue',asyn
   assert.match(renderer,/const chatQueue=\[\]/);
   assert.match(renderer,/input\.disabled=false/);
   assert.doesNotMatch(renderer,/input\.disabled\s*=\s*true/);
+  assert.match(renderer,/modelOverride:selectedModel/);
+  assert.match(renderer,/onAssistantResponse[\s\S]{0,260}voice\.speak\(response\.text\)/);
 });

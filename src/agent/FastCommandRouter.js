@@ -16,6 +16,7 @@ const maximum=/تا آخر|تا ته|تهش|ته ته|آخرش|انتهاش|ان
 const minimum=/صفر|0 درصد|روی 0|روی صفر|کامل قطع|ته پایین|تا کف|کف|کمترین|کامل پایین|حداقل|min|minimum/i;
 const launchVerb=/(?:باز کن|بازش کن|اجرا کن|اجراش کن|راه بنداز|راهش بنداز|بالا بیار|بیارش بالا|بنداز بالا|بیار بالا|بیاورش|بیارش|بزن بالا)/i;
 const factualQuestion=/(چیست|چیه|چی هست|کیه|کی هست|کجاست|کجا هست|چرا|چطور|چگونه|چه کسی|چه زمانی|چه موقع|چند تا|فرق .* چیه|تفاوت .* چیه|معنی .* چیه|what\b|who\b|where\b|when\b|why\b|how\b)/i;
+const simpleStableFact=/(پایتخت|capital of|چه سالی|تاریخ تولد)/i;
 const personalSmallTalk=/(حالت چطوره|خوبی|چه خبر|اسم من|من کی.?ام|منو می.?شناسی|من را می.?شناسی|یادت میاد|یادت هست|دوستم داری|خسته.?ای|سلام|صبح بخیر|شب بخیر)/i;
 const computerProblem=/(سیستم|ویندوز|برنامه|فایل|پوشه|صدا|نور|کروم|تلگرام|واتساپ|روبیکا|اکسل|فتوشاپ|ایلوستریتور|نصب|حذف|آپدیت|ارور|خطا|مشکل|کند)/i;
 
@@ -39,16 +40,19 @@ function namedMedia(s){
 }
 function namedFileCommand(raw){
   const text=String(raw||'').trim();if(!text)return null;
-  const wantsFind=/(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست)/i.test(text),wantsOpen=/(?:باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i.test(text);
+  const verb=String.raw`(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?|گیر(?:ش)?\s*(?:بیار|بیارش)|در\s*بیار|دربیار|نشون(?:م)?\s*بده)`;
+  const wantsFind=/(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|گیر(?:ش)?\s*(?:بیار|بیارش)|در\s*بیار|دربیار|نشون(?:م)?\s*بده)/i.test(text);
+  const wantsOpen=/(?:باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?|گیر(?:ش)?\s*(?:بیار|بیارش)|در\s*بیار|دربیار|نشون(?:م)?\s*بده)/i.test(text);
   if(!wantsFind&&!wantsOpen)return null;
-  const folder=text.match(/(?:پوشه|فولدر)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i)?.[1]?.trim();
+  const folder=text.match(new RegExp(String.raw`(?:پوشه|فولدر)\s+(.+?)(?:\s+(?:رو|را))?\s+${verb}`,'i'))?.[1]?.trim();
   if(folder&&!/^(?:رو|را)$/i.test(folder))return {name:'open_named_folder',args:{name:folder},reply:`پوشه ${folder} رو پیدا کردم و بازش کردم.`};
   const extName=text.match(/([^\s"'،؟]+\.[a-z0-9]{1,8})/i)?.[1];
-  let pathHint=text.match(/(?:پروژه|داخل پوشه|توی پوشه|در پوشه)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i)?.[1]?.trim()||'';
-  if(!pathHint)pathHint=text.match(/(?:پروژه|داخل پوشه|توی پوشه|در پوشه)\s+([^\s،؟]+)(?=\s+(?:رو|را|پیدا|بگرد|باز|کجاست|کجا))/i)?.[1]?.trim()||'';
-  let name=extName||text.match(/(?:فایل|پرونده)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i)?.[1]?.trim();
+  let pathHint=text.match(new RegExp(String.raw`(?:از\s+)?(?:پروژه|داخل\s+پوشه|توی\s+پوشه|در\s+پوشه)\s+(.+?)(?=\s+(?:(?:رو|را)\s+)?(?:برام\s+)?${verb}|$)`,'i'))?.[1]?.trim()||'';
+  if(!pathHint)pathHint=text.match(/(?:از\s+)?(?:پروژه|داخل\s+پوشه|توی\s+پوشه|در\s+پوشه)\s+([^\s،؟]+)/i)?.[1]?.trim()||'';
+  pathHint=pathHint.replace(/\s+(?:رو|را)(?:\s+برام)?$/i,'').trim();
+  let name=extName||text.match(new RegExp(String.raw`(?:فایل|پرونده)\s+(.+?)(?:\s+(?:رو|را))?\s+${verb}`,'i'))?.[1]?.trim();
   let extensions=[];
-  if(!name){const excel=text.match(/(?:اکسل|excel)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i),candidate=excel?.[1]?.trim();if(candidate&&!/^(?:رو|را)$/i.test(candidate)){name=candidate;extensions=['xlsx','xlsm','xls'];}}
+  if(!name){const excel=text.match(new RegExp(String.raw`(?:اکسل|excel)\s+(.+?)(?:\s+(?:رو|را))?\s+${verb}`,'i')),candidate=excel?.[1]?.trim();if(candidate&&!/^(?:رو|را)$/i.test(candidate)){name=candidate;extensions=['xlsx','xlsm','xls'];}}
   if(!name)return null;name=name.replace(/^(?:اکسل|excel)\s+/i,'').trim();if(!name||name.length>180)return null;
   return wantsOpen?{name:'open_named_file',args:{name,extensions,path_hint:pathHint},reply:`${name} رو پیدا کردم و بازش کردم.`}:{name:'global_find_files',args:{query:name,extensions,limit:20,kind:'file',path_hint:pathHint}};
 }
@@ -122,6 +126,6 @@ export function matchFastCommand(input){
   const genericSearch=s.match(/^(?:لطفا\s*)?(?:سرچ|جستجو|بگرد)\s+(?:کن\s+)?(?:درباره\s+)?(.+)/i)||s.match(/^(.+?)\s+(?:رو|را)?\s*(?:سرچ|جستجو)(?: کن)?$/i);
   if(genericSearch?.[1]?.trim()&&!/فایل|پوشه|سیستم/i.test(genericSearch[1]))return {name:'web_search',args:{query:genericSearch[1].trim()},reply:'برات سرچ کردم.'};
 
-  if(factualQuestion.test(s)&&!personalSmallTalk.test(s)&&!computerProblem.test(s))return {name:'grounded_factual_answer',args:{query:input}};
+  if(factualQuestion.test(s)&&simpleStableFact.test(s)&&!personalSmallTalk.test(s)&&!computerProblem.test(s))return {name:'grounded_factual_answer',args:{query:input}};
   return null;
 }
