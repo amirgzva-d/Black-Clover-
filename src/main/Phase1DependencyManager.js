@@ -4,7 +4,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { DependencyManager } from './DependencyManager.js';
 const execFileAsync=promisify(execFile);
-const CHAT_MODEL=process.env.BLACK_CLOVER_MODEL||'qwen3:4b-instruct';
+const CHAT_MODEL=process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b';
 const NATURAL_VOICE=process.env.BLACK_CLOVER_EDGE_VOICE||'fa-IR-DilaraNeural';
 async function exists(p){try{await fs.access(p);return true;}catch{return false;}}
 async function tags(){try{const r=await fetch('http://127.0.0.1:11434/api/tags',{signal:AbortSignal.timeout(4000)});if(!r.ok)return[];const j=await r.json();return (j.models||[]).map(x=>x.name);}catch{return[];}}
@@ -20,7 +20,7 @@ async function installEdgeTts(exe){let last=null;for(let attempt=1;attempt<=3;at
 export class Phase1DependencyManager extends DependencyManager{
   async status(){
     const base=await super.status(),models=await tags(),ready=hasModel(models,CHAT_MODEL),py=await pythonExe(),naturalTts=await pythonModule(py,'edge_tts');
-    const items=base.items.map(item=>item.id==='qwen'?{...item,name:'Qwen3 4B Instruct',installed:ready,detail:ready?'مغز محلی سریع و غیر-Thinking ماریا':`مدل گفت‌وگوی اصلی لازم است: ${CHAT_MODEL}`} : item);
+    const items=base.items.map(item=>item.id==='qwen'?{...item,name:'Qwen2.5 3B Agent',installed:ready,detail:ready?'مغز محلی سریع و non-thinking ماریا':`مدل گفت‌وگوی اصلی لازم است: ${CHAT_MODEL}`} : item);
     items.push({id:'natural_tts',name:'Maria Natural Persian Voice',required:true,installed:naturalTts,detail:naturalTts?`صدای طبیعی زن فارسی آماده است • ${NATURAL_VOICE}`:`صدای طبیعی رایگان فارسی • ${NATURAL_VOICE} • با اینترنت، Piper در حالت آفلاین پشتیبان است`});
     return {...base,items,recommendedReady:items.every(x=>x.installed||x.required===false),fullReady:items.every(x=>x.installed),primaryChatModelReady:ready,preferredChatModel:CHAT_MODEL,naturalTtsReady:naturalTts,preferredNaturalVoice:NATURAL_VOICE};
   }
