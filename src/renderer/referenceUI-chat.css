@@ -1,0 +1,62 @@
+/* Reference-accurate MARIA layer — based on the supplied chat and dock screenshots. */
+:root{
+  --ref-bg:#090a0d;--ref-panel:#0e1014;--ref-panel-2:#15171d;--ref-line:rgba(255,255,255,.115);
+  --ref-soft:rgba(255,255,255,.055);--ref-text:#f4f4f7;--ref-muted:#888b94;--ref-pink:#ff8ed8;--ref-pink-2:#ffb2e3;
+  --ref-green:#42c993;--ref-white:#f2f2f4;--ref-black:#0a0b0e;
+}
+.maria-reference-chat,.maria-reference-avatar,.surface-pins,.surface-reminders{font-family:"Vazirmatn","IRANSansX","Segoe UI Variable",Tahoma,sans-serif!important}
+.maria-reference-chat svg,.maria-reference-avatar svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---------- Chat: same visual hierarchy as the reference screenshot ---------- */
+.maria-reference-chat .chat{
+  inset:8px!important;width:calc(100% - 16px)!important;height:calc(100% - 16px)!important;
+  border-radius:30px!important;border:1px solid rgba(219,222,232,.26)!important;overflow:hidden!important;
+  display:flex!important;flex-direction:column!important;
+  background:radial-gradient(circle at 12% -8%,rgba(255,255,255,.035),transparent 24%),linear-gradient(180deg,rgba(11,12,16,.985),rgba(8,9,12,.985))!important;
+  box-shadow:0 34px 110px rgba(0,0,0,.68),inset 0 1px rgba(255,255,255,.055)!important;backdrop-filter:blur(28px) saturate(110%)!important;
+}
+.maria-reference-chat .chat:after{content:"";position:absolute;inset:0;pointer-events:none;border-radius:30px;background:linear-gradient(130deg,rgba(255,255,255,.02),transparent 25%,transparent 72%,rgba(255,255,255,.018));mix-blend-mode:screen}
+.maria-reference-chat .chat header{
+  flex:0 0 112px!important;height:112px!important;min-height:112px!important;padding:20px 22px 14px 28px!important;
+  border-bottom:1px solid rgba(255,255,255,.07)!important;background:transparent!important;display:flex!important;align-items:flex-start!important;gap:18px!important;
+  direction:ltr!important;-webkit-app-region:drag!important;
+}
+.maria-reference-chat .assistant-id{display:flex!important;align-items:center!important;gap:14px!important;min-width:270px!important;position:relative!important;direction:ltr!important}
+.reference-head-avatar{width:66px;height:66px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.16);box-shadow:0 8px 22px rgba(0,0,0,.42)}
+.reference-brand-copy{display:flex;flex-direction:column;gap:7px;direction:rtl;text-align:left}
+.reference-name{font-family:"Segoe UI Variable","Arial",sans-serif;font-weight:500;font-size:26px;letter-spacing:7px;color:#f6f6f8;direction:ltr;white-space:nowrap;display:flex;align-items:center;gap:8px}
+.reference-name i{width:10px;height:10px;border-radius:50%;background:var(--ref-green);box-shadow:0 0 14px rgba(66,201,147,.32)}
+.reference-brand-copy>span{font-size:13px;color:#999ca5;white-space:nowrap;direction:rtl;letter-spacing:0}
+.reference-model-button{
+  position:absolute!important;left:80px!important;top:70px!important;min-width:165px;height:31px;border:1px solid rgba(255,255,255,.075);border-radius:10px;
+  background:rgba(255,255,255,.025);color:#b8bac1;padding:0 9px;display:flex;align-items:center;gap:7px;cursor:pointer;-webkit-app-region:no-drag!important;
+}
+.reference-model-button>svg{width:15px!important;height:15px!important;color:#f7a4d8}.reference-model-button>span{display:flex;align-items:center;gap:6px;min-width:0;direction:rtl}.reference-model-button small{font-size:8px;color:#71747d}.reference-model-button b{font-size:9px;font-weight:600;max-width:100px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#d7d8dd}.reference-model-button>i{font-style:normal;margin-left:auto;color:#777b84}
+.maria-reference-chat .header-actions{flex:1!important;display:flex!important;align-items:flex-start!important;justify-content:flex-end!important;gap:9px!important;direction:ltr!important;min-width:0!important}
+.reference-hidden-control,.reference-native-model{display:none!important}
+.reference-search{width:min(410px,50vw);height:52px;margin-top:13px;border-radius:29px;border:1px solid rgba(255,255,255,.045);background:linear-gradient(180deg,rgba(40,42,49,.66),rgba(26,28,33,.76));display:flex;align-items:center;direction:rtl;padding:0 18px;gap:12px;-webkit-app-region:no-drag;box-shadow:inset 0 1px rgba(255,255,255,.025)}
+.reference-search input{flex:1;border:0!important;outline:0!important;background:transparent!important;color:#e2e3e8!important;font:inherit!important;font-size:12px!important;text-align:right!important;direction:rtl!important;box-shadow:none!important}.reference-search input::placeholder{color:#777a82}.reference-search svg{width:27px!important;height:27px!important;color:#f2f2f5;stroke-width:1.8!important}
+.maria-reference-chat .window-actions{margin:7px 0 0 5px!important;gap:4px!important;align-self:flex-start!important}.maria-reference-chat .window-btn{width:33px!important;height:33px!important;border:0!important;background:transparent!important;border-radius:10px!important;color:#e9e9ed!important}.maria-reference-chat .window-btn:hover{background:rgba(255,255,255,.06)!important}.maria-reference-chat .window-btn.close:hover{background:rgba(255,82,120,.1)!important;color:#ffb5c6!important}
+
+.reference-chat-tabs{flex:0 0 70px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:0 24px;align-items:center;direction:ltr;border-bottom:0;background:transparent}
+.reference-chat-tabs button{height:58px;border:1px solid rgba(255,255,255,.075);border-radius:16px;background:linear-gradient(180deg,rgba(26,28,34,.72),rgba(18,20,25,.78));color:#e2e2e6;display:flex;align-items:center;justify-content:center;gap:13px;font:inherit;font-size:14px;font-weight:700;cursor:pointer;direction:rtl;box-shadow:inset 0 1px rgba(255,255,255,.02)}
+.reference-chat-tabs button.active{background:linear-gradient(180deg,#f9f9fb,#ededf1);color:#0a0b0d;border-color:#fff;box-shadow:0 5px 20px rgba(255,255,255,.06)}
+.reference-chat-tabs button svg{width:24px!important;height:24px!important}
+.reference-quick-row{flex:0 0 78px;padding:9px 24px 13px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px;direction:rtl}
+.reference-quick-row button{height:55px;border:1px solid rgba(255,255,255,.085);border-radius:14px;background:linear-gradient(180deg,rgba(28,30,35,.72),rgba(20,22,27,.76));color:#d8d9de;display:flex;align-items:center;justify-content:center;gap:9px;font:inherit;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;overflow:hidden;box-shadow:inset 0 1px rgba(255,255,255,.025);transition:.15s}
+.reference-quick-row button:hover{transform:translateY(-1px);border-color:rgba(255,255,255,.16);background:rgba(38,40,47,.78)}.reference-quick-row button svg{width:18px!important;height:18px!important;color:#ededf0;flex:0 0 auto}
+
+.maria-reference-chat #activity{flex:0 0 auto!important;margin:0 24px 5px!important;padding:6px 10px!important;border:0!important;border-radius:9px!important;background:rgba(255,255,255,.025)!important;color:#888b94!important;font-size:9px!important}
+.maria-reference-chat #messages{flex:1 1 auto!important;min-height:0!important;padding:26px 28px 16px!important;display:flex!important;flex-direction:column!important;gap:21px!important;overflow:auto!important;scrollbar-width:thin;scrollbar-color:#353740 transparent}
+.maria-reference-chat .welcome{display:none!important}
+.maria-reference-chat .message-row{width:max-content!important;max-width:74%!important;position:relative!important;display:grid!important;grid-template-columns:auto 1fr!important;grid-template-rows:auto auto!important;column-gap:11px!important;row-gap:5px!important;margin:0!important;direction:ltr!important;opacity:1!important;transform:none!important}
+.maria-reference-chat .message-row>small{grid-row:1;grid-column:2;display:flex!important;align-items:center;gap:10px;font-family:"Segoe UI Variable","Vazirmatn",sans-serif!important;font-size:11px!important;color:#7c7f88!important;direction:ltr!important;margin:0 2px!important}.maria-reference-chat .message-row>small span{font-weight:600;color:#c6c8cf;letter-spacing:.6px}.maria-reference-chat .message-row>small time{color:#555861;font-weight:400;letter-spacing:0}
+.maria-reference-chat .message-avatar{grid-column:1;grid-row:1/3;width:39px;height:39px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.08);align-self:start;margin-top:-1px}
+.maria-reference-chat .message-row .msg{grid-column:2;grid-row:2;padding:14px 18px!important;border-radius:21px!important;border:1px solid rgba(255,255,255,.06)!important;background:linear-gradient(145deg,rgba(32,34,39,.95),rgba(26,28,33,.96))!important;color:#e8e8eb!important;font-size:13px!important;line-height:1.8!important;box-shadow:none!important;white-space:pre-wrap;text-align:right;direction:rtl}
+.maria-reference-chat .message-row.bot{align-self:flex-start!important}.maria-reference-chat .message-row.bot .msg{border-top-left-radius:17px!important}
+.maria-reference-chat .message-row.user{align-self:flex-end!important;display:flex!important;flex-direction:column!important;align-items:flex-end!important;direction:rtl!important;max-width:70%!important}.maria-reference-chat .message-row.user>small{order:0;align-self:flex-end;direction:rtl!important}.maria-reference-chat .message-row.user .msg{order:1;background:linear-gradient(180deg,#f9f9fb,#ededf1)!important;color:#16171b!important;border:0!important;border-radius:20px!important;box-shadow:0 5px 24px rgba(255,255,255,.025)!important;min-width:160px}
+.maria-reference-chat #confirm{flex:0 0 auto!important;margin:0 24px 8px!important}
+.maria-reference-chat #form{flex:0 0 88px!important;padding:12px 20px 17px!important;border-top:0!important;background:transparent!important;display:flex!important;align-items:center!important;gap:8px!important;direction:ltr!important;position:relative!important}
+.reference-composer-tools{height:62px;display:flex;align-items:center;gap:5px;position:absolute;left:28px;z-index:4}.reference-composer-tools button{width:38px;height:38px;border:0;background:transparent;color:#8e929d;display:grid;place-items:center;cursor:pointer;border-radius:10px}.reference-composer-tools button:hover{background:rgba(255,255,255,.05);color:#dfe0e5}.reference-composer-tools svg{width:23px!important;height:23px!important}
+.maria-reference-chat #mic{display:none!important}.maria-reference-chat .input-wrap{flex:1!important;order:1!important}.maria-reference-chat .input-wrap input{width:100%!important;height:62px!important;border-radius:19px!important;border:1px solid rgba(255,255,255,.14)!important;background:linear-gradient(180deg,rgba(18,20,24,.96),rgba(13,15,19,.97))!important;color:#e5e6ea!important;padding:0 22px 0 110px!important;font-size:13px!important;direction:rtl!important;text-align:right!important;box-shadow:inset 0 1px rgba(255,255,255,.025)!important}.maria-reference-chat .input-wrap input::placeholder{color:#5f626b!important}.maria-reference-chat .input-hint{display:none!important}
+.maria-reference-chat .send-btn{order:2!important;width:66px!important;height:62px!important;flex:0 0 66px!important;border-radius:18px!important;background:linear-gradient(180deg,#f8f8fa,#ededf1)!important;color:#0b0c0f!important;border:0!important;box-shadow:0 7px 20px rgba(255,255,255,.035)!important;display:grid!important;place-items:center!important}.maria-reference-chat .send-btn svg{width:29px!important;height:29px!important;stroke-width:1.9!important}
