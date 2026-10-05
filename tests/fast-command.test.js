@@ -21,10 +21,12 @@ test('fast router understands relative and absolute brightness',()=>{
 });
 
 test('fast router recognizes common and generic app launch phrases',()=>{
+  assert.equal(matchFastCommand('تلگرام رو باز کن').name,'launch_any_app');
   assert.deepEqual(matchFastCommand('تلگرام رو باز کن').args,{name:'Telegram'});
   assert.deepEqual(matchFastCommand('وی اس کد رو اجرا کن').args,{name:'Visual Studio Code'});
   assert.deepEqual(matchFastCommand('فتوشاپ رو راه بنداز').args,{name:'Adobe Photoshop'});
   assert.deepEqual(matchFastCommand('برنامه VLC رو باز کن').args,{name:'vlc'});
+  assert.equal(matchFastCommand('یه نوت پد بنداز بالا').name,'launch_any_app');
 });
 
 test('fast router recognizes media and search variants',()=>{
@@ -32,6 +34,16 @@ test('fast router recognizes media and search variants',()=>{
   assert.equal(matchFastCommand('موزیک رو نگه دار').name,'media_play_pause');
   assert.equal(matchFastCommand('گربه بامزه رو سرچ کن').name,'web_search');
   assert.equal(matchFastCommand('تو یوتیوب موسیقی لوفای سرچ کن').name,'youtube_search');
+  assert.equal(matchFastCommand('حتماً تو کروم درباره OpenAI سرچ کن').name,'chrome_search');
+});
+
+test('fast router finds named files without asking the model first',()=>{
+  const found=matchFastCommand('فایل package.json پروژه Black-Clover-Live رو پیدا کن');
+  assert.equal(found.name,'global_find_files');
+  assert.equal(found.args.query,'package.json');
+  const excel=matchFastCommand('اکسل فروش رو باز کن');
+  assert.equal(excel.name,'open_named_file');
+  assert.deepEqual(excel.args.extensions,['xlsx','xlsm','xls']);
 });
 
 test('fast router recognizes important power actions',()=>{

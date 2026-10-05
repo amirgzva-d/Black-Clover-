@@ -36,6 +36,20 @@ function namedMedia(s){
   if(!video&&!music)return null;
   return {name,extensions:video?['mp4','mkv','avi','mov','webm','m4v']:['mp3','wav','m4a','flac','ogg','aac']};
 }
+function namedFileCommand(raw){
+  const text=String(raw||'').trim();if(!text)return null;
+  const wantsFind=/(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست)/i.test(text),wantsOpen=/(?:باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i.test(text);
+  if(!wantsFind&&!wantsOpen)return null;
+  const folder=text.match(/(?:پوشه|فولدر)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i)?.[1]?.trim();
+  if(folder&&!/^(?:رو|را)$/i.test(folder))return {name:'open_named_folder',args:{name:folder},reply:`پوشه ${folder} رو پیدا کردم و بازش کردم.`};
+  const extName=text.match(/([^\s"'،؟]+\.[a-z0-9]{1,8})/i)?.[1];
+  const pathHint=text.match(/(?:پروژه|داخل پوشه|توی پوشه|در پوشه)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i)?.[1]?.trim()||'';
+  let name=extName||text.match(/(?:فایل|پرونده)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i)?.[1]?.trim();
+  let extensions=[];
+  if(!name){const excel=text.match(/(?:اکسل|excel)\s+(.+?)(?:\s+(?:رو|را))?\s+(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?)/i),candidate=excel?.[1]?.trim();if(candidate&&!/^(?:رو|را)$/i.test(candidate)){name=candidate;extensions=['xlsx','xlsm','xls'];}}
+  if(!name)return null;name=name.replace(/^(?:اکسل|excel)\s+/i,'').trim();if(!name||name.length>180)return null;
+  return wantsOpen?{name:'open_named_file',args:{name,extensions,path_hint:pathHint},reply:`${name} رو پیدا کردم و بازش کردم.`}:{name:'global_find_files',args:{query:name,extensions,limit:20,kind:'file',path_hint:pathHint}};
+}
 
 export function matchFastCommand(input){
   const s=normalize(input);
@@ -70,11 +84,18 @@ export function matchFastCommand(input){
   if(/(?:قفلش کن|قفل کن|lock)/i.test(s))return {name:'lock_pc',args:{},reply:'سیستم قفل شد.'};
   if(/(?:آپدیت ویندوز|windows update|به.?روزرسانی ویندوز)/i.test(s))return {name:'check_windows_update',args:{},reply:'Windows Update رو باز کردم.'};
 
+  const fileCommand=namedFileCommand(input);if(fileCommand)return fileCommand;
+
   if(launchVerb.test(s)){
-    for(const [re,name] of appAliases)if(re.test(s))return {name:'launch_app',args:{name},reply:`${name} رو باز کردم.`};
-    const name=genericAppName(s);if(name&&name.length<80)return {name:'launch_app',args:{name},reply:`${name} رو باز کردم.`};
+    // Keep the legacy launch_app contract for Photoshop while the universal
+    // launcher remains the default for every other installed application.
+    if(/photoshop|فتوشاپ/i.test(s))return {name:'launch_app',args:{name:'Adobe Photoshop'},reply:'Adobe Photoshop رو باز کردم.'};
+    for(const [re,name] of appAliases)if(re.test(s))return {name:'launch_any_app',args:{name},reply:`${name} رو باز کردم.`};
+    const name=genericAppName(s);if(name&&name.length<80)return {name:'launch_any_app',args:{name},reply:`${name} رو باز کردم.`};
   }
 
+  const chromeSearch=s.match(/(?:کروم|chrome).*?(?:سرچ|جستجو|بگرد|پیدا)(?: کن)?\s+(.+)/i)||s.match(/(?:تو|در)?\s*(?:کروم|chrome)\s+(?:درباره\s+)?(.+?)\s+(?:رو|را)?\s*(?:سرچ|جستجو|بگرد|پیدا)(?: کن)?$/i)||s.match(/(.+?)\s+(?:رو|را)?\s*(?:تو|در)\s*(?:کروم|chrome)\s*(?:سرچ|جستجو|پیدا)(?: کن)?$/i);
+  if(chromeSearch?.[1]?.trim())return {name:'chrome_search',args:{query:chromeSearch[1].trim()},reply:'توی Chrome برات سرچ کردم.'};
   const yt=s.match(/(?:یوتیوب|youtube).*?(?:سرچ|جستجو|بگرد)(?: کن)?\s+(.+)/i)||s.match(/(.+?)\s+(?:رو|را)?\s*(?:تو|در)?\s*(?:یوتیوب|youtube)\s*(?:سرچ|جستجو|پیدا)(?: کن)?$/i);
   if(yt?.[1]?.trim())return {name:'youtube_search',args:{query:yt[1].trim()},reply:'توی یوتیوب برات گشتم.'};
   const google=s.match(/(?:گوگل|google).*?(?:سرچ|جستجو|بگرد|پیدا)(?: کن)?\s+(.+)/i)||s.match(/(.+?)\s+(?:رو|را)?\s*(?:تو|در)?\s*(?:گوگل|google)\s*(?:سرچ|جستجو|پیدا)(?: کن)?$/i);
