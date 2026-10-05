@@ -4,16 +4,16 @@ import { BrainRouter,pickBestLocalModel } from '../src/agent/BrainRouter.js';
 import { selectToolNames } from '../src/agent/SmartToolRouter.js';
 import { tools } from '../src/agent/toolRegistry.js';
 
-test('phase 1 defaults to the responsive Qwen3 instruct chat model',()=>{
+test('phase 1 defaults to the responsive non-thinking local agent model',()=>{
   const brain=new BrainRouter();
-  assert.equal(brain.local.model,'qwen3:4b-instruct');
+  assert.equal(brain.local.model,'qwen2.5:3b');
   assert.equal(brain.local.think,false);
 });
 
-test('local brain selector prefers capable chat models instead of failing on one hard-coded name',()=>{
-  const models=['nomic-embed-text:latest','llama3.2:3b','qwen3:8b','qwen3.5:4b'];
-  assert.equal(pickBestLocalModel(models,'general'),'qwen3:8b');
-  assert.equal(pickBestLocalModel(['llama3.2:3b','qwen3.5:4b'],'general'),'qwen3.5:4b');
+test('local brain selector prefers stable non-thinking chat models and coding specialists',()=>{
+  const models=['nomic-embed-text:latest','llama3.2:3b','qwen3:8b','qwen3.5:4b','qwen2.5:3b'];
+  assert.equal(pickBestLocalModel(models,'general'),'qwen2.5:3b');
+  assert.equal(pickBestLocalModel(['llama3.2:3b','qwen3.5:4b'],'general'),'llama3.2:3b');
   assert.equal(pickBestLocalModel(['qwen3:4b','qwen2.5-coder:3b'],'coding'),'qwen2.5-coder:3b');
   assert.equal(pickBestLocalModel(['nomic-embed-text:latest'],'general'),null);
 });
