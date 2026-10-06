@@ -24,9 +24,33 @@ npm run dev
 ```
 
 ## Hybrid AI brain
-The default brain is local Ollama, so core chat and local computer actions do not require an AI API subscription.
+Maria supports both cloud and local brains. Core computer actions stay available offline through Ollama, while configured cloud providers can be used for stronger chat, planning, coding and research.
 
-If an online provider is configured, Maria tries the online brain first and automatically falls back to local Ollama when the internet/provider fails.
+The recommended order for this project is Groq for fast general/agent work, Gemini for research-heavy work, then the other configured providers. If a cloud request times out or receives a transient 408/409/425/429/5xx response, Maria retries briefly. If that provider still fails, the online pool tries the next configured provider; if cloud access is unavailable, BrainRouter falls back to local Ollama.
+
+Cloud API keys are optional. The app can be installed and code-tested while the PC is offline; cloud connectivity can be validated later without changing the architecture.
+
+### Recommended Groq
+Groq uses an OpenAI-compatible endpoint and is the preferred fast agent provider:
+```powershell
+[Environment]::SetEnvironmentVariable('GROQ_API_KEY','YOUR_KEY','User')
+[Environment]::SetEnvironmentVariable('GROQ_MODEL','openai/gpt-oss-120b','User')
+```
+The default base URL is `https://api.groq.com/openai/v1`. Override it with `GROQ_BASE_URL` only when needed.
+
+### Recommended Gemini
+Gemini is available through Google's OpenAI-compatible endpoint:
+```powershell
+[Environment]::SetEnvironmentVariable('GEMINI_API_KEY','YOUR_KEY','User')
+[Environment]::SetEnvironmentVariable('GEMINI_MODEL','gemini-3.8-flash','User')
+```
+The default base URL is `https://generativelanguage.googleapis.com/v1beta/openai`. Override it with `GEMINI_BASE_URL` only when needed.
+
+To prefer online brains whenever the request is cloud-eligible:
+```powershell
+[Environment]::SetEnvironmentVariable('BLACK_CLOVER_BRAIN_POLICY','online-first','User')
+```
+Restart Maria after changing Windows user environment variables.
 
 ### Optional DeepSeek
 Set these Windows user environment variables, then restart the app:
@@ -43,9 +67,7 @@ Qwen requires an API key and a region/workspace-specific OpenAI-compatible Base 
 [Environment]::SetEnvironmentVariable('QWEN_BASE_URL','YOUR_OPENAI_COMPATIBLE_BASE_URL','User')
 [Environment]::SetEnvironmentVariable('QWEN_MODEL','qwen-plus','User')
 ```
-When both Qwen and DeepSeek are configured, Qwen currently has priority. Remove its variables if you want DeepSeek to be selected instead.
-
-Never commit API keys to GitHub.
+Provider selection is automatic by task profile, but a configured provider/model can also be selected explicitly from Maria's model picker. Never commit API keys to GitHub.
 
 ## Memory
 Maria stores durable lightweight memory locally in the user's application-data area (`BlackClover/memory.json`). The model can explicitly remember/recall important preferences and the agent also captures clear phrases such as “remember this”. Relevant memories are retrieved into later conversations.
