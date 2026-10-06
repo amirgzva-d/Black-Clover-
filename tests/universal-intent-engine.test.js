@@ -31,4 +31,7 @@ test('direct plans use existing tool contracts and do not execute by themselves'
   const search=resolveUniversalIntent('درباره آب و هوا سرچ کن');
   assert.equal(search.direct.name,'web_search');
   assert.equal(search.direct.args.query,'آب و هوا');
+  const chrome=resolveUniversalIntent('تو کروم درباره وضعیت هوا سرچ کن');
+  assert.equal(chrome.direct.name,'chrome_search');
+  assert.equal(chrome.direct.args.query,'وضعیت هوا');
 });
