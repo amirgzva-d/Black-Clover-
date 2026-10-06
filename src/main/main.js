@@ -66,6 +66,8 @@ app.on('window-all-closed',()=>{});
 ipcMain.handle('agent:chat',async(_e,payload)=>{const text=typeof payload==='object'&&payload!==null?payload.text:payload,options=typeof payload==='object'&&payload!==null?(payload.options||{}):{};const response=await agent.chat(String(text??''),{modelOverride:options.model||options.modelOverride||'auto',profile:options.profile||null});sendAvatar('assistant:response',response);return response;});
 ipcMain.handle('agent:confirm',async(_e,payload)=>{const response=await agent.confirm(payload);sendAvatar('assistant:response',response);return response;});
 ipcMain.handle('agent:status',()=>agent.status());
+ipcMain.handle('agent:runtime-runs',(_e,options)=>agent.runtimeV2?.recentRuns?.(options||{})||[]);
+ipcMain.handle('agent:runtime-error-report',(_e,options)=>agent.runtimeV2?.diagnosticReport?.(options||{})||{generatedAt:new Date().toISOString(),errors:[]});
 ipcMain.handle('brain:catalog',()=>agent.modelCatalog());
 ipcMain.handle('assistant:toggle',()=>{toggleChat();return true;});
 ipcMain.handle('assistant:show-chat',()=>{showChat();return true;});
