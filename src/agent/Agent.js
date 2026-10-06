@@ -16,6 +16,7 @@ import { shouldGroundKnowledge,groundedKnowledgeAnswer } from './GroundedKnowled
 import { canonicalizeCommand } from './SemanticCanonicalizer.js';
 import { matchSmallTalk } from './SmallTalkRouter.js';
 import { actionIntent } from './ActionIntent.js';
+import { BrainRuntime } from './runtime/BrainRuntime.js';
 
 const MAX_TURNS=64,MAX_STEPS=32;
 const cleanReply=text=>String(text??'').replace(/\n{3,}/g,'\n\n').trim();
@@ -36,7 +37,7 @@ const COMPACT_CHAT_SYSTEM=`تو MARIA هستی؛ یک دستیار هوش مصن
 
 export class Agent{
   constructor({emit=()=>{},client=new BrainRouter(),systemContext='',chatOptions={},defaultTools=[],enableScheduler=true}={}){
-    this.emit=emit;this.client=client;this.chatOptions={...chatOptions};this.defaultTools=[...new Set(defaultTools||[])].filter(n=>tools[n]);this.history=[{role:'system',content:`${PERSONALITY_SYSTEM}${systemContext||''}`,_private:false}];this.pending=new Map();this.improving=false;
+    this.emit=emit;this.client=client;this.chatOptions={...chatOptions};this.defaultTools=[...new Set(defaultTools||[])].filter(n=>tools[n]);this.history=[{role:'system',content:`${PERSONALITY_SYSTEM}${systemContext||''}`,_private:false}];this.pending=new Map();this.improving=false;this.useRuntimeV2=process.env.BLACK_CLOVER_RUNTIME_V2!=='0';this.runtimeV2=new BrainRuntime({client:this.client,emit:this.emit,chatOptions:this.chatOptions,defaultTools:this.defaultTools,systemContext});
     if(enableScheduler)reminders.setActionExecutor(async item=>{
       this.emit({type:'scheduled-action',state:'running',id:item.id,label:item.label||item.instruction});
       let response=await this.chat(item.instruction);let blocked=false,guard=0;
@@ -48,7 +49,7 @@ export class Agent{
   trimHistory(){if(this.history.length>MAX_TURNS)this.history=[this.history[0],...this.history.slice(-(MAX_TURNS-1))];}
   modelHistory({allowOnline,compact=false}){const source=allowOnline?this.history.filter(m=>!m._private||m.role==='system'):this.history;const out=source.map(publicFields);if(compact&&out[0]?.role==='system')out[0]={role:'system',content:COMPACT_CHAT_SYSTEM};return out;}
   async modelCatalog(){return this.client.catalog();}
-  async status(){const [brain,policy,memories,learning,activeReminders,notes]=await Promise.all([this.client.health(),permissions.status(),memory.list(500),skills.stats(),reminders.list(),pinnedNotes.list({limit:100})]);return {ollama:brain.local,brain,model:this.client.model,models:brain.installedLocalModels||await this.client.models(),pending:this.pending.size,tools:Object.keys(tools).length,languagePatterns:CAPABILITY_PHRASE_COUNT,memoryItems:memories.length,permissions:policy,learning,personal:{reminders:activeReminders,notes}};}
+  async status(){const [brain,policy,memories,learning,activeReminders,notes,runtimeV2]=await Promise.all([this.client.health(),permissions.status(),memory.list(500),skills.stats(),reminders.list(),pinnedNotes.list({limit:100}),this.runtimeV2.status()]);return {ollama:brain.local,brain,model:this.client.model,models:brain.installedLocalModels||await this.client.models(),pending:this.useRuntimeV2?runtimeV2.pending:this.pending.size,tools:Object.keys(tools).length,languagePatterns:CAPABILITY_PHRASE_COUNT,memoryItems:memories.length,permissions:policy,learning,runtimeV2:{...runtimeV2,active:this.useRuntimeV2},personal:{reminders:activeReminders,notes}};}
   fastReply(turn,text,name){const reply=cleanReply(text)||'انجام شد.';this.history.push({role:'assistant',content:reply,_private:turn.private});this.trimHistory();return {ok:true,text:reply,brain:{mode:'direct',model:'windows-fast-path',privacy:turn.private?'local-private':'local'},toolsRouted:turn.routeNames?.length||0,direct:true,tool:name};}
   async tryFastCommand(fast,turn,routeNames){
     if(!fast||!tools[fast.name])return null;const {name,args={}}=fast,tool=tools[name];turn.routeNames=routeNames;
@@ -83,6 +84,7 @@ export class Agent{
     if(!turn.private)await skills.queueImprovement(turn.original,{error:'Agent exceeded safe automatic step limit'});return {ok:false,text:'این کار بیش از حدِ امنِ مراحل خودکار طول کشید. بخش‌های انجام‌شده حفظ شده‌اند؛ از وضعیت فعلی دوباره برنامه‌ریزی می‌کنم.'};
   }
   async chat(text,options={}){
+    if(this.useRuntimeV2)return this.runtimeV2.chat(text,options);
     const original=String(text??'').trim();if(!original)return {ok:false,text:'پیام خالی است.'};const effectiveChatOptions={...this.chatOptions,...(options||{})};
     try{
       const rule=await permissions.parseUserRule(original);await memory.maybeRememberUserStatement(original);
@@ -105,6 +107,7 @@ export class Agent{
     }catch(e){try{await skills.queueImprovement(original,{error:e.message,privateContext:isPrivateRequest(original,[])});this.emit({type:'learning',action:'gap-queued',title:original,error:e.message});}catch{}return {ok:false,text:`الان مغز یا یکی از ابزارها گیر کرد: ${e.message}`};}
   }
   async confirm({id,approved}){
+    if(this.useRuntimeV2)return this.runtimeV2.confirm({id,approved});
     const p=this.pending.get(id);if(!p)return {ok:false,text:'این درخواست تأیید دیگر در دسترس نیست.'};this.pending.delete(id);if(Date.now()-p.createdAt>180000)return {ok:false,text:'زمان این تأیید گذشته؛ دستور را دوباره بگو تا با وضعیت فعلی سیستم بررسی شود.'};
     if(p.fast){if(!approved)return this.fastReply(p.turn,'باشه، انجامش نمی‌دهم.',p.name);try{this.emit({type:'tool',name:p.name});await permissions.assertAllowed(p.name,p.args);const out=await runTool(p.name,p.args);if(out?.success===false)return {ok:false,text:`نتوانستم انجامش بدهم: ${out.error||out.message||'خطای ابزار'}`};return this.fastReply(p.turn,p.fastReply||out.message||'انجام شد.',p.name);}catch(e){return {ok:false,text:`نتوانستم این بخش را اجرا کنم: ${e.message}`};}}
     const {name,args,callId,turn,remainingCalls,routeNames,startStep}=p;if(!approved){this.history.push(toolMessage(name,{tool_name:name,success:false,cancelled:true},callId,turn.private));turn.trace.push({name,args,success:false,error:'user cancelled'});this.trimHistory();return this.drive({routeNames,turn,queuedCalls:remainingCalls,startStep});}
