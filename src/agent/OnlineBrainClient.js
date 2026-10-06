@@ -39,7 +39,7 @@ export function onlineBrainFromEnv(){
   const groqKey=process.env.GROQ_API_KEY;
   if(groqKey)return new OnlineBrainClient({provider:'groq',apiKey:groqKey,baseUrl:process.env.GROQ_BASE_URL||'https://api.groq.com/openai/v1',model:process.env.GROQ_MODEL||'openai/gpt-oss-120b'});
   const geminiKey=process.env.GEMINI_API_KEY||process.env.GOOGLE_API_KEY;
-  if(geminiKey)return new OnlineBrainClient({provider:'gemini',apiKey:geminiKey,baseUrl:process.env.GEMINI_BASE_URL||'https://generativelanguage.googleapis.com/v1beta/openai',model:process.env.GEMINI_MODEL||'gemini-3.6-flash'});
+  if(geminiKey)return new OnlineBrainClient({provider:'gemini',apiKey:geminiKey,baseUrl:process.env.GEMINI_BASE_URL||'https://generativelanguage.googleapis.com/v1beta/openai',model:process.env.GEMINI_MODEL||'gemini-3.8-flash'});
   const qwenKey=process.env.DASHSCOPE_API_KEY||process.env.QWEN_API_KEY,qwenBase=process.env.QWEN_BASE_URL;
   if(qwenKey&&qwenBase)return new OnlineBrainClient({provider:'qwen',apiKey:qwenKey,baseUrl:qwenBase,model:process.env.QWEN_MODEL||'qwen-plus'});
   const deepKey=process.env.DEEPSEEK_API_KEY;
