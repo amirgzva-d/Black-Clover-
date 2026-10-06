@@ -15,7 +15,7 @@ test('Groq and Gemini are first-class configurable providers',()=>{
     assert.equal(groq?.configured,true);
     assert.equal(groq?.model,'openai/gpt-oss-120b');
     assert.equal(gemini?.configured,true);
-    assert.equal(gemini?.model,'gemini-3.6-flash');
+    assert.equal(gemini?.model,'gemini-3.8-flash');
   }finally{
     for(const [key,value] of Object.entries(before)){if(value===undefined)delete process.env[key];else process.env[key]=value;}
   }
