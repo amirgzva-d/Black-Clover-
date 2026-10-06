@@ -118,7 +118,7 @@ function directFor(text){
   }
   if(has(text,words.search)){
     const query=extractQuery(text);
-    if(query && !has(text,words.files))return {name:'web_search',args:{query},reply:'جست‌وجوی واقعی را انجام دادم.'};
+    if(query && !has(text,words.files)){const name=has(text,words.browser)?'chrome_search':'web_search';return {name,args:{query},reply:name==='chrome_search'?'جست‌وجوی واقعی Google را انجام دادم.':'جست‌وجوی وب را انجام دادم.'};}
   }
   if(has(text,words.apps)){
     const app=extractApp(text);
