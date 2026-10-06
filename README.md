@@ -26,7 +26,7 @@ npm run dev
 ## Hybrid AI brain
 Maria supports both cloud and local brains. Core computer actions stay available offline through Ollama, while configured cloud providers can be used for stronger chat, planning, coding and research.
 
-The recommended order for this project is Groq for fast general/agent work, Gemini for research-heavy work, then the other configured providers. If a cloud request times out or receives a transient 408/409/425/429/5xx response, Maria retries briefly. If that provider still fails, the online pool tries the next configured provider; if cloud access is unavailable, BrainRouter falls back to local Ollama.
+For the chat-first free configuration, the recommended order is Groq GPT-OSS 120B for fast high-capability chat, Gemini 3.8 Flash as the second free cloud brain, OpenRouter's free router as a third fallback, then local Ollama when cloud access is unavailable. If a cloud request times out or receives a transient 408/409/425/429/5xx response, Maria retries briefly. If that provider still fails, the online pool tries the next configured provider; if cloud access is unavailable, BrainRouter falls back to local Ollama.
 
 Cloud API keys are optional. The app can be installed and code-tested while the PC is offline; cloud connectivity can be validated later without changing the architecture.
 
@@ -51,6 +51,24 @@ To prefer online brains whenever the request is cloud-eligible:
 [Environment]::SetEnvironmentVariable('BLACK_CLOVER_BRAIN_POLICY','online-first','User')
 ```
 Restart Maria after changing Windows user environment variables.
+
+### Optional OpenRouter free fallback
+OpenRouter can provide an additional no-cost fallback when its free models are available:
+```powershell
+[Environment]::SetEnvironmentVariable('OPENROUTER_API_KEY','YOUR_KEY','User')
+[Environment]::SetEnvironmentVariable('OPENROUTER_MODEL','openrouter/free','User')
+```
+The default base URL is `https://openrouter.ai/api/v1`.
+
+### Free-only mode
+To guarantee that automatic routing never selects the paid-provider integrations configured on the machine:
+```powershell
+[Environment]::SetEnvironmentVariable('BLACK_CLOVER_FREE_ONLY','1','User')
+```
+In this mode the online router only uses Groq, Gemini and OpenRouter, followed by local Ollama fallback. Free tiers still have provider rate/usage limits and can change over time.
+
+### Updating a running Maria copy
+A GitHub source change does not hot-patch an already installed Windows EXE. If Maria is launched from the development checkout, pull the new commits and restart the app. If Maria is launched from an installed EXE, install a newly built package until an auto-update mechanism is added. Once the new code and API keys are present, reconnecting to the internet is enough for BrainRouter to start using the configured online providers automatically.
 
 ### Optional DeepSeek
 Set these Windows user environment variables, then restart the app:
