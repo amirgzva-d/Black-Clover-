@@ -122,9 +122,9 @@ export function matchFastCommand(input){
   const yt=s.match(/(?:یوتیوب|youtube).*?(?:سرچ|جستجو|بگرد)(?: کن)?\s+(.+)/i)||s.match(/(.+?)\s+(?:رو|را)?\s*(?:تو|در)?\s*(?:یوتیوب|youtube)\s*(?:سرچ|جستجو|پیدا)(?: کن)?$/i);
   if(yt?.[1]?.trim())return {name:'youtube_search',args:{query:yt[1].trim()},reply:'توی یوتیوب برات گشتم.'};
   const google=s.match(/(?:گوگل|google).*?(?:سرچ|جستجو|بگرد|پیدا)(?: کن)?\s+(.+)/i)||s.match(/(.+?)\s+(?:رو|را)?\s*(?:تو|در)?\s*(?:گوگل|google)\s*(?:سرچ|جستجو|پیدا)(?: کن)?$/i);
-  if(google?.[1]?.trim())return {name:'web_search',args:{query:google[1].trim()},reply:'سرچ گوگل رو باز کردم.'};
+  if(google?.[1]?.trim())return {name:'chrome_search',args:{query:google[1].trim()},reply:'نتایج Google رو در Chrome شخصی باز کردم.'};
   const genericSearch=s.match(/^(?:لطفا\s*)?(?:سرچ|جستجو|بگرد)\s+(?:کن\s+)?(?:درباره\s+)?(.+)/i)||s.match(/^(.+?)\s+(?:رو|را)?\s*(?:سرچ|جستجو)(?: کن)?$/i);
-  if(genericSearch?.[1]?.trim()&&!/فایل|پوشه|سیستم/i.test(genericSearch[1]))return {name:'web_search',args:{query:genericSearch[1].trim()},reply:'برات سرچ کردم.'};
+  if(genericSearch?.[1]?.trim()&&!/فایل|پوشه|سیستم/i.test(genericSearch[1]))return {name:'chrome_search',args:{query:genericSearch[1].trim()},reply:'نتایج Google رو در Chrome شخصی باز کردم.'};
 
   if(factualQuestion.test(s)&&simpleStableFact.test(s)&&!personalSmallTalk.test(s)&&!computerProblem.test(s))return {name:'grounded_factual_answer',args:{query:input}};
   return null;
