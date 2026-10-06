@@ -19,7 +19,7 @@ export function pickBestLocalModel(models=[],profile='general'){return [...new S
 export async function internetAvailable(){const checks=await Promise.all(['https://www.msftconnecttest.com/connecttest.txt','https://www.google.com/generate_204'].map(u=>ping(u)));return checks.some(Boolean);}
 
 export class BrainRouter{
-  constructor({local=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:4096,temperature:.38,timeoutMs:90000,think:false,numPredict:700}),chatLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CHAT_MODEL||process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:3072,temperature:.42,timeoutMs:60000,think:false,numPredict:280}),legacyLocal=new OllamaClient({model:process.env.BLACK_CLOVER_LEGACY_MODEL||'qwen2.5:1.5b',keepAlive:'2m',numCtx:4096,temperature:.35,timeoutMs:60000,think:false,numPredict:480}),researchLocal=new OllamaClient({model:process.env.BLACK_CLOVER_RESEARCH_MODEL||process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:3072,temperature:.22,timeoutMs:60000,think:false,numPredict:320}),codingLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CODING_MODEL||'qwen2.5-coder:3b',keepAlive:'10m',numCtx:8192,temperature:.28,timeoutMs:180000,think:false,numPredict:1400}),online=onlineBrainPoolFromEnv(),networkTtlMs=15000}={}){
+  constructor({local=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:4096,temperature:.38,timeoutMs:90000,think:false,numPredict:700}),chatLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CHAT_MODEL||'qwen2.5:1.5b',keepAlive:'30m',numCtx:1536,temperature:.5,timeoutMs:45000,think:false,numPredict:140}),legacyLocal=new OllamaClient({model:process.env.BLACK_CLOVER_LEGACY_MODEL||'qwen2.5:1.5b',keepAlive:'2m',numCtx:4096,temperature:.35,timeoutMs:60000,think:false,numPredict:480}),researchLocal=new OllamaClient({model:process.env.BLACK_CLOVER_RESEARCH_MODEL||process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:3072,temperature:.22,timeoutMs:60000,think:false,numPredict:320}),codingLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CODING_MODEL||'qwen2.5-coder:3b',keepAlive:'10m',numCtx:8192,temperature:.28,timeoutMs:180000,think:false,numPredict:1400}),online=onlineBrainPoolFromEnv(),networkTtlMs=15000}={}){
     this.local=local;this.chatLocal=chatLocal;this.legacyLocal=legacyLocal;this.researchLocal=researchLocal;this.codingLocal=codingLocal;this.online=online;this.networkTtlMs=networkTtlMs;this.lastMode='local';this.lastProfile='general';this.networkState=null;this.networkCheckedAt=0;this.lastFallbackReason='';this.lastProvider=null;this.lastModel=local.model;this.adaptiveLocal=null;this.selectedLocals=new Map();
   }
   get model(){return this.lastModel||this.local.model;}
@@ -52,12 +52,13 @@ export class BrainRouter{
     add(this.adaptiveLocal);
     return out.filter(client=>client&&!isCloudModel(client.model));
   }
-  async localChat(messages,tools,profile,preferred){
+  async localChat(messages,tools,profile,preferred,onDelta=null){
     const errors=[];
     for(const client of this.localCandidates(profile,preferred)){
       try{
         if(typeof client.hasModel==='function'&&!(await client.hasModel()))continue;
-        const out=await client.chat(messages,tools);
+        const out=onDelta&&typeof client.chatStream==='function'?await client.chatStream(messages,tools,onDelta):await client.chat(messages,tools);
+        if(!String(out?.message?.content||'').trim()&&!out?.message?.tool_calls?.length)throw new Error('Model returned no final answer');
         this.lastMode=profile==='coding'?'local-coding':profile==='chat'?'local-chat':client===this.legacyLocal?'local-legacy':client===this.adaptiveLocal?'local-adaptive':'local';
         this.lastProvider='ollama';
         this.lastModel=client.model;
@@ -70,7 +71,8 @@ export class BrainRouter{
     throw new Error('No local Ollama chat model is installed. Install a local chat model or choose another provider.');
   }
   async catalog(){const installed=await this.local.models(),descriptions={openai:'مدل‌های ابری قدرتمند OpenAI برای کار عمومی و کدنویسی',anthropic:'Claude برای تحلیل عمیق، متن طولانی و Coding',deepseek:'DeepSeek برای تحلیل و کدنویسی',qwen:'Qwen Cloud برای فارسی، ابزارها و کار عمومی',gemini:'Gemini برای متن و کار چندرسانه‌ای',groq:'Llama روی Groq با تمرکز روی پاسخ سریع',openrouter:'دسترسی به مجموعه بزرگی از مدل‌های Cloud',mistral:'مدل‌های سریع Mistral Cloud'},online=(this.online?.catalog?.()||[]).map(x=>({id:`online:${x.provider}`,provider:x.provider,model:x.model||'auto',label:`${x.label||x.provider}${x.model?` • ${x.model}`:''}`,description:descriptions[x.provider]||'مدل Cloud',available:Boolean(x.configured),configured:Boolean(x.configured)}));return [{id:'auto',provider:'auto',model:'auto',label:'Auto • Maria',description:'Maria بر اساس نوع کار سریع‌ترین و مناسب‌ترین مغز آماده را انتخاب می‌کند.',available:true,configured:true},...installed.map(model=>{const cloud=/:cloud$/i.test(model);return {id:cloud?`ollama-cloud:${model}`:`ollama:${model}`,provider:cloud?'ollama-cloud':'ollama',model,label:`${cloud?'Ollama Cloud':'Ollama'} • ${model}`,description:cloud?'مدل Cloud از مسیر Ollama؛ داده برای پاسخ به سرویس آنلاین فرستاده می‌شود.':'مدل محلی؛ داده روی همین سیستم می‌ماند.',available:true,configured:true};}),...online];}
-  async chat(messages,tools=[],{allowOnline=true,privacyReason='',profile='general',provider='auto',model='auto',modelOverride='auto'}={}){
+  async chat(messages,tools=[],{allowOnline=true,privacyReason='',profile='general',provider='auto',model='auto',modelOverride='auto',onDelta=null}={}){
+    this.lastFallbackReason='';
     profile=inferProfile(tools,profile);
     this.lastProfile=profile;
     if(modelOverride&&modelOverride!=='auto'){
@@ -93,7 +95,7 @@ export class BrainRouter{
         try{
           const cloud=await this.chooseLocal(profile,model);
           if(!isCloudModel(cloud.model))throw new Error('Selected Ollama Cloud model is not installed');
-          const out=await cloud.chat(messages,tools);
+          const out=onDelta&&typeof cloud.chatStream==='function'?await cloud.chatStream(messages,tools,onDelta):await cloud.chat(messages,tools);
           this.lastMode='ollama-cloud';
           this.lastProvider='ollama-cloud';
           this.lastModel=cloud.model;
@@ -111,7 +113,7 @@ export class BrainRouter{
       else{
         try{
           if(!this.online?.configured)throw new Error(provider+' is not configured');
-          const out=await this.online.chat(messages,tools,{profile,provider,model});
+          const out=onDelta&&typeof this.online.chatStream==='function'?await this.online.chatStream(messages,tools,{profile,provider,model},onDelta):await this.online.chat(messages,tools,{profile,provider,model});
           this.lastMode='online';
           this.lastProvider=out.provider;
           this.lastModel=out.model;
@@ -127,7 +129,7 @@ export class BrainRouter{
     if(wantsOnline){
       if(await this.network()){
         try{
-          const out=await this.online.chat(messages,tools,{profile,provider:'auto',model:'auto'});
+          const out=onDelta&&typeof this.online.chatStream==='function'?await this.online.chatStream(messages,tools,{profile,provider:'auto',model:'auto'},onDelta):await this.online.chat(messages,tools,{profile,provider:'auto',model:'auto'});
           this.lastMode='online';
           this.lastProvider=out.provider;
           this.lastModel=out.model;
@@ -160,9 +162,12 @@ export class BrainRouter{
             :this.lastFallbackReason.startsWith('adaptive-local-model:')
               ?'[HOST NOTICE: Preferred local model unavailable. Continue with the available local model.]'
               :'';
-    return this.localChat(notice?[...messages,{role:'system',content:notice}]:messages,tools,profile,preferred);
+    return this.localChat(notice?[...messages,{role:'system',content:notice}]:messages,tools,profile,preferred,onDelta);
   }
 
+  async chatStream(messages,tools=[],options={},onDelta=()=>{}){
+    return this.chat(messages,tools,{...options,onDelta:tools?.length?null:onDelta});
+  }
   async health(){
     const [internet,localService,primaryModelAvailable,legacyModelAvailable,codingModelAvailable,installedModels]=await Promise.all([this.network({fresh:true}),this.local.health(),this.local.hasModel(),this.legacyLocal.hasModel(),this.codingLocal.hasModel(),this.local.models()]);
     const onlineStates=this.online?.configured&&internet?await this.online.health():{},bestAvailableLocalModel=pickBestLocalModel(installedModels,this.lastProfile);

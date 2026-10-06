@@ -154,6 +154,27 @@ async function contextualMotion(text, emotion) {
   } catch {}
 }
 
+let streamRow=null,streamBody=null,streamText='';
+function appendStream(delta){
+  if(!IS_CHAT)return;
+  if(!streamRow){
+    $('.welcome')?.remove();
+    streamRow=document.createElement('div');streamRow.className='message-row bot show';
+    streamBody=document.createElement('div');streamBody.className='msg';
+    const meta=document.createElement('small');meta.textContent='Maria • در حال پاسخ';
+    streamRow.append(meta,streamBody);messages.append(streamRow);
+  }
+  streamText+=String(delta||'');streamBody.textContent=streamText;
+  messages.scrollTo({top:messages.scrollHeight,behavior:'auto'});
+}
+function finishStream(finalText){
+  if(!streamRow)return false;
+  const text=String(finalText||streamText||'').trim();streamBody.textContent=text;
+  streamBody.dataset.complete='true';
+  if(text){const emotion=showEmotion(text);contextualMotion(text,emotion);}
+  streamRow=null;streamBody=null;streamText='';return true;
+}
+
 function bubble(who, text) {
   $('.welcome')?.remove();
   const row = document.createElement('div');
@@ -305,8 +326,11 @@ async function pumpChatQueue(){
       try{
         const selectedModel=localStorage.getItem('blackClover:selectedModel')||'auto';
         const response=await window.blackClover.chat(text,selectedModel==='auto'?{}:{modelOverride:selectedModel});
-        if(IS_CHAT)bubble('bot',response.text);
-        if(!voice.enabled)status.textContent='آماده';
+        const hadStream=Boolean(streamRow);
+        if(IS_CHAT){if(hadStream)finishStream(response?.text);else bubble('bot',response?.text||'جوابی دریافت نشد.');}
+        if(response?.text&&voice.enabled)voice.speak(response.text);
+        if(response?.brain?.model)status.textContent='آماده • '+(response.brain.provider||'محلی')+' • '+response.brain.model;
+        else if(!voice.enabled)status.textContent='آماده';
         if(response.requiresConfirmation)showConfirm(response.confirmationId,response.text);
       }catch(error){
         if(IS_CHAT)bubble('bot',`خطا: ${error.message||error}`);
@@ -534,6 +558,7 @@ $('#installRecommended').onclick = async () => {
 };
 
 window.blackClover.onEvent(event => {
+  if (event.type === 'stream') { appendStream(event.delta || ''); return; }
   if (event.type === 'thinking') setActivity('در حال فکر کردن…');
   if (event.type === 'tool') {
     setActivity('در حال انجام کار…');
