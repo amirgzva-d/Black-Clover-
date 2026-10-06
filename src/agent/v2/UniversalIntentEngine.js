@@ -41,7 +41,7 @@ const words={
   browser:/کروم|chrome|مرورگر|browser|گوگل|google|یوتیوب|youtube/i,
   files:/فایل|پرونده|پوشه|فولدر|دایرکتوری|دسکتاپ|desktop|zip|فشرده|استخراج|extract|کپی|منتقل|جابه.?جا|تغییر.?نام/i,
   media:/آهنگ|موزیک|موسیقی|فیلم|ویدیو|کلیپ|media|movie|video|پخش/i,
-  apps:/برنامه|اپ|نرم.?افزار|باز کن|اجرا|ببند|بستن|launch|open|close/i,
+  apps:/برنامه|اپ|نرم.?افزار|application|app|کروم|chrome|فایرفاکس|firefox|اج|edge|تلگرام|telegram|واتساپ|whatsapp|روبیکا|rubika|اکسل|excel|ورد|word|فتوشاپ|photoshop|وی.?اس.?کد|vscode/i,
   research:/تحقیق|بررسی چندمنبعی|منبع|مقاله|مطالعه|خلاصه کن|research|sources|investigate/i,
   desktop:/دسکتاپ|desktop|مرتب|گروه.?بندی|organize/i,
   updates:/آپدیت|به.?روز|به.?روزرسانی|نصب|حذف|uninstall|install|upgrade|update/i,
@@ -52,7 +52,7 @@ const openVerbs=/باز کن|بازش کن|اجرا کن|راه بنداز|با�
 const closeVerbs=/ببند|ببندش|بستن|بسته کن|close|quit|exit/i;
 const upVerbs=/زیاد|بیشتر|بالا|بلندتر|قوی.?تر|افزایش|ببر بالا|بیار بالا|تا آخر|تا ته|فول|نهایت|maximum|up/i;
 const downVerbs=/کم|کمتر|پایین|آروم.?تر|کاهش|ببر پایین|بیار پایین|تا کف|حداقل|minimum|down/i;
-const muteOn=/بی.?صدا|سایلنت|میوت|قطع صدا|خفه|mute(?!d? ?off)/i;
+const muteOn=/بی.?صدا|سایلنت|میوت|قطع صدا|خفه|(?:صدا|ولوم|اسپیکر).{0,12}(?:ببند|بستن|قطع)|mute(?!d? ?off)/i;
 const muteOff=/از بی.?صدا دربیار|از میوت دربیار|وصل صدا|صدا رو وصل|unmute|برگردون صدا/i;
 
 const apps=[
@@ -188,13 +188,19 @@ export function generateEvaluationUtterances(){
     find:['پیدا کن','بگرد','در بیار','نشون بده','find کن']
   };
   const out=[];
+  const prefixes=['','لطفا ','برام ','می‌تونی ','اگه میشه ','خواهشا ','برای من '];
+  const suffixes=['',' لطفا',' رو انجام بده',' برام',' الان'];
   for(const subject of Object.keys(subjects)){
     for(const s of subjects[subject]){
       for(const kind of Object.keys(verbs)){
         for(const v of verbs[kind]){
-          const text=`${s} ${v}`;
-          const expected=subject==='volume'?'audio.control':subject==='brightness'?'display.control':subject==='search'?'web.search':subject==='files'?'files.manage':'apps.manage';
-          out.push({text,expected});
+          for(const prefix of prefixes){
+            for(const suffix of suffixes){
+              const text=`${prefix}${s} ${v}${suffix}`;
+              const expected=subject==='volume'?'audio.control':subject==='brightness'?'display.control':subject==='search'?'web.search':subject==='files'?'files.manage':'apps.manage';
+              out.push({text,expected});
+            }
+          }
         }
       }
     }
