@@ -44,3 +44,20 @@ test('desktop UI has independent chat pins reminders and nonblocking queue',asyn
   assert.match(renderer,/modelOverride:selectedModel/);
   assert.match(renderer,/onAssistantResponse[\s\S]{0,260}voice\.speak\(response\.text\)/);
 });
+
+
+test('motions wardrobe projects chat pins and reminders have independent surfaces',async()=>{
+  const [main,preload,ui,assets]=await Promise.all([
+    fs.readFile(new URL('../src/main/main.js',import.meta.url),'utf8'),
+    fs.readFile(new URL('../src/main/preload.cjs',import.meta.url),'utf8'),
+    fs.readFile(new URL('../src/renderer/luxuryUI.js',import.meta.url),'utf8'),
+    fs.readFile(new URL('../src/renderer/assetSurface.js',import.meta.url),'utf8')
+  ]);
+  for(const token of ["surface==='motions'","surface==='wardrobe'","surface==='projects'","surface==='pins'","surface==='reminders'"])assert.ok(main.includes(token),token);
+  for(const token of ['showMotions','showWardrobe','showProjects','showPins','showReminders','listLocalAssets'])assert.ok(preload.includes(token),token);
+  assert.match(ui,/showMotions/);
+  assert.match(ui,/showWardrobe/);
+  assert.match(assets,/Pose \/ Animation/);
+  assert.match(assets,/Face Animation/);
+  assert.match(assets,/XWear/);
+});

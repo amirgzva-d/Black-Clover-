@@ -1,5 +1,6 @@
 import { app,BrowserWindow,ipcMain,globalShortcut,Tray,Menu,nativeImage,Notification,screen } from 'electron';
 import path from 'node:path';
+import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -11,14 +12,15 @@ import { projectService } from '../agent/ProjectService.js';
 import { Phase1DependencyManager } from './Phase1DependencyManager.js';
 import { SpeechService } from './SpeechService.js';
 import { SystemPresence } from './SystemPresence.js';
+import { LocalAssetLibrary } from './LocalAssetLibrary.js';
 
 const execFileAsync=promisify(execFile),__dirname=path.dirname(fileURLToPath(import.meta.url));
 app.commandLine.appendSwitch('autoplay-policy','no-user-gesture-required');
-let avatarWin=null,chatWin=null,pinsWin=null,remindersWin=null,projectsWin=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false;
-const livingWindows=()=>[avatarWin,chatWin,pinsWin,remindersWin,projectsWin].filter(w=>w&&!w.isDestroyed());
+let avatarWin=null,chatWin=null,pinsWin=null,remindersWin=null,projectsWin=null,motionsWin=null,wardrobeWin=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false;
+const livingWindows=()=>[avatarWin,chatWin,pinsWin,remindersWin,projectsWin,motionsWin,wardrobeWin].filter(w=>w&&!w.isDestroyed());
 const send=event=>{for(const w of livingWindows())w.webContents.send('agent:event',event);};
 const sendAvatar=(channel,payload)=>{if(avatarWin&&!avatarWin.isDestroyed())avatarWin.webContents.send(channel,payload);};
-const agent=new Agent({emit:send}),deps=new Phase1DependencyManager({emit:send}),speech=new SpeechService(),presence=new SystemPresence({emit:e=>{send(e);if(e.type==='break-reminder'&&Notification.isSupported())new Notification({title:'Maria • Black Clover',body:e.text,silent:true}).show();}});
+const agent=new Agent({emit:send}),deps=new Phase1DependencyManager({emit:send}),speech=new SpeechService(),localAssets=new LocalAssetLibrary(()=>app.getPath('desktop')),presence=new SystemPresence({emit:e=>{send(e);if(e.type==='break-reminder'&&Notification.isSupported())new Notification({title:'Maria • Black Clover',body:e.text,silent:true}).show();}});
 
 function loadSurface(w,surface){const dev=process.env.NODE_ENV!=='production'&&!app.isPackaged;if(dev)w.loadURL(`http://127.0.0.1:5173/?surface=${surface}`);else w.loadFile(path.join(__dirname,'../../dist/index.html'),{query:{surface}});}
 function displayWorkArea(){return screen.getPrimaryDisplay().workArea;}
@@ -26,6 +28,7 @@ function avatarBounds(){const a=displayWorkArea(),width=Math.min(405,Math.max(34
 function chatBounds(){const a=displayWorkArea(),avatar=avatarBounds(),width=Math.min(540,Math.max(470,Math.round(a.width*.30))),height=Math.min(700,Math.max(590,Math.round(a.height*.72)));let x=avatar.x-width-18;if(x<a.x+10)x=a.x+22;return {width,height,x,y:a.y+Math.max(18,Math.round((a.height-height)/2))};}
 function utilityBounds(){const b=chatBounds();return {...b,width:Math.min(560,b.width+20),height:Math.min(720,b.height+20)};}
 function projectsBounds(){const a=displayWorkArea(),width=Math.min(1120,Math.max(820,Math.round(a.width*.72))),height=Math.min(780,Math.max(620,Math.round(a.height*.82)));return {width,height,x:a.x+Math.max(12,Math.round((a.width-width)/2)),y:a.y+Math.max(12,Math.round((a.height-height)/2))};}
+function assetBounds(){const a=displayWorkArea(),width=Math.min(980,Math.max(760,Math.round(a.width*.62))),height=Math.min(820,Math.max(620,Math.round(a.height*.80)));return {width,height,x:a.x+Math.max(12,Math.round((a.width-width)/2)),y:a.y+Math.max(12,Math.round((a.height-height)/2))};}
 function commonWebPreferences(){return {preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false};}
 
 async function beginAutoProvision(){if(autoProvisionStarted||!app.isPackaged||process.platform!=='win32')return;autoProvisionStarted=true;try{if(!await deps.needsProvisioning())return;provisioning=true;send({type:'provision',state:'needed',message:'Full Setup ماریا در حال آماده‌سازی است'});await deps.installAll({includeOptional:true});}catch(e){console.warn('Auto provision:',e.message);send({type:'provision',state:'partial',message:`آماده‌سازی کامل نشد: ${e.message}`});}finally{provisioning=false;}}
@@ -33,21 +36,24 @@ function createAvatarWindow(){if(avatarWin&&!avatarWin.isDestroyed())return avat
 function createChatWindow(){if(chatWin&&!chatWin.isDestroyed())return chatWin;const b=chatBounds();chatWin=new BrowserWindow({...b,minWidth:470,minHeight:560,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:'Maria Chat',webPreferences:commonWebPreferences()});loadSurface(chatWin,'chat');chatWin.on('close',e=>{if(!quitting){e.preventDefault();chatWin.hide();}});chatWin.on('closed',()=>{chatWin=null;});return chatWin;}
 function createUtilityWindow(surface){const key=surface==='pins'?'pins':'reminders',current=key==='pins'?pinsWin:remindersWin;if(current&&!current.isDestroyed())return current;const b=utilityBounds(),w=new BrowserWindow({...b,minWidth:480,minHeight:560,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:key==='pins'?'Maria Pins':'Maria Reminders',webPreferences:commonWebPreferences()});loadSurface(w,key);w.on('close',e=>{if(!quitting){e.preventDefault();w.hide();}});w.on('closed',()=>{if(key==='pins')pinsWin=null;else remindersWin=null;});if(key==='pins')pinsWin=w;else remindersWin=w;return w;}
 function createProjectsWindow(){if(projectsWin&&!projectsWin.isDestroyed())return projectsWin;const b=projectsBounds();projectsWin=new BrowserWindow({...b,minWidth:820,minHeight:600,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:'Maria Projects',webPreferences:commonWebPreferences()});loadSurface(projectsWin,'projects');projectsWin.on('close',e=>{if(!quitting){e.preventDefault();projectsWin.hide();}});projectsWin.on('closed',()=>{projectsWin=null;});return projectsWin;}
+function createAssetWindow(surface){const isMotion=surface==='motions',current=isMotion?motionsWin:wardrobeWin;if(current&&!current.isDestroyed())return current;const b=assetBounds(),w=new BrowserWindow({...b,minWidth:720,minHeight:580,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:isMotion?'Maria Motions':'Maria Wardrobe',webPreferences:commonWebPreferences()});loadSurface(w,surface);w.on('close',e=>{if(!quitting){e.preventDefault();w.hide();}});w.on('closed',()=>{if(isMotion)motionsWin=null;else wardrobeWin=null;});if(isMotion)motionsWin=w;else wardrobeWin=w;return w;}
 function showAvatar(){const w=createAvatarWindow();if(w.isMinimized())w.restore();w.setBounds(avatarBounds());w.show();return w;}
 function showChat({focus=true}={}){showAvatar();const w=createChatWindow();if(w.isMinimized())w.restore();w.setBounds(chatBounds());w.show();w.moveTop();if(focus){w.focus();w.webContents.send('assistant:focus-input');}return w;}
 function showUtility(surface){showAvatar();const w=createUtilityWindow(surface);if(w.isMinimized())w.restore();w.setBounds(utilityBounds());w.show();w.moveTop();w.focus();return w;}
 function showProjects(){showAvatar();const w=createProjectsWindow();if(w.isMinimized())w.restore();w.setBounds(projectsBounds());w.show();w.moveTop();w.focus();return w;}
+function showAssetSurface(surface){showAvatar();const w=createAssetWindow(surface);if(w.isMinimized())w.restore();w.setBounds(assetBounds());w.show();w.moveTop();w.focus();return w;}
 function hideChat(){if(chatWin&&!chatWin.isDestroyed())chatWin.hide();}
 function hideAvatar(){if(avatarWin&&!avatarWin.isDestroyed())avatarWin.hide();}
 function hideUtility(surface){const w=surface==='pins'?pinsWin:remindersWin;if(w&&!w.isDestroyed())w.hide();}
 function hideProjects(){if(projectsWin&&!projectsWin.isDestroyed())projectsWin.hide();}
+function hideAssetSurface(surface){const w=surface==='motions'?motionsWin:wardrobeWin;if(w&&!w.isDestroyed())w.hide();}
 function toggleAvatar(){if(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isVisible())hideAvatar();else showAvatar();}
 function toggleAlwaysOnTop(){const w=showAvatar(),next=!w.isAlwaysOnTop();w.setAlwaysOnTop(next,next?'floating':'normal');return next;}
 function toggleChat(){if(chatWin&&!chatWin.isDestroyed()&&chatWin.isVisible())hideChat();else showChat();}
 
 function trayIcon(){return nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAK0lEQVR42mNkYPj/n4ECwESJ5lEDRg0YNYDQgBqGQWjAoAGjBgwaMGgAAJs7Ah7lQ3jMAAAAAElFTkSuQmCC').resize({width:16,height:16});}
 async function installAllFromTray(){if(provisioning)return;provisioning=true;try{await deps.installAll({includeOptional:true});}catch{}finally{provisioning=false;}}
-function desktopMenu(){const pinned=Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop());return Menu.buildFromTemplate([{label:'نمایش ماریا',click:showAvatar},{label:'مخفی کردن ماریا',click:hideAvatar},{label:'باز کردن چت',click:()=>showChat()},{label:'پین‌شده‌ها',click:()=>showUtility('pins')},{label:'یادآورها و کارهای زمان‌بندی‌شده',click:()=>showUtility('reminders')},{label:'پروژه‌ها',click:showProjects},{type:'separator'},{label:pinned?'برداشتن از روی همه پنجره‌ها':'همیشه روی پنجره‌ها',type:'checkbox',checked:pinned,click:toggleAlwaysOnTop},{label:'تنظیمات ماریا',click:()=>{const w=showChat();w.webContents.send('assistant:open-settings');}},{type:'separator'},{label:'آماده‌سازی کامل ابزارها',click:installAllFromTray},{label:'اجرا با دسترسی Administrator',click:()=>restartElevated().catch(()=>{})},{type:'separator'},{label:'خروج کامل',click:()=>{quitting=true;app.quit();}}]);}
+function desktopMenu(){const pinned=Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop());return Menu.buildFromTemplate([{label:'نمایش ماریا',click:showAvatar},{label:'مخفی کردن ماریا',click:hideAvatar},{label:'باز کردن چت',click:()=>showChat()},{label:'پین‌شده‌ها',click:()=>showUtility('pins')},{label:'یادآورها و کارهای زمان‌بندی‌شده',click:()=>showUtility('reminders')},{label:'پروژه‌ها',click:showProjects},{label:'حرکت‌ها',click:()=>showAssetSurface('motions')},{label:'لباس و وسایل',click:()=>showAssetSurface('wardrobe')},{type:'separator'},{label:pinned?'برداشتن از روی همه پنجره‌ها':'همیشه روی پنجره‌ها',type:'checkbox',checked:pinned,click:toggleAlwaysOnTop},{label:'تنظیمات ماریا',click:()=>{const w=showChat();w.webContents.send('assistant:open-settings');}},{type:'separator'},{label:'آماده‌سازی کامل ابزارها',click:installAllFromTray},{label:'اجرا با دسترسی Administrator',click:()=>restartElevated().catch(()=>{})},{type:'separator'},{label:'خروج کامل',click:()=>{quitting=true;app.quit();}}]);}
 function createTray(){if(tray)return;tray=new Tray(trayIcon());tray.setToolTip('Maria • Black Clover');const refresh=()=>tray.setContextMenu(desktopMenu());refresh();tray.on('right-click',refresh);tray.on('click',toggleAvatar);}
 function psQuote(s){return `'${String(s).replaceAll("'","''")}'`;}
 async function isAdmin(){try{const {stdout}=await execFileAsync('powershell.exe',['-NoProfile','-NonInteractive','-Command','([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)'],{windowsHide:true,timeout:10000});return stdout.trim().toLowerCase()==='true';}catch{return false;}}
@@ -78,12 +84,23 @@ ipcMain.handle('assistant:show-pins',()=>{showUtility('pins');return true;});
 ipcMain.handle('assistant:hide-pins',()=>{hideUtility('pins');return true;});
 ipcMain.handle('assistant:show-reminders',()=>{showUtility('reminders');return true;});
 ipcMain.handle('assistant:hide-reminders',()=>{hideUtility('reminders');return true;});
+ipcMain.handle('assistant:show-motions',()=>{showAssetSurface('motions');return true;});
+ipcMain.handle('assistant:hide-motions',()=>{hideAssetSurface('motions');return true;});
+ipcMain.handle('assistant:show-wardrobe',()=>{showAssetSurface('wardrobe');return true;});
+ipcMain.handle('assistant:hide-wardrobe',()=>{hideAssetSurface('wardrobe');return true;});
 ipcMain.handle('assistant:toggle-top',()=>toggleAlwaysOnTop());
-ipcMain.handle('assistant:window-state',()=>({avatarVisible:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isVisible()),chatVisible:Boolean(chatWin&&!chatWin.isDestroyed()&&chatWin.isVisible()),projectsVisible:Boolean(projectsWin&&!projectsWin.isDestroyed()&&projectsWin.isVisible()),alwaysOnTop:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop())}));
+ipcMain.handle('assistant:window-state',()=>({avatarVisible:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isVisible()),chatVisible:Boolean(chatWin&&!chatWin.isDestroyed()&&chatWin.isVisible()),projectsVisible:Boolean(projectsWin&&!projectsWin.isDestroyed()&&projectsWin.isVisible()),motionsVisible:Boolean(motionsWin&&!motionsWin.isDestroyed()&&motionsWin.isVisible()),wardrobeVisible:Boolean(wardrobeWin&&!wardrobeWin.isDestroyed()&&wardrobeWin.isVisible()),alwaysOnTop:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop())}));
 ipcMain.handle('assistant:minimize-chat',()=>{const w=createChatWindow();w.minimize();return true;});
-ipcMain.handle('assistant:minimize-surface',(_e,surface)=>{const w=surface==='pins'?pinsWin:surface==='reminders'?remindersWin:surface==='projects'?projectsWin:chatWin;if(w&&!w.isDestroyed())w.minimize();return true;});
+ipcMain.handle('assistant:minimize-surface',(_e,surface)=>{const w=surface==='pins'?pinsWin:surface==='reminders'?remindersWin:surface==='projects'?projectsWin:surface==='motions'?motionsWin:surface==='wardrobe'?wardrobeWin:chatWin;if(w&&!w.isDestroyed())w.minimize();return true;});
 ipcMain.handle('assistant:open-settings',()=>{const w=showChat();w.webContents.send('assistant:open-settings');return true;});
 ipcMain.handle('assistant:prompt',(_e,text)=>{const w=showChat();w.webContents.send('assistant:prefill-prompt',{text:String(text||''),submit:true});return true;});
+
+ipcMain.handle('assets:list-local',()=>localAssets.list());
+ipcMain.handle('assets:read-local',(_e,name)=>localAssets.read(String(name||'')));
+ipcMain.handle('assets:open-folder',()=>localAssets.openFolder());
+ipcMain.handle('assets:apply-avatar',async(_e,name)=>{const payload=await localAssets.read(String(name||''));showAvatar();sendAvatar('assistant:local-avatar',payload);return {ok:true,name:payload.name};});
+ipcMain.handle('assets:import-motion',async(_e,name)=>{const payload=await localAssets.read(String(name||''));showAvatar();sendAvatar('assistant:local-motion',payload);return {ok:true,name:payload.name};});
+ipcMain.handle('avatar:play-motion',(_e,id)=>{showAvatar();sendAvatar('assistant:play-motion',{id:String(id||'')});return true;});
 
 ipcMain.handle('projects:list',()=>projectService.list());
 ipcMain.handle('projects:catalog',()=>projectService.catalog());

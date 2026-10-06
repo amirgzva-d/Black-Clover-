@@ -180,6 +180,11 @@ avatarRoot.addEventListener('blackclover:avatar-loaded', event => {
   const name = meta.name || meta.title || meta.meta?.title;
   avatarPick.title = name ? `مدل فعلی: ${name}` : 'تغییر کاراکتر VRM';
 });
+if(IS_AVATAR){
+  window.blackClover?.onLocalAvatar?.(async payload=>{try{const file=new File([payload.bytes],payload.name,{type:'model/gltf-binary'});await useAvatarFile(file);}catch(error){bubble('bot','مدل محلی لود نشد: '+(error.message||error));}});
+  window.blackClover?.onLocalMotion?.(async payload=>{try{const type=/\.vrma$/i.test(payload.name)?'model/gltf-binary':'application/zip';const file=new File([payload.bytes],payload.name,{type});await useMotionFile(file);}catch(error){bubble('bot','Motion Pack محلی آماده نشد: '+(error.message||error));}});
+  window.blackClover?.onPlayMotion?.(async payload=>{try{const controller=await avatarControllerPromise;await controller?.playMotion?.(payload?.id);}catch(error){bubble('bot','حرکت اجرا نشد: '+(error.message||error));}});
+}
 listMotions().then(async items => {
   let available=items;
   if (!available.length && IS_AVATAR) {
@@ -193,7 +198,7 @@ listMotions().then(async items => {
   }
   if(available.length){
     motionPick.textContent=`حرکت‌ها • ${available.length}`;
-    if(IS_AVATAR){try{const controller=await avatarControllerPromise;const idle=available.find(x=>x.id==='fullbody')?.id||available[0].id;await controller.setIdleMotion?.(idle);}catch{}}
+    /* Keep VRMA motions event-driven. Procedural breathing remains the default idle to avoid pose drift/rotation. */
   }
 }).catch(() => {});
 
