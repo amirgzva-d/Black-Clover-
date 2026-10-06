@@ -4,7 +4,9 @@ import { onlineBrainPoolFromEnv } from './OnlineBrainPool.js';
 const ping=async(url,timeoutMs=2500)=>{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);try{const r=await fetch(url,{method:'GET',cache:'no-store',signal:controller.signal});return r.ok||r.status===204;}catch{return false;}finally{clearTimeout(timer);}};
 const inferProfile=(tools,requested='general')=>{if(requested&&requested!=='general')return requested;const list=tools||[],names=list.map(x=>x?.function?.name||'').join(' ');if(!list.length)return 'chat';if(/project_|coding|git_|run_project|inspect_project|write_project|replace_project/i.test(names))return 'coding';if(/research|web_|wikipedia|read_web/i.test(names))return 'research';if(list.length>36)return 'complex';return 'general';};
 const modelText=name=>String(name||'').toLowerCase();
-const badGeneralModel=name=>/(embed|embedding|rerank|vision-only|whisper|stable-diffusion|flux|nomic)/i.test(name);
+const badGeneralModel=name=>/(embed|embedding|rerank|vision-only|whisper|stable-diffusion|flux|nomic|:cloud$)/i.test(name);
+const isCloudModel=name=>/:cloud$/i.test(String(name||'').trim());
+const errorMessage=error=>String(error?.message||error||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,240);
 const scoreModel=(name,profile='general')=>{
   const n=modelText(name);if(!n||badGeneralModel(n))return -1000;let score=0;
   if(profile==='coding'){if(/qwen3[-.:]?coder/.test(n))score+=120;else if(/qwen2\.5[-.:]?coder/.test(n))score+=110;else if(/deepseek[-.:]?coder/.test(n))score+=100;else if(/coder|code/.test(n))score+=55;}
@@ -17,7 +19,7 @@ export function pickBestLocalModel(models=[],profile='general'){return [...new S
 export async function internetAvailable(){const checks=await Promise.all(['https://www.msftconnecttest.com/connecttest.txt','https://www.google.com/generate_204'].map(u=>ping(u)));return checks.some(Boolean);}
 
 export class BrainRouter{
-  constructor({local=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:4096,temperature:.38,timeoutMs:90000,think:false,numPredict:700}),chatLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CHAT_MODEL||process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:3072,temperature:.42,timeoutMs:60000,think:false,numPredict:280}),legacyLocal=new OllamaClient({model:process.env.BLACK_CLOVER_LEGACY_MODEL||'qwen2.5:1.5b',keepAlive:'2m',numCtx:4096,temperature:.35,timeoutMs:60000,think:false,numPredict:480}),researchLocal=new OllamaClient({model:process.env.BLACK_CLOVER_RESEARCH_MODEL||'qwen2.5:1.5b',keepAlive:'8m',numCtx:3072,temperature:.22,timeoutMs:45000,think:false,numPredict:320}),codingLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CODING_MODEL||'qwen2.5-coder:3b',keepAlive:'10m',numCtx:8192,temperature:.28,timeoutMs:180000,think:false,numPredict:1400}),online=onlineBrainPoolFromEnv(),networkTtlMs=15000}={}){
+  constructor({local=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:4096,temperature:.38,timeoutMs:90000,think:false,numPredict:700}),chatLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CHAT_MODEL||process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:3072,temperature:.42,timeoutMs:60000,think:false,numPredict:280}),legacyLocal=new OllamaClient({model:process.env.BLACK_CLOVER_LEGACY_MODEL||'qwen2.5:1.5b',keepAlive:'2m',numCtx:4096,temperature:.35,timeoutMs:60000,think:false,numPredict:480}),researchLocal=new OllamaClient({model:process.env.BLACK_CLOVER_RESEARCH_MODEL||process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:3072,temperature:.22,timeoutMs:60000,think:false,numPredict:320}),codingLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CODING_MODEL||'qwen2.5-coder:3b',keepAlive:'10m',numCtx:8192,temperature:.28,timeoutMs:180000,think:false,numPredict:1400}),online=onlineBrainPoolFromEnv(),networkTtlMs=15000}={}){
     this.local=local;this.chatLocal=chatLocal;this.legacyLocal=legacyLocal;this.researchLocal=researchLocal;this.codingLocal=codingLocal;this.online=online;this.networkTtlMs=networkTtlMs;this.lastMode='local';this.lastProfile='general';this.networkState=null;this.networkCheckedAt=0;this.lastFallbackReason='';this.lastProvider=null;this.lastModel=local.model;this.adaptiveLocal=null;this.selectedLocals=new Map();
   }
   get model(){return this.lastModel||this.local.model;}
@@ -38,19 +40,129 @@ export class BrainRouter{
     if(picked){this.lastFallbackReason=`adaptive-local-model: ${picked}`;this.adaptiveLocal=this.cloneLocal(profile==='coding'?this.codingLocal:profile==='research'?this.researchLocal:this.local,picked);return this.adaptiveLocal;}
     throw new Error(`No local Ollama chat model is installed. Install ${this.local.model} or choose another provider.`);
   }
-  async catalog(){const installed=await this.local.models(),online=(this.online?.catalog?.()||[]).filter(x=>x.configured).map(x=>({id:`online:${x.provider}`,provider:x.provider,model:x.model||'auto',label:`${x.label||x.provider}${x.model?` • ${x.model}`:''}`,available:true}));return [{id:'auto',provider:'auto',model:'auto',label:'Auto • Maria',available:true},...installed.map(model=>({id:`ollama:${model}`,provider:'ollama',model,label:`Ollama • ${model}`,available:true})),...online];}
-  async chat(messages,tools=[],{allowOnline=true,privacyReason='',profile='general',provider='auto',model='auto',modelOverride='auto'}={}){
-    profile=inferProfile(tools,profile);this.lastProfile=profile;
-    if(modelOverride&&modelOverride!=='auto'){const selected=String(modelOverride);if(selected.startsWith('ollama:')){provider='ollama';model=selected.slice(7);}else if(selected.startsWith('online:')){provider=selected.slice(7);model='auto';}}
-    provider=String(provider||'auto').toLowerCase();model=String(model||'auto');
-    const forceLocal=provider==='ollama'||provider==='local',forceOnline=!['auto','ollama','local'].includes(provider),policy=String(process.env.BLACK_CLOVER_BRAIN_POLICY||'online-first').toLowerCase();
-    if(forceOnline){if(!allowOnline)throw new Error('This project contains private/local context, so cloud model use is blocked for this turn.');if(!await this.network())throw new Error('Internet is unavailable for the selected cloud provider.');const out=await this.online.chat(messages,tools,{profile,provider,model});this.lastMode='online';this.lastProvider=out.provider;this.lastModel=out.model;this.lastFallbackReason='';return out;}
-    const wantsOnline=!forceLocal&&allowOnline&&this.online?.configured&&(policy==='online-first'||profile==='coding'||profile==='research'||profile==='complex');
-    if(wantsOnline){const connected=await this.network();if(connected){try{const out=await this.online.chat(messages,tools,{profile,provider:'auto',model:'auto'});this.lastMode='online';this.lastProvider=out.provider;this.lastModel=out.model;this.lastFallbackReason='';return out;}catch(e){this.lastFallbackReason=`online-failed: ${e.message}`;}}else this.lastFallbackReason='internet-offline';}
-    if(this.online?.configured&&!allowOnline)this.lastFallbackReason=`privacy-local${privacyReason?`: ${privacyReason}`:''}`;
-    const local=await this.chooseLocal(profile,forceLocal?model:'auto'),notice=this.lastFallbackReason==='internet-offline'?'[HOST NOTICE: Internet is unavailable. Continue locally and never claim online research succeeded.]':this.lastFallbackReason.startsWith('online-failed')?'[HOST NOTICE: Online brains failed. Continue with the local brain.]':this.lastFallbackReason==='primary-local-model-missing'?'[HOST NOTICE: The preferred local model is unavailable; use this compatible fallback.]':this.lastFallbackReason.startsWith('adaptive-local-model:')?`[HOST NOTICE: Preferred local model unavailable. Running on ${this.lastFallbackReason.slice('adaptive-local-model: '.length)}.]`:'';
-    this.lastMode=profile==='coding'?'local-coding':profile==='chat'?'local-chat':local===this.legacyLocal?'local-legacy':local===this.adaptiveLocal?'local-adaptive':forceLocal&&model!=='auto'?'local-selected':'local';this.lastProvider='ollama';this.lastModel=local.model;return local.chat(notice?[...messages,{role:'system',content:notice}]:messages,tools);
+  localCandidates(profile,preferred){
+    const out=[];
+    const add=client=>{if(client&&!out.includes(client))out.push(client);};
+    add(preferred);
+    if(profile==='coding')add(this.codingLocal);
+    if(profile==='chat')add(this.chatLocal);
+    if(profile==='research')add(this.researchLocal);
+    add(this.local);
+    add(this.legacyLocal);
+    add(this.adaptiveLocal);
+    return out.filter(client=>client&&!isCloudModel(client.model));
   }
+  async localChat(messages,tools,profile,preferred){
+    const errors=[];
+    for(const client of this.localCandidates(profile,preferred)){
+      try{
+        if(typeof client.hasModel==='function'&&!(await client.hasModel()))continue;
+        const out=await client.chat(messages,tools);
+        this.lastMode=profile==='coding'?'local-coding':profile==='chat'?'local-chat':client===this.legacyLocal?'local-legacy':client===this.adaptiveLocal?'local-adaptive':'local';
+        this.lastProvider='ollama';
+        this.lastModel=client.model;
+        return out;
+      }catch(error){
+        errors.push(String(client.model||'ollama')+': '+errorMessage(error));
+      }
+    }
+    if(errors.length)throw new Error('Local brain unavailable: '+errors.join(' | '));
+    throw new Error('No local Ollama chat model is installed. Install a local chat model or choose another provider.');
+  }
+  async catalog(){const installed=await this.local.models(),descriptions={openai:'مدل‌های ابری قدرتمند OpenAI برای کار عمومی و کدنویسی',anthropic:'Claude برای تحلیل عمیق، متن طولانی و Coding',deepseek:'DeepSeek برای تحلیل و کدنویسی',qwen:'Qwen Cloud برای فارسی، ابزارها و کار عمومی',gemini:'Gemini برای متن و کار چندرسانه‌ای',groq:'Llama روی Groq با تمرکز روی پاسخ سریع',openrouter:'دسترسی به مجموعه بزرگی از مدل‌های Cloud',mistral:'مدل‌های سریع Mistral Cloud'},online=(this.online?.catalog?.()||[]).map(x=>({id:`online:${x.provider}`,provider:x.provider,model:x.model||'auto',label:`${x.label||x.provider}${x.model?` • ${x.model}`:''}`,description:descriptions[x.provider]||'مدل Cloud',available:Boolean(x.configured),configured:Boolean(x.configured)}));return [{id:'auto',provider:'auto',model:'auto',label:'Auto • Maria',description:'Maria بر اساس نوع کار سریع‌ترین و مناسب‌ترین مغز آماده را انتخاب می‌کند.',available:true,configured:true},...installed.map(model=>{const cloud=/:cloud$/i.test(model);return {id:cloud?`ollama-cloud:${model}`:`ollama:${model}`,provider:cloud?'ollama-cloud':'ollama',model,label:`${cloud?'Ollama Cloud':'Ollama'} • ${model}`,description:cloud?'مدل Cloud از مسیر Ollama؛ داده برای پاسخ به سرویس آنلاین فرستاده می‌شود.':'مدل محلی؛ داده روی همین سیستم می‌ماند.',available:true,configured:true};}),...online];}
+  async chat(messages,tools=[],{allowOnline=true,privacyReason='',profile='general',provider='auto',model='auto',modelOverride='auto'}={}){
+    profile=inferProfile(tools,profile);
+    this.lastProfile=profile;
+    if(modelOverride&&modelOverride!=='auto'){
+      const selected=String(modelOverride);
+      if(selected.startsWith('ollama-cloud:')){provider='ollama-cloud';model=selected.slice(13);}
+      else if(selected.startsWith('ollama:')){provider='ollama';model=selected.slice(7);}
+      else if(selected.startsWith('online:')){provider=selected.slice(7);model='auto';}
+    }
+    provider=String(provider||'auto').toLowerCase();
+    model=String(model||'auto');
+    const forceLocal=provider==='ollama'||provider==='local';
+    const forceOllamaCloud=provider==='ollama-cloud';
+    const forceOnline=!['auto','ollama','local','ollama-cloud'].includes(provider);
+    const policy=String(process.env.BLACK_CLOVER_BRAIN_POLICY||'online-first').toLowerCase();
+
+    if(forceOllamaCloud){
+      if(!allowOnline)this.lastFallbackReason='ollama-cloud-blocked-private';
+      else if(!await this.network())this.lastFallbackReason='ollama-cloud-offline';
+      else{
+        try{
+          const cloud=await this.chooseLocal(profile,model);
+          if(!isCloudModel(cloud.model))throw new Error('Selected Ollama Cloud model is not installed');
+          const out=await cloud.chat(messages,tools);
+          this.lastMode='ollama-cloud';
+          this.lastProvider='ollama-cloud';
+          this.lastModel=cloud.model;
+          this.lastFallbackReason='';
+          return out;
+        }catch(error){
+          this.lastFallbackReason='ollama-cloud-failed: '+errorMessage(error);
+        }
+      }
+    }
+
+    if(forceOnline){
+      if(!allowOnline)this.lastFallbackReason='cloud-blocked-private';
+      else if(!await this.network())this.lastFallbackReason='internet-offline';
+      else{
+        try{
+          if(!this.online?.configured)throw new Error(provider+' is not configured');
+          const out=await this.online.chat(messages,tools,{profile,provider,model});
+          this.lastMode='online';
+          this.lastProvider=out.provider;
+          this.lastModel=out.model;
+          this.lastFallbackReason='';
+          return out;
+        }catch(error){
+          this.lastFallbackReason='online-failed: '+errorMessage(error);
+        }
+      }
+    }
+
+    const wantsOnline=!forceLocal&&!forceOllamaCloud&&allowOnline&&this.online?.configured&&(policy==='online-first'||profile==='coding'||profile==='research'||profile==='complex');
+    if(wantsOnline){
+      if(await this.network()){
+        try{
+          const out=await this.online.chat(messages,tools,{profile,provider:'auto',model:'auto'});
+          this.lastMode='online';
+          this.lastProvider=out.provider;
+          this.lastModel=out.model;
+          this.lastFallbackReason='';
+          return out;
+        }catch(error){
+          this.lastFallbackReason='online-failed: '+errorMessage(error);
+        }
+      }else{
+        this.lastFallbackReason='internet-offline';
+      }
+    }
+    if(this.online?.configured&&!allowOnline)this.lastFallbackReason='privacy-local'+(privacyReason?': '+privacyReason:'');
+
+    let preferred;
+    try{
+      preferred=await this.chooseLocal(profile,forceLocal?model:'auto');
+    }catch(error){
+      if(!this.lastFallbackReason)this.lastFallbackReason='local-selection-failed: '+errorMessage(error);
+      preferred=await this.chooseLocal(profile,'auto');
+    }
+    const notice=this.lastFallbackReason==='internet-offline'
+      ?'[HOST NOTICE: Internet is unavailable. Continue locally and never claim online research succeeded.]'
+      :this.lastFallbackReason.startsWith('online-failed')
+        ?'[HOST NOTICE: Online brains failed. Continue with the local brain.]'
+        :this.lastFallbackReason.startsWith('ollama-cloud-')
+          ?'[HOST NOTICE: Ollama Cloud is unavailable or unauthorized. Continue with a local model.]'
+          :this.lastFallbackReason==='primary-local-model-missing'
+            ?'[HOST NOTICE: The preferred local model is unavailable; use this compatible fallback.]'
+            :this.lastFallbackReason.startsWith('adaptive-local-model:')
+              ?'[HOST NOTICE: Preferred local model unavailable. Continue with the available local model.]'
+              :'';
+    return this.localChat(notice?[...messages,{role:'system',content:notice}]:messages,tools,profile,preferred);
+  }
+
   async health(){
     const [internet,localService,primaryModelAvailable,legacyModelAvailable,codingModelAvailable,installedModels]=await Promise.all([this.network({fresh:true}),this.local.health(),this.local.hasModel(),this.legacyLocal.hasModel(),this.codingLocal.hasModel(),this.local.models()]);
     const onlineStates=this.online?.configured&&internet?await this.online.health():{},bestAvailableLocalModel=pickBestLocalModel(installedModels,this.lastProfile);

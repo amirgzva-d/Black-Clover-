@@ -14,6 +14,10 @@ const knownApp=name=>{
   const n=String(name||'').toLowerCase();
   const env=process.env,candidates=[];
   if(/chrome/.test(n))candidates.push(path.join(env.PROGRAMFILES||'','Google','Chrome','Application','chrome.exe'),path.join(env['PROGRAMFILES(X86)']||'','Google','Chrome','Application','chrome.exe'),path.join(env.LOCALAPPDATA||'','Google','Chrome','Application','chrome.exe'));
+  else if(/edge|مایکروسافت اج|اج/.test(n))candidates.push(path.join(env['PROGRAMFILES(X86)']||'','Microsoft','Edge','Application','msedge.exe'),path.join(env.PROGRAMFILES||'','Microsoft','Edge','Application','msedge.exe'));
+  else if(/excel|اکسل/.test(n))candidates.push(path.join(env.PROGRAMFILES||'','Microsoft Office','root','Office16','EXCEL.EXE'),path.join(env['PROGRAMFILES(X86)']||'','Microsoft Office','root','Office16','EXCEL.EXE'));
+  else if(/word|ورد/.test(n))candidates.push(path.join(env.PROGRAMFILES||'','Microsoft Office','root','Office16','WINWORD.EXE'),path.join(env['PROGRAMFILES(X86)']||'','Microsoft Office','root','Office16','WINWORD.EXE'));
+  else if(/powerpoint|پاورپوینت/.test(n))candidates.push(path.join(env.PROGRAMFILES||'','Microsoft Office','root','Office16','POWERPNT.EXE'),path.join(env['PROGRAMFILES(X86)']||'','Microsoft Office','root','Office16','POWERPNT.EXE'));
   else if(/telegram/.test(n))return {name:'Telegram Desktop',kind:'startapp',target:'TelegramMessengerLLP.TelegramDesktop_t4vj0pshhgkwm!Telegram.TelegramDesktop.Store'};
   else if(/visual studio code|vscode|vs code/.test(n))candidates.push(path.join(env.LOCALAPPDATA||'','Programs','Microsoft VS Code','Code.exe'));
   else if(/notepad/.test(n))return {name:'Notepad',kind:'direct',target:'notepad.exe'};

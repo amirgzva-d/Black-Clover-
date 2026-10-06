@@ -83,3 +83,10 @@ test('autonomous profile documents persistent-save confirmations',async()=>{
     assert.ok(status.alwaysConfirm.some(x=>/Save\/Save As/.test(x)));
   }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
+
+
+test('ordinary filenames containing test do not force coding mode',()=>{
+  const intent=actionIntent('در فایل C:\\Temp\\agent-test.xlsx شیت Sales سلول B2 رو به 42 تغییر بده و بعد بررسی کن');
+  assert.equal(intent.modes.includes('coding'),false);
+  assert.ok(intent.modes.includes('spreadsheet'));
+});

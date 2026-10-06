@@ -16,7 +16,7 @@ export const ACTION_MODES=[
   {id:'spreadsheet',title:'Excel',description:'خواندن، استخراج و ویرایش فایل‌های Excel',pattern:/(اکسل|excel|xlsx|xlsm|xls\b|workbook|worksheet|شیت|سلول|ردیف|ستون|فرمول)/i},
   {id:'social',title:'پیام‌رسان',description:'Telegram، WhatsApp، Rubika و ارسال فایل/پیام',pattern:/(تلگرام|telegram|واتساپ|whatsapp|روبیکا|rubika|اینستاگرام|instagram|discord|پیام|بفرست|ارسال)/i},
   {id:'creative',title:'Adobe و طراحی',description:'کار با Photoshop، Illustrator و گردش‌کارهای طراحی',pattern:/(فتوشاپ|photoshop|ایلوستریتور|illustrator|طراحی|ادیت عکس|ویرایش عکس|طرح|پوستر|بنر)/i},
-  {id:'coding',title:'کدنویسی',description:'VS Code، ساخت سایت/بازی/اپ، تست و رفع باگ',pattern:/(کد|کدنویسی|برنامه.?نویسی|vscode|vs code|پروژه|سایت بساز|بازی بساز|اپ بساز|npm|git|build|test|باگ|debug|refactor)/i},
+  {id:'coding',title:'کدنویسی',description:'VS Code، ساخت سایت/بازی/اپ، تست و رفع باگ',pattern:/(کد|کدنویسی|برنامه.?نویسی|vscode|vs code|پروژه|سایت بساز|بازی بساز|اپ بساز|npm|\bgit\b|debug|refactor|رفع باگ|باگ.*(?:کد|پروژه|برنامه))/i},
   {id:'software',title:'نصب و مدیریت نرم‌افزار',description:'نصب، حذف، آپدیت و ارتقای برنامه‌ها',pattern:/(نصب|دانلود.*نصب|حذف برنامه|آن.?اینستال|uninstall|install|upgrade|آپدیت برنامه|به.?روزرسانی برنامه|winget)/i},
   {id:'diagnostics',title:'عیب‌یابی',description:'بررسی خطا و مشکل برنامه یا Windows',pattern:/(مشکل|خراب|ارور|خطا|کند|عیب.?یابی|بررسی کن چرا|درستش کن|تعمیر|repair|diagnos|event log|defender|firewall|dns)/i},
   {id:'personalization',title:'دسکتاپ و شخصی‌سازی',description:'مرتب‌سازی دسکتاپ و تغییر پس‌زمینه',pattern:/(پس.?زمینه|والپیپر|wallpaper|مرتب.*دسکتاپ|دسکتاپ.*مرتب|ظاهر ویندوز)/i},

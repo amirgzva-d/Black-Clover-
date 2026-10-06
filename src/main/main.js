@@ -13,16 +13,26 @@ import { Phase1DependencyManager } from './Phase1DependencyManager.js';
 import { SpeechService } from './SpeechService.js';
 import { SystemPresence } from './SystemPresence.js';
 import { LocalAssetLibrary } from './LocalAssetLibrary.js';
+import { BrainProviderStore } from './BrainProviderStore.js';
+import { setRuntimeProviderConfig,onlineBrainPoolFromEnv } from '../agent/OnlineBrainPool.js';
 
 const execFileAsync=promisify(execFile),__dirname=path.dirname(fileURLToPath(import.meta.url));
+const isDev=!app.isPackaged&&process.env.NODE_ENV!=='production';
+if(isDev){
+  const slot=String(process.env.BLACK_CLOVER_DEV_SLOT||'').replace(/[^a-z0-9_-]/gi,'').slice(0,24);
+  const suffix=slot?'-'+slot:'';
+  app.setPath('userData',path.join(app.getPath('appData'),'BlackCloverLiveDev'+suffix));
+  app.setPath('cache',path.join(app.getPath('temp'),'BlackCloverLiveDevCache'+suffix));
+  app.commandLine.appendSwitch('remote-debugging-port',String(process.env.BLACK_CLOVER_DEBUG_PORT||'9223'));
+}
 app.commandLine.appendSwitch('autoplay-policy','no-user-gesture-required');
-let avatarWin=null,chatWin=null,pinsWin=null,remindersWin=null,projectsWin=null,motionsWin=null,wardrobeWin=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false;
+let avatarWin=null,chatWin=null,pinsWin=null,remindersWin=null,projectsWin=null,motionsWin=null,wardrobeWin=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false,brainStore=null;
 const livingWindows=()=>[avatarWin,chatWin,pinsWin,remindersWin,projectsWin,motionsWin,wardrobeWin].filter(w=>w&&!w.isDestroyed());
 const send=event=>{for(const w of livingWindows())w.webContents.send('agent:event',event);};
 const sendAvatar=(channel,payload)=>{if(avatarWin&&!avatarWin.isDestroyed())avatarWin.webContents.send(channel,payload);};
 const agent=new Agent({emit:send}),deps=new Phase1DependencyManager({emit:send}),speech=new SpeechService(),localAssets=new LocalAssetLibrary(()=>app.getPath('desktop')),presence=new SystemPresence({emit:e=>{send(e);if(e.type==='break-reminder'&&Notification.isSupported())new Notification({title:'Maria • Black Clover',body:e.text,silent:true}).show();}});
 
-function loadSurface(w,surface){const dev=process.env.NODE_ENV!=='production'&&!app.isPackaged;if(dev)w.loadURL(`http://127.0.0.1:5173/?surface=${surface}`);else w.loadFile(path.join(__dirname,'../../dist/index.html'),{query:{surface}});}
+function loadSurface(w,surface){if(isDev)w.loadURL(`http://127.0.0.1:5173/?surface=${surface}`);else w.loadFile(path.join(__dirname,'../../dist/index.html'),{query:{surface}});}
 function displayWorkArea(){return screen.getPrimaryDisplay().workArea;}
 function avatarBounds(){const a=displayWorkArea(),width=Math.min(405,Math.max(340,Math.round(a.width*.22))),height=Math.min(660,Math.max(540,Math.round(a.height*.68)));return {width,height,x:a.x+a.width-width-14,y:a.y+a.height-height-10};}
 function chatBounds(){const a=displayWorkArea(),avatar=avatarBounds(),width=Math.min(540,Math.max(470,Math.round(a.width*.30))),height=Math.min(700,Math.max(590,Math.round(a.height*.72)));let x=avatar.x-width-18;if(x<a.x+10)x=a.x+22;return {width,height,x,y:a.y+Math.max(18,Math.round((a.height-height)/2))};}
@@ -62,9 +72,10 @@ function startupStatus(){const s=app.getLoginItemSettings();return {openAtLogin:
 function setStartup(enabled){if(!app.isPackaged)return {ok:false,message:'Start-with-Windows is enabled after installing the packaged app.',...startupStatus()};app.setLoginItemSettings({openAtLogin:Boolean(enabled),path:process.execPath,args:[]});return {ok:true,...startupStatus()};}
 function startReminderPump(){if(reminderTimer)return;reminderTimer=setInterval(async()=>{try{for(const item of await reminders.takeDue()){const text=item.message||item.label||item.instruction||'یادآوری';send({type:'reminder',item,text});if(Notification.isSupported())new Notification({title:'یادآوری ماریا',body:text}).show();}}catch(e){console.warn('Reminder pump:',e.message);}},5000);}
 function startIdleLearningPump(){if(learningTimer)return;learningTimer=setInterval(async()=>{try{if(provisioning)return;const idle=presence.status().idleSeconds;if(!Number.isFinite(idle)||idle<300)return;const dependencyState=await deps.status();if(!dependencyState.recommendedReady)return;await agent.improveOne({allowCurriculum:true});}catch(e){console.warn('Idle learning:',e.message);}},10*60*1000);}
+async function refreshBrainProviders(){if(!brainStore)brainStore=new BrainProviderStore();const cfg=await brainStore.runtimeConfig();setRuntimeProviderConfig(cfg);agent.client.online=onlineBrainPoolFromEnv();projectService.reloadBrains();return {settings:await brainStore.publicState(),catalog:await agent.modelCatalog()};}
 
 const gotLock=app.requestSingleInstanceLock();if(!gotLock){app.quit();}else app.on('second-instance',()=>{showAvatar();showChat();});
-app.whenReady().then(()=>{createAvatarWindow();createTray();presence.start();startReminderPump();startIdleLearningPump();globalShortcut.register('CommandOrControl+Shift+Space',toggleChat);app.on('activate',showAvatar);});
+app.whenReady().then(async()=>{brainStore=new BrainProviderStore();await refreshBrainProviders().catch(e=>console.warn('Brain providers:',e.message));createAvatarWindow();createTray();presence.start();startReminderPump();startIdleLearningPump();globalShortcut.register('CommandOrControl+Shift+Space',toggleChat);app.on('activate',showAvatar);});
 app.on('before-quit',()=>{quitting=true;});
 app.on('will-quit',()=>{globalShortcut.unregisterAll();presence.stop();if(reminderTimer)clearInterval(reminderTimer);if(learningTimer)clearInterval(learningTimer);});
 app.on('window-all-closed',()=>{});
@@ -73,6 +84,11 @@ ipcMain.handle('agent:chat',async(_e,payload)=>{const text=typeof payload==='obj
 ipcMain.handle('agent:confirm',async(_e,payload)=>{const response=await agent.confirm(payload);sendAvatar('assistant:response',response);return response;});
 ipcMain.handle('agent:status',()=>agent.status());
 ipcMain.handle('brain:catalog',()=>agent.modelCatalog());
+ipcMain.handle('brain:settings',async()=>{if(!brainStore)brainStore=new BrainProviderStore();return brainStore.publicState();});
+ipcMain.handle('brain:save-provider',async(_e,payload)=>{if(!brainStore)brainStore=new BrainProviderStore();await brainStore.saveProvider(payload||{});return refreshBrainProviders();});
+ipcMain.handle('brain:remove-provider',async(_e,provider)=>{if(!brainStore)brainStore=new BrainProviderStore();await brainStore.removeProvider(String(provider||''));return refreshBrainProviders();});
+ipcMain.handle('brain:test-provider',async(_e,provider)=>{await refreshBrainProviders();const states=await agent.client.online.health();return {provider:String(provider||''),ok:Boolean(states?.[provider]),states};});
+ipcMain.handle('brain:github-login',async()=>{if(!brainStore)brainStore=new BrainProviderStore();return brainStore.startGithubLogin();});
 ipcMain.handle('assistant:toggle',()=>{toggleChat();return true;});
 ipcMain.handle('assistant:show-chat',()=>{showChat();return true;});
 ipcMain.handle('assistant:hide-chat',()=>{hideChat();return true;});

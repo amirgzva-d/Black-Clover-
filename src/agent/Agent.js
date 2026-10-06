@@ -24,6 +24,19 @@ const skillContext=items=>items?.length?`\n\n[LEARNED EXPERIENCE — prior reusa
 const toolMessage=(name,out,callId,isPrivate=false)=>({role:'tool',content:JSON.stringify(out),tool_name:name,...(callId?{tool_call_id:callId}:{}),_private:isPrivate});
 const publicFields=m=>{const x={role:m.role,content:m.content??''};if(m.tool_calls)x.tool_calls=m.tool_calls;if(m.tool_name)x.tool_name=m.tool_name;if(m.tool_call_id)x.tool_call_id=m.tool_call_id;return x;};
 const parseArgs=raw=>{if(typeof raw!=='string')return raw??{};try{return JSON.parse(raw||'{}');}catch{return {};}};
+const textToolCalls=(content,allowedNames=[])=>{
+  const text=String(content??'').trim();if(!text)return[];
+  const fenced=text.match(/^\`\`\`(?:json)?\s*([\s\S]*?)\s*\`\`\`$/i),raw=fenced?.[1]??((text.startsWith('{')&&text.endsWith('}'))||(text.startsWith('[')&&text.endsWith(']'))?text:'');
+  if(!raw)return[];let parsed;try{parsed=JSON.parse(raw);}catch{return[];}
+  const allow=new Set(allowedNames||[]),items=Array.isArray(parsed)?parsed:Array.isArray(parsed?.tool_calls)?parsed.tool_calls:[parsed],calls=[];
+  for(const item of items){
+    const fn=item?.function||item,name=String(fn?.name||item?.tool||'').trim(),args=fn?.arguments??item?.arguments??item?.args??{};
+    if(!name||!allow.has(name)||!tools[name])continue;
+    const obj=parseArgs(args);if(!obj||typeof obj!=='object'||Array.isArray(obj))continue;
+    calls.push({id:`text-tool-${crypto.randomUUID()}`,type:'function',function:{name,arguments:JSON.stringify(obj)}});
+  }
+  return calls;
+};
 const soundsUnfamiliar=text=>/(نمی.?تونم|نمی.?توانم|نمی.?دونم|نمی.?دانم|بلد نیستم|ابزار(?:ش|ش رو)? ندارم|قابلیت(?:ش|ش رو)? ندارم|can(?:not|'t)|don.?t know|not supported)/i.test(String(text||''));
 const explicitCloud=options=>!['','auto','ollama','local'].includes(String(options?.provider||'auto').toLowerCase());
 const COMPACT_CHAT_SYSTEM='تو ماریا هستی؛ دستیار فارسی روان، دقیق و کاربردی. برای گفتگوی عادی و سوال‌های دانشی مستقیم جواب بده. اگر سوال آموزشی است توضیح روشن و مرحله‌ای بده. چیزی را که مطمئن نیستی قطعی جلوه نده. لحن طبیعی، دوستانه و کوتاه‌تا‌متوسط باشد و از تکرار یا حاشیه پرهیز کن.';
@@ -72,7 +85,7 @@ export class Agent{
     for(let step=startStep;step<MAX_STEPS;step++){
       if(queue.length){while(queue.length){const call=queue.shift(),r=await this.executeToolCall(call,turn);if(r.needsConfirmation){const id=crypto.randomUUID();this.pending.set(id,{...r,createdAt:Date.now(),routeNames,turn,remainingCalls:queue,startStep:step});return {ok:true,requiresConfirmation:true,confirmationId:id,text:`این بخش حساس یا برگشت‌ناپذیر است. اجرای «${r.name}» را تأیید می‌کنی؟`};}}continue;}
       this.emit({type:'thinking',step});const options=turn.chatOptions||this.chatOptions,allowOnline=!turn.private||explicitCloud(options);const response=await this.client.chat(this.modelHistory({allowOnline,compact:routeNames.length===0}),ollamaTools(routeNames),{...options,allowOnline,privacyReason:turn.private?'private computer/project context':''}),msg=response?.message;
-      if(!msg)throw new Error('Model returned no message');const internal={...msg,_private:turn.private};this.history.push(internal);turn.assistantMessage=internal;this.trimHistory();const calls=msg.tool_calls??[];if(!calls.length){const reply=cleanReply(msg.content)||'انجام شد.';return this.finishTurn(turn,reply);}queue=[...calls];
+      if(!msg)throw new Error('Model returned no message');const nativeCalls=Array.isArray(msg.tool_calls)?msg.tool_calls:[],syntheticCalls=nativeCalls.length?[]:textToolCalls(msg.content,routeNames),calls=nativeCalls.length?nativeCalls:syntheticCalls;const internal={...msg,...(syntheticCalls.length?{content:'',tool_calls:syntheticCalls}:{}),_private:turn.private};this.history.push(internal);turn.assistantMessage=internal;this.trimHistory();if(!calls.length){const reply=cleanReply(msg.content)||'انجام شد.';return this.finishTurn(turn,reply);}queue=[...calls];
     }
     if(!turn.private)await skills.queueImprovement(turn.original,{error:'Agent exceeded safe automatic step limit'});return {ok:false,text:'این کار بیش از حدِ امنِ مراحل خودکار طول کشید. بخش‌های انجام‌شده حفظ شده‌اند؛ از وضعیت فعلی دوباره برنامه‌ریزی می‌کنم.'};
   }

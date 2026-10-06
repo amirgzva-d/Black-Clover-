@@ -2,6 +2,11 @@ const { contextBridge,ipcRenderer }=require('electron');
 contextBridge.exposeInMainWorld('blackClover',{
   chat:(text,options={})=>ipcRenderer.invoke('agent:chat',{text,options}),
   modelCatalog:()=>ipcRenderer.invoke('brain:catalog'),
+  brainSettings:()=>ipcRenderer.invoke('brain:settings'),
+  saveBrainProvider:payload=>ipcRenderer.invoke('brain:save-provider',payload),
+  removeBrainProvider:provider=>ipcRenderer.invoke('brain:remove-provider',provider),
+  testBrainProvider:provider=>ipcRenderer.invoke('brain:test-provider',provider),
+  connectGithubBrain:()=>ipcRenderer.invoke('brain:github-login'),
   confirm:(id,approved)=>ipcRenderer.invoke('agent:confirm',{id,approved}),
   getStatus:()=>ipcRenderer.invoke('agent:status'),
   toggle:()=>ipcRenderer.invoke('assistant:toggle'),

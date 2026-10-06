@@ -2,9 +2,10 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { shouldGroundKnowledge,groundedKnowledgeAnswer } from '../src/agent/GroundedKnowledge.js';
 
-test('plain factual questions use grounded research while computer actions do not',()=>{
-  assert.equal(shouldGroundKnowledge('پایتخت مغولستان کجاست؟'),true);
+test('ordinary questions stay in chat while fresh or explicit research uses the web',()=>{
+  assert.equal(shouldGroundKnowledge('پایتخت مغولستان کجاست؟'),false);
   assert.equal(shouldGroundKnowledge('جدیدترین کارت گرافیک انویدیا چیه؟'),true);
+  assert.equal(shouldGroundKnowledge('پایتخت مغولستان را با منبع بررسی کن'),true);
   assert.equal(shouldGroundKnowledge('صدا رو تا ته زیاد کن'),false);
   assert.equal(shouldGroundKnowledge('فتوشاپ رو باز کن'),false);
   assert.equal(shouldGroundKnowledge('سلام ماریا خوبی؟'),false);

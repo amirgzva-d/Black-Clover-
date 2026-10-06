@@ -16,16 +16,16 @@ const titleBase=title=>clean(String(title||'').split(/\s+-\s+|\s+–\s+/)[0]);
 
 export function shouldGroundKnowledge(text=''){
   const value=String(text||'').trim();if(!value||smallTalk.test(value)||localComputer.test(value))return false;
-  const howTo=/(چطور|چطوری|چگونه|روش|مراحل|راهنما|آموزش|چیکار کنم|چکار کنم)/i.test(value);
-  if(actionIntent(value).action&&!howTo)return false;
-  return factual.test(value)&&(howTo||currentish.test(value)||explicitResearch.test(value)||simpleStableFact.test(value));
+  if(actionIntent(value).action&&!explicitResearch.test(value)&&!currentish.test(value))return false;
+  if(explicitResearch.test(value))return true;
+  return factual.test(value)&&currentish.test(value);
 }
 
 function capitalAnswer(query,sources){
   if(!/(پایتخت|capital)/i.test(query))return '';
   const entity=clean(query).replace(/پایتخت|کجاست|کجا هست|چیست|چیه|capital|what|where|is|the|of|\?|؟/gi,' ').replace(/\s+/g,' ').trim(),entityNorm=plain(entity);
-  for(const s of sources){const title=titleBase(s.title),titleNorm=plain(title),textNorm=plain(`${s.snippet||''} ${String(s.text||'').slice(0,2600)}`);if(title&&title.length<70&&titleNorm!==entityNorm&&textNorm.includes('پایتخت')&&(!entityNorm||textNorm.includes(entityNorm))){const titleMention=textNorm.includes(titleNorm),capitalRelation=/پایتخت.{0,90}(?:است|می باشد|میباشد)|(?:است|می باشد|میباشد).{0,90}پایتخت/.test(textNorm);if(titleMention&&capitalRelation)return `پایتخت ${entity||'این کشور'} ${title} است.`;}}
-  for(const s of sources){const text=clean(`${s.snippet||''} ${String(s.text||'').slice(0,4200)}`);const patterns=[/پایتخت\s+و\s+بزرگ(?:‌| )?ترین\s+شهر\s+([آ-یA-Za-z‌\- ]{2,55}?)(?=\s+\d|[،؛,.]|\s+است\b|$)/i,/پایتخت\s+آن\s+([آ-یA-Za-z‌\- ]{2,55}?)(?=[،؛,.]|\s+است\b|$)/i,/(?:capital(?: and largest city)?(?: of [^.,;]{1,80})? is)\s+([A-Za-z\- ]{2,60})(?=[.,;]|$)/i];for(const re of patterns){const m=text.match(re);if(!m)continue;const place=clean(m[1]).replace(/\s+(?:است|می‌باشد|میباشد)$/,'');if(place&&plain(place)!==entityNorm)return `پایتخت ${entity||'این کشور'} ${place} است.`;}}
+  for(const s of sources){const title=titleBase(s.title),titleNorm=plain(title),textNorm=plain(`${s.snippet||''} ${String(s.text||'').slice(0,2600)}`);if(title&&title.length<70&&titleNorm!==entityNorm&&!/پایتخت|capital/i.test(title)&&textNorm.includes('پایتخت')&&(!entityNorm||textNorm.includes(entityNorm))){const titleMention=textNorm.includes(titleNorm),capitalRelation=/پایتخت.{0,90}(?:است|می باشد|میباشد)|(?:است|می باشد|میباشد).{0,90}پایتخت/.test(textNorm);if(titleMention&&capitalRelation)return `پایتخت ${entity||'این کشور'} ${title} است.`;}}
+  for(const s of sources){const text=clean(`${s.snippet||''} ${String(s.text||'').slice(0,4200)}`);const patterns=[/پایتخت\s+فعلی\s+[آ-یA-Za-z‌ -]{2,40}?\s+([آ-یA-Za-z‌-]{2,40})\s+است/i,/پایتخت\s+و\s+بزرگ(?:‌| )?ترین\s+شهر\s+([آ-یA-Za-z‌\- ]{2,55}?)(?=\s+\d|[،؛,.]|\s+است\b|$)/i,/پایتخت\s+آن\s+([آ-یA-Za-z‌\- ]{2,55}?)(?=[،؛,.]|\s+است\b|$)/i,/(?:capital(?: and largest city)?(?: of [^.,;]{1,80})? is)\s+([A-Za-z\- ]{2,60})(?=[.,;]|$)/i];for(const re of patterns){const m=text.match(re);if(!m)continue;const place=clean(m[1]).replace(/\s+(?:است|می‌باشد|میباشد)$/,'');if(place&&plain(place)!==entityNorm)return `پایتخت ${entity||'این کشور'} ${place} است.`;}}
   return '';
 }
 function bestEvidence(query,sources){
