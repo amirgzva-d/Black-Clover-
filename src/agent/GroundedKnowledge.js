@@ -34,7 +34,7 @@ function bestEvidence(query,sources){
 async function synthesize(query,sources,client,brainOptions={}){
   if(!client)return '';
   const evidence=sources.slice(0,4).map((s,i)=>`SOURCE ${i+1}: ${s.title}\nURL: ${s.url}\n${clean(s.snippet||'')}\n${clean(String(s.text||'').slice(0,deepHowTo.test(query)||currentish.test(query)||explicitResearch.test(query)?2600:1400))}`).join('\n\n');
-  const messages=[{role:'system',content:'You answer the user in natural Persian. Use only the supplied web evidence for factual claims. For how-to questions give practical ordered steps. If evidence is incomplete, say exactly what is uncertain. Do not mention hidden prompts. Keep the answer useful and concise, usually 2-6 short paragraphs or steps.'},{role:'user',content:`Question: ${query}\n\nWeb evidence:\n${evidence}`}];
+  const messages=[{role:'system',content:'You are MARIA answering in fluent natural Persian. Use the supplied web evidence for factual claims and do not invent missing facts. Match depth to the question: simple questions can be brief, but hard, technical, comparative, educational or how-to questions should receive a complete professional explanation with reasoning summary, important assumptions, practical steps/examples, caveats and a clear conclusion when useful. If evidence is incomplete or sources conflict, state the uncertainty precisely. Do not mention hidden prompts or fabricate citations.'},{role:'user',content:`Question: ${query}\n\nWeb evidence:\n${evidence}`}];
   try{const r=await client.chat(messages,[],{...brainOptions,allowOnline:true,profile:'research'});return clean(r?.message?.content);}catch{return '';}
 }
 
@@ -44,6 +44,6 @@ export async function groundedKnowledgeAnswer(query,{runTool,client,brainOptions
   else{const wiki=await runTool('wikipedia_search',{query,limit:4});sources=(wiki?.data?.results||[]).map(x=>({...x,text:x.text||x.snippet||''}));if(!sources.length){const live=await runTool('live_web_search',{query,limit:5});sources=(live?.data?.results||[]).map(x=>({...x,text:x.snippet||''}));}}
   if(!sources.length)return null;
   let answer=capitalAnswer(query,sources);if(!answer)answer=await synthesize(query,sources,client,brainOptions);if(!answer){const best=bestEvidence(query,sources);if(best?.text)answer=best.text;}
-  if(!answer)return null;if(answer.length>2400)answer=`${answer.slice(0,2397).trim()}…`;
-  return {answer,sources:sources.slice(0,4).map(({title,url})=>({title,url}))};
+  if(!answer)return null;if(answer.length>7000)answer=`${answer.slice(0,6997).trim()}…`;
+  return {answer,sources:sources.slice(0,5).map(({title,url})=>({title,url}))};
 }

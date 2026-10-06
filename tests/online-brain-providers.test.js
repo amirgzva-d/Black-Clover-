@@ -65,3 +65,24 @@ test('online client does not retry authentication failures',async()=>{
     assert.equal(calls,1);
   }finally{globalThis.fetch=original;}
 });
+
+
+test('OpenRouter free router is configurable as a third free fallback',()=>{
+  const before={OPENROUTER_API_KEY:process.env.OPENROUTER_API_KEY,OPENROUTER_MODEL:process.env.OPENROUTER_MODEL};
+  try{
+    process.env.OPENROUTER_API_KEY='test-openrouter';
+    delete process.env.OPENROUTER_MODEL;
+    const pool=onlineBrainPoolFromEnv(),item=pool.catalog().find(x=>x.provider==='openrouter');
+    assert.equal(item?.configured,true);
+    assert.equal(item?.model,'openrouter/free');
+  }finally{
+    for(const [key,value] of Object.entries(before)){if(value===undefined)delete process.env[key];else process.env[key]=value;}
+  }
+});
+
+test('free-only routing excludes paid providers and keeps Groq Gemini OpenRouter',()=>{
+  const mk=provider=>({provider,model:provider,configured:true,chat:async()=>({message:{role:'assistant',content:provider},provider,model:provider}),health:async()=>true});
+  const pool=new OnlineBrainPool({clients:['openai','anthropic','deepseek','groq','gemini','openrouter'].map(mk),freeOnly:true});
+  assert.deepEqual(pool.ordered('general').map(x=>x.provider),['groq','gemini','openrouter']);
+  assert.deepEqual(pool.ordered('research').map(x=>x.provider),['gemini','groq','openrouter']);
+});

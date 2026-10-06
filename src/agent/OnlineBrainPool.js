@@ -24,6 +24,7 @@ function openAICompatibleClients(){
   const out=[];const add=(provider,apiKey,baseUrl,model)=>{if(apiKey&&baseUrl&&model)out.push(new OnlineBrainClient({provider,apiKey,baseUrl,model}));};
   add('groq',process.env.GROQ_API_KEY,process.env.GROQ_BASE_URL||'https://api.groq.com/openai/v1',process.env.GROQ_MODEL||'openai/gpt-oss-120b');
   add('gemini',process.env.GEMINI_API_KEY||process.env.GOOGLE_API_KEY,process.env.GEMINI_BASE_URL||'https://generativelanguage.googleapis.com/v1beta/openai',process.env.GEMINI_MODEL||'gemini-3.8-flash');
+  add('openrouter',process.env.OPENROUTER_API_KEY,process.env.OPENROUTER_BASE_URL||'https://openrouter.ai/api/v1',process.env.OPENROUTER_MODEL||'openrouter/free');
   add('qwen',process.env.DASHSCOPE_API_KEY||process.env.QWEN_API_KEY,process.env.QWEN_BASE_URL,process.env.QWEN_MODEL||'qwen-plus');
   add('deepseek',process.env.DEEPSEEK_API_KEY,process.env.DEEPSEEK_BASE_URL||'https://api.deepseek.com',process.env.DEEPSEEK_MODEL||'deepseek-chat');
   add('openai',process.env.OPENAI_API_KEY,process.env.OPENAI_BASE_URL||'https://api.openai.com/v1',process.env.OPENAI_MODEL||'gpt-6-luna');
@@ -31,25 +32,28 @@ function openAICompatibleClients(){
   return out;
 }
 const cloneClient=(client,model)=>client instanceof AnthropicBrainClient?client.withModel(model):typeof client.withModel==='function'?client.withModel(model):new OnlineBrainClient({provider:client.provider,apiKey:client.apiKey,baseUrl:client.baseUrl,model:model||client.model});
-const KNOWN=[['groq','Groq • GPT-OSS'],['gemini','Google Gemini'],['openai','ChatGPT / OpenAI'],['anthropic','Claude'],['deepseek','DeepSeek'],['qwen','Qwen Cloud']];
+const KNOWN=[['groq','Groq • GPT-OSS 120B'],['gemini','Google Gemini 3.8 Flash'],['openrouter','OpenRouter • Free Router'],['openai','ChatGPT / OpenAI'],['anthropic','Claude'],['deepseek','DeepSeek'],['qwen','Qwen Cloud']];
 
 export class OnlineBrainPool{
-  constructor({clients=[...openAICompatibleClients(),new AnthropicBrainClient()].filter(x=>x.configured)}={}){this.clients=clients;this.last=null;}
+  constructor({clients=[...openAICompatibleClients(),new AnthropicBrainClient()].filter(x=>x.configured),freeOnly=/^(1|true|yes)$/i.test(String(process.env.BLACK_CLOVER_FREE_ONLY||''))}={}){this.clients=clients;this.freeOnly=Boolean(freeOnly);this.last=null;}
   get configured(){return this.clients.length>0;}
   get provider(){return this.last?.provider||this.clients[0]?.provider||null;}
   get model(){return this.last?.model||this.clients[0]?.model||null;}
   catalog(){return KNOWN.map(([provider,label])=>{const c=this.clients.find(x=>x.provider===provider);return {provider,label,configured:Boolean(c),model:c?.model||null};});}
   ordered(profile='general'){
+    const allowed=this.freeOnly?this.clients.filter(c=>['groq','gemini','openrouter'].includes(c.provider)):this.clients;
     const score=c=>{
-      if(profile==='coding'){if(c.provider==='groq')return 0;if(c.provider==='anthropic')return 1;if(c.provider==='openai')return 2;if(c.provider==='deepseek')return 3;if(c.provider==='gemini')return 4;if(c.provider==='qwen')return 5;}
-      if(profile==='research'){if(c.provider==='gemini')return 0;if(c.provider==='groq')return 1;if(c.provider==='openai')return 2;if(c.provider==='qwen')return 3;if(c.provider==='anthropic')return 4;if(c.provider==='deepseek')return 5;}
-      if(profile==='complex'){if(c.provider==='groq')return 0;if(c.provider==='gemini')return 1;if(c.provider==='anthropic')return 2;if(c.provider==='openai')return 3;if(c.provider==='deepseek')return 4;if(c.provider==='qwen')return 5;}
-      return c.provider==='groq'?0:c.provider==='gemini'?1:c.provider==='qwen'?2:c.provider==='deepseek'?3:c.provider==='openai'?4:c.provider==='anthropic'?5:6;
+      if(profile==='coding'){if(c.provider==='groq')return 0;if(c.provider==='gemini')return 1;if(c.provider==='openrouter')return 2;if(c.provider==='anthropic')return 3;if(c.provider==='openai')return 4;if(c.provider==='deepseek')return 5;if(c.provider==='qwen')return 6;}
+      if(profile==='research'){if(c.provider==='gemini')return 0;if(c.provider==='groq')return 1;if(c.provider==='openrouter')return 2;if(c.provider==='openai')return 3;if(c.provider==='qwen')return 4;if(c.provider==='anthropic')return 5;if(c.provider==='deepseek')return 6;}
+      if(profile==='complex'){if(c.provider==='groq')return 0;if(c.provider==='gemini')return 1;if(c.provider==='openrouter')return 2;if(c.provider==='anthropic')return 3;if(c.provider==='openai')return 4;if(c.provider==='deepseek')return 5;if(c.provider==='qwen')return 6;}
+      return c.provider==='groq'?0:c.provider==='gemini'?1:c.provider==='openrouter'?2:c.provider==='qwen'?3:c.provider==='deepseek'?4:c.provider==='openai'?5:c.provider==='anthropic'?6:7;
     };
-    return [...this.clients].sort((a,b)=>score(a)-score(b));
+    return [...allowed].sort((a,b)=>score(a)-score(b));
   }
   async chat(messages,tools=[],{profile='general',provider='auto',model='auto'}={}){
-    const chosen=String(provider||'auto').toLowerCase(),base=chosen==='auto'?this.ordered(profile):this.clients.filter(c=>c.provider===chosen);
+    const chosen=String(provider||'auto').toLowerCase();
+    if(this.freeOnly&&chosen!=='auto'&&!['groq','gemini','openrouter'].includes(chosen))throw new Error(`${chosen} is disabled because BLACK_CLOVER_FREE_ONLY is enabled.`);
+    const base=chosen==='auto'?this.ordered(profile):this.clients.filter(c=>c.provider===chosen);
     if(chosen!=='auto'&&!base.length)throw new Error(`${chosen} is not configured. Add its API key in settings/environment first.`);
     const errors=[];for(const original of base){const c=model&&model!=='auto'?cloneClient(original,model):original;try{const out=await c.chat(messages,tools);this.last=c;return out;}catch(e){errors.push(`${c.provider}: ${e.message}`);if(chosen!=='auto')break;}}
     throw new Error(errors.join(' | ')||'No online provider configured');
