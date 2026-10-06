@@ -4,6 +4,8 @@ contextBridge.exposeInMainWorld('blackClover',{
   modelCatalog:()=>ipcRenderer.invoke('brain:catalog'),
   confirm:(id,approved)=>ipcRenderer.invoke('agent:confirm',{id,approved}),
   getStatus:()=>ipcRenderer.invoke('agent:status'),
+  runtimeRuns:(options={})=>ipcRenderer.invoke('agent:runtime-runs',options),
+  runtimeErrorReport:(options={})=>ipcRenderer.invoke('agent:runtime-error-report',options),
   toggle:()=>ipcRenderer.invoke('assistant:toggle'),
   showChat:()=>ipcRenderer.invoke('assistant:show-chat'),
   hideChat:()=>ipcRenderer.invoke('assistant:hide-chat'),
