@@ -34,7 +34,7 @@ const numberNear=(text,re)=>{
 };
 
 const words={
-  volume:/صدا|ولوم|volume|اسپیکر|بلندگو|سایلنت|میوت|mute|unmute/i,
+  volume:/صدا|ولوم|volume|اسپیکر|بلندگو|ساکت|سایلنت|میوت|mute|unmute/i,
   brightness:/نور|روشنایی|brightness|مانیتور|نمایشگر/i,
   power:/خاموش|ری.?استارت|راه.?اندازی مجدد|اسلیپ|خواب|قفل|shutdown|restart|sleep|lock/i,
   search:/سرچ|جستجو|جست.?وجو|بگرد|گوگل|google|search|find|پیدا کن/i,
@@ -52,7 +52,7 @@ const openVerbs=/باز کن|بازش کن|اجرا کن|راه بنداز|با�
 const closeVerbs=/ببند|ببندش|بستن|بسته کن|close|quit|exit/i;
 const upVerbs=/زیاد|بیشتر|بالا|بلندتر|قوی.?تر|افزایش|ببر بالا|بیار بالا|تا آخر|تا ته|فول|نهایت|maximum|up/i;
 const downVerbs=/کم|کمتر|پایین|آروم.?تر|کاهش|ببر پایین|بیار پایین|تا کف|حداقل|minimum|down/i;
-const muteOn=/بی.?صدا|سایلنت|میوت|قطع صدا|خفه|(?:صدا|ولوم|اسپیکر).{0,12}(?:ببند|بستن|قطع)|mute(?!d? ?off)/i;
+const muteOn=/بی.?صدا|ساکت|سایلنت|میوت|قطع صدا|خفه|(?:صدا|ولوم|اسپیکر).{0,12}(?:ببند|بستن|قطع)|mute(?!d? ?off)/i;
 const muteOff=/از بی.?صدا دربیار|از میوت دربیار|وصل صدا|صدا رو وصل|unmute|برگردون صدا/i;
 
 const apps=[
