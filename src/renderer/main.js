@@ -124,13 +124,13 @@ function bubble(who, text) {
   }
 }
 
-async function useAvatarFile(file) {
+async function useAvatarFile(file, { persist = true } = {}) {
   if (!file) return;
   avatarPanel.classList.add('avatar-importing');
   status.textContent = 'در حال آماده‌کردن شخصیت…';
   try {
     const controller = await avatarControllerPromise;
-    const result = await controller.loadFile(file, { persist: true });
+    const result = await controller.loadFile(file, { persist });
     status.textContent = 'شخصیت آماده است';
     avatarPick.title = `مدل فعلی: ${result.name}`;
   } catch (error) {
@@ -163,8 +163,9 @@ avatarPick.onclick = () => avatarFile.click();
 avatarFile.onchange = () => useAvatarFile(avatarFile.files?.[0]);
 motionPick.onclick = () => motionFile.click();
 motionFile.onchange = () => useMotionFile(motionFile.files?.[0]);
-avatarRoot.addEventListener('blackclover:load-built-in',async event=>{const url=event.detail?.url;if(!url)return;try{const controller=await avatarControllerPromise;await controller?.loadBuiltIn?.(url);status.textContent='شخصیت آماده است';}catch(error){bubble('bot',`مدل آماده لود نشد: ${error.message||error}`);}});
-avatarRoot.addEventListener('blackclover:wardrobe-file',event=>useAvatarFile(event.detail?.file));
+avatarRoot.addEventListener('blackclover:load-built-in',async event=>{const url=event.detail?.url;if(!url)return;try{const controller=await avatarControllerPromise;await controller?.loadBuiltIn?.(url,{persist:Boolean(event.detail?.persist)});status.textContent=event.detail?.persist?'شخصیت ذخیره شد':'پیش‌نمایش شخصیت';}catch(error){bubble('bot',`مدل آماده لود نشد: ${error.message||error}`);}});
+avatarRoot.addEventListener('blackclover:wardrobe-file',event=>useAvatarFile(event.detail?.file,{persist:event.detail?.persist!==false}));
+avatarRoot.addEventListener('blackclover:restore-avatar',async()=>{try{const controller=await avatarControllerPromise;await controller?.restoreSaved?.();status.textContent='شخصیت قبلی برگشت';}catch(error){bubble('bot',`برگرداندن شخصیت قبلی ممکن نشد: ${error.message||error}`);}});
 avatarPanel.addEventListener('dragover', event => { event.preventDefault(); avatarPanel.classList.add('dragging'); });
 avatarPanel.addEventListener('dragleave', () => avatarPanel.classList.remove('dragging'));
 avatarPanel.addEventListener('drop', event => {
