@@ -22,14 +22,16 @@ class AnthropicBrainClient{
 
 function openAICompatibleClients(){
   const out=[];const add=(provider,apiKey,baseUrl,model)=>{if(apiKey&&baseUrl&&model)out.push(new OnlineBrainClient({provider,apiKey,baseUrl,model}));};
+  add('groq',process.env.GROQ_API_KEY,process.env.GROQ_BASE_URL||'https://api.groq.com/openai/v1',process.env.GROQ_MODEL||'openai/gpt-oss-120b');
+  add('gemini',process.env.GEMINI_API_KEY||process.env.GOOGLE_API_KEY,process.env.GEMINI_BASE_URL||'https://generativelanguage.googleapis.com/v1beta/openai',process.env.GEMINI_MODEL||'gemini-3.6-flash');
   add('qwen',process.env.DASHSCOPE_API_KEY||process.env.QWEN_API_KEY,process.env.QWEN_BASE_URL,process.env.QWEN_MODEL||'qwen-plus');
   add('deepseek',process.env.DEEPSEEK_API_KEY,process.env.DEEPSEEK_BASE_URL||'https://api.deepseek.com',process.env.DEEPSEEK_MODEL||'deepseek-chat');
   add('openai',process.env.OPENAI_API_KEY,process.env.OPENAI_BASE_URL||'https://api.openai.com/v1',process.env.OPENAI_MODEL||'gpt-6-luna');
   add('generic',process.env.BLACK_CLOVER_ONLINE_API_KEY,process.env.BLACK_CLOVER_ONLINE_BASE_URL,process.env.BLACK_CLOVER_ONLINE_MODEL);
   return out;
 }
-const cloneClient=(client,model)=>client instanceof AnthropicBrainClient?client.withModel(model):new OnlineBrainClient({provider:client.provider,apiKey:client.apiKey,baseUrl:client.baseUrl,model:model||client.model});
-const KNOWN=[['openai','ChatGPT / OpenAI'],['anthropic','Claude'],['deepseek','DeepSeek'],['qwen','Qwen Cloud']];
+const cloneClient=(client,model)=>client instanceof AnthropicBrainClient?client.withModel(model):typeof client.withModel==='function'?client.withModel(model):new OnlineBrainClient({provider:client.provider,apiKey:client.apiKey,baseUrl:client.baseUrl,model:model||client.model});
+const KNOWN=[['groq','Groq • GPT-OSS'],['gemini','Google Gemini'],['openai','ChatGPT / OpenAI'],['anthropic','Claude'],['deepseek','DeepSeek'],['qwen','Qwen Cloud']];
 
 export class OnlineBrainPool{
   constructor({clients=[...openAICompatibleClients(),new AnthropicBrainClient()].filter(x=>x.configured)}={}){this.clients=clients;this.last=null;}
@@ -38,7 +40,13 @@ export class OnlineBrainPool{
   get model(){return this.last?.model||this.clients[0]?.model||null;}
   catalog(){return KNOWN.map(([provider,label])=>{const c=this.clients.find(x=>x.provider===provider);return {provider,label,configured:Boolean(c),model:c?.model||null};});}
   ordered(profile='general'){
-    const score=c=>{if(profile==='coding'){if(c.provider==='anthropic')return 0;if(c.provider==='openai')return 1;if(c.provider==='deepseek')return 2;if(c.provider==='qwen')return 3;}if(profile==='research'){if(c.provider==='openai')return 0;if(c.provider==='qwen')return 1;if(c.provider==='anthropic')return 2;if(c.provider==='deepseek')return 3;}return c.provider==='qwen'?0:c.provider==='deepseek'?1:c.provider==='openai'?2:c.provider==='anthropic'?3:4;};return [...this.clients].sort((a,b)=>score(a)-score(b));
+    const score=c=>{
+      if(profile==='coding'){if(c.provider==='groq')return 0;if(c.provider==='anthropic')return 1;if(c.provider==='openai')return 2;if(c.provider==='deepseek')return 3;if(c.provider==='gemini')return 4;if(c.provider==='qwen')return 5;}
+      if(profile==='research'){if(c.provider==='gemini')return 0;if(c.provider==='groq')return 1;if(c.provider==='openai')return 2;if(c.provider==='qwen')return 3;if(c.provider==='anthropic')return 4;if(c.provider==='deepseek')return 5;}
+      if(profile==='complex'){if(c.provider==='groq')return 0;if(c.provider==='gemini')return 1;if(c.provider==='anthropic')return 2;if(c.provider==='openai')return 3;if(c.provider==='deepseek')return 4;if(c.provider==='qwen')return 5;}
+      return c.provider==='groq'?0:c.provider==='gemini'?1:c.provider==='qwen'?2:c.provider==='deepseek'?3:c.provider==='openai'?4:c.provider==='anthropic'?5:6;
+    };
+    return [...this.clients].sort((a,b)=>score(a)-score(b));
   }
   async chat(messages,tools=[],{profile='general',provider='auto',model='auto'}={}){
     const chosen=String(provider||'auto').toLowerCase(),base=chosen==='auto'?this.ordered(profile):this.clients.filter(c=>c.provider===chosen);
