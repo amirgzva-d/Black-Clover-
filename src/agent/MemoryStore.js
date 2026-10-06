@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
+import { memoryPolicy } from './memory/MemoryPolicy.js';
 
 const words=text=>[...new Set(String(text||'').toLowerCase().replace(/[^\p{L}\p{N}_\s-]/gu,' ').split(/\s+/).filter(x=>x.length>1))];
 const defaultDir=()=>process.env.BLACK_CLOVER_DATA_DIR||path.join(process.env.APPDATA||path.join(os.homedir(),'.black-clover'),'BlackClover');
@@ -19,7 +20,7 @@ export class MemoryStore{
   async remove(id){await this.load();const before=this.items.length;this.items=this.items.filter(x=>x.id!==id);if(this.items.length!==before)await this.save();return this.items.length!==before;}
   async removeByQuery(query,{limit=20}={}){const matches=await this.recall(query,{limit});const ids=new Set(matches.map(x=>x.id));if(!ids.size)return 0;this.items=this.items.filter(x=>!ids.has(x.id));await this.save();return ids.size;}
   async clear(){this.items=[];this.loaded=true;await this.save();}
-  async maybeRememberUserStatement(text){const s=String(text||'').trim();if(!s)return null;const explicit=/(یادت باشه|یادت بمونه|به خاطر بسپار|فراموش نکن|من دوست دارم|من ترجیح میدم|ترجیح می‌دم|اسم من|اسمم|همیشه برام|از این به بعد|هیچ.?وقت|هرگز)/i.test(s);if(!explicit)return null;const kind=/(هیچ.?وقت|هرگز|فراموش نکن)/i.test(s)?'rule':'user_preference';return this.remember(s,{kind,importance:kind==='rule'?.96:.86,tags:[kind]});}
+  async maybeRememberUserStatement(text,{privateContext=false}={}){const s=String(text||'').trim();if(!s)return null;const explicit=/(یادت باشه|یادت بمونه|به خاطر بسپار|فراموش نکن|من دوست دارم|من ترجیح میدم|ترجیح می‌دم|اسم من|اسمم|همیشه برام|از این به بعد|هیچ.?وقت|هرگز)/i.test(s);if(!explicit)return null;const decision=memoryPolicy.evaluate(s,{explicit:true,privateContext});if(!decision.allowed)return null;const kind=/(هیچ.?وقت|هرگز|فراموش نکن)/i.test(s)?'rule':'user_preference';return this.remember(decision.text,{kind,importance:kind==='rule'?.96:.86,tags:[kind]});}
 }
 
 export const memory=new MemoryStore();
