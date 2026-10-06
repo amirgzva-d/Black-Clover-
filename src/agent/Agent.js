@@ -16,6 +16,7 @@ import { shouldGroundKnowledge,groundedKnowledgeAnswer } from './GroundedKnowled
 import { canonicalizeCommand } from './SemanticCanonicalizer.js';
 import { matchSmallTalk } from './SmallTalkRouter.js';
 import { actionIntent } from './ActionIntent.js';
+import { resolveUniversalIntent } from './v2/UniversalIntentEngine.js';
 
 const MAX_TURNS=64,MAX_STEPS=32;
 const cleanReply=text=>String(text??'').replace(/\n{3,}/g,'\n\n').trim();
@@ -86,8 +87,8 @@ export class Agent{
     const original=String(text??'').trim();if(!original)return {ok:false,text:'پیام خالی است.'};const effectiveChatOptions={...this.chatOptions,...(options||{})};
     try{
       const rule=await permissions.parseUserRule(original);await memory.maybeRememberUserStatement(original);
-      const canonical=canonicalizeCommand(original),normalized=normalizePersianCommand(canonical),hints=[...new Set([...commandHints(normalized),...capabilityHints(normalized)])],routeNames=[...new Set([...this.defaultTools,...selectToolNames(canonical,hints)])].filter(n=>tools[n]),basePrivate=isPrivateRequest(original,hints);
-      const fast=matchFastCommand(normalized),fastTurn={private:basePrivate,assistantMessage:null,original,trace:[],routeNames,chatOptions:effectiveChatOptions};
+      const canonical=canonicalizeCommand(original),normalized=normalizePersianCommand(canonical),universalPlan=resolveUniversalIntent(original),hints=[...new Set([...commandHints(normalized),...capabilityHints(normalized),...universalPlan.hints,...(universalPlan.goal?[`intent-${universalPlan.goal}`]:[])])],routeNames=[...new Set([...this.defaultTools,...selectToolNames(canonical,hints)])].filter(n=>tools[n]),basePrivate=isPrivateRequest(original,hints);
+      const fast=universalPlan.direct||matchFastCommand(normalized),fastTurn={private:basePrivate,assistantMessage:null,original,trace:[],routeNames,chatOptions:effectiveChatOptions};
       // Deterministic desktop actions go first so colloquial commands stay fast and
       // destructive actions stop at confirmation before any LLM request.
       if(fast){this.history.push({role:'user',content:original,_private:basePrivate});this.trimHistory();const direct=await this.tryFastCommand(fast,fastTurn,routeNames);if(direct)return direct;this.history.pop();}
