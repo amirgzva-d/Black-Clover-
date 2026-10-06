@@ -23,7 +23,7 @@ class AnthropicBrainClient{
 function openAICompatibleClients(){
   const out=[];const add=(provider,apiKey,baseUrl,model)=>{if(apiKey&&baseUrl&&model)out.push(new OnlineBrainClient({provider,apiKey,baseUrl,model}));};
   add('groq',process.env.GROQ_API_KEY,process.env.GROQ_BASE_URL||'https://api.groq.com/openai/v1',process.env.GROQ_MODEL||'openai/gpt-oss-120b');
-  add('gemini',process.env.GEMINI_API_KEY||process.env.GOOGLE_API_KEY,process.env.GEMINI_BASE_URL||'https://generativelanguage.googleapis.com/v1beta/openai',process.env.GEMINI_MODEL||'gemini-3.6-flash');
+  add('gemini',process.env.GEMINI_API_KEY||process.env.GOOGLE_API_KEY,process.env.GEMINI_BASE_URL||'https://generativelanguage.googleapis.com/v1beta/openai',process.env.GEMINI_MODEL||'gemini-3.8-flash');
   add('qwen',process.env.DASHSCOPE_API_KEY||process.env.QWEN_API_KEY,process.env.QWEN_BASE_URL,process.env.QWEN_MODEL||'qwen-plus');
   add('deepseek',process.env.DEEPSEEK_API_KEY,process.env.DEEPSEEK_BASE_URL||'https://api.deepseek.com',process.env.DEEPSEEK_MODEL||'deepseek-chat');
   add('openai',process.env.OPENAI_API_KEY,process.env.OPENAI_BASE_URL||'https://api.openai.com/v1',process.env.OPENAI_MODEL||'gpt-6-luna');
