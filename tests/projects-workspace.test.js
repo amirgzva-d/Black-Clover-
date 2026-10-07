@@ -6,14 +6,16 @@ import path from 'node:path';
 
 const root=path.resolve('.');
 test('Projects workspace, model picker and IPC contracts are wired',async()=>{
-  const [ui,preload,main,service,brain]=await Promise.all([
+  const [ui,chat,preload,main,service,brain]=await Promise.all([
     fs.readFile(path.join(root,'src/renderer/luxuryUI.js'),'utf8'),
+    fs.readFile(path.join(root,'src/renderer/chatSurfaceV2.js'),'utf8'),
     fs.readFile(path.join(root,'src/main/preload.cjs'),'utf8'),
     fs.readFile(path.join(root,'src/main/main.js'),'utf8'),
     fs.readFile(path.join(root,'src/agent/ProjectService.js'),'utf8'),
     fs.readFile(path.join(root,'src/agent/BrainRouter.js'),'utf8')
   ]);
-  assert.match(ui,/surface==='projects'/);assert.match(ui,/chat-model-select/);assert.match(ui,/openProjectVsCode/);assert.match(ui,/publishProjectGithub/);
+  assert.match(ui,/surface==='projects'/);assert.match(ui,/project-model/);assert.match(ui,/openProjectVsCode/);assert.match(ui,/publishProjectGithub/);
+  assert.match(chat,/MODEL_ID='auto'/);assert.match(chat,/modelSelect/);assert.doesNotMatch(chat,/window\.localStorage\.setItem\('blackClover:selectedModel','ollama:qwen2\.5:3b'\)/);
   assert.match(preload,/projects:list/);assert.match(preload,/projects:chat/);assert.match(preload,/projects:git-status/);assert.match(preload,/projects:publish-github/);
   assert.match(main,/createProjectsWindow/);assert.match(main,/projects:publish-github/);assert.match(service,/openVsCode/);assert.match(service,/publishGithub/);
   assert.match(brain,/async catalog\(\)/);assert.match(brain,/modelOverride/);

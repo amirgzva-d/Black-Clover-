@@ -1,4 +1,5 @@
 import { canonicalizeCommand } from './SemanticCanonicalizer.js';
+import { parseWebRequest } from './WebRequest.js';
 const normalize=s=>String(s||'').toLowerCase().normalize('NFKC').replace(/[؟?!.،,]+/g,' ').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\s+/g,' ').trim();
 const digits=s=>String(s).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 const n=s=>Number(digits(String(s)).replace(/[^0-9]/g,''));
@@ -8,7 +9,7 @@ const appAliases=[
   [/\bchrome\b|کروم/i,'Google Chrome'],[/firefox|فایرفاکس/i,'Firefox'],[/edge|اج\b|مایکروسافت اج/i,'Microsoft Edge'],[/telegram|تلگرام/i,'Telegram'],[/whatsapp|واتساپ/i,'WhatsApp'],[/rubika|روبیکا/i,'Rubika'],[/instagram|اینستاگرام/i,'Instagram'],[/discord|دیسکورد/i,'Discord'],[/vscode|vs code|وی.?اس.?کد/i,'Visual Studio Code'],[/photoshop|فتوشاپ/i,'Adobe Photoshop'],[/illustrator|ایلوستریتور/i,'Adobe Illustrator'],[/excel|اکسل/i,'Excel'],[/word|ورد/i,'Word'],[/powerpoint|پاورپوینت/i,'PowerPoint'],[/spotify|اسپاتیفای/i,'Spotify'],[/vlc/i,'vlc'],[/notepad|نوت.?پد/i,'Notepad'],[/calculator|ماشین.?حساب/i,'Calculator'],[/explorer|فایل اکسپلورر|اکسپلورر/i,'File Explorer']
 ];
 const has=(s,re)=>re.test(s);
-const audio=/صدا|ولوم|volume|اسپیکر|speaker/i;
+const audio=/صدا|ولوم|volume|اسپیکر|speaker|mute|unmute|سایلنت|بی.?صدا/i;
 const bright=/نور|روشنایی|brightness/i;
 const increase=/زیاد|بیشتر|بالا|ببر بالا|بیار بالا|بکش بالا|بده بالا|بکن بالا|بالاتر|بلندتر|تقویت|قوی.?تر|افزایش/i;
 const decrease=/کم|کمتر|پایین|بیار پایین|ببر پایین|بکش پایین|بده پایین|بکن پایین|پایین.?تر|آروم.?تر|آرام.?تر|کاهش/i;
@@ -30,6 +31,17 @@ function genericAppName(s){
   if(!m)return null;
   return m[1].replace(/^(?:برنامه|اپ|نرم افزار)\s+/i,'').trim();
 }
+function reminderCommand(raw){
+  const s=normalize(digits(raw));
+  const rel=s.match(/(?:(\d{1,4})\s*(دقیقه|ساعت|روز)\s*(?:دیگه|دیگر|بعد|بعدتر)?\s*(?:یادم بنداز|یادآوری کن)\s*(?:که)?\s*(.+)|(?:یادم بنداز|یادآوری کن)\s*(?:که)?\s*(\d{1,4})\s*(دقیقه|ساعت|روز)\s*(?:دیگه|دیگر|بعد)?\s*(.+))/i);
+  if(rel){const amount=Number(rel[1]||rel[4]),unit=rel[2]||rel[5],message=String(rel[3]||rel[6]||'').trim();if(amount>0&&message){const mult=unit==='دقیقه'?60000:unit==='ساعت'?3600000:86400000;return {name:'create_reminder',args:{message,due_at:new Date(Date.now()+amount*mult).toISOString()},reply:'باشه، یادآوریش می‌کنم.'};}}
+  const tomorrow=s.match(/(?:فردا)\s*(?:ساعت)?\s*(\d{1,2})(?::(\d{1,2}))?\s*(?:یادم بنداز|یادآوری کن)\s*(?:که)?\s*(.+)|(?:یادم بنداز|یادآوری کن)\s*(?:که)?\s*فردا\s*(?:ساعت)?\s*(\d{1,2})(?::(\d{1,2}))?\s*(.+)/i);
+  if(tomorrow){const h=Number(tomorrow[1]||tomorrow[4]),m=Number(tomorrow[2]||tomorrow[5]||0),message=String(tomorrow[3]||tomorrow[6]||'').trim();if(h>=0&&h<24&&m>=0&&m<60&&message){const d=new Date();d.setDate(d.getDate()+1);d.setHours(h,m,0,0);return {name:'create_reminder',args:{message,due_at:d.toISOString()},reply:'باشه، برای فردا یادآوریش می‌کنم.'};}}
+  return null;
+}
+function pinnedNoteCommand(raw){
+  const t=String(raw||'').trim();let m=t.match(/^(?:پین کن|ذخیره کن|یادداشت کن)\s*[:：-]?\s*(.{2,2000})$/i);if(!m)m=t.match(/^(.{2,1800}?)\s+(?:رو|را)\s+(?:به عنوان )?(?:متن مهم )?(?:پین|ذخیره|یادداشت) کن$/i);if(!m?.[1]?.trim())return null;const text=m[1].trim();if(/^(?:این|اونو|همونو)$/i.test(text))return null;return {name:'create_pinned_note',args:{title:text.slice(0,70),text,pinned:true,tags:['user-pinned']},reply:'ذخیره‌ش کردم که یادت نره.'};
+}
 function namedMedia(s){
   const m=s.match(/(?:فیلم|ویدیو|کلیپ|آهنگ|موزیک|موسیقی)\s+(.+?)\s*(?:رو|را)?\s*(?:پخش|باز)(?:ش)?\s*کن/i)||s.match(/(.+?)\s+(?:رو|را)\s*(?:پخش|باز)(?:ش)?\s*کن\s*(?:با\s+پلیر)?$/i);
   if(!m?.[1]?.trim())return null;
@@ -37,6 +49,27 @@ function namedMedia(s){
   const video=/(فیلم|ویدیو|کلیپ)/i.test(s),music=/(آهنگ|موزیک|موسیقی)/i.test(s);
   if(!video&&!music)return null;
   return {name,extensions:video?['mp4','mkv','avi','mov','webm','m4v']:['mp3','wav','m4a','flac','ogg','aac']};
+}
+function searchQueryFor(raw,engine='generic'){
+  const s=normalize(raw).replace(/^(?:لطفا|لطفاً)\s*/i,'');
+  const engines={google:'(?:گوگل|google)',chrome:'(?:کروم|chrome)',youtube:'(?:یوتیوب|youtube)'};
+  const clean=q=>String(q||'').replace(/^(?:درباره|راجع به|دنبال)\s+/i,'').replace(/\s+(?:رو|را)$/i,'').trim();
+  if(engine!=='generic'){
+    const e=engines[engine],v='(?:سرچ|جستجو|بگرد|پیدا)(?:\\s*کن)?',patterns=[
+      new RegExp(`^(?:(?:تو|در)\\s*)?${e}\\s+(?:درباره\\s+)?(.+?)\\s+(?:رو|را)?\\s*${v}$`,'i'),
+      new RegExp(`^(?:(?:تو|در)\\s*)?${e}\\s*${v}\\s+(?:(?:درباره|راجع به|دنبال)\\s+)?(.+)$`,'i'),
+      new RegExp(`^(.+?)\\s+(?:رو|را)?\\s*(?:تو|در)\\s*${e}\\s*${v}$`,'i'),
+      new RegExp(`^(.+?)\\s+(?:رو|را)?\\s*${v}\\s*(?:تو|در)\\s*${e}$`,'i')
+    ];
+    for(const re of patterns){const m=s.match(re),q=clean(m?.[1]);if(q&&!/^(?:کن|سرچ|جستجو|بگرد|پیدا)$/i.test(q))return q;}
+    return null;
+  }
+  const patterns=[
+    /^(?:سرچ|جستجو|بگرد)(?:\s*کن)?\s+(?:(?:درباره|راجع به|دنبال)\s+)?(.+)$/i,
+    /^(.+?)\s+(?:رو|را)?\s*(?:سرچ|جستجو)(?:\s*کن)?$/i
+  ];
+  for(const re of patterns){const m=s.match(re),q=clean(m?.[1]);if(q&&!/^(?:کن|سرچ|جستجو|بگرد)$/i.test(q))return q;}
+  return null;
 }
 function namedFileCommand(raw){
   const text=String(raw||'').trim();if(!text)return null;
@@ -58,18 +91,33 @@ function namedFileCommand(raw){
 }
 
 export function matchFastCommand(input){
+  const localFile=/(?:فایل|پرونده|پوشه|فولدر|اکسل|excel|\.(?:pdf|docx?|xlsx?|xlsm|txt|csv|json|mp[34]|mkv|vrm|png|jpe?g)\b)/i.test(input)&&!/(?:سایت|website|گوگل|google|کروم|chrome|از اینترنت|از وب)/i.test(input)?namedFileCommand(input):null;
+  if(localFile)return localFile;
+  const web=parseWebRequest(input);
+  if(web){
+    if(web.mode==='website')return {name:'chrome_open_named_site',args:{site:web.site,profile:'personal'}};
+    if(web.mode==='browser')return {name:web.engine==='youtube'?'youtube_search':'chrome_search',args:{query:web.query,...(web.engine==='youtube'?{}:{profile:'personal'})}};
+    return {name:'grounded_factual_answer',args:{query:web.domain?`site:${web.domain} ${web.query}`:web.query}};
+  }
+  // A launch is only one step of a messenger transfer; leave the whole goal
+  // to the planner. Public search phrases must not execute embedded commands.
+  if(/(?:تلگرام|واتساپ|روبیکا|telegram|whatsapp|rubika)/i.test(input)&&/(?:پیوی|چت|مخاطب|پیام|فوروارد|بفرست|ارسال|بردار)/i.test(input))return null;
+  if(/(?:چطور|چگونه|چرا|آموزش|نحوه|اگر|وقتی|نگفتم|نکن|نکنید)/i.test(input))return null;
   input=canonicalizeCommand(input);
   const s=normalize(input);
   if(!s)return null;
 
   if(has(s,audio)){
+    if(/unmute|(?:از\s*)?(?:بی.?صدا|سایلنت|mute).*(?:در.?بیار|بردار|خاموش کن)|صدا.*(?:وصل(?:ش)?|فعال|روشن|باز)\s*کن/i.test(s))return {name:'set_mute',args:{muted:false},reply:'صدا دوباره وصله.'};
+    if(/(?:بی.?صدا|سایلنت|mute)|صدا.*(?:قطع(?:ش)?|ببند(?:ش)?|خاموش)\s*کن/i.test(s)&&!/unmute|در.?بیار|بردار|وصل|فعال|روشن|باز/i.test(s))return {name:'set_mute',args:{muted:true},reply:'صدا رو بی‌صدا کردم.'};
     if(has(s,maximum)&&has(s,/(?:زیاد|بالا|ببر|بیار|بکش|بده|بکن|کن|بذار|تنظیم|فول|سقف|نهایت|انتها|آخر)/i))return {name:'set_volume',args:{percent:100},reply:'صدا رو تا آخر بردم بالا، رئیس.'};
-    if(has(s,minimum)&&has(s,/(?:کم|پایین|ببر|بیار|بکش|بده|بکن|کن|بذار|تنظیم|قطع|کف)/i))return {name:'set_volume',args:{percent:0},reply:'صدا رو روی صفر گذاشتم.'};
-    const percent=extractPercent(s,audio);if(percent!==null)return {name:'set_volume',args:{percent},reply:`صدا رو روی ${percent}٪ تنظیم کردم.`};
-    if(/(?:از\s*)?(?:بی.?صدا|سایلنت|mute).*(?:در.?بیار|بردار|خاموش کن)|صدا رو (?:وصل|فعال) کن|unmute/i.test(s))return {name:'set_mute',args:{muted:false},reply:'صدا دوباره وصله.'};
-    if(/بی.?صدا|سایلنت|mute|صدا.*قطع کن/i.test(s)&&!/unmute|در.?بیار|بردار/i.test(s))return {name:'set_mute',args:{muted:true},reply:'صدا رو بی‌صدا کردم.'};
-    if(has(s,increase))return {name:'volume_up',args:{},reply:'صدا رو بیشتر کردم.'};
-    if(has(s,decrease))return {name:'volume_down',args:{},reply:'صدا رو کمتر کردم.'};
+    if(has(s,minimum)&&has(s,/(?:کم|پایین|ببر|بیار|بکش|بده|بکن|کن|بذار|تنظیم|کف)/i))return {name:'set_volume',args:{percent:0},reply:'صدا رو روی صفر گذاشتم.'};
+    const percent=extractPercent(s,audio),relative=has(s,increase)||has(s,decrease);
+    if(relative&&!/(?:روی|بذار|بگذار|تنظیم|برسون|برسان|تا\s*\d)/i.test(s)){
+      const amount=percent??(/(?:یه کم|یکم|کمی|یه ذره|یک ذره|یخورده|یخرده|اندکی)/i.test(s)?3:10);
+      return {name:has(s,increase)?'volume_up':'volume_down',args:{amount},reply:has(s,increase)?'صدا رو بیشتر کردم.':'صدا رو کمتر کردم.'};
+    }
+    if(percent!==null)return {name:'set_volume',args:{percent},reply:`صدا رو روی ${percent}٪ تنظیم کردم.`};
   }
 
   if(has(s,bright)){
@@ -80,6 +128,8 @@ export function matchFastCommand(input){
     if(has(s,decrease))return {name:'brightness_down',args:{},reply:'نور صفحه رو کمتر کردم.'};
   }
 
+  const reminder=reminderCommand(input);if(reminder)return reminder;
+  const note=pinnedNoteCommand(input);if(note)return note;
   const mediaFile=namedMedia(s);if(mediaFile)return {name:'open_named_file',args:mediaFile,reply:`${mediaFile.name} رو پیدا کردم و برای پخش بازش کردم.`};
   if(/(?:آهنگ|موزیک|media|پخش).*(?:بعدی|next)|(?:بعدی|next).*(?:آهنگ|موزیک|ترک)/i.test(s))return {name:'media_next',args:{},reply:'رفتم ترک بعدی.'};
   if(/(?:آهنگ|موزیک|media|پخش).*(?:قبلی|previous)|(?:قبلی|previous).*(?:آهنگ|موزیک|ترک)/i.test(s))return {name:'media_previous',args:{},reply:'برگشتم ترک قبلی.'};
@@ -113,18 +163,20 @@ export function matchFastCommand(input){
     // Keep the legacy launch_app contract for Photoshop while the universal
     // launcher remains the default for every other installed application.
     if(/photoshop|فتوشاپ/i.test(s))return {name:'launch_app',args:{name:'Adobe Photoshop'},reply:'Adobe Photoshop رو باز کردم.'};
+    if(/whatsapp|واتساپ/i.test(s))return {name:'chrome_open_service',args:{service:'whatsapp'},reply:'واتساپ شرکت رو در پروفایل شرکتی Chrome باز کردم.'};
+    if(/rubika|روبیکا/i.test(s))return {name:'chrome_open_service',args:{service:'rubika'},reply:'روبیکای شرکت رو در پروفایل شرکتی Chrome باز کردم.'};
     for(const [re,name] of appAliases)if(re.test(s))return {name:'launch_any_app',args:{name},reply:`${name} رو باز کردم.`};
     const name=genericAppName(s);if(name&&name.length<80)return {name:'launch_any_app',args:{name},reply:`${name} رو باز کردم.`};
   }
 
-  const chromeSearch=s.match(/(?:کروم|chrome).*?(?:سرچ|جستجو|بگرد|پیدا)(?: کن)?\s+(.+)/i)||s.match(/(?:تو|در)?\s*(?:کروم|chrome)\s+(?:درباره\s+)?(.+?)\s+(?:رو|را)?\s*(?:سرچ|جستجو|بگرد|پیدا)(?: کن)?$/i)||s.match(/(.+?)\s+(?:رو|را)?\s*(?:تو|در)\s*(?:کروم|chrome)\s*(?:سرچ|جستجو|پیدا)(?: کن)?$/i);
-  if(chromeSearch?.[1]?.trim())return {name:'chrome_search',args:{query:chromeSearch[1].trim()},reply:'توی Chrome برات سرچ کردم.'};
-  const yt=s.match(/(?:یوتیوب|youtube).*?(?:سرچ|جستجو|بگرد)(?: کن)?\s+(.+)/i)||s.match(/(.+?)\s+(?:رو|را)?\s*(?:تو|در)?\s*(?:یوتیوب|youtube)\s*(?:سرچ|جستجو|پیدا)(?: کن)?$/i);
-  if(yt?.[1]?.trim())return {name:'youtube_search',args:{query:yt[1].trim()},reply:'توی یوتیوب برات گشتم.'};
-  const google=s.match(/(?:گوگل|google).*?(?:سرچ|جستجو|بگرد|پیدا)(?: کن)?\s+(.+)/i)||s.match(/(.+?)\s+(?:رو|را)?\s*(?:تو|در)?\s*(?:گوگل|google)\s*(?:سرچ|جستجو|پیدا)(?: کن)?$/i);
-  if(google?.[1]?.trim())return {name:'web_search',args:{query:google[1].trim()},reply:'سرچ گوگل رو باز کردم.'};
-  const genericSearch=s.match(/^(?:لطفا\s*)?(?:سرچ|جستجو|بگرد)\s+(?:کن\s+)?(?:درباره\s+)?(.+)/i)||s.match(/^(.+?)\s+(?:رو|را)?\s*(?:سرچ|جستجو)(?: کن)?$/i);
-  if(genericSearch?.[1]?.trim()&&!/فایل|پوشه|سیستم/i.test(genericSearch[1]))return {name:'web_search',args:{query:genericSearch[1].trim()},reply:'برات سرچ کردم.'};
+  const chromeSearch=searchQueryFor(s,'chrome');
+  if(chromeSearch)return {name:'chrome_search',args:{query:chromeSearch,profile:'personal'},reply:'نتایج رو در Chrome با پروفایل Amir باز کردم.'};
+  const yt=searchQueryFor(s,'youtube');
+  if(yt)return {name:'youtube_search',args:{query:yt},reply:'نتایج YouTube رو با پروفایل Amir باز کردم.'};
+  const google=searchQueryFor(s,'google');
+  if(google)return {name:'chrome_search',args:{query:google,profile:'personal'},reply:'نتایج Google رو در پروفایل Amir باز کردم.'};
+  const genericSearch=searchQueryFor(s,'generic');
+  if(genericSearch&&!/فایل|پوشه|سیستم/i.test(genericSearch))return {name:'chrome_search',args:{query:genericSearch,profile:'personal'},reply:'نتایج جستجو رو در Google با پروفایل Amir باز کردم.'};
 
   if(factualQuestion.test(s)&&simpleStableFact.test(s)&&!personalSmallTalk.test(s)&&!computerProblem.test(s))return {name:'grounded_factual_answer',args:{query:input}};
   return null;

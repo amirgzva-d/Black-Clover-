@@ -16,6 +16,7 @@ const safeRepoName=s=>String(s||'maria-project').trim().replace(/[^a-zA-Z0-9._-]
 
 export class ProjectService{
   constructor({emit=()=>{}}={}){this.emit=emit;this.sessions=new Map();this.router=new BrainRouter();}
+  reloadBrains(){this.router=new BrainRouter();this.sessions.clear();return true;}
   async list(){return projects.list();}
   async catalog(){const [items,models]=await Promise.all([projects.list(),this.router.models()]),web=[{provider:'web',label:'ChatGPT Web',model:'chatgpt',configured:true},{provider:'web',label:'Claude Web',model:'claude',configured:true},{provider:'web',label:'DeepSeek Web',model:'deepseek',configured:true},{provider:'web',label:'Qwen Web',model:'qwen',configured:true}];return {projects:items,models:models||[],providers:[...(this.router.online?.catalog?.()||[]),...web]};}
   async create(payload){const item=await projects.create(payload||{});try{await run('git.exe',['init'],item.directory,20000);}catch{}this.sessions.delete(item.id);return item;}

@@ -29,18 +29,44 @@ test('reminder store supports manual reminders and scheduled actions',async()=>{
 });
 
 test('desktop UI has independent chat pins reminders and nonblocking queue',async()=>{
-  const [main,preload,ui,renderer]=await Promise.all([
+  const [main,preload,ui,renderer,chat]=await Promise.all([
     fs.readFile(new URL('../src/main/main.js',import.meta.url),'utf8'),
     fs.readFile(new URL('../src/main/preload.cjs',import.meta.url),'utf8'),
     fs.readFile(new URL('../src/renderer/luxuryUI.js',import.meta.url),'utf8'),
-    fs.readFile(new URL('../src/renderer/main.js',import.meta.url),'utf8')
+    fs.readFile(new URL('../src/renderer/main.js',import.meta.url),'utf8'),
+    fs.readFile(new URL('../src/renderer/chatSurfaceV2.js',import.meta.url),'utf8')
   ]);
   for(const token of ["surface==='pins'","surface==='reminders'","pins:list","reminders:list"])assert.ok(main.includes(token),token);
   for(const token of ['showPins','showReminders','listPins','listReminders'])assert.ok(preload.includes(token),token);
   assert.match(ui,/mountDataSurface/);
-  assert.match(renderer,/const chatQueue=\[\]/);
-  assert.match(renderer,/input\.disabled=false/);
-  assert.doesNotMatch(renderer,/input\.disabled\s*=\s*true/);
-  assert.match(renderer,/modelOverride:selectedModel/);
-  assert.match(renderer,/onAssistantResponse[\s\S]{0,260}voice\.speak\(response\.text\)/);
+  assert.match(renderer,/chatSurfaceV2/);
+  assert.match(chat,/const queue=\[\]/);
+  assert.doesNotMatch(chat,/input\.disabled\s*=\s*true/);
+  assert.match(chat,/modelOverride:selectedModel/);
+  assert.match(chat,/HISTORY_KEY/);
+  assert.match(chat,/event\.type==='stream'/);
+  assert.match(chat,/voice\.speak\(response\.text\)/);
+});
+
+
+test('motions wardrobe projects chat pins and reminders have independent surfaces',async()=>{
+  const [main,preload,ui,assets]=await Promise.all([
+    fs.readFile(new URL('../src/main/main.js',import.meta.url),'utf8'),
+    fs.readFile(new URL('../src/main/preload.cjs',import.meta.url),'utf8'),
+    fs.readFile(new URL('../src/renderer/luxuryUI.js',import.meta.url),'utf8'),
+    fs.readFile(new URL('../src/renderer/assetSurface.js',import.meta.url),'utf8')
+  ]);
+  for(const token of ["surface==='motions'","surface==='wardrobe'","surface==='projects'","surface==='pins'","surface==='reminders'"])assert.ok(main.includes(token),token);
+  for(const token of ['showMotions','showWardrobe','showProjects','showPins','showReminders','listLocalAssets'])assert.ok(preload.includes(token),token);
+  assert.match(ui,/showMotions/);
+  assert.match(ui,/showWardrobe/);
+  assert.match(assets,/Pose \/ Animation/);
+  assert.match(assets,/Expression/);
+  assert.match(assets,/XWear/);
+  assert.match(assets,/liveStage/);
+  assert.match(assets,/data-lock-current/);
+  assert.match(assets,/data-apply-preview/);
+  assert.match(assets,/data-apply-motion/);
+  assert.match(preload,/avatarLockState/);
+  assert.match(main,/avatar:lock-state/);
 });

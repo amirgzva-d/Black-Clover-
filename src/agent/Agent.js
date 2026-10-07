@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { BrainRouter } from './BrainRouter.js';
+import { BrainRuntime } from './runtime/BrainRuntime.js';
 import { tools,ollamaTools,runTool } from './toolRegistry.js';
 import { PERSONALITY_SYSTEM } from './personality.js';
 import { normalizePersianCommand,commandHints } from './language.js';
@@ -16,6 +17,10 @@ import { shouldGroundKnowledge,groundedKnowledgeAnswer } from './GroundedKnowled
 import { canonicalizeCommand } from './SemanticCanonicalizer.js';
 import { matchSmallTalk } from './SmallTalkRouter.js';
 import { actionIntent } from './ActionIntent.js';
+import { planFastSequence } from './FastSequencePlanner.js';
+import { verifyFastAction,STRICT_VERIFY_TOOLS } from './FastActionVerifier.js';
+import { compactToolSelection,expandToolSelection } from './ToolSelectionPolicy.js';
+import { incidents } from './IncidentStore.js';
 
 const MAX_TURNS=64,MAX_STEPS=32;
 const cleanReply=text=>String(text??'').replace(/\n{3,}/g,'\n\n').trim();
@@ -36,7 +41,7 @@ const COMPACT_CHAT_SYSTEM=`تو MARIA هستی؛ یک دستیار هوش مصن
 
 export class Agent{
   constructor({emit=()=>{},client=new BrainRouter(),systemContext='',chatOptions={},defaultTools=[],enableScheduler=true}={}){
-    this.emit=emit;this.client=client;this.chatOptions={...chatOptions};this.defaultTools=[...new Set(defaultTools||[])].filter(n=>tools[n]);this.history=[{role:'system',content:`${PERSONALITY_SYSTEM}${systemContext||''}`,_private:false}];this.pending=new Map();this.improving=false;
+    this.emit=emit;this.client=client;this.runtime=new BrainRuntime({brain:this.client,emit:this.emit});this.chatOptions={...chatOptions};this.defaultTools=[...new Set(defaultTools||[])].filter(n=>tools[n]);this.history=[{role:'system',content:`${PERSONALITY_SYSTEM}${systemContext||''}`,_private:false}];this.pending=new Map();this.improving=false;
     if(enableScheduler)reminders.setActionExecutor(async item=>{
       this.emit({type:'scheduled-action',state:'running',id:item.id,label:item.label||item.instruction});
       let response=await this.chat(item.instruction);let blocked=false,guard=0;
@@ -49,12 +54,80 @@ export class Agent{
   modelHistory({allowOnline,compact=false}){const source=allowOnline?this.history.filter(m=>!m._private||m.role==='system'):this.history;const out=source.map(publicFields);if(compact&&out[0]?.role==='system')out[0]={role:'system',content:COMPACT_CHAT_SYSTEM};return out;}
   async modelCatalog(){return this.client.catalog();}
   async status(){const [brain,policy,memories,learning,activeReminders,notes]=await Promise.all([this.client.health(),permissions.status(),memory.list(500),skills.stats(),reminders.list(),pinnedNotes.list({limit:100})]);return {ollama:brain.local,brain,model:this.client.model,models:brain.installedLocalModels||await this.client.models(),pending:this.pending.size,tools:Object.keys(tools).length,languagePatterns:CAPABILITY_PHRASE_COUNT,memoryItems:memories.length,permissions:policy,learning,personal:{reminders:activeReminders,notes}};}
-  fastReply(turn,text,name){const reply=cleanReply(text)||'انجام شد.';this.history.push({role:'assistant',content:reply,_private:turn.private});this.trimHistory();return {ok:true,text:reply,brain:{mode:'direct',model:'windows-fast-path',privacy:turn.private?'local-private':'local'},toolsRouted:turn.routeNames?.length||0,direct:true,tool:name};}
+  fastReply(turn,text,name,extra={}){const reply=cleanReply(text)||'انجام شد.';this.history.push({role:'assistant',content:reply,_private:turn.private});this.trimHistory();return {ok:extra.ok!==false,text:reply,brain:{mode:'direct',model:'windows-fast-path',privacy:turn.private?'local-private':'local',runtime:'v2'},toolsRouted:turn.routeNames?.length||0,direct:true,tool:name,...extra};}
   async tryFastCommand(fast,turn,routeNames){
-    if(!fast||!tools[fast.name])return null;const {name,args={}}=fast,tool=tools[name];turn.routeNames=routeNames;
-    const protectedMatch=await permissions.protectedMatch(name,args);if(protectedMatch)return this.fastReply(turn,`این مورد با قانون دائمی خودت محافظت شده: ${protectedMatch.label}`,name);
-    if(await permissions.shouldConfirm(name,tool,args)){const id=crypto.randomUUID();this.pending.set(id,{fast:true,name,args,createdAt:Date.now(),turn,routeNames,fastReply:fast.reply});return {ok:true,requiresConfirmation:true,confirmationId:id,text:`این کار روی وضعیت سیستم اثر مهم می‌گذارد. اجرای «${name}» را تأیید می‌کنی؟`};}
-    try{this.emit({type:'tool',name});await permissions.assertAllowed(name,args);const out=await runTool(name,args);if(out?.success===false)return null;turn.trace.push({name,args,success:true,error:''});return this.fastReply(turn,fast.reply||out?.message||'انجام شد.',name);}catch{return null;}
+    if(!fast||!tools[fast.name])return null;
+    const {name,args={}}=fast,tool=tools[name];turn.routeNames=routeNames;
+    const protectedMatch=await permissions.protectedMatch(name,args);
+    if(protectedMatch)return this.fastReply(turn,`این مورد با قانون دائمی خودت محافظت شده: ${protectedMatch.label}`,name,{ok:false,blocked:true});
+
+    if(await permissions.shouldConfirm(name,tool,args)){
+      const id=crypto.randomUUID();
+      this.pending.set(id,{fast:true,name,args,createdAt:Date.now(),turn,routeNames,fastReply:fast.reply});
+      return {ok:true,requiresConfirmation:true,confirmationId:id,text:`این کار روی وضعیت سیستم اثر مهم می‌گذارد. اجرای «${name}» را تأیید می‌کنی؟`};
+    }
+
+    try{
+      this.emit({type:'tool',name});
+      await permissions.assertAllowed(name,args);
+      const out=await runTool(name,args);
+      if(out?.success===false){
+        await incidents.record({kind:'tool',phase:'fast-action',error:out?.error||out?.message||'tool failed',tool:name,input:turn.original,privateContext:turn.private,model:'windows-fast-path'});
+        return this.fastReply(turn,`نتونستم این کار رو کامل انجام بدم: ${out?.error||out?.message||'خطای ابزار'}`,name,{ok:false});
+      }
+      const verification=await verifyFastAction({name,args},out,runTool);
+      const strictFail=verification?.verified===false&&STRICT_VERIFY_TOOLS.has(name);
+      turn.trace.push({name,args,success:!strictFail,error:strictFail?'verification failed':'',verification});
+      if(strictFail){
+        await incidents.record({kind:'verification',phase:'fast-action',error:verification?.reason||'postcondition failed',tool:name,input:turn.original,privateContext:turn.private,model:'windows-fast-path'});
+        return this.fastReply(turn,'دستور اجرا شد، ولی نتیجه نهایی روی ویندوز تأیید نشد؛ موفقیت اعلام نمی‌کنم.',name,{ok:false,verification});
+      }
+      return this.fastReply(turn,fast.reply||out?.message||'انجام شد.',name,{verification});
+    }catch(error){
+      await incidents.record({kind:'runtime',phase:'fast-action',error:error.message,tool:name,input:turn.original,privateContext:turn.private,model:'windows-fast-path'}).catch(()=>{});
+      return null;
+    }
+  }
+
+  async tryFastSequence(sequence,turn,routeNames){
+    if(!sequence?.complete||!sequence?.multi)return null;
+    turn.routeNames=routeNames;
+    const actions=sequence.steps.filter(step=>step.type==='action');
+
+    for(const step of actions){
+      const {name,args={}}=step.command||{},tool=tools[name];
+      if(!tool)return null;
+      const protectedMatch=await permissions.protectedMatch(name,args);
+      if(protectedMatch)return this.fastReply(turn,`این مورد با قانون دائمی خودت محافظت شده: ${protectedMatch.label}`,'fast-sequence',{ok:false,blocked:true});
+      if(await permissions.shouldConfirm(name,tool,args))return null;
+    }
+
+    const results=[],replies=[];
+    let lastVerification=null;
+    for(const step of sequence.steps){
+      if(step.type==='verify'){
+        if(lastVerification?.verified===false)return this.fastReply(turn,'بررسی کردم؛ مرحله قبلی واقعاً تأیید نشد.','fast-sequence',{ok:false,sequence:true,results});
+        continue;
+      }
+      const {name,args={}}=step.command;
+      try{
+        this.emit({type:'tool',name});
+        await permissions.assertAllowed(name,args);
+        const out=await runTool(name,args);
+        if(out?.success===false)return this.fastReply(turn,`مرحله «${name}» انجام نشد: ${out.error||out.message||'خطای ابزار'}`,'fast-sequence',{ok:false,sequence:true,results});
+        lastVerification=await verifyFastAction({name,args},out,runTool);
+        const strictFail=lastVerification?.verified===false&&STRICT_VERIFY_TOOLS.has(name);
+        turn.trace.push({name,args,success:!strictFail,error:strictFail?'verification failed':'',verification:lastVerification});
+        results.push({name,args,verification:lastVerification});
+        if(strictFail)return this.fastReply(turn,`مرحله «${name}» اجرا شد ولی نتیجه‌اش تأیید نشد.`,'fast-sequence',{ok:false,sequence:true,results});
+        if(step.command.reply)replies.push(step.command.reply);
+      }catch(error){
+        await incidents.record({kind:'runtime',phase:'fast-sequence',error:error.message,tool:name,input:turn.original,privateContext:turn.private,model:'windows-fast-path'}).catch(()=>{});
+        return this.fastReply(turn,`در مرحله «${name}» خطا شد: ${error.message}`,'fast-sequence',{ok:false,sequence:true,results});
+      }
+    }
+    const verified=results.some(x=>x.verification?.verified===true);
+    return this.fastReply(turn,replies.length>1?`انجام شد: ${replies.join(' ')}`:(replies[0]||'انجام شد.')+(verified?' نتیجه هم بررسی شد.':''),'fast-sequence',{sequence:true,results});
   }
   async executeToolCall(call,turn){
     const name=call.function?.name,args=parseArgs(call.function?.arguments),tool=tools[name],callId=call.id;
@@ -62,21 +135,33 @@ export class Agent{
     const privateTool=toolMakesContextPrivate(name);if(privateTool){turn.private=true;if(turn.assistantMessage)turn.assistantMessage._private=true;}
     const protectedMatch=await permissions.protectedMatch(name,args);if(protectedMatch){const out={tool_name:name,success:false,blocked:true,error:`Protected by permanent user rule: ${protectedMatch.label}`};this.history.push(toolMessage(name,out,callId,true));turn.trace.push({name,args,success:false,error:out.error});this.trimHistory();return {continue:true,blocked:true};}
     if(await permissions.shouldConfirm(name,tool,args))return {needsConfirmation:true,name,args,callId};
-    this.emit({type:'tool',name});let out;try{await permissions.assertAllowed(name,args);out=await runTool(name,args);}catch(e){out={tool_name:name,success:false,error:e.message};}
-    const success=out?.success!==false;turn.trace.push({name,args,success,error:success?'':String(out?.error||out?.message||'').slice(0,700)});
-    if(!success&&!turn.private){await skills.queueImprovement(turn.original,{tool:name,error:out?.error||out?.message||'tool failed'});this.emit({type:'learning',action:'gap-queued',title:turn.original,tool:name,error:out?.error||out?.message||'tool failed'});}
-    this.history.push(toolMessage(name,out,callId,turn.private||privateTool));this.trimHistory();return {continue:true,out};
+    this.emit({type:'tool',name});let out;
+    try{await permissions.assertAllowed(name,args);out=await runTool(name,args);}catch(e){out={tool_name:name,success:false,error:e.message};}
+    let verification=null;
+    if(out?.success!==false)verification=await verifyFastAction({name,args},out,runTool);
+    const strictFail=verification?.verified===false&&STRICT_VERIFY_TOOLS.has(name);
+    const success=out?.success!==false&&!strictFail;
+    turn.trace.push({name,args,success,error:success?'':String(out?.error||out?.message||verification?.reason||'verification failed').slice(0,700),verification});
+    if(!success){
+      await incidents.record({kind:strictFail?'verification':'tool',phase:'agent-tool',error:out?.error||out?.message||verification?.reason||'tool failed',tool:name,input:turn.original,privateContext:turn.private||privateTool,model:this.client.model}).catch(()=>{});
+      if(!turn.private){await skills.queueImprovement(turn.original,{tool:name,error:out?.error||out?.message||verification?.reason||'tool failed'});this.emit({type:'learning',action:'gap-queued',title:turn.original,tool:name,error:out?.error||out?.message||verification?.reason||'tool failed'});}
+    }
+    const toolOut=strictFail?{...out,success:false,error:verification?.reason||'Postcondition verification failed',verification}:verification?{...out,verification}:out;
+    this.history.push(toolMessage(name,toolOut,callId,turn.private||privateTool));this.trimHistory();return {continue:true,out:toolOut};
   }
   async finishTurn(turn,reply){
-    const successes=turn.trace.filter(x=>x.success).length,failures=turn.trace.filter(x=>!x.success).length;
-    if(!turn.private&&successes>=2&&failures===0){try{const learned=await skills.learnFromTrace(turn.original,turn.trace);if(learned)this.emit({type:'learning',action:'workflow-learned',title:learned.title});}catch{}}
+    const successes=turn.trace.filter(x=>x.success).length,failures=turn.trace.filter(x=>!x.success).length,verified=turn.trace.filter(x=>x.success&&x.verification?.verified===true).length;
+    let learned=false;
+    if(!turn.private&&successes>=2&&failures===0&&verified>=1){
+      try{const item=await skills.learnFromTrace(turn.original,turn.trace);if(item){learned=true;this.emit({type:'learning',action:'workflow-learned',title:item.title});}}catch{}
+    }
     if(!turn.private&&soundsUnfamiliar(reply)){try{await skills.queueImprovement(turn.original,{error:'Model reported an unfamiliar or unsupported task'});this.emit({type:'learning',action:'gap-queued',title:turn.original});}catch{}}
-    return {ok:true,text:reply,brain:{mode:this.client.lastMode,model:this.client.model,provider:this.client.lastProvider,privacy:turn.private?'local/private-context':'online-eligible'},toolsRouted:turn.routeNames?.length||0,learned:!turn.private&&successes>=2&&failures===0};
+    return {ok:true,text:reply,brain:{mode:this.client.lastMode,model:this.client.model,provider:this.client.lastProvider,privacy:turn.private?'local/private-context':'online-eligible',runtime:'v2'},toolsRouted:turn.routeNames?.length||0,learned,verification:{verifiedSteps:verified,failedSteps:failures}};
   }
   async drive({routeNames,turn,queuedCalls=[],startStep=0}={}){
     turn.routeNames=routeNames;let queue=[...queuedCalls];
     for(let step=startStep;step<MAX_STEPS;step++){
-      if(queue.length){while(queue.length){const call=queue.shift(),r=await this.executeToolCall(call,turn);if(r.needsConfirmation){const id=crypto.randomUUID();this.pending.set(id,{...r,createdAt:Date.now(),routeNames,turn,remainingCalls:queue,startStep:step});return {ok:true,requiresConfirmation:true,confirmationId:id,text:`این بخش حساس یا برگشت‌ناپذیر است. اجرای «${r.name}» را تأیید می‌کنی؟`};}}continue;}
+      if(queue.length){while(queue.length){const call=queue.shift(),r=await this.executeToolCall(call,turn);if(r?.out){routeNames=expandToolSelection(routeNames,r.out,{max:30}).filter(n=>tools[n]);turn.routeNames=routeNames;}if(r.needsConfirmation){const id=crypto.randomUUID();this.pending.set(id,{...r,createdAt:Date.now(),routeNames,turn,remainingCalls:queue,startStep:step});return {ok:true,requiresConfirmation:true,confirmationId:id,text:`این بخش حساس یا برگشت‌ناپذیر است. اجرای «${r.name}» را تأیید می‌کنی؟`};}}continue;}
       this.emit({type:'thinking',step});const options=turn.chatOptions||this.chatOptions,allowOnline=!turn.private||explicitCloud(options);const response=await this.client.chat(this.modelHistory({allowOnline,compact:routeNames.length===0}),ollamaTools(routeNames),{...options,allowOnline,privacyReason:turn.private?'private computer/project context':''}),msg=response?.message;
       if(!msg)throw new Error('Model returned no message');const internal={...msg,_private:turn.private};this.history.push(internal);turn.assistantMessage=internal;this.trimHistory();const calls=msg.tool_calls??[];if(!calls.length){const reply=cleanReply(msg.content)||'انجام شد.';return this.finishTurn(turn,reply);}queue=[...calls];
     }
@@ -85,15 +170,65 @@ export class Agent{
   async chat(text,options={}){
     const original=String(text??'').trim();if(!original)return {ok:false,text:'پیام خالی است.'};const effectiveChatOptions={...this.chatOptions,...(options||{})};
     try{
-      const rule=await permissions.parseUserRule(original);await memory.maybeRememberUserStatement(original);
-      const canonical=canonicalizeCommand(original),normalized=normalizePersianCommand(canonical),hints=[...new Set([...commandHints(normalized),...capabilityHints(normalized)])],routeNames=[...new Set([...this.defaultTools,...selectToolNames(canonical,hints)])].filter(n=>tools[n]),basePrivate=isPrivateRequest(original,hints);
-      const fast=matchFastCommand(normalized),fastTurn={private:basePrivate,assistantMessage:null,original,trace:[],routeNames,chatOptions:effectiveChatOptions};
-      // Deterministic desktop actions go first so colloquial commands stay fast and
-      // destructive actions stop at confirmation before any LLM request.
-      if(fast){this.history.push({role:'user',content:original,_private:basePrivate});this.trimHistory();const direct=await this.tryFastCommand(fast,fastTurn,routeNames);if(direct)return direct;this.history.pop();}
-      const intent=actionIntent(canonical),small=matchSmallTalk(original);if(small&&!intent.action){this.history.push({role:'user',content:original,_private:false},{role:'assistant',content:small,_private:false});this.trimHistory();return {ok:true,text:small,brain:{mode:'direct-smalltalk',model:'maria-local',privacy:'local'},toolsRouted:0,direct:true};}
+      const rule=await permissions.parseUserRule(original);
+      const canonical=canonicalizeCommand(original),normalized=normalizePersianCommand(canonical);
+      const hints=[...new Set([...commandHints(normalized),...capabilityHints(normalized)])];
+      const basePrivate=isPrivateRequest(original,hints),intent=actionIntent(canonical);
+      const rawRouteNames=[...new Set([...this.defaultTools,...selectToolNames(canonical,hints)])].filter(n=>tools[n]);
+      const routeNames=compactToolSelection(canonical,rawRouteNames,{modes:intent.modes,action:intent.action,multiStep:intent.multiStep,max:18}).filter(n=>tools[n]);
+      const fast=matchFastCommand(original)||matchFastCommand(canonical)||matchFastCommand(normalized);
+      const sequenceOriginal=planFastSequence(original),sequenceNormalized=planFastSequence(normalized),sequence=sequenceOriginal?.complete?sequenceOriginal:sequenceNormalized;
+      const fastTurn={private:basePrivate,assistantMessage:null,original,trace:[],routeNames,chatOptions:effectiveChatOptions};
+
+      // Privacy is classified before durable memory. Obvious local actions execute
+      // deterministically and are verified before MARIA claims success.
+      if(sequence?.complete&&sequence.multi){
+        this.history.push({role:'user',content:original,_private:basePrivate});this.trimHistory();
+        const direct=await this.tryFastSequence(sequence,fastTurn,routeNames);
+        if(direct)return direct;
+        this.history.pop();
+      }
+      if(fast){
+        this.history.push({role:'user',content:original,_private:basePrivate});this.trimHistory();
+        const direct=await this.tryFastCommand(fast,fastTurn,routeNames);
+        if(direct)return direct;
+        this.history.pop();
+      }
+
+      await memory.maybeRememberUserStatement(original);
+      const small=matchSmallTalk(original);if(small&&!intent.action){this.history.push({role:'user',content:original,_private:false},{role:'assistant',content:small,_private:false});this.trimHistory();return {ok:true,text:small,brain:{mode:'direct-smalltalk',model:'maria-local',privacy:'local'},toolsRouted:0,direct:true};}
       const needsGround=!basePrivate&&shouldGroundKnowledge(original);
-      if(!intent.action&&!needsGround&&!fast&&this.defaultTools.length===0){const privateChat=basePrivate;this.history.push({role:'user',content:original,_private:privateChat});this.trimHistory();const response=await this.client.chat(this.modelHistory({allowOnline:!privateChat,compact:true}),[],{...effectiveChatOptions,allowOnline:!privateChat,privacyReason:privateChat?'private conversation':'',profile:effectiveChatOptions.profile||'chat'}),reply=cleanReply(response?.message?.content)||'جوابی دریافت نشد.';this.history.push({role:'assistant',content:reply,_private:privateChat});this.trimHistory();return {ok:true,text:reply,brain:{mode:this.client.lastMode,model:this.client.model,provider:this.client.lastProvider||'ollama',privacy:privateChat?'local-private':'online-eligible'},toolsRouted:0,directChat:true};}
+      if(!intent.action&&!needsGround&&!fast&&this.defaultTools.length===0){
+        const privateChat=basePrivate;
+        this.history.push({role:'user',content:original,_private:privateChat});
+        this.trimHistory();
+        const run=await this.runtime.answer({
+          text:original,
+          messages:this.modelHistory({allowOnline:!privateChat,compact:true}),
+          hints,
+          options:{...effectiveChatOptions,allowOnline:!privateChat}
+        });
+        const reply=cleanReply(run?.message?.content)||'جوابی دریافت نشد.';
+        this.history.push({role:'assistant',content:reply,_private:privateChat});
+        this.trimHistory();
+        return {
+          ok:run?.ok!==false,
+          text:reply,
+          brain:{
+            mode:this.client.lastMode,
+            model:run?.model||this.client.model,
+            provider:run?.provider||this.client.lastProvider||'ollama',
+            profile:run?.profile||this.client.lastProfile,
+            privacy:privateChat?'local-private':'online-eligible',
+            runtime:'v2'
+          },
+          validation:run?.validation,
+          verification:run?.verification,
+          runId:run?.run?.id,
+          toolsRouted:0,
+          directChat:true
+        };
+      }
       if(!routeNames.length){const small=matchSmallTalk(original);if(small){this.history.push({role:'user',content:original,_private:basePrivate},{role:'assistant',content:small,_private:basePrivate});this.trimHistory();return {ok:true,text:small,brain:{mode:'direct-smalltalk',model:'maria-local',provider:'local',privacy:basePrivate?'local-private':'local'},toolsRouted:0,direct:true};}}
       if(!basePrivate&&shouldGroundKnowledge(original)){
         try{this.emit({type:'thinking',kind:'grounded-research'});const grounded=await groundedKnowledgeAnswer(original,{client:this.client,runTool,brainOptions:effectiveChatOptions});if(grounded?.answer){this.history.push({role:'user',content:original,_private:false},{role:'assistant',content:grounded.answer,_private:false});this.trimHistory();return {ok:true,text:grounded.answer,brain:{mode:'grounded-research',model:this.client.model,provider:this.client.lastProvider||'ollama',privacy:'public'},sources:grounded.sources,toolsRouted:routeNames.length};}}catch(e){this.emit({type:'research-error',error:e.message});}
