@@ -60,13 +60,16 @@ test('brain runtime repairs accidental English response once',async()=>{
 test('tool resolver keeps common actions lazy and bounded',()=>{
   const resolver=new ToolResolver({maxTools:18});
   const search=resolver.resolve('سرچ کن قیمت آهن امروز',{mode:'action'});
-  assert.equal(search.fast?.name,'chrome_search');
-  assert.ok(search.names.includes('chrome_search'));
+  assert.equal(search.fast?.name,'grounded_factual_answer');
+  assert.ok(search.names.includes('grounded_factual_answer'));
   assert.ok(search.names.length<=18);
 });
 
 test('Chrome routing uses Amir for search and company for WhatsApp and Rubika',()=>{
-  assert.equal(matchFastCommand('سرچ کن قیمت آهن امروز')?.name,'chrome_search');
+  assert.equal(matchFastCommand('سرچ کن قیمت آهن امروز')?.name,'grounded_factual_answer');
+  const explicitBrowser=matchFastCommand('فقط تو گوگل قیمت آهن امروز رو سرچ کن');
+  assert.equal(explicitBrowser?.name,'chrome_search');
+  assert.equal(explicitBrowser?.args?.profile,'personal');
   assert.equal(chromeProfileForService('whatsapp'),'Profile 19');
   assert.equal(chromeProfileForService('rubika'),'Profile 19');
   assert.equal(chromeProfileForService('google'),'Profile 1');

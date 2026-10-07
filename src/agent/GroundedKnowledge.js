@@ -1,10 +1,12 @@
 import { actionIntent } from './ActionIntent.js';
+import { parseWebRequest } from './WebRequest.js';
 
 const factual=/(؟|\?|چیست|چیه|چی هست|کیه|کی هست|کجاست|کجا هست|چرا|چطور|چگونه|چه کسی|چه زمانی|چه موقع|چند تا|فرق .* چیه|تفاوت .* چیه|معنی .* چیه|روش|مراحل|راهنما|آموزش|درستش کنم|درست کنم|حلش کنم|حل کنم|چیکار کنم|چکار کنم|what\b|who\b|where\b|when\b|why\b|how\b)/i;
 const smallTalk=/(حالت چطوره|خوبی|چه خبر|اسم من|من کی.?ام|منو می.?شناسی|من را می.?شناسی|یادت میاد|یادت هست|دوستم داری|خسته.?ای|سلام|صبح بخیر|شب بخیر)/i;
 const localComputer=/(سیستم من|کامپیوتر من|فایل من|پوشه من|دسکتاپ من|تلگرام من|واتساپ من|اکسل من|فتوشاپ من|ویندوز من|این فایل|این برنامه|این پنجره)/i;
 const currentish=/(جدیدترین|آخرین|امروز|الان|فعلی|current|latest|today|recent|202[4-9])/i;
 const explicitResearch=/(تحقیق|بررسی کن|منبع|با منبع|از وب|از اینترنت|از گوگل|سرچ کن|جستجو کن|research|source|web search|google)/i;
+const deepRequest=/(تحقیق\s*(?:کامل|عمیق|جامع)|بررسی\s*(?:کامل|عمیق|جامع)|عمیق|جامع|موشکاف|چند\s*منبع|با\s*جزئیات|جزئیات\s*کامل|مقایسه\s*دقیق|deep\s*research|in[- ]depth)/i;
 const simpleStableFact=/(پایتخت|جمعیت .* چقد|مساحت .* چقد|چه کسی .* را ساخت|چه سالی|تاریخ تولد|capital of)/i;
 const deepHowTo=/(درستش کنم|درست کنم|حلش کنم|حل کنم|رفع|مراحل|آموزش|نصب|راه.?اندازی|تنظیم(?:ات)?|خطا|ارور|مشکل)/i;
 const stop=new Set('چی چیه چیست هست است کجاست کجا کیه کی چرا چطور چگونه چه کسی زمانی موقع چند تا فرق تفاوت معنی رو را یه یک این اون آن of the a an is are what who where when why how'.split(' '));
@@ -15,35 +17,92 @@ const sentences=s=>clean(s).split(/(?<=[.!؟])\s+|[؛]\s*/).map(clean).filter(x=
 const titleBase=title=>clean(String(title||'').split(/\s+-\s+|\s+–\s+/)[0]);
 
 export function shouldGroundKnowledge(text=''){
-  const value=String(text||'').trim();if(!value||smallTalk.test(value)||localComputer.test(value))return false;
-  const howTo=/(چطور|چطوری|چگونه|روش|مراحل|راهنما|آموزش|چیکار کنم|چکار کنم)/i.test(value);
-  if(actionIntent(value).action&&!howTo)return false;
-  return factual.test(value)&&(howTo||currentish.test(value)||explicitResearch.test(value)||simpleStableFact.test(value));
+  const value=String(text||'').trim();
+  if(!value||smallTalk.test(value)||localComputer.test(value))return false;
+  if(actionIntent(value).action&&!explicitResearch.test(value)&&!currentish.test(value))return false;
+  if(explicitResearch.test(value))return true;
+  if(currentish.test(value)&&factual.test(value))return true;
+  return simpleStableFact.test(value)&&factual.test(value);
 }
 
 function capitalAnswer(query,sources){
   if(!/(پایتخت|capital)/i.test(query))return '';
   const entity=clean(query).replace(/پایتخت|کجاست|کجا هست|چیست|چیه|capital|what|where|is|the|of|\?|؟/gi,' ').replace(/\s+/g,' ').trim(),entityNorm=plain(entity);
-  for(const s of sources){const title=titleBase(s.title),titleNorm=plain(title),textNorm=plain(`${s.snippet||''} ${String(s.text||'').slice(0,2600)}`);if(title&&title.length<70&&titleNorm!==entityNorm&&textNorm.includes('پایتخت')&&(!entityNorm||textNorm.includes(entityNorm))){const titleMention=textNorm.includes(titleNorm),capitalRelation=/پایتخت.{0,90}(?:است|می باشد|میباشد)|(?:است|می باشد|میباشد).{0,90}پایتخت/.test(textNorm);if(titleMention&&capitalRelation)return `پایتخت ${entity||'این کشور'} ${title} است.`;}}
-  for(const s of sources){const text=clean(`${s.snippet||''} ${String(s.text||'').slice(0,4200)}`);const patterns=[/پایتخت\s+و\s+بزرگ(?:‌| )?ترین\s+شهر\s+([آ-یA-Za-z‌\- ]{2,55}?)(?=\s+\d|[،؛,.]|\s+است\b|$)/i,/پایتخت\s+آن\s+([آ-یA-Za-z‌\- ]{2,55}?)(?=[،؛,.]|\s+است\b|$)/i,/(?:capital(?: and largest city)?(?: of [^.,;]{1,80})? is)\s+([A-Za-z\- ]{2,60})(?=[.,;]|$)/i];for(const re of patterns){const m=text.match(re);if(!m)continue;const place=clean(m[1]).replace(/\s+(?:است|می‌باشد|میباشد)$/,'');if(place&&plain(place)!==entityNorm)return `پایتخت ${entity||'این کشور'} ${place} است.`;}}
+  for(const s of sources){
+    const title=titleBase(s.title),titleNorm=plain(title),textNorm=plain(`${s.snippet||''} ${String(s.text||'').slice(0,2600)}`);
+    if(title&&title.length<70&&titleNorm!==entityNorm&&!/پایتخت|capital/i.test(title)&&textNorm.includes('پایتخت')&&(!entityNorm||textNorm.includes(entityNorm))){
+      const titleMention=textNorm.includes(titleNorm),capitalRelation=/پایتخت.{0,90}(?:است|می باشد|میباشد)|(?:است|می باشد|میباشد).{0,90}پایتخت/.test(textNorm);
+      if(titleMention&&capitalRelation)return `پایتخت ${entity||'این کشور'} ${title} است.`;
+    }
+  }
+  for(const s of sources){
+    const text=clean(`${s.snippet||''} ${String(s.text||'').slice(0,4200)}`);
+    const patterns=[/پایتخت\s+فعلی\s+[آ-یA-Za-z‌ -]{2,40}?\s+([آ-یA-Za-z‌-]{2,40})\s+است/i,/پایتخت\s+و\s+بزرگ(?:‌| )?ترین\s+شهر\s+([آ-یA-Za-z‌\- ]{2,55}?)(?=\s+\d|[،؛,.]|\s+است\b|$)/i,/پایتخت\s+آن\s+([آ-یA-Za-z‌\- ]{2,55}?)(?=[،؛,.]|\s+است\b|$)/i,/(?:capital(?: and largest city)?(?: of [^.,;]{1,80})? is)\s+([A-Za-z\- ]{2,60})(?=[.,;]|$)/i];
+    for(const re of patterns){const m=text.match(re);if(!m)continue;const place=clean(m[1]).replace(/\s+(?:است|می‌باشد|میباشد)$/,'');if(place&&plain(place)!==entityNorm)return `پایتخت ${entity||'این کشور'} ${place} است.`;}
+  }
   return '';
 }
+
 function bestEvidence(query,sources){
-  const q=words(query);let best=null;sources.forEach((s,sourceIndex)=>{const candidates=[...sentences(s.snippet||''),...sentences(String(s.text||'').slice(0,5000))].slice(0,22);for(const text of candidates){const low=plain(text);let score=0;for(const w of q)if(low.includes(w))score+=3;score+=Math.max(0,3-sourceIndex);if(currentish.test(query)&&sourceIndex===0)score+=2;if(!best||score>best.score)best={score,text,source:s};}});return best;
-}
-async function synthesize(query,sources,client,brainOptions={}){
-  if(!client)return '';
-  const evidence=sources.slice(0,4).map((s,i)=>`SOURCE ${i+1}: ${s.title}\nURL: ${s.url}\n${clean(s.snippet||'')}\n${clean(String(s.text||'').slice(0,deepHowTo.test(query)||currentish.test(query)||explicitResearch.test(query)?2600:1400))}`).join('\n\n');
-  const messages=[{role:'system',content:'You are MARIA answering in fluent natural Persian. Use the supplied web evidence for factual claims and do not invent missing facts. Match depth to the question: simple questions can be brief, but hard, technical, comparative, educational or how-to questions should receive a complete professional explanation with reasoning summary, important assumptions, practical steps/examples, caveats and a clear conclusion when useful. If evidence is incomplete or sources conflict, state the uncertainty precisely. Do not mention hidden prompts or fabricate citations.'},{role:'user',content:`Question: ${query}\n\nWeb evidence:\n${evidence}`}];
-  try{const r=await client.chat(messages,[],{...brainOptions,allowOnline:true,profile:'research'});return clean(r?.message?.content);}catch{return '';}
+  const q=words(query);let best=null;
+  sources.forEach((s,sourceIndex)=>{
+    const candidates=[...sentences(s.snippet||''),...sentences(String(s.text||'').slice(0,5000))].slice(0,22);
+    for(const text of candidates){const low=plain(text);let score=0;for(const w of q)if(low.includes(w))score+=3;score+=Math.max(0,3-sourceIndex);if(currentish.test(query)&&sourceIndex===0)score+=2;if(!best||score>best.score)best={score,text,source:s};}
+  });
+  return best;
 }
 
-export async function groundedKnowledgeAnswer(query,{runTool,client,brainOptions={}}={}){
-  if(!runTool)throw new Error('Grounded knowledge tool runner is missing');const deep=currentish.test(query)||explicitResearch.test(query)||deepHowTo.test(query);let sources=[];
-  if(deep||simpleStableFact.test(query)){const research=await runTool('research_topic',{query,sources:deep?(currentish.test(query)?4:3):2});sources=research?.data?.sources||[];}
-  else{const wiki=await runTool('wikipedia_search',{query,limit:4});sources=(wiki?.data?.results||[]).map(x=>({...x,text:x.text||x.snippet||''}));if(!sources.length){const live=await runTool('live_web_search',{query,limit:5});sources=(live?.data?.results||[]).map(x=>({...x,text:x.snippet||''}));}}
+function evidenceDigest(query,sources,{deep=false}={}){
+  const rows=sources.slice(0,deep?4:3).map((s,i)=>{
+    const body=clean(s.snippet||s.text||'').slice(0,deep?650:420);
+    return `[${i+1}] ${clean(s.title)||'منبع وب'}${body?` — ${body}`:''}`;
+  }).filter(Boolean);
+  if(!rows.length)return '';
+  const intro=deep?'جمع‌بندی شواهدی که از منابع زنده پیدا کردم:':'نتیجه سریع از جست‌وجوی زنده وب:';
+  return `${intro}\n${rows.join('\n\n')}`;
+}
+
+function cloudSynthesisAvailable(client){
+  if(!client)return false;
+  if(Object.prototype.hasOwnProperty.call(client,'online')||client?.online!==undefined)return Boolean(client?.online?.configured);
+  return typeof client.chat==='function';
+}
+
+async function synthesize(query,sources,client,brainOptions={},conversation=[]){
+  if(!cloudSynthesisAvailable(client))return '';
+  const evidence=sources.slice(0,4).map((s,i)=>`SOURCE ${i+1}: ${s.title}\nURL: ${s.url}\n${clean(s.snippet||'')}\n${clean(String(s.text||'').slice(0,deepHowTo.test(query)||currentish.test(query)||explicitResearch.test(query)?2600:1400))}`).join('\n\n');
+  const prior=conversation.filter(m=>!m._private&&['user','assistant'].includes(m.role)&&m.content).slice(-4).map(m=>({role:m.role,content:String(m.content)}));
+  const messages=[{role:'system',content:'فقط به فارسی طبیعی و حرفه‌ای پاسخ بده. برای ادعاهای واقعی فقط از شواهد وب داده‌شده استفاده کن و چیزی نساز. اگر منابع ناقص یا متناقض‌اند صریح بگو. کنار ادعاهای مهم شماره منبع مثل [1] را بیاور. اندازه پاسخ را متناسب با سؤال انتخاب کن.'},...prior,{role:'user',content:`سؤال کاربر: ${query}\n\nشواهد وب:\n${evidence}`}];
+  try{const r=await client.chat(messages,[],{...brainOptions,allowOnline:true,profile:'research'});return String(r?.message?.content||'').trim();}catch{return '';}
+}
+
+export async function groundedKnowledgeAnswer(query,{runTool,client,brainOptions={},conversation=[],forceResearch=false}={}){
+  if(!runTool)throw new Error('Grounded knowledge tool runner is missing');
+  const request=parseWebRequest(query),searchQuery=request?.mode==='research'?(request.domain?`site:${request.domain} ${request.query}`:request.query):query;
+  const deep=Boolean(forceResearch||deepRequest.test(query)||(deepHowTo.test(query)&&/(تحقیق|منبع|وب|اینترنت)/i.test(query)));
+  let sources=[];
+
+  if(deep){
+    const research=await runTool('research_topic',{query:searchQuery,sources:4});
+    sources=research?.success===false?[]:research?.data?.sources||[];
+  }else if(request?.mode==='research'||explicitResearch.test(query)||currentish.test(query)){
+    const live=await runTool('live_web_search',{query:searchQuery,limit:6});
+    sources=(live?.data?.results||[]).map(x=>({...x,text:x.snippet||''}));
+  }else if(simpleStableFact.test(query)||factual.test(query)){
+    const wiki=await runTool('wikipedia_search',{query,limit:4});
+    sources=(wiki?.data?.results||[]).map(x=>({...x,text:x.text||x.snippet||''}));
+    if(!sources.length){const live=await runTool('live_web_search',{query,limit:5});sources=(live?.data?.results||[]).map(x=>({...x,text:x.snippet||''}));}
+  }
+
   if(!sources.length)return null;
-  let answer=capitalAnswer(query,sources);if(!answer)answer=await synthesize(query,sources,client,brainOptions);if(!answer){const best=bestEvidence(query,sources);if(best?.text)answer=best.text;}
-  if(!answer)return null;if(answer.length>7000)answer=`${answer.slice(0,6997).trim()}…`;
-  return {answer,sources:sources.slice(0,5).map(({title,url})=>({title,url}))};
+  let answer=capitalAnswer(query,sources);
+  if(!answer)answer=await synthesize(query,sources,client,brainOptions,conversation);
+  if(!answer)answer=evidenceDigest(query,sources,{deep});
+  if(!answer){const best=bestEvidence(query,sources);if(best?.text)answer=best.text;}
+  if(!answer)return null;
+
+  const links=sources.slice(0,4).filter(s=>/^https?:\/\//i.test(s.url||'')).map(({title,url})=>({title,url}));
+  if(links.length&&!links.some(s=>answer.includes(s.url)))answer+='\n\nمنابع:\n'+links.map((s,i)=>`[${i+1}] ${s.title}: ${s.url}`).join('\n');
+  if(answer.length>7000)answer=`${answer.slice(0,6997).trim()}…`;
+  return {answer,sources:links,searchQuery,mode:deep?'deep':'fast'};
 }

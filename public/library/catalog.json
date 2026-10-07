@@ -1,0 +1,2636 @@
+{
+  "version": 1,
+  "root": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل",
+  "packages": [
+    {
+      "name": "7903223404901736379.vrm",
+      "size": 21647424,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\7903223404901736379.vrm",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\7903223404901736379.vrm",
+      "category": "avatar",
+      "status": "indexed",
+      "counts": {}
+    },
+    {
+      "name": "_VRoid_Free_Alien_Girl.zip",
+      "size": 11826159,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\_VRoid_Free_Alien_Girl.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\_VRoid_Free_Alien_Girl.zip",
+      "category": "avatar",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 1,
+        ".vrma": 0,
+        ".unitypackage": 0,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "EvilFallArma_PS_filer.rar",
+      "size": 16081925,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\EvilFallArma_PS_filer.rar",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\EvilFallArma_PS_filer.rar",
+      "category": "material",
+      "status": "indexed",
+      "counts": {
+        ".psd": 3
+      }
+    },
+    {
+      "name": "EvilFallArmar_v1.22.zip",
+      "size": 36229500,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\EvilFallArmar_v1.22.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\EvilFallArmar_v1.22.zip",
+      "category": "wardrobe",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 1,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "FREE無料-Manuka5FaceAnimation.zip",
+      "size": 30393,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\FREE無料-Manuka5FaceAnimation.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\FREE無料-Manuka5FaceAnimation.zip",
+      "category": "expression",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 1,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "FREE無料-Milltina5FaceAnimation.zip",
+      "size": 44656,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\FREE無料-Milltina5FaceAnimation.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\FREE無料-Milltina5FaceAnimation.zip",
+      "category": "expression",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 1,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "FREE無料-PoseAnimationManuka.zip",
+      "size": 4244,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\FREE無料-PoseAnimationManuka.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\FREE無料-PoseAnimationManuka.zip",
+      "category": "animation",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 1,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "FREE無料-PoseAnimationMilltina.zip",
+      "size": 4254,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\FREE無料-PoseAnimationMilltina.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\FREE無料-PoseAnimationMilltina.zip",
+      "category": "animation",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 1,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "Komano-Shapekey+_Free.zip",
+      "size": 56939,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\Komano-Shapekey+_Free.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\Komano-Shapekey+_Free.zip",
+      "category": "expression",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 1,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "MatCap_Sample3.zip",
+      "size": 3182566,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\MatCap_Sample3.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\MatCap_Sample3.zip",
+      "category": "material",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 0,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "minuitpose-03_FREE_.zip",
+      "size": 74240,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\minuitpose-03_FREE_.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\minuitpose-03_FREE_.zip",
+      "category": "animation",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 1,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "Model_MOSO.VRM.rar",
+      "size": 22596292,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\Model_MOSO.VRM.rar",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\Model_MOSO.VRM.rar",
+      "category": "avatar",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 1
+      }
+    },
+    {
+      "name": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "size": 137249,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "category": "animation",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 1,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "preview_Set.zip",
+      "size": 216959145,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\preview_Set.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\preview_Set.zip",
+      "category": "preview",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 0,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "PURUPURU_Sit_Sample.zip",
+      "size": 43258,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\PURUPURU_Sit_Sample.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\PURUPURU_Sit_Sample.zip",
+      "category": "animation",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 1,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "Sample.zip",
+      "size": 41726,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\Sample.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\Sample.zip",
+      "category": "animation",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 1,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "sea_themed_accessory_pack.zip",
+      "size": 36879207,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\sea_themed_accessory_pack.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\sea_themed_accessory_pack.zip",
+      "category": "wardrobe",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 0,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "SEXY_POSE.zip",
+      "size": 3771,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\SEXY_POSE.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\SEXY_POSE.zip",
+      "category": "animation",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 1,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "VN3_filer.rar",
+      "size": 1817561,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\VN3_filer.rar",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\VN3_filer.rar",
+      "category": "docs",
+      "status": "indexed",
+      "counts": {
+        ".pdf": 4
+      }
+    },
+    {
+      "name": "VRMA_MotionPack.zip",
+      "size": 3453950,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\VRMA_MotionPack.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\VRMA_MotionPack.zip",
+      "category": "motion",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 7,
+        ".unitypackage": 0,
+        ".xwear/xavatar": 0
+      }
+    },
+    {
+      "name": "Wolfchan_XAvatar_Ver.1.0.0.zip",
+      "size": 37651635,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\Wolfchan_XAvatar_Ver.1.0.0.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\Wolfchan_XAvatar_Ver.1.0.0.zip",
+      "category": "wardrobe",
+      "status": "indexed",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 0,
+        ".xwear/xavatar": 3
+      }
+    },
+    {
+      "name": "大星蒼-sirius-.zip",
+      "size": 69162115,
+      "source": "C:\\Users\\cibesabz\\OneDrive\\Desktop\\21 عدد قایل\\\\大星蒼-sirius-.zip",
+      "rawCopy": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\raw\\大星蒼-sirius-.zip",
+      "category": "blocked",
+      "status": "blocked-license",
+      "counts": {
+        ".vrm": 0,
+        ".vrma": 0,
+        ".unitypackage": 0,
+        ".xwear/xavatar": 0
+      },
+      "note": "Readme prohibits use outside UTAU/DAW workflow and prohibits AI use."
+    }
+  ],
+  "avatars": [
+    {
+      "name": "Libby Free",
+      "status": "ready",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\avatars\\7903223404901736379.vrm",
+      "publicUrl": "/models/User_7903.vrm",
+      "format": "vrm",
+      "meta": {"title":"Libby Free","author":"rurune"}
+    },
+    {
+      "name": "Alien Girl",
+      "status": "ready",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\avatars\\Alien Girl [Free Model].vrm",
+      "publicUrl": "/models/Alien_Girl.vrm",
+      "format": "vrm",
+      "package": "_VRoid_Free_Alien_Girl.zip",
+      "meta": {"title":"Alien Girl","author":"koru"}
+    },
+    {
+      "name": "Model MOSO",
+      "status": "ready",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\avatars\\Model_MOSO.VRM\\Model_MOSO.vrm",
+      "publicUrl": "/models/Model_MOSO.vrm",
+      "format": "vrm",
+      "meta": {"title":"Model MOSO","author":"Prototyp_X_ONE"}
+    }
+  ],
+  "motions": [
+    {
+      "name": "VRMA_01",
+      "status": "ready",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\motions\\VRMA_01.vrma",
+      "format": "vrma",
+      "package": "VRMA_MotionPack.zip",
+      "index": 1
+    },
+    {
+      "name": "VRMA_02",
+      "status": "ready",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\motions\\VRMA_02.vrma",
+      "format": "vrma",
+      "package": "VRMA_MotionPack.zip",
+      "index": 2
+    },
+    {
+      "name": "VRMA_03",
+      "status": "ready",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\motions\\VRMA_03.vrma",
+      "format": "vrma",
+      "package": "VRMA_MotionPack.zip",
+      "index": 3
+    },
+    {
+      "name": "VRMA_04",
+      "status": "ready",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\motions\\VRMA_04.vrma",
+      "format": "vrma",
+      "package": "VRMA_MotionPack.zip",
+      "index": 4
+    },
+    {
+      "name": "VRMA_05",
+      "status": "ready",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\motions\\VRMA_05.vrma",
+      "format": "vrma",
+      "package": "VRMA_MotionPack.zip",
+      "index": 5
+    },
+    {
+      "name": "VRMA_06",
+      "status": "ready",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\motions\\VRMA_06.vrma",
+      "format": "vrma",
+      "package": "VRMA_MotionPack.zip",
+      "index": 6
+    },
+    {
+      "name": "VRMA_07",
+      "status": "ready",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\motions\\VRMA_07.vrma",
+      "format": "vrma",
+      "package": "VRMA_MotionPack.zip",
+      "index": 7
+    }
+  ],
+  "animations": [
+    {
+      "name": "9 Back Weapon Toggle Off.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/9 Back Weapon Toggle Off.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\9 Back Weapon Toggle Off.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "3 Gun State hide.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/3 Gun State hide.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\3 Gun State hide.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "1 FlyMode leg Animation.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/1 FlyMode leg Animation.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\1 FlyMode leg Animation.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "1 FlyMode on.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/1 FlyMode on.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\1 FlyMode on.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "6 Fire On Trans R.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/6 Fire On Trans R.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\6 Fire On Trans R.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "SampleScene-Restrain Off.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/SampleScene-Restrain Off.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\SampleScene-Restrain Off.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "4 Wingman State ShiledMode.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/4 Wingman State ShiledMode.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\4 Wingman State ShiledMode.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "2 FlyMode Locol On.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/2 FlyMode Locol On.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\2 FlyMode Locol On.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "8 Wingman Fire on trans.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/8 Wingman Fire on trans.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\8 Wingman Fire on trans.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "3 Gun State AttackNotReady L.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/3 Gun State AttackNotReady L.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\3 Gun State AttackNotReady L.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "1 FlyMode back Animation 1.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/1 FlyMode back Animation 1.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\1 FlyMode back Animation 1.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "8 Wingman Fire on.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/8 Wingman Fire on.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\8 Wingman Fire on.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "4 Wingman State shield.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/4 Wingman State shield.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\4 Wingman State shield.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "3 Gun State on.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/3 Gun State on.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\3 Gun State on.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar Empty.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/EvilFall Armar Empty.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\EvilFall Armar Empty.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "7 Side Weapon Fire on.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/7 Side Weapon Fire on.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\7 Side Weapon Fire on.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "1 FlyMode off.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/1 FlyMode off.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\1 FlyMode off.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "SampleScene-Restrain On.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/SampleScene-Restrain On.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\SampleScene-Restrain On.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "3 Gun State AttackNotReady R.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/3 Gun State AttackNotReady R.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\3 Gun State AttackNotReady R.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "6 Fire Off R.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/6 Fire Off R.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\6 Fire Off R.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "9 Back Weapon Toggle On.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/9 Back Weapon Toggle On.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\9 Back Weapon Toggle On.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "8 Wingman Fire off.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/8 Wingman Fire off.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\8 Wingman Fire off.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "7 Side Weapon Fire off.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/7 Side Weapon Fire off.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\7 Side Weapon Fire off.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "9 Back Weapon Toggle On Trans.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/9 Back Weapon Toggle On Trans.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\9 Back Weapon Toggle On Trans.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "9 Back Weapon Toggle Off Trans.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/9 Back Weapon Toggle Off Trans.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\9 Back Weapon Toggle Off Trans.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "8 Arm Weapon off.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/8 Arm Weapon off.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\8 Arm Weapon off.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "4 Wingman State ShiledMode Trans 1.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/4 Wingman State ShiledMode Trans 1.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\4 Wingman State ShiledMode Trans 1.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "6 Fire Off L.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/6 Fire Off L.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\6 Fire Off L.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "5 Side Weapon State on.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/5 Side Weapon State on.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\5 Side Weapon State on.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "4 Wingman State ShiledMode Trans.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/4 Wingman State ShiledMode Trans.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\4 Wingman State ShiledMode Trans.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "6 Fire On L.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/6 Fire On L.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\6 Fire On L.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "3 Gun State AttackReady R.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/3 Gun State AttackReady R.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\3 Gun State AttackReady R.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "4 Wingman State on.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/4 Wingman State on.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\4 Wingman State on.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "8 Arm Weapon on.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/8 Arm Weapon on.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\8 Arm Weapon on.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "6 Fire On R.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/6 Fire On R.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\6 Fire On R.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "4 Wingman State shield off.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/4 Wingman State shield off.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\4 Wingman State shield off.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "6 Fire On Trans L.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/6 Fire On Trans L.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\6 Fire On Trans L.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "5 Side Weapon State off.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/5 Side Weapon State off.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\5 Side Weapon State off.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "4 Wingman State off.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/4 Wingman State off.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\4 Wingman State off.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "2 FlyMode Locol Off.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/2 FlyMode Locol Off.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\2 FlyMode Locol Off.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "1 FlyMode off trans.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/1 FlyMode off trans.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\1 FlyMode off trans.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "7 Side Weapon Fire on trans.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/7 Side Weapon Fire on trans.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\7 Side Weapon Fire on trans.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "3 Gun State AttackReady L.anim",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/3 Gun State AttackReady L.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\3 Gun State AttackReady L.anim",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "SIT_93.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Manuka】FaceAnimation/《FREE❥無料》_Manuka/SIT_93.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\FREE無料-PoseAnimationManuka\\Assets\\∔Shapeshifter Clinic∔\\【Manuka】FaceAnimation\\《FREE❥無料》_Manuka\\SIT_93.anim",
+      "package": "FREE無料-PoseAnimationManuka.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "SIT_93.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Milltina】FaceAnimation/《FREE❥無料》_Milltina/SIT_93.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\FREE無料-PoseAnimationMilltina\\Assets\\∔Shapeshifter Clinic∔\\【Milltina】FaceAnimation\\《FREE❥無料》_Milltina\\SIT_93.anim",
+      "package": "FREE無料-PoseAnimationMilltina.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "stand08b.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/stand/stand08b.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\stand\\stand08b.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "stand09b.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/stand/stand09b.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\stand\\stand09b.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "nail02a.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/nail/nail02a.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\nail\\nail02a.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "nail01a.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/nail/nail01a.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\nail\\nail01a.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "stand08a.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/stand/stand08a.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\stand\\stand08a.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "nail02b.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/nail/nail02b.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\nail\\nail02b.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "sleep01b.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/sleep/sleep01b.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\sleep\\sleep01b.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "sit04b.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/sit/sit04b.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\sit\\sit04b.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "nail01b.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/nail/nail01b.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\nail\\nail01b.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "sit05a.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/sit/sit05a.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\sit\\sit05a.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "sit04a.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/sit/sit04a.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\sit\\sit04a.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "sit05b.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/sit/sit05b.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\sit\\sit05b.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "stand09a.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/stand/stand09a.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\stand\\stand09a.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "sleep01a.anim",
+      "logical": "Assets/minuitmus/minuitpose-03【FREE】/sleep/sleep01a.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\minuitpose-03üyFREEüz\\Assets\\minuitmus\\minuitpose-03【FREE】\\sleep\\sleep01a.anim",
+      "package": "minuitpose-03_FREE_.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡7.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡7.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡7.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡3.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡3.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡3.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡21.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡21.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡21.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡29.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡29.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡29.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡27.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡27.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡27.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡14.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡14.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡14.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡10.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡10.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡10.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡17.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡17.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡17.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡6.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡6.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡6.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡18.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡18.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡18.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡1.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡1.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡1.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡16.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡16.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡16.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡26.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡26.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡26.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡19.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡19.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡19.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡23.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡23.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡23.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡28.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡28.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡28.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡15.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡15.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡15.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡20.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡20.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡20.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡12.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡12.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡12.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡25.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡25.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡25.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡9.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡9.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡9.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡5.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡5.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡5.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡30.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡30.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡30.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡24.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡24.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡24.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡2.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡2.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡2.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡8.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡8.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡8.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡13.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡13.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡13.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡4.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡4.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡4.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡22.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡22.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡22.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Free♡11.anim",
+      "logical": "Assets/! Pic♡Pix/Free♡Pose/Free♡11.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\！Pic♡Pix  - Free Pose set - 通常版\\Assets\\! Pic♡Pix\\Free♡Pose\\Free♡11.anim",
+      "package": "Pic_Pix__-_Free_Pose_set_-_通常版.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sit_Sample 7.anim",
+      "logical": "Assets/! PURUPURU_Sit_Sample !/Sit_Sample 7.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sit_Sample\\Assets\\! PURUPURU_Sit_Sample !\\Sit_Sample 7.anim",
+      "package": "PURUPURU_Sit_Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sit_Sample 5.anim",
+      "logical": "Assets/! PURUPURU_Sit_Sample !/Sit_Sample 5.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sit_Sample\\Assets\\! PURUPURU_Sit_Sample !\\Sit_Sample 5.anim",
+      "package": "PURUPURU_Sit_Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sit_Sample 6.anim",
+      "logical": "Assets/! PURUPURU_Sit_Sample !/Sit_Sample 6.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sit_Sample\\Assets\\! PURUPURU_Sit_Sample !\\Sit_Sample 6.anim",
+      "package": "PURUPURU_Sit_Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sit_Sample 4.anim",
+      "logical": "Assets/! PURUPURU_Sit_Sample !/Sit_Sample 4.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sit_Sample\\Assets\\! PURUPURU_Sit_Sample !\\Sit_Sample 4.anim",
+      "package": "PURUPURU_Sit_Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sit_Sample 2.anim",
+      "logical": "Assets/! PURUPURU_Sit_Sample !/Sit_Sample 2.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sit_Sample\\Assets\\! PURUPURU_Sit_Sample !\\Sit_Sample 2.anim",
+      "package": "PURUPURU_Sit_Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sit_Sample 8.anim",
+      "logical": "Assets/! PURUPURU_Sit_Sample !/Sit_Sample 8.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sit_Sample\\Assets\\! PURUPURU_Sit_Sample !\\Sit_Sample 8.anim",
+      "package": "PURUPURU_Sit_Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sit_Sample 3.anim",
+      "logical": "Assets/! PURUPURU_Sit_Sample !/Sit_Sample 3.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sit_Sample\\Assets\\! PURUPURU_Sit_Sample !\\Sit_Sample 3.anim",
+      "package": "PURUPURU_Sit_Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sit_Sample 9.anim",
+      "logical": "Assets/! PURUPURU_Sit_Sample !/Sit_Sample 9.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sit_Sample\\Assets\\! PURUPURU_Sit_Sample !\\Sit_Sample 9.anim",
+      "package": "PURUPURU_Sit_Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sit_Sample 10.anim",
+      "logical": "Assets/! PURUPURU_Sit_Sample !/Sit_Sample 10.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sit_Sample\\Assets\\! PURUPURU_Sit_Sample !\\Sit_Sample 10.anim",
+      "package": "PURUPURU_Sit_Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sit_Sample 1.anim",
+      "logical": "Assets/! PURUPURU_Sit_Sample !/Sit_Sample 1.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sit_Sample\\Assets\\! PURUPURU_Sit_Sample !\\Sit_Sample 1.anim",
+      "package": "PURUPURU_Sit_Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sample 4.anim",
+      "logical": "Assets/! PURUPURU_Sample !/Sample 4.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sample\\Assets\\! PURUPURU_Sample !\\Sample 4.anim",
+      "package": "Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sample 8.anim",
+      "logical": "Assets/! PURUPURU_Sample !/Sample 8.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sample\\Assets\\! PURUPURU_Sample !\\Sample 8.anim",
+      "package": "Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sample 10.anim",
+      "logical": "Assets/! PURUPURU_Sample !/Sample 10.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sample\\Assets\\! PURUPURU_Sample !\\Sample 10.anim",
+      "package": "Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sample 5.anim",
+      "logical": "Assets/! PURUPURU_Sample !/Sample 5.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sample\\Assets\\! PURUPURU_Sample !\\Sample 5.anim",
+      "package": "Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sample 1.anim",
+      "logical": "Assets/! PURUPURU_Sample !/Sample 1.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sample\\Assets\\! PURUPURU_Sample !\\Sample 1.anim",
+      "package": "Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sample 6.anim",
+      "logical": "Assets/! PURUPURU_Sample !/Sample 6.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sample\\Assets\\! PURUPURU_Sample !\\Sample 6.anim",
+      "package": "Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sample 7.anim",
+      "logical": "Assets/! PURUPURU_Sample !/Sample 7.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sample\\Assets\\! PURUPURU_Sample !\\Sample 7.anim",
+      "package": "Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sample 2.anim",
+      "logical": "Assets/! PURUPURU_Sample !/Sample 2.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sample\\Assets\\! PURUPURU_Sample !\\Sample 2.anim",
+      "package": "Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sample 9.anim",
+      "logical": "Assets/! PURUPURU_Sample !/Sample 9.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sample\\Assets\\! PURUPURU_Sample !\\Sample 9.anim",
+      "package": "Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Sample 3.anim",
+      "logical": "Assets/! PURUPURU_Sample !/Sample 3.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\PURUPURU_Sample\\Assets\\! PURUPURU_Sample !\\Sample 3.anim",
+      "package": "Sample.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "SEXY_47.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Vol.1】PoseAnimation/SEXY_100pose/SEXY_47.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\SEXY_POSE\\Assets\\∔Shapeshifter Clinic∔\\【Vol.1】PoseAnimation\\SEXY_100pose\\SEXY_47.anim",
+      "package": "SEXY_POSE.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    }
+  ],
+  "expressions": [
+    {
+      "name": "Shy.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Manuka】FaceAnimation/《FREE❥無料》_Manuka/Shy.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\《FREE無料》Manuka5FaceAnimation\\Assets\\∔Shapeshifter Clinic∔\\【Manuka】FaceAnimation\\《FREE❥無料》_Manuka\\Shy.anim",
+      "package": "FREE無料-Manuka5FaceAnimation.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Cry.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Manuka】FaceAnimation/《FREE❥無料》_Manuka/Cry.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\《FREE無料》Manuka5FaceAnimation\\Assets\\∔Shapeshifter Clinic∔\\【Manuka】FaceAnimation\\《FREE❥無料》_Manuka\\Cry.anim",
+      "package": "FREE無料-Manuka5FaceAnimation.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Smile.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Manuka】FaceAnimation/《FREE❥無料》_Manuka/Smile.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\《FREE無料》Manuka5FaceAnimation\\Assets\\∔Shapeshifter Clinic∔\\【Manuka】FaceAnimation\\《FREE❥無料》_Manuka\\Smile.anim",
+      "package": "FREE無料-Manuka5FaceAnimation.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Pero.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Manuka】FaceAnimation/《FREE❥無料》_Manuka/Pero.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\《FREE無料》Manuka5FaceAnimation\\Assets\\∔Shapeshifter Clinic∔\\【Manuka】FaceAnimation\\《FREE❥無料》_Manuka\\Pero.anim",
+      "package": "FREE無料-Manuka5FaceAnimation.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Kirakira.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Manuka】FaceAnimation/《FREE❥無料》_Manuka/Kirakira.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\《FREE無料》Manuka5FaceAnimation\\Assets\\∔Shapeshifter Clinic∔\\【Manuka】FaceAnimation\\《FREE❥無料》_Manuka\\Kirakira.anim",
+      "package": "FREE無料-Manuka5FaceAnimation.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Shy2.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Milltina】FaceAnimation/《FREE❥無料》_Milltina/Shy2.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\《FREE無料》Milltina5FaceAnimation\\Assets\\∔Shapeshifter Clinic∔\\【Milltina】FaceAnimation\\《FREE❥無料》_Milltina\\Shy2.anim",
+      "package": "FREE無料-Milltina5FaceAnimation.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Cross_Gao~.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Milltina】FaceAnimation/《FREE❥無料》_Milltina/Cross_Gao~.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\《FREE無料》Milltina5FaceAnimation\\Assets\\∔Shapeshifter Clinic∔\\【Milltina】FaceAnimation\\《FREE❥無料》_Milltina\\Cross_Gao~.anim",
+      "package": "FREE無料-Milltina5FaceAnimation.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Shy1.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Milltina】FaceAnimation/《FREE❥無料》_Milltina/Shy1.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\《FREE無料》Milltina5FaceAnimation\\Assets\\∔Shapeshifter Clinic∔\\【Milltina】FaceAnimation\\《FREE❥無料》_Milltina\\Shy1.anim",
+      "package": "FREE無料-Milltina5FaceAnimation.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Trouble.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Milltina】FaceAnimation/《FREE❥無料》_Milltina/Trouble.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\《FREE無料》Milltina5FaceAnimation\\Assets\\∔Shapeshifter Clinic∔\\【Milltina】FaceAnimation\\《FREE❥無料》_Milltina\\Trouble.anim",
+      "package": "FREE無料-Milltina5FaceAnimation.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Cross_Smile.anim",
+      "logical": "Assets/∔Shapeshifter Clinic∔/【Milltina】FaceAnimation/《FREE❥無料》_Milltina/Cross_Smile.anim",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\《FREE無料》Milltina5FaceAnimation\\Assets\\∔Shapeshifter Clinic∔\\【Milltina】FaceAnimation\\《FREE❥無料》_Milltina\\Cross_Smile.anim",
+      "package": "FREE無料-Milltina5FaceAnimation.zip",
+      "format": "anim",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Komano-Shapkey+_v1.2.5_BlendShare_Free.asset",
+      "logical": "Assets/OmO/Komano-Shapekey+/Komano-Shapkey+_v1.2.5_BlendShare_Free.asset",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\Komano-Shapekey+_Free\\Assets\\OmO\\Komano-Shapekey+\\Komano-Shapkey+_v1.2.5_BlendShare_Free.asset",
+      "package": "Komano-Shapekey+_Free.zip",
+      "format": "asset",
+      "status": "needs-conversion"
+    }
+  ],
+  "wardrobe": [
+    {
+      "name": "ChargeLaser.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/ChargeLaser.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\ChargeLaser.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Energy Loop.wav",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/SoundEffect/Energy Loop.wav",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\SoundEffect\\Energy Loop.wav",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "wav",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "flame1.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ParticleTex/flame1.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ParticleTex\\flame1.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "DumpeBullet.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/DumpeBullet.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\DumpeBullet.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar Airi.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar Airi.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar Airi.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvillFallArmar MainColor2 UV.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/EvillFallArmar MainColor2 UV.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\EvillFallArmar MainColor2 UV.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "6.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/menu icon/6.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\menu icon\\6.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvillFallArmar Metal.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/EvillFallArmar Metal.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\EvillFallArmar Metal.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvillFallArmar MainColor1.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/EvillFallArmar MainColor1.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\EvillFallArmar MainColor1.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvillFallArmar MainColor3.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/EvillFallArmar MainColor3.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\EvillFallArmar MainColor3.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar for Sio.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar for Sio.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar for Sio.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "ParticleAfterburner.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/ParticleAfterburner.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\ParticleAfterburner.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Energy End.wav",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/SoundEffect/Energy End.wav",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\SoundEffect\\Energy End.wav",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "wav",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "For Milltina.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/cutout mask/For Milltina.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\cutout mask\\For Milltina.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "jet01.wav",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/SoundEffect/jet01.wav",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\SoundEffect\\jet01.wav",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "wav",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "MainUV1.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/Texture/MainUV1.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\Texture\\MainUV1.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "jet05.wav",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/SoundEffect/jet05.wav",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\SoundEffect\\jet05.wav",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "wav",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar Without MA.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar Without MA.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar Without MA.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvillFallArmar Trans.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/EvillFallArmar Trans.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\EvillFallArmar Trans.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "6.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/Texture/6.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\Texture\\6.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar For Chiffon.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar For Chiffon.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar For Chiffon.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "jet stream.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/jet stream.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\jet stream.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "jet stream leg.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/jet stream leg.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\jet stream leg.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "7.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/menu icon/7.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\menu icon\\7.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar Selestia.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar Selestia.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar Selestia.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "C.HitSplash.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ChargeLaser/C.HitSplash.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ChargeLaser\\C.HitSplash.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "light.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ParticleTex/light.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ParticleTex\\light.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar Kuroki Variant.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar Kuroki Variant.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar Kuroki Variant.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Saber.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/Saber.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\Saber.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "4.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/Texture/4.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\Texture\\4.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "jet03.wav",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/SoundEffect/jet03.wav",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\SoundEffect\\jet03.wav",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "wav",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "1.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/menu icon/1.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\menu icon\\1.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "C.HitTrail.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ChargeLaser/C.HitTrail.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ChargeLaser\\C.HitTrail.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar for Lime.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar for Lime.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar for Lime.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "4.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/menu icon/4.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\menu icon\\4.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "8.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/menu icon/8.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\menu icon\\8.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "For Shinano.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/cutout mask/For Shinano.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\cutout mask\\For Shinano.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar.fbx",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/fbx/EvilFall Armar.fbx",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\fbx\\EvilFall Armar.fbx",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "fbx",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvillFallArmar MainColor2.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/EvillFallArmar MainColor2.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\EvillFallArmar MainColor2.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "For Moe.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/cutout mask/For Moe.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\cutout mask\\For Moe.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar Moe.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar Moe.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar Moe.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "1.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/Texture/1.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\Texture\\1.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvillFallArmar MainColor1 UV.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/EvillFallArmar MainColor1 UV.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\EvillFallArmar MainColor1 UV.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "jet02.wav",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/SoundEffect/jet02.wav",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\SoundEffect\\jet02.wav",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "wav",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "D.Dumpesphere.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/DumpeBullet/D.Dumpesphere.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\DumpeBullet\\D.Dumpesphere.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "jet04.wav",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/SoundEffect/jet04.wav",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\SoundEffect\\jet04.wav",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "wav",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar for Kikyo.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar for Kikyo.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar for Kikyo.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "line1.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/line1.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\line1.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "C.ExplotePC.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ChargeLaser/C.ExplotePC.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ChargeLaser\\C.ExplotePC.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "C.ShootSphere.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ChargeLaser/C.ShootSphere.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ChargeLaser\\C.ShootSphere.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "for Lasyusha.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/cutout mask/for Lasyusha.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\cutout mask\\for Lasyusha.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "jet00.wav",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/SoundEffect/jet00.wav",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\SoundEffect\\jet00.wav",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "wav",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "For Lime&Chiffon.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/cutout mask/For Lime&Chiffon.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\cutout mask\\For Lime&Chiffon.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "2.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/menu icon/2.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\menu icon\\2.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "For Kikyo.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/cutout mask/For Kikyo.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\cutout mask\\For Kikyo.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "5.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/menu icon/5.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\menu icon\\5.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvillFallArmar Light.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/EvillFallArmar Light.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\EvillFallArmar Light.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar for Milltina Variant.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar for Milltina Variant.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar for Milltina Variant.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar for Shinano.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar for Shinano.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar for Shinano.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "3.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/FX control & Animation/menu icon/3.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\FX control & Animation\\menu icon\\3.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "Shield.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/Shield.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\Shield.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "smoke1.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ParticleTex/smoke1.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ParticleTex\\smoke1.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "C.Shortlaser.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ChargeLaser/C.Shortlaser.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ChargeLaser\\C.Shortlaser.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "for selestia.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/cutout mask/for selestia.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\cutout mask\\for selestia.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "C.LargeSplash.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ChargeLaser/C.LargeSplash.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ChargeLaser\\C.LargeSplash.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "5.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/Texture/5.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\Texture\\5.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "D.DumpeBullet.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/DumpeBullet/D.DumpeBullet.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\DumpeBullet\\D.DumpeBullet.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar for Shinano Variant.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar for Shinano Variant.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar for Shinano Variant.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "MainUV2.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/Texture/MainUV2.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\Texture\\MainUV2.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "bfg_fire_0_id#851251895.ogg",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/SoundEffect/bfg_fire_0_id#851251895.ogg",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\SoundEffect\\bfg_fire_0_id#851251895.ogg",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "ogg",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "bfg_charge_4_id#245839299.ogg",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/SoundEffect/bfg_charge_4_id#245839299.ogg",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\SoundEffect\\bfg_charge_4_id#245839299.ogg",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "ogg",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "For Sio.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/cutout mask/For Sio.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\cutout mask\\For Sio.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "2.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/Texture/2.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\Texture\\2.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar For Lasyusha.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar For Lasyusha.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar For Lasyusha.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "bfg_discharge_action_id#891530590.ogg",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/SoundEffect/bfg_discharge_action_id#891530590.ogg",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\SoundEffect\\bfg_discharge_action_id#891530590.ogg",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "ogg",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "C.Explote.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ChargeLaser/C.Explote.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ChargeLaser\\C.Explote.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "bullet.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ParticleTex/bullet.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ParticleTex\\bullet.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "EvilFall Armar Manuka.prefab",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/prefabe/EvilFall Armar Manuka.prefab",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\prefabe\\EvilFall Armar Manuka.prefab",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "prefab",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "D.DumpeSmoke.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/DumpeBullet/D.DumpeSmoke.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\DumpeBullet\\D.DumpeSmoke.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "3.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/Texture/3.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\Texture\\3.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "For Manuka.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/cutout mask/For Manuka.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\cutout mask\\For Manuka.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "For Airi.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/cutout mask/For Airi.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\cutout mask\\For Airi.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "C.Shortlaser 1.mat",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/ParticleTexMat/ChargeLaser/C.Shortlaser 1.mat",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\ParticleTexMat\\ChargeLaser\\C.Shortlaser 1.mat",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "mat",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "TransUV.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/Material/Texture/TransUV.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\Material\\Texture\\TransUV.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "standard2.png",
+      "logical": "Assets/YaokiSubWork/EvilFallArmar/ParticleEffect/texture&shader/standard2.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\unity-extracted\\EvilFallArmar v1.22\\Assets\\YaokiSubWork\\EvilFallArmar\\ParticleEffect\\texture&shader\\standard2.png",
+      "package": "EvilFallArmar_v1.22.zip",
+      "format": "png",
+      "status": "needs-conversion"
+    },
+    {
+      "name": "1.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\1.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "2.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\2.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "albino horns.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\albino horns.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "axolotl ears customizable.psd",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\axolotl ears customizable.psd",
+      "format": "psd",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "face sides albino.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\face sides albino.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "face sides cobalt.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\face sides cobalt.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "face sides green.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\face sides green.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "face sides orange.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\face sides orange.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "face sides purple.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\face sides purple.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "horns cobalt.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\horns cobalt.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "horns green.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\horns green.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "horns orangew.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\horns orangew.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "horns purple.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\horns purple.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "horns.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\horns.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "jellyfish hat.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\jellyfish hat.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "jellyfish hat.psd",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\jellyfish hat.psd",
+      "format": "psd",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "layer.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\layer.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "pearls.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\pearls.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "1460d530-5510-474f-a5b8-078480224ad9.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset16\\materials\\rendered_textures\\1460d530-5510-474f-a5b8-078480224ad9.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "2529266a-5d7c-4d24-b35e-b581932af88c.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset16\\materials\\rendered_textures\\2529266a-5d7c-4d24-b35e-b581932af88c.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "2f1c1eb8-da3d-4820-ab4b-91abf225ae73.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset16\\materials\\rendered_textures\\2f1c1eb8-da3d-4820-ab4b-91abf225ae73.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "3ecd9ae7-7541-4f5a-8523-d7af8bf482a8.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset16\\materials\\rendered_textures\\3ecd9ae7-7541-4f5a-8523-d7af8bf482a8.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "8bf80575-3940-420f-b294-afc7e1899d0e.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset16\\materials\\rendered_textures\\8bf80575-3940-420f-b294-afc7e1899d0e.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "8dd827e6-e2c2-4bf0-a188-918751827685.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset16\\materials\\rendered_textures\\8dd827e6-e2c2-4bf0-a188-918751827685.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "preset.json",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset16\\preset.json",
+      "format": "json",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "1460d530-5510-474f-a5b8-078480224ad9.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset17\\materials\\rendered_textures\\1460d530-5510-474f-a5b8-078480224ad9.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "2529266a-5d7c-4d24-b35e-b581932af88c.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset17\\materials\\rendered_textures\\2529266a-5d7c-4d24-b35e-b581932af88c.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "2f1c1eb8-da3d-4820-ab4b-91abf225ae73.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset17\\materials\\rendered_textures\\2f1c1eb8-da3d-4820-ab4b-91abf225ae73.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "3ecd9ae7-7541-4f5a-8523-d7af8bf482a8.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset17\\materials\\rendered_textures\\3ecd9ae7-7541-4f5a-8523-d7af8bf482a8.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "8bf80575-3940-420f-b294-afc7e1899d0e.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset17\\materials\\rendered_textures\\8bf80575-3940-420f-b294-afc7e1899d0e.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "8dd827e6-e2c2-4bf0-a188-918751827685.png",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset17\\materials\\rendered_textures\\8dd827e6-e2c2-4bf0-a188-918751827685.png",
+      "format": "png",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "preset.json",
+      "status": "needs-vroid-attachment",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\sea-accessories\\accessory pack\\preset17\\preset.json",
+      "format": "json",
+      "package": "sea_themed_accessory_pack.zip"
+    },
+    {
+      "name": "Wolfchan.xavatar",
+      "status": "needs-conversion",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\wolfchan\\Wolfchan.xavatar",
+      "format": "xavatar",
+      "package": "Wolfchan_XAvatar_Ver.1.0.0.zip"
+    },
+    {
+      "name": "Wolfchan_Costume.xwear",
+      "status": "needs-conversion",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\wolfchan\\Wolfchan_Costume.xwear",
+      "format": "xwear",
+      "package": "Wolfchan_XAvatar_Ver.1.0.0.zip"
+    },
+    {
+      "name": "Wolfchan_Body.xavatar",
+      "status": "needs-conversion",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\wardrobe\\wolfchan\\Wolfchan_Body.xavatar",
+      "format": "xavatar",
+      "package": "Wolfchan_XAvatar_Ver.1.0.0.zip"
+    }
+  ],
+  "materials": [
+    {
+      "name": "MainUV1.psd",
+      "status": "source",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\materials\\EvilFallArma_PS_filer\\MainUV1.psd",
+      "format": "psd",
+      "package": "EvilFallArma_PS_filer.rar"
+    },
+    {
+      "name": "MainUV2.psd",
+      "status": "source",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\materials\\EvilFallArma_PS_filer\\MainUV2.psd",
+      "format": "psd",
+      "package": "EvilFallArma_PS_filer.rar"
+    },
+    {
+      "name": "TransUV.psd",
+      "status": "source",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\materials\\EvilFallArma_PS_filer\\TransUV.psd",
+      "format": "psd",
+      "package": "EvilFallArma_PS_filer.rar"
+    },
+    {
+      "name": "MatCap3.png",
+      "status": "ready-reference",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\materials\\matcap\\MatCap3.png",
+      "publicUrl": "/library/materials/MatCap3.png",
+      "format": "png",
+      "package": "MatCap_Sample3.zip"
+    },
+    {
+      "name": "MatCap1.png",
+      "status": "ready-reference",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\materials\\matcap\\MatCap1.png",
+      "publicUrl": "/library/materials/MatCap1.png",
+      "format": "png",
+      "package": "MatCap_Sample3.zip"
+    },
+    {
+      "name": "MatCap2.png",
+      "status": "ready-reference",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\materials\\matcap\\MatCap2.png",
+      "publicUrl": "/library/materials/MatCap2.png",
+      "format": "png",
+      "package": "MatCap_Sample3.zip"
+    }
+  ],
+  "voice": [],
+  "previews": [
+    {
+      "name": "1.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\1.png",
+      "publicUrl": "/library/previews/1.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "2.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\2.png",
+      "publicUrl": "/library/previews/2.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "Sample .png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\Sample .png",
+      "publicUrl": "/library/previews/Sample.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "1.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\1.png",
+      "publicUrl": "/library/previews/1.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "10.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\10.png",
+      "publicUrl": "/library/previews/10.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "11.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\11.png",
+      "publicUrl": "/library/previews/11.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "12.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\12.png",
+      "publicUrl": "/library/previews/12.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "13.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\13.png",
+      "publicUrl": "/library/previews/13.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "14.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\14.png",
+      "publicUrl": "/library/previews/14.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "15.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\15.png",
+      "publicUrl": "/library/previews/15.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "16.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\16.png",
+      "publicUrl": "/library/previews/16.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "17.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\17.png",
+      "publicUrl": "/library/previews/17.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "18.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\18.png",
+      "publicUrl": "/library/previews/18.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "19.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\19.png",
+      "publicUrl": "/library/previews/19.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "2.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\2.png",
+      "publicUrl": "/library/previews/2.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "20.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\20.png",
+      "publicUrl": "/library/previews/20.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "21.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\21.png",
+      "publicUrl": "/library/previews/21.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "22.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\22.png",
+      "publicUrl": "/library/previews/22.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "23.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\23.png",
+      "publicUrl": "/library/previews/23.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "24.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\24.png",
+      "publicUrl": "/library/previews/24.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "25.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\25.png",
+      "publicUrl": "/library/previews/25.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "26.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\26.png",
+      "publicUrl": "/library/previews/26.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "27.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\27.png",
+      "publicUrl": "/library/previews/27.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "28.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\28.png",
+      "publicUrl": "/library/previews/28.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "29.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\29.png",
+      "publicUrl": "/library/previews/29.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "3.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\3.png",
+      "publicUrl": "/library/previews/3.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "30.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\30.png",
+      "publicUrl": "/library/previews/30.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "31.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\31.png",
+      "publicUrl": "/library/previews/31.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "32.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\32.png",
+      "publicUrl": "/library/previews/32.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "33.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\33.png",
+      "publicUrl": "/library/previews/33.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "34.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\34.png",
+      "publicUrl": "/library/previews/34.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "35.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\35.png",
+      "publicUrl": "/library/previews/35.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "36.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\36.png",
+      "publicUrl": "/library/previews/36.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "37.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\37.png",
+      "publicUrl": "/library/previews/37.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "38.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\38.png",
+      "publicUrl": "/library/previews/38.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "39.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\39.png",
+      "publicUrl": "/library/previews/39.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "4.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\4.png",
+      "publicUrl": "/library/previews/4.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "40.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\40.png",
+      "publicUrl": "/library/previews/40.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "5.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\5.png",
+      "publicUrl": "/library/previews/5.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "6.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\6.png",
+      "publicUrl": "/library/previews/6.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "7.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\7.png",
+      "publicUrl": "/library/previews/7.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "8.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\8.png",
+      "publicUrl": "/library/previews/8.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "9.png",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\9.png",
+      "publicUrl": "/library/previews/9.jpg",
+      "package": "preview_Set.zip"
+    },
+    {
+      "name": "♥ありがとうね♥.jpg",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\previews\\originals\\♥ありがとうね♥.jpg",
+      "publicUrl": "/library/previews/♥ありがとうね♥.jpg",
+      "package": "preview_Set.zip"
+    }
+  ],
+  "docs": [
+    {
+      "name": "20240727014959vn3license_en.pdf",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\docs\\VN3_filer\\20240727014959vn3license_en.pdf",
+      "package": "VN3_filer.rar"
+    },
+    {
+      "name": "20240727014959vn3license_ja.pdf",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\docs\\VN3_filer\\20240727014959vn3license_ja.pdf",
+      "package": "VN3_filer.rar"
+    },
+    {
+      "name": "20240727014959vn3license_ko.pdf",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\docs\\VN3_filer\\20240727014959vn3license_ko.pdf",
+      "package": "VN3_filer.rar"
+    },
+    {
+      "name": "20240727014959vn3license_zh.pdf",
+      "localPath": "C:\\Users\\cibesabz\\AppData\\Roaming\\BlackClover\\AssetLibrary\\docs\\VN3_filer\\20240727014959vn3license_zh.pdf",
+      "package": "VN3_filer.rar"
+    }
+  ],
+  "blocked": [
+    {
+      "name": "大星蒼-sirius-.zip",
+      "status": "blocked-license",
+      "reason": "License/readme prohibits use in Maria/AI."
+    }
+  ]
+}

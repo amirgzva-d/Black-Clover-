@@ -1,4 +1,5 @@
 import { canonicalizeCommand } from './SemanticCanonicalizer.js';
+import { parseWebRequest } from './WebRequest.js';
 const normalize=s=>String(s||'').toLowerCase().normalize('NFKC').replace(/[؟?!.،,]+/g,' ').replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\s+/g,' ').trim();
 const digits=s=>String(s).replace(/[۰-۹]/g,d=>'۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d));
 const n=s=>Number(digits(String(s)).replace(/[^0-9]/g,''));
@@ -90,18 +91,33 @@ function namedFileCommand(raw){
 }
 
 export function matchFastCommand(input){
+  const localFile=/(?:فایل|پرونده|پوشه|فولدر|اکسل|excel|\.(?:pdf|docx?|xlsx?|xlsm|txt|csv|json|mp[34]|mkv|vrm|png|jpe?g)\b)/i.test(input)&&!/(?:سایت|website|گوگل|google|کروم|chrome|از اینترنت|از وب)/i.test(input)?namedFileCommand(input):null;
+  if(localFile)return localFile;
+  const web=parseWebRequest(input);
+  if(web){
+    if(web.mode==='website')return {name:'chrome_open_named_site',args:{site:web.site,profile:'personal'}};
+    if(web.mode==='browser')return {name:web.engine==='youtube'?'youtube_search':'chrome_search',args:{query:web.query,...(web.engine==='youtube'?{}:{profile:'personal'})}};
+    return {name:'grounded_factual_answer',args:{query:web.domain?`site:${web.domain} ${web.query}`:web.query}};
+  }
+  // A launch is only one step of a messenger transfer; leave the whole goal
+  // to the planner. Public search phrases must not execute embedded commands.
+  if(/(?:تلگرام|واتساپ|روبیکا|telegram|whatsapp|rubika)/i.test(input)&&/(?:پیوی|چت|مخاطب|پیام|فوروارد|بفرست|ارسال|بردار)/i.test(input))return null;
+  if(/(?:چطور|چگونه|چرا|آموزش|نحوه|اگر|وقتی|نگفتم|نکن|نکنید)/i.test(input))return null;
   input=canonicalizeCommand(input);
   const s=normalize(input);
   if(!s)return null;
 
   if(has(s,audio)){
-    if(/unmute|(?:از\s*)?(?:بی.?صدا|سایلنت|mute).*(?:در.?بیار|بردار|خاموش کن)|صدا\s*(?:رو|را)?\s*(?:وصل|فعال|روشن|باز)\s*کن/i.test(s))return {name:'set_mute',args:{muted:false},reply:'صدا دوباره وصله.'};
-    if(/(?:بی.?صدا|سایلنت|mute)|صدا.*(?:قطع|ببند|خاموش)\s*کن/i.test(s)&&!/unmute|در.?بیار|بردار|وصل|فعال|روشن|باز/i.test(s))return {name:'set_mute',args:{muted:true},reply:'صدا رو بی‌صدا کردم.'};
+    if(/unmute|(?:از\s*)?(?:بی.?صدا|سایلنت|mute).*(?:در.?بیار|بردار|خاموش کن)|صدا.*(?:وصل(?:ش)?|فعال|روشن|باز)\s*کن/i.test(s))return {name:'set_mute',args:{muted:false},reply:'صدا دوباره وصله.'};
+    if(/(?:بی.?صدا|سایلنت|mute)|صدا.*(?:قطع(?:ش)?|ببند(?:ش)?|خاموش)\s*کن/i.test(s)&&!/unmute|در.?بیار|بردار|وصل|فعال|روشن|باز/i.test(s))return {name:'set_mute',args:{muted:true},reply:'صدا رو بی‌صدا کردم.'};
     if(has(s,maximum)&&has(s,/(?:زیاد|بالا|ببر|بیار|بکش|بده|بکن|کن|بذار|تنظیم|فول|سقف|نهایت|انتها|آخر)/i))return {name:'set_volume',args:{percent:100},reply:'صدا رو تا آخر بردم بالا، رئیس.'};
     if(has(s,minimum)&&has(s,/(?:کم|پایین|ببر|بیار|بکش|بده|بکن|کن|بذار|تنظیم|کف)/i))return {name:'set_volume',args:{percent:0},reply:'صدا رو روی صفر گذاشتم.'};
-    const percent=extractPercent(s,audio);if(percent!==null)return {name:'set_volume',args:{percent},reply:`صدا رو روی ${percent}٪ تنظیم کردم.`};
-    if(has(s,increase))return {name:'volume_up',args:{},reply:'صدا رو بیشتر کردم.'};
-    if(has(s,decrease))return {name:'volume_down',args:{},reply:'صدا رو کمتر کردم.'};
+    const percent=extractPercent(s,audio),relative=has(s,increase)||has(s,decrease);
+    if(relative&&!/(?:روی|بذار|بگذار|تنظیم|برسون|برسان|تا\s*\d)/i.test(s)){
+      const amount=percent??(/(?:یه کم|یکم|کمی|یه ذره|یک ذره|یخورده|یخرده|اندکی)/i.test(s)?3:10);
+      return {name:has(s,increase)?'volume_up':'volume_down',args:{amount},reply:has(s,increase)?'صدا رو بیشتر کردم.':'صدا رو کمتر کردم.'};
+    }
+    if(percent!==null)return {name:'set_volume',args:{percent},reply:`صدا رو روی ${percent}٪ تنظیم کردم.`};
   }
 
   if(has(s,bright)){
