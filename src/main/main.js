@@ -13,6 +13,9 @@ import { SpeechService } from './SpeechService.js';
 import { SystemPresence } from './SystemPresence.js';
 
 const execFileAsync=promisify(execFile),__dirname=path.dirname(fileURLToPath(import.meta.url));
+const isolatedUserData=String(process.env.BLACK_CLOVER_ELECTRON_DATA_DIR||'').trim();
+if(isolatedUserData)app.setPath('userData',isolatedUserData);
+const devServerUrl=String(process.env.BLACK_CLOVER_DEV_URL||'http://127.0.0.1:5173').replace(/\/$/,'');
 app.commandLine.appendSwitch('autoplay-policy','no-user-gesture-required');
 let avatarWin=null,chatWin=null,pinsWin=null,remindersWin=null,projectsWin=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false;
 const livingWindows=()=>[avatarWin,chatWin,pinsWin,remindersWin,projectsWin].filter(w=>w&&!w.isDestroyed());
@@ -20,7 +23,7 @@ const send=event=>{for(const w of livingWindows())w.webContents.send('agent:even
 const sendAvatar=(channel,payload)=>{if(avatarWin&&!avatarWin.isDestroyed())avatarWin.webContents.send(channel,payload);};
 const agent=new Agent({emit:send}),deps=new Phase1DependencyManager({emit:send}),speech=new SpeechService(),presence=new SystemPresence({emit:e=>{send(e);if(e.type==='break-reminder'&&Notification.isSupported())new Notification({title:'Maria • Black Clover',body:e.text,silent:true}).show();}});
 
-function loadSurface(w,surface){const dev=process.env.NODE_ENV!=='production'&&!app.isPackaged;if(dev)w.loadURL(`http://127.0.0.1:5173/?surface=${surface}`);else w.loadFile(path.join(__dirname,'../../dist/index.html'),{query:{surface}});}
+function loadSurface(w,surface){const dev=process.env.NODE_ENV!=='production'&&!app.isPackaged;if(dev)w.loadURL(`${devServerUrl}/?surface=${surface}`);else w.loadFile(path.join(__dirname,'../../dist/index.html'),{query:{surface}});}
 function displayWorkArea(){return screen.getPrimaryDisplay().workArea;}
 function avatarBounds(){const a=displayWorkArea(),width=Math.min(405,Math.max(340,Math.round(a.width*.22))),height=Math.min(660,Math.max(540,Math.round(a.height*.68)));return {width,height,x:a.x+a.width-width-14,y:a.y+a.height-height-10};}
 function chatBounds(){const a=displayWorkArea(),avatar=avatarBounds(),width=Math.min(540,Math.max(470,Math.round(a.width*.30))),height=Math.min(700,Math.max(590,Math.round(a.height*.72)));let x=avatar.x-width-18;if(x<a.x+10)x=a.x+22;return {width,height,x,y:a.y+Math.max(18,Math.round((a.height-height)/2))};}

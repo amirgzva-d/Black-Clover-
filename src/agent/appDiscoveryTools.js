@@ -38,6 +38,22 @@ async function discover(name){
 
 export const appDiscoveryTools={
   find_any_app:tool('read','Discover an installed Windows application by human name across Start Apps, Start Menu shortcuts and App Paths registry. Use when normal app lookup may miss the program.',{type:'object',properties:{name:{type:'string'}},required:['name']},async({name})=>{const items=await discover(name);return result('find_any_app',true,items.length?'Installed applications found':'No matching installed application found',items);}),
+  find_running_app:tool('read','Verify whether a Windows application is actually running after launch. Matches process executable/name and visible window title.',{type:'object',properties:{name:{type:'string'},target:{type:'string'}},required:[]},async({name='',target=''})=>{
+    const q=quote(name),targetQ=quote(target),base=path.basename(String(target||'')).replace(/\.exe$/i,''),baseQ=quote(base);
+    const script=`$q='${q}';$target='${targetQ}';$base='${baseQ}';$items=@();
+      Get-CimInstance Win32_Process -ErrorAction SilentlyContinue|ForEach-Object {
+        $pn=[IO.Path]::GetFileNameWithoutExtension($_.Name);$path=$_.ExecutablePath;
+        if(($base -and $pn -like ('*'+$base+'*')) -or ($target -and $path -eq $target) -or ($q -and $pn -like ('*'+$q+'*'))){
+          $items+=[pscustomobject]@{pid=$_.ProcessId;name=$_.Name;path=$path;title=''}
+        }
+      };
+      Get-Process -ErrorAction SilentlyContinue|Where-Object {$_.MainWindowTitle -and $q -and $_.MainWindowTitle -like ('*'+$q+'*')}|ForEach-Object {
+        $items+=[pscustomobject]@{pid=$_.Id;name=$_.ProcessName;path='';title=$_.MainWindowTitle}
+      };
+      $items|Sort-Object pid -Unique|Select-Object -First 30|ConvertTo-Json -Depth 4 -Compress`;
+    const items=parse(await ps(script,12000));
+    return result('find_running_app',true,items.length?'Running application verified':'Application process/window not found',{running:items.length>0,items});
+  }),
   launch_any_app:tool('low','Launch an installed Windows application discovered by human name, including Store/Start Apps and traditional desktop apps.',{type:'object',properties:{name:{type:'string'}},required:['name']},async({name})=>{
     const items=await discover(name),item=items[0];if(!item)return result('launch_any_app',false,'Application not found');
     if(item.kind==='direct'){const child=spawn(item.target,[],{detached:true,stdio:'ignore',windowsHide:false});child.unref();return result('launch_any_app',true,'Application launched',{...item});}
