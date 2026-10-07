@@ -1,0 +1,13 @@
+import fs from 'node:fs';
+let p='C:/Users/cibesabz/Black-Clover-Live/src/agent/toolRegistry.js',s=fs.readFileSync(p,'utf8');
+if(!s.includes("resourceResolverTools"))s=s.replace("import { windowsUpdateTools } from './windowsUpdateTools.js';","import { windowsUpdateTools } from './windowsUpdateTools.js';\nimport { resourceResolverTools } from './resourceResolverTools.js';");
+if(!s.includes("...windowsUpdateTools,...resourceResolverTools"))s=s.replace("...windowsUpdateTools});","...windowsUpdateTools,...resourceResolverTools});");
+fs.writeFileSync(p,s);
+p='C:/Users/cibesabz/Black-Clover-Live/src/agent/SmartToolRouter.js';s=fs.readFileSync(p,'utf8');
+if(!s.includes("'resolve_resource','open_resource'"))s=s.replace("workflowBridge:['search_action_book','search_learned_skills','find_any_app','launch_any_app'","workflowBridge:['search_action_book','search_learned_skills','resolve_resource','open_resource','find_any_app','launch_any_app'");
+if(!s.includes("'list_known_apps'"))s=s.replace("apps:['find_app','list_installed_apps'","apps:['find_app','list_installed_apps','list_known_apps','refresh_app_catalog','resolve_resource','open_resource'");
+fs.writeFileSync(p,s);
+p='C:/Users/cibesabz/Black-Clover-Live/src/agent/automationTools.js';s=fs.readFileSync(p,'utf8');
+s=s.replace("['-NoProfile','-NonInteractive','-ExecutionPolicy','Bypass','-Command',script]","['-NoProfile','-NonInteractive','-Command',script]");
+fs.writeFileSync(p,s);
+console.log('registry/router/security updated');

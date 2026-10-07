@@ -1,0 +1,12 @@
+import fs from 'node:fs';
+const p='C:/Users/cibesabz/Black-Clover-Live/src/agent/FastCommandRouter.js';let s=fs.readFileSync(p,'utf8');
+if(!s.includes('function reminderCommand(')){
+  const anchor="function namedMedia(s){";
+  const helper=`function reminderCommand(raw){\n  const s=normalize(digits(raw));\n  const rel=s.match(/(?:(\\d{1,4})\\s*(دقیقه|ساعت|روز)\\s*(?:دیگه|دیگر|بعد|بعدتر)?\\s*(?:یادم بنداز|یادآوری کن)\\s*(?:که)?\\s*(.+)|(?:یادم بنداز|یادآوری کن)\\s*(?:که)?\\s*(\\d{1,4})\\s*(دقیقه|ساعت|روز)\\s*(?:دیگه|دیگر|بعد)?\\s*(.+))/i);\n  if(rel){const amount=Number(rel[1]||rel[4]),unit=rel[2]||rel[5],message=String(rel[3]||rel[6]||'').trim();if(amount>0&&message){const mult=unit==='دقیقه'?60000:unit==='ساعت'?3600000:86400000;return {name:'create_reminder',args:{message,due_at:new Date(Date.now()+amount*mult).toISOString()},reply:'باشه، یادآوریش می‌کنم.'};}}\n  const tomorrow=s.match(/(?:فردا)\\s*(?:ساعت)?\\s*(\\d{1,2})(?::(\\d{1,2}))?\\s*(?:یادم بنداز|یادآوری کن)\\s*(?:که)?\\s*(.+)|(?:یادم بنداز|یادآوری کن)\\s*(?:که)?\\s*فردا\\s*(?:ساعت)?\\s*(\\d{1,2})(?::(\\d{1,2}))?\\s*(.+)/i);\n  if(tomorrow){const h=Number(tomorrow[1]||tomorrow[4]),m=Number(tomorrow[2]||tomorrow[5]||0),message=String(tomorrow[3]||tomorrow[6]||'').trim();if(h>=0&&h<24&&m>=0&&m<60&&message){const d=new Date();d.setDate(d.getDate()+1);d.setHours(h,m,0,0);return {name:'create_reminder',args:{message,due_at:d.toISOString()},reply:'باشه، برای فردا یادآوریش می‌کنم.'};}}\n  return null;\n}\nfunction pinnedNoteCommand(raw){\n  const t=String(raw||'').trim();let m=t.match(/^(?:پین کن|ذخیره کن|یادداشت کن)\\s*[:：-]?\\s*(.{2,2000})$/i);if(!m)m=t.match(/^(.{2,1800}?)\\s+(?:رو|را)\\s+(?:به عنوان )?(?:متن مهم )?(?:پین|ذخیره|یادداشت) کن$/i);if(!m?.[1]?.trim())return null;const text=m[1].trim();if(/^(?:این|اونو|همونو)$/i.test(text))return null;return {name:'create_pinned_note',args:{title:text.slice(0,70),text,pinned:true,tags:['user-pinned']},reply:'ذخیره‌ش کردم که یادت نره.'};\n}\n`;
+  s=s.replace(anchor,helper+anchor);
+}
+if(!s.includes("const reminder=reminderCommand(input)")){
+  const anchor="  const mediaFile=namedMedia(s);";
+  s=s.replace(anchor,"  const reminder=reminderCommand(input);if(reminder)return reminder;\n  const note=pinnedNoteCommand(input);if(note)return note;\n"+anchor);
+}
+fs.writeFileSync(p,s);console.log('fast reminders/notes added');

@@ -35,10 +35,13 @@ export class PermissionPolicy{
   _argsText(args={}){return norm(Object.values(args).filter(v=>['string','number'].includes(typeof v)).join(' '));}
   async protectedMatch(name,args={}){await this.load();if(!destructiveTools.has(name)&&!/(delete|uninstall|remove)/i.test(name))return null;const hay=this._argsText(args);if(!hay)return null;return this.state.protectedResources.find(x=>hay.includes(x.key)||x.key.includes(hay))||null;}
   async isProtectedDocumentSave(name,args={}){
+    // Foreground-process inspection is relatively expensive on Windows. Only
+    // do it for the two UI actions that can actually trigger a document save.
+    if(name!=='press_key'&&name!=='invoke_ui_element')return false;
+    const candidate=name==='press_key'?/^(CTRL\+S|CTRL\+SHIFT\+S)$/i.test(String(args?.key||'')):saveWords.test(this._argsText(args));
+    if(!candidate)return false;
     const app=await foregroundProcess();if(!/(photoshop|illustrator|excel)/i.test(app))return false;
-    if(name==='press_key'&&/^(CTRL\+S|CTRL\+SHIFT\+S)$/i.test(String(args?.key||'')))return true;
-    if(name==='invoke_ui_element'&&saveWords.test(this._argsText(args)))return true;
-    return false;
+    return true;
   }
   isInstallerExecution(name,args={}){return ['open_file','open_named_file'].includes(name)&&installerFile.test(this._argsText(args));}
   async assertAllowed(name,args={}){const match=await this.protectedMatch(name,args);if(match)throw new Error(`این مورد با قانون دائمی شما محافظت شده و حذف/پاک نمی‌شود: ${match.label}`);return true;}

@@ -1,0 +1,14 @@
+import fs from 'node:fs/promises';
+import path from 'node:path';
+import os from 'node:os';
+import {execFile} from 'node:child_process';
+import {promisify} from 'node:util';
+import {Agent} from './src/agent/Agent.js';
+const exec=promisify(execFile),root=path.join(os.tmpdir(),'maria-agent-excel-'+Date.now()),file=path.join(root,'agent-test.xlsx');
+await fs.mkdir(root,{recursive:true});
+await exec('py.exe',['-3','-c',"from openpyxl import Workbook;import sys;w=Workbook();s=w.active;s.title='Sales';s['A1']='Name';s['B1']='Value';s['A2']='Ali';s['B2']=10;w.save(sys.argv[1])",file],{windowsHide:true});
+const a=new Agent(),prompt=`در فایل ${file} شیت Sales سلول B2 رو به 42 تغییر بده و بعد بررسی کن که ذخیره شده`;
+const t=Date.now(),r=await a.chat(prompt);
+console.log(JSON.stringify({ms:Date.now()-t,requiresConfirmation:r.requiresConfirmation,confirmationId:Boolean(r.confirmationId),text:r.text,brain:r.brain,tool:r.tool||null},null,2));
+await fs.rm(root,{recursive:true,force:true}).catch(()=>{});
+process.exit(r.requiresConfirmation&&r.confirmationId?0:2);

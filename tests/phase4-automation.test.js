@@ -31,7 +31,7 @@ test('scheduled actions execute through registered agent executor instead of bec
     await store.createAction({instruction:'تحقیق کن و گزارش بساز',label:'تحقیق',dueAt:new Date(Date.now()-1000).toISOString()});
     const reminders=await store.takeDue(Date.now());
     assert.equal(reminders.length,0);
-    await new Promise(r=>setTimeout(r,120));
+    await store.whenIdle();
     assert.deepEqual(seen,['تحقیق کن و گزارش بساز']);
     const active=await store.list();
     assert.ok(active.some(x=>x.kind==='reminder'&&/اجرا شد/.test(x.message)));

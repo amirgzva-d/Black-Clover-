@@ -4,7 +4,7 @@ import { onlineBrainPoolFromEnv } from './OnlineBrainPool.js';
 const ping=async(url,timeoutMs=2500)=>{const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);try{const r=await fetch(url,{method:'GET',cache:'no-store',signal:controller.signal});return r.ok||r.status===204;}catch{return false;}finally{clearTimeout(timer);}};
 const inferProfile=(tools,requested='general')=>{if(requested&&requested!=='general')return requested;const list=tools||[],names=list.map(x=>x?.function?.name||'').join(' ');if(!list.length)return 'chat';if(/project_|coding|git_|run_project|inspect_project|write_project|replace_project/i.test(names))return 'coding';if(/research|web_|wikipedia|read_web/i.test(names))return 'research';if(list.length>36)return 'complex';return 'general';};
 const modelText=name=>String(name||'').toLowerCase();
-const badGeneralModel=name=>/(embed|embedding|rerank|vision-only|whisper|stable-diffusion|flux|nomic|:cloud$)/i.test(name);
+const badGeneralModel=name=>/(embed|embedding|rerank|vision-only|whisper|stable-diffusion|flux|nomic|llama|:cloud$)/i.test(name);
 const isCloudModel=name=>/:cloud$/i.test(String(name||'').trim());
 const errorMessage=error=>String(error?.message||error||'').replace(/<[^>]*>/g,' ').replace(/\s+/g,' ').trim().slice(0,240);
 const scoreModel=(name,profile='general')=>{
@@ -19,7 +19,7 @@ export function pickBestLocalModel(models=[],profile='general'){return [...new S
 export async function internetAvailable(){const checks=await Promise.all(['https://www.msftconnecttest.com/connecttest.txt','https://www.google.com/generate_204'].map(u=>ping(u)));return checks.some(Boolean);}
 
 export class BrainRouter{
-  constructor({local=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:4096,temperature:.38,timeoutMs:90000,think:false,numPredict:700}),chatLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CHAT_MODEL||'qwen2.5:1.5b',keepAlive:'30m',numCtx:1536,temperature:.5,timeoutMs:45000,think:false,numPredict:140}),legacyLocal=new OllamaClient({model:process.env.BLACK_CLOVER_LEGACY_MODEL||'qwen2.5:1.5b',keepAlive:'2m',numCtx:4096,temperature:.35,timeoutMs:60000,think:false,numPredict:480}),researchLocal=new OllamaClient({model:process.env.BLACK_CLOVER_RESEARCH_MODEL||process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'15m',numCtx:3072,temperature:.22,timeoutMs:60000,think:false,numPredict:320}),codingLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CODING_MODEL||'qwen2.5-coder:3b',keepAlive:'10m',numCtx:8192,temperature:.28,timeoutMs:180000,think:false,numPredict:1400}),online=onlineBrainPoolFromEnv(),networkTtlMs=15000}={}){
+  constructor({local=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:3072,temperature:.32,timeoutMs:60000,think:false,numPredict:360}),chatLocal=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:2048,temperature:.36,timeoutMs:45000,think:false,numPredict:240}),legacyLocal=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:3072,temperature:.32,timeoutMs:60000,think:false,numPredict:360}),researchLocal=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:3072,temperature:.20,timeoutMs:60000,think:false,numPredict:360}),codingLocal=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:4096,temperature:.24,timeoutMs:90000,think:false,numPredict:700}),online=onlineBrainPoolFromEnv(),networkTtlMs=15000}={}){
     this.local=local;this.chatLocal=chatLocal;this.legacyLocal=legacyLocal;this.researchLocal=researchLocal;this.codingLocal=codingLocal;this.online=online;this.networkTtlMs=networkTtlMs;this.lastMode='local';this.lastProfile='general';this.networkState=null;this.networkCheckedAt=0;this.lastFallbackReason='';this.lastProvider=null;this.lastModel=local.model;this.adaptiveLocal=null;this.selectedLocals=new Map();
   }
   get model(){return this.lastModel||this.local.model;}
@@ -41,8 +41,8 @@ export class BrainRouter{
     throw new Error(`No local Ollama chat model is installed. Install ${this.local.model} or choose another provider.`);
   }
   localCandidates(profile,preferred){
-    const out=[];
-    const add=client=>{if(client&&!out.includes(client))out.push(client);};
+    const out=[],seen=new Set();
+    const add=client=>{const key=String(client?.model||'').toLowerCase();if(client&&key&&!seen.has(key)&&!isCloudModel(client.model)){seen.add(key);out.push(client);}};
     add(preferred);
     if(profile==='coding')add(this.codingLocal);
     if(profile==='chat')add(this.chatLocal);
@@ -50,7 +50,7 @@ export class BrainRouter{
     add(this.local);
     add(this.legacyLocal);
     add(this.adaptiveLocal);
-    return out.filter(client=>client&&!isCloudModel(client.model));
+    return out;
   }
   async localChat(messages,tools,profile,preferred,onDelta=null){
     const errors=[];
@@ -86,7 +86,7 @@ export class BrainRouter{
     const forceLocal=provider==='ollama'||provider==='local';
     const forceOllamaCloud=provider==='ollama-cloud';
     const forceOnline=!['auto','ollama','local','ollama-cloud'].includes(provider);
-    const policy=String(process.env.BLACK_CLOVER_BRAIN_POLICY||'online-first').toLowerCase();
+    const policy=String(process.env.BLACK_CLOVER_BRAIN_POLICY||'local-first').toLowerCase();
 
     if(forceOllamaCloud){
       if(!allowOnline)this.lastFallbackReason='ollama-cloud-blocked-private';
@@ -125,7 +125,7 @@ export class BrainRouter{
       }
     }
 
-    const wantsOnline=!forceLocal&&!forceOllamaCloud&&allowOnline&&this.online?.configured&&(policy==='online-first'||profile==='coding'||profile==='research'||profile==='complex');
+    const wantsOnline=!forceLocal&&!forceOllamaCloud&&allowOnline&&this.online?.configured&&policy==='online-first';
     if(wantsOnline){
       if(await this.network()){
         try{

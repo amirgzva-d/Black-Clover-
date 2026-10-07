@@ -1,0 +1,4 @@
+import fs from 'node:fs';const p='C:/Users/cibesabz/Black-Clover-Live/src/main/SpeechService.js';let s=fs.readFileSync(p,'utf8');
+if(!s.includes("SpeechCommandNormalizer"))s=s.replace("import { promisify } from 'node:util';","import { promisify } from 'node:util';\nimport { normalizeSpeechCommand } from './SpeechCommandNormalizer.js';");
+s=s.replace("const text=(await fs.readFile(txt,'utf8')).replace(/\\s+/g,' ').trim();if(!text)throw new Error('Whisper متنی تشخیص نداد.');return {text,engine:'whisper.cpp',language};","const rawText=(await fs.readFile(txt,'utf8')).replace(/\\s+/g,' ').trim();if(!rawText)throw new Error('Whisper متنی تشخیص نداد.');const text=normalizeSpeechCommand(rawText);return {text,rawText,engine:'whisper.cpp',language};");
+fs.writeFileSync(p,s);console.log('speech command normalization added');

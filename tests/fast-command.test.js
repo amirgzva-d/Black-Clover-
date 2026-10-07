@@ -32,7 +32,8 @@ test('fast router recognizes common and generic app launch phrases',()=>{
 test('fast router recognizes media and search variants',()=>{
   assert.equal(matchFastCommand('آهنگ بعدی رو بزن').name,'media_next');
   assert.equal(matchFastCommand('موزیک رو نگه دار').name,'media_play_pause');
-  assert.equal(matchFastCommand('گربه بامزه رو سرچ کن').name,'web_search');
+  assert.equal(matchFastCommand('گربه بامزه رو سرچ کن').name,'grounded_factual_answer');
+  assert.equal(matchFastCommand('گربه بامزه رو سرچ کن').args.query,'گربه بامزه');
   assert.equal(matchFastCommand('تو یوتیوب موسیقی لوفای سرچ کن').name,'youtube_search');
   assert.equal(matchFastCommand('حتماً تو کروم درباره OpenAI سرچ کن').name,'chrome_search');
 });

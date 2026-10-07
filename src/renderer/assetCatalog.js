@@ -1,12 +1,10 @@
 export const MARIA_ASSET_CATALOG=[
   {name:'1658678464118441614.vrm',kind:'avatar',use:'avatar-selector',status:'importable',notes:'Ameath VRM; local-use asset. Do not redistribute from the public repo.'},
   {name:'2065525101661372465 (1).vrm',kind:'avatar',use:'avatar-selector',status:'importable',notes:'Sally VRM; local-use asset. Do not redistribute from the public repo.'},
-  {name:'4475429325269774311.vrm',kind:'avatar',use:'avatar-selector',status:'importable',notes:'Mobuko beta VRM; local-use asset.'},
   {name:'6169937430135470937.vrm',kind:'avatar',use:'avatar-selector',status:'importable',notes:'Yinlin VRM; local-use asset.'},
   {name:'6953900368484330122.vrm',kind:'avatar',use:'avatar-selector',status:'importable',notes:'VRM with restrictive embedded metadata; keep local only.'},
   {name:'7903223404901736379.vrm',kind:'avatar',use:'avatar-selector',status:'importable',notes:'Libby_free VRM; local use only; embedded metadata disallows commercial use.'},
   {name:'8034982919287768796.vrm',kind:'avatar',use:'avatar-selector',status:'importable',notes:'Cinderella VRM; local-use asset.'},
-  {name:'8197612703181177878.vrm',kind:'avatar',use:'avatar-selector',status:'importable',notes:'Bunnygirl VRM; local-use asset.'},
   {name:'8505292573653795333.vrm',kind:'avatar',use:'avatar-selector',status:'importable',notes:'Soppo VRM; local-use asset.'},
   {name:'Cookies.zip',kind:'wardrobe',use:'wardrobe-source',status:'convert',notes:'UnityPackage wardrobe/content pack; requires Unity extraction/conversion.'},
   {name:'EvilFallArmar_v1.22.zip',kind:'wardrobe',use:'armor-effects',status:'convert',notes:'Armor pack with Unity assets, animations, materials, particles and prefabs.'},

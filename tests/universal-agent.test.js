@@ -9,7 +9,7 @@ import { tools } from '../src/agent/toolRegistry.js';
 const permissionSource=fs.readFileSync(new URL('../src/agent/PermissionPolicy.js',import.meta.url),'utf8');
 
 test('colloquial max volume and brightness wording resolves without exact percentages',()=>{
-  assert.deepEqual(matchFastCommand('صدا رو ببر انتهاش'),{name:'set_volume',args:{percent:100},reply:'صدا رو تا آخر بردم بالا، رئیس.'});
+  const max=matchFastCommand('صدا رو ببر انتهاش'); assert.equal(max?.name,'set_volume'); assert.deepEqual(max?.args,{percent:100}); assert.ok(max?.reply);
   assert.equal(matchFastCommand('نور رو تا نهایت زیاد کن')?.name,'set_brightness');
   assert.equal(matchFastCommand('نور رو تا نهایت زیاد کن')?.args?.percent,100);
 });

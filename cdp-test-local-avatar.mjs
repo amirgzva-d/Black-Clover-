@@ -1,0 +1,6 @@
+async function pages(){return await (await fetch('http://127.0.0.1:9223/json')).json();}
+async function evalOn(p,expr){const ws=new WebSocket(p.webSocketDebuggerUrl);await new Promise((ok,fail)=>{ws.onopen=ok;ws.onerror=fail});const id=1;const out=await new Promise((ok,fail)=>{const t=setTimeout(()=>fail(new Error('timeout')),15000);ws.onmessage=e=>{const j=JSON.parse(e.data);if(j.id===id){clearTimeout(t);ok(j);}};ws.send(JSON.stringify({id,method:'Runtime.evaluate',params:{expression:expr,returnByValue:true,awaitPromise:true}}));});ws.close();return out.result?.result?.value;}
+let ps=await pages();const w=ps.find(x=>x.url.includes('surface=wardrobe'));const a=ps.find(x=>x.url.includes('surface=avatar'));if(!w||!a)throw new Error('pages missing');
+const click=await evalOn(w,`(async()=>{const b=document.querySelector('[data-avatar="7903223404901736379.vrm"]');b.click();await new Promise(r=>setTimeout(r,4500));return {text:b.innerText,disabled:b.disabled};})()`);
+const state=await evalOn(a,`(()=>({ready:document.querySelector('#avatar3d')?.className,title:document.querySelector('#avatarPick')?.title,canvas:[...document.querySelectorAll('canvas')].map(x=>({w:x.width,h:x.height})),motion:document.querySelector('#avatar3d')?.dataset.motion}))()`);
+console.log(JSON.stringify({click,state},null,2));

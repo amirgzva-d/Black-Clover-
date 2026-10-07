@@ -8,7 +8,7 @@ const groups={
   research:['live_web_search','read_web_page','wikipedia_search','research_topic','web_search','chrome_search','open_url','search_action_book','search_learned_skills'],
   knowledge:['live_web_search','read_web_page','wikipedia_search','research_topic'],
   aiBrains:['ai_provider_status','open_ai_portal','chrome_open_service','search_action_book','search_learned_skills','open_url','web_search','inspect_ui','vision_inspect_screen','invoke_ui_element','set_ui_value','type_text','press_key'],
-  apps:['find_app','find_any_app','list_installed_apps','launch_app','launch_any_app','close_app','winget_search','install_app','uninstall_app','list_winget_upgrades','upgrade_app','search_action_book','search_learned_skills'],
+  apps:['find_app','find_any_app','find_running_app','list_installed_apps','launch_app','launch_any_app','close_app','winget_search','install_app','uninstall_app','list_winget_upgrades','upgrade_app','search_action_book','search_learned_skills'],
   storage:['storage_overview','global_find_files','open_named_file','reveal_named_file','open_named_folder','list_directory','file_info','open_folder','open_file','search_files','search_action_book','search_learned_skills'],
   files:['global_find_files','open_named_file','reveal_named_file','open_named_folder','list_directory','file_info','read_text_file','create_folder','write_text_file','delete_path','open_folder','open_file','search_files','rename_path','move_path','copy_path','create_text_file','append_text_file','open_downloads','open_desktop','search_action_book','search_learned_skills'],
   spreadsheet:['global_find_files','open_named_file','excel_status','excel_list_sheets','excel_read_range','excel_set_cells','excel_append_rows','excel_add_image','excel_list_hyperlinks','excel_collect_images','copy_files_to_clipboard','search_action_book','search_learned_skills'],
@@ -30,7 +30,7 @@ const groups={
   scheduler:['get_time','create_reminder','create_scheduled_action','list_reminders','cancel_reminder','search_action_book'],
   wellbeing:['wellbeing_status','remind_eye_break','remind_move_body','remind_posture','remind_hydration','remind_meal_break','remind_sleep_wind_down','remind_focus_reset','remind_breathing_pause','remind_wrist_stretch','remind_neck_stretch','remind_back_stretch','remind_screen_distance','remind_brightness_comfort','remind_audio_comfort','remind_ventilation','remind_workspace_reset','remind_deep_work_pace','remind_long_session_break','remind_late_night_pause','remind_quiet_pause'],
   permissions:['permission_status','set_permission_profile','protect_resource','unprotect_resource'],
-  workflowBridge:['search_action_book','search_learned_skills','find_any_app','launch_any_app','global_find_files','open_named_file','list_windows','focus_window','inspect_ui','vision_inspect_screen','invoke_ui_element','set_ui_value','type_text','press_key','copy_files_to_clipboard','chrome_open_url','chrome_search','chrome_open_service','open_url','web_search','research_topic']
+  workflowBridge:['search_action_book','search_learned_skills','resolve_resource','open_resource','find_any_app','launch_any_app','global_find_files','open_named_file','list_windows','focus_window','inspect_ui','vision_inspect_screen','invoke_ui_element','set_ui_value','type_text','press_key','copy_files_to_clipboard','chrome_open_url','chrome_search','chrome_open_service','open_url','web_search','research_topic']
 };
 const patterns=[
   ['memory',/(یاد|حافظه|remember|فراموش|ترجیح|اسمم|هیچ.?وقت|هرگز)/i],

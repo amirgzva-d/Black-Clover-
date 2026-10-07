@@ -1,0 +1,2 @@
+import { SpeechService } from '../src/main/SpeechService.js';
+const s=new SpeechService();const t0=Date.now();const tts=await s.synthesize('سلام ماریا، صدا را زیاد کن.',{rate:1,pitch:1.05});console.log('TTS',tts.engine,tts.voice,Buffer.from(tts.audio,'base64').length,Date.now()-t0);const t1=Date.now();try{const out=await s.transcribe(Buffer.from(tts.audio,'base64'),{language:'fa'});console.log('STT',JSON.stringify(out),Date.now()-t1);}catch(e){console.error('STT_FAIL',e.message,e.stderr||'');process.exitCode=2;}
