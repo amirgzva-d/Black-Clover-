@@ -139,6 +139,29 @@ Runtime architecture stays:
 No capability is considered professional merely because it has many phrases. It must also pass ambiguity, context, safety and real-system verification tests.
 
 
+
+## Global Criticality Rule — Every Capability Is First-Class
+
+No capability family in MARIA is treated as "unimportant" or second-class.
+
+Every capability must reach the same production principles:
+- dedicated Skill/Agent architecture
+- large, high-quality language packs
+- context awareness
+- ambiguity handling
+- permissions
+- verification
+- undo/rollback where possible
+- failure recovery
+- real-system integration tests
+- auditability
+- safe learning
+- offline/online fallback
+- extensibility without changing Brain Core
+
+Priority controls development order only; it does NOT lower quality requirements.
+
+
 ## Capability status
 
 | # | Capability | Design | Local implementation |
@@ -152,8 +175,8 @@ No capability is considered professional merely because it has many phrases. It 
 | 07 | Web Search / Research | DESIGN COMPLETE v1 | WAITING |
 | 08 | Browser Automation | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 09 | YouTube / Web Media | NEXT | WAITING |
-| 10 | Messaging / Forwarding | QUEUED | WAITING |
-| 11 | Timed / Conditional Actions | QUEUED | WAITING |
+| 10 | Messaging / Forwarding | DESIGN COMPLETE v1 ADVANCED | WAITING |
+| 11 | Timed / Conditional Actions | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 12 | Power / Lock / Security | QUEUED | WAITING |
 | 13 | Excel / Office | QUEUED | WAITING |
 | 14 | Desktop Organization | QUEUED | WAITING |
@@ -8741,4 +8764,1147 @@ When the MARIA system is online:
 24. test stale-page/iframe/dynamic-site recovery.
 25. test phishing/prompt-injection/download security.
 26. mark only verified modules IMPLEMENTED.
+
+
+
+---
+
+## 10 — Unified Messaging / AI Web-App / Social Action Engine
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`communication.*\`, \`message.*\`, \`chat.*\`, \`webapp.ai.*\`, \`social.*\`, \`attachment.*\`, \`conversation.*\`  
+**Owner modules:** Communication Orchestrator / Surface Resolver / Identity Resolver / Recipient Resolver / Conversation Resolver / Message Composer / Attachment Resolver / Send Guard / Message Verifier / Action Audit / Service Adapter Registry / Browser Adapter / Desktop App Adapter  
+**Offline capable:** partial; local draft/composition works offline, external send/read needs service/network  
+**Risk class:** L0–L5 depending on read/send/delete/account action  
+**Primary surfaces:** Browser + installed desktop apps + structured APIs/connectors when available
+
+### 1. Purpose
+
+MARIA must be able to operate authorized communication and AI services through either:
+- an installed desktop application,
+- a web application in Chrome/another approved browser profile,
+- or a structured official connector/API when available.
+
+Target service families include, capability-gated:
+- ChatGPT
+- Claude
+- Qwen
+- DeepSeek
+- Pinterest
+- Telegram
+- WhatsApp
+- Rubika
+- Gmail / webmail
+- future messaging/social/AI services added through the same adapter registry
+
+Core actions:
+- open service
+- choose browser vs installed app
+- choose account/profile
+- open a person/chat/group/channel/page
+- read latest messages
+- search messages/conversations
+- compose text
+- type without sending
+- send text
+- attach/send files
+- attach/send images/video/audio
+- forward messages/files
+- reply to a message
+- edit a sent message where supported
+- delete a message where supported
+- copy message/text
+- read response aloud
+- summarize conversation
+- open shared links/files
+- save/download received files
+- share content from another app
+- schedule a future send
+- conditionally send after an event
+- verify the final external state
+
+No service is assumed to support every action. Each adapter publishes a capability manifest.
+
+### 2. Unified service/surface abstraction
+
+Canonical object model:
+- service
+- surface: browser | desktop_app | connector_api
+- account
+- browser_profile
+- conversation
+- recipient
+- group/channel
+- message
+- attachment
+- thread/reply target
+- page/profile/board where relevant
+- current draft
+- scheduled action
+- external side-effect result
+
+Surface selection priority:
+1. explicit user request
+2. preferred structured connector/API
+3. installed desktop app if user prefers it
+4. authorized browser profile/web app
+5. ask if multiple valid surfaces differ materially
+
+Examples:
+- "Telegram رو تو برنامه باز کن"
+- "واتساپ رو تو Chrome باز کن"
+- "ChatGPT رو تو برنامه خودش بیار"
+- "Claude رو تو مرورگر باز کن"
+- "اگه برنامه Rubika نصبه از همون استفاده کن، وگرنه نسخه وب"
+- "با همون اکانت قبلی"
+
+### 3. Canonical intents — service/app opening
+
+- \`communication.service.open\`
+- \`communication.service.open_desktop\`
+- \`communication.service.open_web\`
+- \`communication.service.get_active\`
+- \`communication.surface.select\`
+- \`communication.account.select\`
+- \`communication.account.switch\`
+- \`communication.account.verify\`
+
+Natural examples:
+- "تلگرام رو باز کن"
+- "واتساپ رو بیار"
+- "Rubika رو باز کن"
+- "ChatGPT رو تو Chrome"
+- "Claude رو باز کن"
+- "Qwen رو بیار"
+- "DeepSeek رو باز کن"
+- "پینترست رو تو مرورگر باز کن"
+- "برنامه‌ش نصبه از همون برو"
+- "نسخه وبش رو باز کن"
+- "با حساب شخصیم"
+- "با اکانت دوم"
+- "با پروفایل کاری Chrome"
+- typo/STT variants:
+  - "تلکرام"
+  - "واتس اپ"
+  - "روبیکاا"
+  - "کلاود"
+  - "کلود"
+  - "دیپ سیک"
+  - "دیپسیک"
+  - "کیوون"
+  - "چت جی پی تی"
+
+### 4. Conversation/recipient resolution
+
+Canonical:
+- \`conversation.list\`
+- \`conversation.search\`
+- \`conversation.open\`
+- \`conversation.open_saved_messages\`
+- \`recipient.resolve\`
+- \`group.resolve\`
+- \`channel.resolve\`
+- \`contact.resolve_by_name\`
+- \`contact.resolve_by_number\`
+
+Examples:
+- "برو پیوی علی"
+- "چت مهدی رو باز کن"
+- "برو گروه کار"
+- "کانال X رو باز کن"
+- "Saved Messages تلگرام"
+- "پیام‌های ذخیره‌شده رو باز کن"
+- "به این شماره پیام بده"
+- "مخاطبی که اسمش Sara هست"
+- "اون گروهی که دیروز توش بودیم"
+- "چت آخرم با علی"
+- "نه اون علی، علی شرکت"
+
+RecipientResolver uses:
+1. explicit service
+2. exact account
+3. exact contact ID/number when available
+4. user alias
+5. exact normalized name
+6. recent conversation context
+7. fuzzy match only when unique
+8. clarify if multiple recipients remain
+
+Never send externally based on a weak ambiguous recipient match.
+
+### 5. Read/search message intents
+
+- \`message.read_latest\`
+- \`message.read_unread\`
+- \`message.read_selected\`
+- \`message.read_thread\`
+- \`message.search\`
+- \`message.summarize\`
+- \`message.read_aloud\`
+- \`message.copy\`
+- \`message.get_sender\`
+- \`message.get_time\`
+
+Examples:
+- "آخرین پیام علی رو بخون"
+- "پیام‌های جدید Telegram رو بگو"
+- "واتساپ چی اومده"
+- "سه پیام آخر گروه کار"
+- "این پیام رو بخون"
+- "کل گفتگو رو خلاصه کن"
+- "از صبح تا الان چی گفتن"
+- "پیام فلانی رو پیدا کن"
+- "این متن رو کپی کن"
+- "بلند بخونش"
+
+Privacy:
+- proactive notifications default to sender + safe preview
+- full message body read aloud requires user request or approved rule
+
+### 6. Compose vs type vs send
+
+These are distinct:
+
+- \`message.compose\`
+- \`message.type\`
+- \`message.preview\`
+- \`message.send\`
+- \`message.cancel_draft\`
+
+Examples:
+- "براش بنویس سلام"
+=> type/compose only unless context clearly implies send.
+
+- "این متن رو بنویس ولی نفرست"
+=> type only.
+
+- "همینو بفرست"
+=> send current reviewed draft.
+
+- "به علی بگو ده دقیقه دیر می‌رسم"
+=> normally compose + send because imperative is explicitly communicative; policy may still preview depending on user preference/risk.
+
+User-configurable send policy:
+- always preview
+- preview important/external actions
+- direct-send low-risk explicit messages
+- service-specific preference
+
+### 7. Text sending
+
+Canonical:
+- \`message.send_text\`
+- \`message.reply_text\`
+- \`message.send_multiline\`
+- \`message.send_quote\`
+
+Examples:
+- "این پیام رو برای علی بفرست"
+- "به مهدی بگو رسیدم"
+- "تو WhatsApp براش بنویس..."
+- "در Telegram بفرست..."
+- "همین متن زیر رو بفرست"
+- "این پاراگراف رو ارسال کن"
+- "جواب بده باشه"
+- "روی همین پیام Reply کن"
+
+Verification:
+- outgoing message appears in intended conversation
+- timestamp/state indicates accepted/sent when available
+- no false success from click alone
+
+### 8. File / media sending
+
+Canonical:
+- \`attachment.send_file\`
+- \`attachment.send_files\`
+- \`attachment.send_image\`
+- \`attachment.send_video\`
+- \`attachment.send_audio\`
+- \`attachment.send_document\`
+- \`attachment.reply_with_file\`
+
+Examples:
+- "این فایل رو برای علی بفرست"
+- "PDF دسکتاپ رو تو Telegram گروه کار بفرست"
+- "این عکس رو WhatsApp کن"
+- "سه فایل انتخاب‌شده رو بفرست"
+- "همین ویدئو رو برای اون شخص ارسال کن"
+- "این فایل Excel رو تو Rubika بفرست"
+- "همراه متن زیر فایل رو هم بفرست"
+
+AttachmentResolver must:
+1. resolve exact local item
+2. verify type/path/size
+3. confirm intended recipient
+4. attach
+5. verify UI/service shows exact filename
+6. send
+7. verify outgoing attachment state
+
+Never upload an ambiguous local file.
+
+### 9. Forward
+
+Canonical:
+- \`message.forward\`
+- \`message.forward_many\`
+- \`attachment.forward\`
+- \`conversation.forward_selected\`
+
+Examples:
+- "این پیام رو برای علی فوروارد کن"
+- "همینو بفرست گروه کار"
+- "این فایل رو به سه گروه فوروارد کن"
+- "این پیام و دوتا بعدیش رو برای مهدی بفرست"
+- "از Saved Messages اینو فوروارد کن"
+- "این پیام تلگرام رو برای واتساپ کپی و ارسال کن"
+
+Cross-service forward:
+- when native forwarding is impossible, MARIA converts to a safe copy/share workflow
+- must preserve attachment/text semantics where possible
+- must not falsely claim native forward metadata
+
+### 10. Edit/delete messages
+
+Canonical:
+- \`message.edit\`
+- \`message.delete_for_me\`
+- \`message.delete_for_everyone\`
+- \`message.delete_selected\`
+- \`message.delete_batch\`
+
+Examples:
+- "پیامی که الان فرستادم رو ویرایش کن"
+- "این پیام رو پاک کن"
+- "فقط برای خودم حذفش کن"
+- "برای همه پاکش کن"
+- "اون پیام اشتباهی رو حذف کن"
+- "سه پیام آخرمو پاک کن"
+
+Rules:
+- capability/time-window detection required
+- delete-for-everyone vs delete-for-me are distinct
+- bulk deletion requires stronger confirmation
+- no fake support if service does not allow edit/delete
+- verify message state after action
+
+### 11. AI service adapter family
+
+Unified AI intents:
+- \`ai.service.open\`
+- \`ai.chat.new\`
+- \`ai.chat.search\`
+- \`ai.chat.open\`
+- \`ai.chat.type_prompt\`
+- \`ai.chat.attach_file\`
+- \`ai.chat.send_prompt\`
+- \`ai.chat.wait_response\`
+- \`ai.chat.read_response\`
+- \`ai.chat.copy_response\`
+- \`ai.chat.continue\`
+- \`ai.chat.select_model\`
+- \`ai.chat.stop_generation\`
+
+Adapters:
+- ChatGPTAdapter
+- ClaudeAdapter
+- QwenAdapter
+- DeepSeekAdapter
+- future AI services through WebAppAdapterRegistry
+
+Examples:
+- "Claude رو باز کن و این سوال رو بپرس"
+- "Qwen رو باز کن، این فایل رو بده و خلاصه بخواه"
+- "DeepSeek رو باز کن و جوابش رو بخون"
+- "ChatGPT تو این چت این متن رو بفرست"
+- "جواب Claude رو کپی کن"
+- "جواب هر دو رو بگیر و مقایسه کن"
+
+Cross-AI workflow:
+1. send same prompt to approved services
+2. wait for each response
+3. capture response
+4. compare/summarize
+5. never expose one service's private hidden session credentials to another
+
+### 12. Pinterest actions
+
+Beyond opening/search:
+- \`pinterest.search\`
+- \`pinterest.open_pin\`
+- \`pinterest.save_pin\`
+- \`pinterest.unsave_pin\`
+- \`pinterest.open_board\`
+- \`pinterest.create_board\`
+- \`pinterest.share_pin\`
+- \`pinterest.download_media_handoff\`
+
+Examples:
+- "این Pin رو ذخیره کن"
+- "بذار تو برد طراحی"
+- "این عکس رو برای فلانی بفرست"
+- "این برد رو باز کن"
+- "تو Pinterest این سبک رو سرچ کن"
+
+External/publish actions follow service permissions.
+
+### 13. Installed app vs browser behavior
+
+Each service adapter declares:
+- installed_app_available
+- web_available
+- structured_api_available
+- can_read
+- can_send_text
+- can_send_files
+- can_forward
+- can_edit
+- can_delete
+- can_schedule_natively
+- can_search_history
+- can_verify_delivery
+
+MARIA chooses the best surface but user preference wins.
+
+Example:
+"WhatsApp رو باز کن"
+If desktop app exists and user preference=desktop => open desktop.
+If not => browser web.
+If user says "تو Chrome" => always browser.
+
+### 14. Structured connector first policy
+
+If an official/structured connector exists and supports the requested action:
+1. prefer connector for reliability
+2. use browser/desktop UI when visible interaction is explicitly requested or structured action unavailable
+3. never duplicate-send through both surfaces
+
+For Telegram/WhatsApp/Rubika, actual integration route is capability-gated according to available official APIs, installed clients and authorized UI automation.
+
+### 15. Cross-service content handoff
+
+Examples:
+- "این جواب ChatGPT رو برای علی تو Telegram بفرست"
+- "پیام WhatsApp رو کپی کن ببر Claude"
+- "این عکس Pinterest رو دانلود کن بعد تو Rubika بفرست"
+- "جواب DeepSeek رو تو Saved Messages ذخیره کن"
+
+Planner composes:
+source read → content normalize → destination resolve → compose → permission → send → verify.
+
+### 16. Notifications
+
+Canonical:
+- \`communication.notify_new.enable\`
+- \`communication.notify_new.disable\`
+- \`communication.notify_sender.enable\`
+- \`communication.notify_group.enable\`
+- \`communication.read_notification\`
+
+Examples:
+- "هر وقت علی پیام داد بگو"
+- "پیام جدید WhatsApp رو اعلام کن"
+- "اگه گروه کار چیزی گفت خبرم کن"
+- "پیام‌های Telegram رو موقع Focus نخون"
+
+Actual event support depends on service connector/app/OS notification integration.
+
+### 17. Safety / external side effects
+
+Read/search = low risk.
+
+Sending, editing, deleting, forwarding = external side effect.
+
+Rules:
+- recipient identity must be high-confidence
+- attachment must be exact
+- service/account must be verified
+- messages cannot be silently sent to a fuzzy match
+- bulk actions require preview/confirmation
+- delete-for-everyone is irreversible and service-limited
+- external actions are audit logged
+- no spam/bulk unsolicited messaging automation
+- respect service rate limits and policies
+
+### 18. Verification
+
+Send:
+- correct service/account
+- correct conversation
+- intended message visible as outgoing
+- attachment name/state matches
+- delivery state when exposed
+
+Forward:
+- target received forwarded/copied item
+
+Edit:
+- outgoing text changed
+
+Delete:
+- message no longer visible / deletion marker verified
+
+AI prompt:
+- prompt appears in intended chat
+- generation starts
+- response captured only from intended conversation
+
+### 19. Language coverage
+
+Critical intents target **1000–1500 examples each**:
+- communication.service.open
+- conversation.open
+- recipient.resolve
+- message.read_latest
+- message.send_text
+- message.reply_text
+- attachment.send_file
+- message.forward
+- message.delete_for_me/everyone
+- ai.chat.open
+- ai.chat.type_prompt
+- ai.chat.send_prompt
+- ai.chat.read_response
+- communication.account.select
+
+Hard negatives include:
+- "بنویس" vs "بفرست"
+- "کپی کن" vs "فوروارد کن"
+- "برای خودم پاک کن" vs "برای همه پاک کن"
+- "باز کن" vs "نصب کن"
+- "برو چت علی" vs "به علی پیام بده"
+- "این فایل رو باز کن" vs "این فایل رو بفرست"
+- "این جواب رو بخون" vs "این جواب رو ارسال کن"
+
+Family total target: tens of thousands of diverse utterances across services/context/noise/counterexamples.
+
+### 20. Skill / Agent package
+
+- \`CommunicationOrchestrator\`
+- \`ServiceSurfaceResolver\`
+- \`CommunicationAccountResolver\`
+- \`RecipientResolver\`
+- \`ConversationResolver\`
+- \`MessageReadSkill\`
+- \`MessageComposeSkill\`
+- \`MessageSendSkill\`
+- \`MessageReplySkill\`
+- \`MessageForwardSkill\`
+- \`MessageEditDeleteSkill\`
+- \`AttachmentSendSkill\`
+- \`CommunicationNotificationSkill\`
+- \`AIServicesAdapterRegistry\`
+- \`SocialMessagingAdapterRegistry\`
+- \`CrossServiceHandoffSkill\`
+- \`CommunicationPolicyGuard\`
+- \`CommunicationVerifier\`
+- \`CommunicationAuditLog\`
+- \`CommunicationLanguageAgent\`
+
+Service adapters:
+- \`ChatGPTAdapter\`
+- \`ClaudeAdapter\`
+- \`QwenAdapter\`
+- \`DeepSeekAdapter\`
+- \`PinterestAdapter\`
+- \`TelegramAdapter\`
+- \`WhatsAppAdapter\`
+- \`RubikaAdapter\`
+
+Each adapter is capability-discovered at runtime and must not claim unsupported actions.
+
+### 21. Acceptance criteria
+
+1. browser/desktop/API surfaces are abstracted behind one action model.
+2. user can explicitly choose surface and account.
+3. recipient ambiguity never causes silent send.
+4. compose/type/send are separate.
+5. exact file verification happens before upload/send.
+6. edit/delete/forward respect service capability and time limits.
+7. delete-for-me and delete-for-everyone are distinct.
+8. ChatGPT/Claude/Qwen/DeepSeek workflows can type/send/read/attach through authorized sessions.
+9. cross-service handoff works without leaking credentials.
+10. all external actions are verified and audited.
+11. critical intents have 1000–1500 high-quality examples.
+12. real service tests pass before each adapter is marked IMPLEMENTED.
+
+---
+
+
+
+## 11 — Scheduled / Timed / Conditional Action Engine
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`schedule.*\`, \`automation.*\`, \`trigger.*\`, \`condition.*\`, \`routine.*\`, \`job.*\`  
+**Owner modules:** Temporal Language Agent / Scheduler Core / Durable Job Store / Trigger Engine / Condition Evaluator / Action Planner / Permission Snapshot / Wake/Resume Coordinator / Retry Manager / Idempotency Guard / Job Verifier / Notification Reporter / Audit Log  
+**Offline capable:** yes for local tasks; online-dependent actions wait/fail according to policy  
+**Risk class:** L0–L5 based on scheduled action  
+**Primary platform:** Windows + MARIA Core
+
+### 1. Purpose
+
+MARIA must reliably perform user-authorized actions:
+- at an exact time
+- after a duration
+- on a date
+- every N minutes/hours/days
+- on weekdays/weekends
+- before/after another event
+- when an external condition becomes true
+- when a local system event occurs
+- when a message/email arrives
+- when a file appears/download completes
+- when battery/network/app state changes
+- after reboot/login/wake if a scheduled task was missed
+
+Scheduling is not merely reminders. It can execute real Skills.
+
+Examples:
+- "ساعت 8 این پیام رو برای علی بفرست"
+- "20 دقیقه دیگه صدا رو 30 کن"
+- "فردا 9 صبح Chrome و VS Code رو باز کن"
+- "هر شب 11 حالت شب بخیر رو اجرا کن"
+- "وقتی دانلود تموم شد فایل رو Extract کن"
+- "وقتی اینترنت وصل شد ایمیل رو بفرست"
+- "اگه علی جواب داد بهم بگو"
+- "وقتی باتری رسید 15 درصد Battery Saver رو روشن کن"
+
+### 2. Canonical scheduling intents
+
+- \`schedule.create\`
+- \`schedule.create_once\`
+- \`schedule.create_recurring\`
+- \`schedule.create_conditional\`
+- \`schedule.list\`
+- \`schedule.get\`
+- \`schedule.enable\`
+- \`schedule.disable\`
+- \`schedule.pause\`
+- \`schedule.resume\`
+- \`schedule.update\`
+- \`schedule.cancel\`
+- \`schedule.run_now\`
+- \`schedule.skip_next\`
+- \`schedule.get_next_run\`
+- \`schedule.history\`
+
+### 3. Time language understanding
+
+Absolute:
+- "امروز ساعت 8"
+- "فردا 9 صبح"
+- "جمعه ساعت 4"
+- "2026/10/20 ساعت 18"
+- "ساعت هشت و نیم"
+
+Relative:
+- "20 دقیقه دیگه"
+- "دو ساعت دیگه"
+- "نیم ساعت بعد"
+- "یه ربع دیگه"
+- "بعد از 5 دقیقه"
+
+Dayparts:
+- صبح
+- ظهر
+- عصر
+- شب
+- نیمه‌شب
+
+Recurring:
+- "هر روز"
+- "هر شب"
+- "هر دو ساعت"
+- "هر جمعه"
+- "روزهای کاری"
+- "آخر هفته"
+- "اول هر ماه"
+- "هر 30 دقیقه"
+
+TemporalLanguageAgent must normalize local timezone and daylight-saving behavior.
+
+### 4. Scheduled messaging
+
+Canonical:
+- \`schedule.message.send\`
+- \`schedule.message.forward\`
+- \`schedule.message.reply\`
+
+Examples:
+- "ساعت 10 اینو برای علی بفرست"
+- "فردا صبح فایل PDF رو تو گروه کار بفرست"
+- "این پیام ساعت 6 تو WhatsApp ارسال شه"
+- "جمعه اینو تو Telegram فوروارد کن"
+- "سر ساعت 8 بهش بگو رسیدم"
+- "این رو الآن ننویس، فردا بفرست"
+
+Execution plan stores:
+- exact service
+- exact account
+- exact recipient/conversation ID
+- content snapshot or approved dynamic content rule
+- attachments with stable path/fingerprint
+- confirmation policy
+- retry/missed-run policy
+
+Before send:
+- re-verify account/session/recipient
+- re-verify attachment still exists and matches fingerprint
+- ensure job has not already executed
+
+### 5. Scheduled local/system actions
+
+Examples:
+- "نیم ساعت دیگه سیستم رو Lock کن"
+- "ساعت 12 Sleep کن"
+- "فردا 8 Chrome رو باز کن"
+- "هر شب نور رو 20 کن"
+- "هر روز 9 حالت کار رو اجرا کن"
+- "بعد دو ساعت Wi-Fi رو خاموش کن"
+
+Destructive/high-impact actions like shutdown/restart/delete require appropriate stored permission policy and may need last-moment confirmation depending on user setting.
+
+### 6. Conditional triggers
+
+Canonical triggers:
+- \`trigger.time\`
+- \`trigger.email_received\`
+- \`trigger.message_received\`
+- \`trigger.sender_message\`
+- \`trigger.download_complete\`
+- \`trigger.file_created\`
+- \`trigger.file_changed\`
+- \`trigger.network_online\`
+- \`trigger.network_offline\`
+- \`trigger.battery_below\`
+- \`trigger.battery_above\`
+- \`trigger.power_plugged\`
+- \`trigger.power_unplugged\`
+- \`trigger.app_started\`
+- \`trigger.app_closed\`
+- \`trigger.idle_for\`
+- \`trigger.user_returned\`
+- \`trigger.system_wake\`
+- \`trigger.system_login\`
+- \`trigger.web_condition\`
+
+Examples:
+- "وقتی Gmail از X ایمیل گرفت بهم بگو"
+- "وقتی علی Telegram پیام داد بخونش"
+- "وقتی دانلود تموم شد بازش کن"
+- "وقتی اینترنت برگشت پیام رو بفرست"
+- "وقتی باتری زیر 20 رفت نور رو 30 کن"
+- "وقتی VS Code باز شد پروژه Maria رو باز کن"
+- "وقتی 2 ساعت بیکار بودم صفحه رو Lock کن"
+
+### 7. Condition logic
+
+Support:
+- AND
+- OR
+- NOT
+- threshold
+- debounce
+- cooldown
+- duration
+- count
+- time window
+
+Examples:
+- "اگر اینترنت وصل شد و ساعت قبل 11 شب بود، پیام رو بفرست"
+- "اگر باتری زیر 20 بود و شارژر وصل نبود Battery Saver روشن کن"
+- "اگه سه بار این خطا تکرار شد بهم خبر بده"
+- "فقط روزهای کاری"
+
+Canonical condition tree:
+- trigger
+- predicates
+- action
+- retry
+- cooldown
+- expiry
+
+### 8. Durable jobs
+
+Scheduled jobs must survive:
+- MARIA UI restart
+- Windows login/logout where allowed
+- machine restart
+- temporary network loss
+- app crash
+
+DurableJobStore persists:
+- job_id
+- owner/user
+- created_at
+- timezone
+- schedule
+- trigger
+- condition tree
+- normalized actions
+- exact targets
+- risk level
+- permission snapshot/reference
+- retry policy
+- missed-run policy
+- idempotency key
+- last_run
+- next_run
+- result history
+- enabled state
+
+Secrets are never stored in job payloads.
+
+### 9. Missed-run policy
+
+Per job:
+- skip
+- run_immediately_on_resume
+- ask_user
+- run_within_grace_window
+- reschedule_next
+
+Examples:
+- message scheduled 8:00, PC off until 8:20:
+  - user can choose "اگر تا 30 دقیقه دیر شد بفرست، بعدش نه"
+- shutdown scheduled while PC off:
+  - normally skip
+- reminder:
+  - show on next resume
+
+### 10. Offline/online-aware queue
+
+If scheduled action needs internet:
+- check connectivity
+- if offline, apply policy:
+  - wait until online within deadline
+  - retry
+  - notify failure
+  - skip after expiry
+
+Example:
+"ساعت 9 پیام رو بفرست؛ اگه اینترنت نبود وقتی وصل شد تا قبل 10 بفرست."
+
+This compiles into:
+time trigger at 09:00
+AND online condition
+deadline 10:00
+retry/event wait
+single idempotent send
+
+### 11. Idempotency / duplicate protection
+
+Critical for external actions.
+
+Every scheduled side-effect action gets an idempotency key.
+
+Before execution:
+- check whether already completed
+- verify target/service state
+- ensure retries cannot send duplicate messages/files
+
+Examples:
+- app crashed after send but before local receipt:
+  - verify conversation before retry
+- network timeout:
+  - do not blindly resend
+
+### 12. Permission persistence
+
+Scheduling an action does not mean unlimited future permission.
+
+Permission record includes:
+- exact action family
+- exact target/service/account
+- schedule scope
+- expiry
+- whether background execution is allowed
+- whether confirmation at execution time is required
+
+Examples:
+- "هر روز 9 به گروه کار گزارش بفرست"
+=> recurring permission scoped to that group/report workflow.
+
+It does NOT authorize sending arbitrary messages to other contacts.
+
+### 13. Scheduled AI/web-app workflows
+
+Examples:
+- "هر صبح 9 ChatGPT رو باز کن و این Prompt رو بفرست"
+- "هر شب جواب‌های امروز Claude رو خلاصه کن"
+- "ساعت 6 DeepSeek رو باز کن و این فایل رو تحلیل کن"
+
+Rules:
+- account/session verified at runtime
+- dynamic web pages handled by adapter
+- prompt content snapshot/dynamic source defined
+- output can be routed to note/message/email with separate permissions
+- failures do not silently cascade into wrong accounts
+
+### 14. Scheduled routines
+
+Canonical:
+- \`routine.create\`
+- \`routine.schedule\`
+- \`routine.run\`
+- \`routine.pause\`
+- \`routine.cancel\`
+- \`routine.update\`
+
+Examples:
+"هر روز 8 حالت کار"
+=> open apps, arrange windows, set volume/display, open project, check mail.
+
+"شب بخیر ساعت 12"
+=> summarize pending tasks, lower brightness, quiet notifications, pause media, optional lock/sleep.
+
+Each sub-action:
+- independently verified
+- dependency-aware
+- partial failure reported
+
+### 15. Retry policy
+
+Fields:
+- max_attempts
+- retry_delay
+- exponential_backoff
+- retryable_error_classes
+- deadline
+- jitter
+- fallback_action
+
+No infinite retry loops.
+
+External message send:
+- conservative retry + duplicate verification.
+
+Local reversible action:
+- may retry once or a few times based on adapter.
+
+### 16. Job status/result
+
+States:
+- scheduled
+- waiting_for_condition
+- running
+- succeeded_verified
+- succeeded_unverified
+- partial
+- failed_retryable
+- failed_terminal
+- skipped
+- expired
+- canceled
+- missed
+- waiting_for_user
+- waiting_for_network
+- waiting_for_account_session
+
+### 17. User control
+
+Natural commands:
+- "چه کار زمان‌بندی شده دارم"
+- "کار ساعت 8 رو حذف کن"
+- "فقط امشب اجرا نشه"
+- "از فردا دوباره فعالش کن"
+- "زمانشو بکن 9"
+- "همین الآن اجراش کن"
+- "آخرین بار کی اجرا شد"
+- "چرا اجرا نشد"
+- "لاگش رو نشون بده"
+
+Every job is inspectable/editable/cancelable.
+
+### 18. Notifications
+
+Before/after behavior can be configured:
+- notify before execution
+- notify only on failure
+- notify on success
+- silent success
+- ask confirmation before high-impact action
+
+Example:
+"پیام‌های زمان‌بندی‌شده رو بی‌سروصدا بفرست، فقط اگه نشد بگو."
+
+### 19. Scheduler architecture
+
+#### SchedulerCore
+Resolves next run and durable state.
+
+#### TemporalLanguageAgent
+Parses Persian natural-language time.
+
+#### DurableJobStore
+Crash/restart-safe persistence.
+
+#### TriggerEngine
+Consumes EventBus events.
+
+#### ConditionEvaluator
+Evaluates AND/OR/time/threshold logic.
+
+#### ScheduledActionPlanner
+Stores normalized Skill calls, not raw natural language.
+
+#### PermissionSnapshotManager
+Scopes background permission.
+
+#### IdempotencyGuard
+Prevents duplicate side effects.
+
+#### RetryManager
+Retries safely.
+
+#### WakeResumeCoordinator
+Handles missed jobs after resume/login.
+
+#### ScheduledActionVerifier
+Verifies each actual outcome.
+
+#### SchedulerNotificationReporter
+Reports failures/success according to policy.
+
+#### SchedulerAuditLog
+Stores execution history, redacted.
+
+### 20. Windows integration
+
+Potential mechanisms:
+- MARIA always-running background service/process
+- Windows Task Scheduler for wake/login/recovery bootstrap where appropriate
+- event-driven watchers for file/network/power/session changes
+- connector event streams for Gmail/messages
+- persistent local database for jobs
+
+Do not create hundreds of raw Windows scheduled tasks for every tiny action if MARIA's own scheduler can manage them reliably; Windows Task Scheduler may act as bootstrap/failsafe.
+
+### 21. Language packs
+
+Critical scheduling intents target **1200–1500 examples each**:
+- schedule.create_once
+- schedule.create_recurring
+- schedule.create_conditional
+- schedule.message.send
+- schedule.update
+- schedule.cancel
+- trigger.email_received
+- trigger.message_received
+- trigger.network_online
+- trigger.battery_below
+- routine.schedule
+
+Include:
+- Persian calendar-like phrasing
+- colloquial time
+- "یه ربع دیگه"
+- "سر ساعت"
+- "فردا صبح"
+- "شب"
+- recurring
+- until/deadline
+- exception dates
+- correction
+- "نه فردا، پس‌فردا"
+- time ambiguity
+- AM/PM ambiguity
+- timezone
+- daylight saving
+- missed-run
+- online/offline
+- duplicate prevention
+- conditional AND/OR
+- cancellation
+- pause/resume
+- hard negatives vs reminder-only
+
+Family target: tens of thousands of diverse examples.
+
+### 22. Hard-negative examples
+
+"20 دقیقه دیگه یادم بنداز پیام بدم"
+=> Reminder, not auto-send.
+
+"20 دقیقه دیگه پیام رو بفرست"
+=> Scheduled send.
+
+"ساعت 8 بهم بگو کامپیوتر رو خاموش کنم"
+=> Reminder.
+
+"ساعت 8 کامپیوتر رو خاموش کن"
+=> Scheduled system action.
+
+"اگه علی پیام داد بگو"
+=> Notification watch.
+
+"اگه علی پیام داد جواب بده باشه"
+=> Conditional external message action.
+
+These distinctions are mandatory.
+
+### 23. Test matrix
+
+Time parsing:
+- exact time
+- relative
+- tomorrow
+- recurring weekday
+- DST/timezone
+- ambiguous "صبح"
+
+Messaging:
+- scheduled text
+- scheduled file
+- account changed
+- recipient missing
+- network offline
+- duplicate retry protection
+- missed execution
+
+Conditions:
+- battery
+- network
+- email sender
+- message sender
+- download complete
+- app open
+- idle
+- multi-condition AND/OR
+
+Persistence:
+- MARIA restart
+- Windows reboot
+- login
+- sleep/wake
+
+Permissions:
+- high-impact confirmation
+- expired permission
+- target changed
+
+Verification:
+- action actually occurred
+- partial routine
+- retry
+- terminal failure
+
+### 24. Acceptance criteria
+
+1. schedule survives restart/reboot.
+2. time parsing handles Persian colloquial language robustly.
+3. reminder vs auto-action is never conflated.
+4. scheduled external actions use exact target/account/service.
+5. duplicate sends are prevented.
+6. offline jobs follow explicit missed/retry/deadline policy.
+7. conditions are event-driven where possible.
+8. each job is inspectable/editable/cancelable.
+9. permissions are scope-limited and revocable.
+10. high-impact actions obey confirmation policy.
+11. every execution has verification and audit history.
+12. critical scheduling intents reach 1200–1500 examples.
+13. real suspend/reboot/network-loss tests pass before IMPLEMENTED.
+
+---
 
