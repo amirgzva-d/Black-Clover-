@@ -206,3 +206,78 @@ body.chat-v3 .folder-entry>button:not(:first-child){opacity:.65}
 
 body.chat-v3 .action-dialog #actionDialogTextarea{resize:vertical;min-height:90px;max-height:280px;background:#1e1e1e;color:#eee;border:1px solid #555;border-radius:10px;padding:12px;line-height:1.7;font-size:12px}
 body.chat-v3 .action-dialog #actionDialogTextarea[hidden]{display:none}
+
+/* MARIA 2026 chat polish — clean, compact, responsive, high contrast */
+body.chat-v3{--m-bg:#202123;--m-aside:#171819;--m-panel:#2e2f32;--m-hover:#35363a;--m-line:#404145;--m-text:#f1f1f2;--m-muted:#afb0b4;--m-dim:#85878d}
+body.chat-v3 #app .pro-shell{border:1px solid #37383a;border-radius:15px;box-shadow:0 24px 80px #0006}
+body.chat-v3 .sidebar{background:linear-gradient(160deg,#191a1b,#141516 86%);padding-top:15px}
+body.chat-v3 .brand{margin-bottom:17px}
+body.chat-v3 .brand-icon{background:radial-gradient(circle at 30% 25%,#fff,#d7e3dd 70%);color:#1d2822;box-shadow:0 0 16px #e1f7e012}
+body.chat-v3 .brand strong{letter-spacing:.9px;font-weight:750}
+body.chat-v3 .new-chat{background:#232526;border:1px solid #393a3b;min-height:41px;font-weight:600;transition:background .15s,border-color .15s}
+body.chat-v3 .new-chat:hover{background:#343636;border-color:#555}
+body.chat-v3 .search-box{margin-top:11px;background:#202123;border:1px solid #303233}
+body.chat-v3 .search-box:focus-within{border-color:#69736d}
+body.chat-v3 .chat-entry.selected{background:#333537}
+body.chat-v3 .chat-entry>button:first-child span{font-size:12px}
+body.chat-v3 .chat-entry:hover{background:#2d2f30}
+body.chat-v3 .projects-label{border-top:1px solid #2a2a2a;padding-top:10px;margin-top:18px}
+body.chat-v3 .side-foot{margin-top:8px}
+body.chat-v3 .workspace{background:#202123}
+body.chat-v3 .topbar{background:#202123;border-bottom:1px solid rgba(255,255,255,.035)}
+body.chat-v3 .top-left{gap:10px}
+body.chat-v3 .app-title{font-weight:720;letter-spacing:.6px;font-size:15px}
+body.chat-v3 #modelSelect{font-size:12px;font-weight:550;color:#dedede;padding:0 8px}
+body.chat-v3 #modelSelect:focus{outline:1px solid #666}
+body.chat-v3 .account-chip{border-color:#515154;background:#2b2c30;font-weight:600;transition:background .15s}
+body.chat-v3 .account-chip.online{border-color:#386f4f;background:#223a2e}
+body.chat-v3 .account-chip.pending{border-color:#8f7446;background:#453923}
+body.chat-v3 .account-chip.pending .state-dot{background:#f2c66d;box-shadow:0 0 0 4px #f2c66d11;animation:mariaPulse 1.4s infinite}
+body.chat-v3 .icon-btn{transition:color .13s,background .13s,transform .13s}
+body.chat-v3 .icon-btn:hover{transform:translateY(-1px)}
+body.chat-v3 .subbar{background:#202123;border-color:#2e2f31;padding-left:19px;padding-right:19px}
+body.chat-v3 .subbar #chatTitle{font-size:12px;font-weight:600}
+body.chat-v3 .subbar #status{margin-right:auto;max-width:180px;overflow:hidden;text-overflow:ellipsis}
+body.chat-v3 .messages{scroll-behavior:smooth;padding-top:30px!important}
+body.chat-v3 .message{margin-bottom:27px}
+body.chat-v3 .message.assistant .bubble{max-width:780px}
+body.chat-v3 .message.user .bubble{background:#313236;border:1px solid #3c3d40;box-shadow:0 3px 9px #0001;border-radius:18px 18px 6px 18px}
+body.chat-v3 .message.assistant .bubble :is(ul,ol){padding-right:24px}
+body.chat-v3 .message.assistant .bubble blockquote{padding:8px 15px;border-right:3px solid #7bb28b;background:#292e2b;border-radius:7px}
+body.chat-v3 .bubble pre{border-color:#444;background:#17181a}
+body.chat-v3 .message-actions{opacity:.75}
+body.chat-v3 .message-actions button:hover{background:#414349}
+body.chat-v3 .welcome-symbol{color:#dde9de;filter:drop-shadow(0 0 15px #9ab79c3a)}
+body.chat-v3 .welcome h1{font-size:clamp(20px,3vw,28px);font-weight:530;letter-spacing:-.4px}
+body.chat-v3 .welcome p{max-width:530px}
+body.chat-v3 .ideas{grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+body.chat-v3 .ideas button{border:1px solid #414347;background:#292a2d;box-shadow:0 4px 15px #0001;transition:transform .16s,background .16s,border .16s}
+body.chat-v3 .ideas button:hover{background:#36373b;border-color:#6b6d70;transform:translateY(-2px)}
+body.chat-v3 .composer-wrap{padding-bottom:14px}
+body.chat-v3 .composer{background:#303135;border:1px solid #494b50;border-radius:25px;box-shadow:0 8px 30px #0002;transition:border-color .15s,box-shadow .15s}
+body.chat-v3 .composer:focus-within{border-color:#83878c;box-shadow:0 7px 35px #0004}
+body.chat-v3 .tool-chip{border-radius:12px}
+body.chat-v3 .tool-chip.active{background:#404944;color:#d6f5e3}
+body.chat-v3 .send-btn{background:#f0f0f0;box-shadow:0 3px 8px #0002}
+body.chat-v3 .send-btn:hover{background:#e1ffec}
+body.chat-v3 .connect-banner{background:#2d332f;border-bottom:1px solid #455047}
+body.chat-v3 .connect-banner button{background:#dfeee2;color:#223c2b;border-color:#dfeee2}
+body.chat-v3 .settings-panel{border-color:#54565a;background:#242528;box-shadow:0 30px 100px #000b}
+body.chat-v3 .settings-panel>header strong{font-weight:700}
+body.chat-v3 .settings-tabs{gap:15px}
+body.chat-v3 .settings-tabs button.active{border-bottom-color:#a5d4b6;color:#fff}
+body.chat-v3 .account-identity{background:linear-gradient(135deg,#303438,#2d3032);border:1px solid #414749}
+body.chat-v3 .account-symbol{background:#dcebe0;color:#25412c}
+body.chat-v3 .connection-help{font-size:12px;line-height:1.9;border-right:3px solid #8ba993;padding:9px 12px;background:#303834;border-radius:7px;color:#e0e8e2;margin:0}
+body.chat-v3 .connection-help[hidden]{display:none!important}
+body.chat-v3 .settings-actions button{transition:background .15s,border .15s}
+body.chat-v3 .settings-actions .primary-button{background:#e5f1e8;color:#182a1e;border-color:#e5f1e8}
+body.chat-v3 #cancelChatGPTSignIn{background:#514331;border-color:#836742;color:#f8e6c6}
+body.chat-v3 #testChatGPTConnection{background:#2a4937;border-color:#538168;color:#e1fae9}
+body.chat-v3 #setupRefresh:disabled{opacity:.55;cursor:wait}
+body.chat-v3 .action-dialog{background:#292a2d;border:1px solid #626367;box-shadow:0 25px 90px #000b}
+body.chat-v3 #actionDialogAccept{background:#f2f2f3}
+body.chat-v3 .toast{background:#2d3134;border-color:#69746c;border-radius:12px}
+@media(max-width:960px){body.chat-v3 .ideas{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:700px){body.chat-v3 .ideas{grid-template-columns:1fr}body.chat-v3 .messages{padding:18px 18px!important}body.chat-v3 .composer-wrap{padding:0 13px 12px}body.chat-v3 .account-chip{max-width:130px;overflow:hidden;text-overflow:ellipsis}body.chat-v3 .welcome{gap:9px}body.chat-v3 .welcome h1{font-size:22px}}
+@media(prefers-reduced-motion:reduce){body.chat-v3 *,body.chat-v3 *::before,body.chat-v3 *::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}

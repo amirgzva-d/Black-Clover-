@@ -41,7 +41,7 @@ marked.setOptions({gfm:true,breaks:true});
 const markdown=s=>DOMPurify.sanitize(marked.parse(String(s||'')),{USE_PROFILES:{html:true}});
 const safeUrl=raw=>{try{const u=new URL(raw);return /^https?:$/.test(u.protocol)?u.href:null;}catch{return null;}};
 const api=()=>window.blackClover;
-const state={id:null,chat:null,list:[],folders:[],folder:'all',search:'',model:CHATGPT_AUTO,connected:false,connecting:false,account:null,models:[],sidebar:true,web:false,deep:false,autoRead:localStorage.getItem(VOICE_READ_KEY)==='1'};
+const state={id:null,chat:null,list:[],folders:[],folder:'all',search:'',model:CHATGPT_AUTO,connected:false,connecting:false,account:null,models:[],sidebar:true,web:false,deep:false,autoRead:localStorage.getItem(VOICE_READ_KEY)==='1',checking:false,testing:false};
 let busy=false,cancelled=false,activeChatId=null,streamContent='',activeStream=null,mic=null,toastTimer=null;
 const button=(id,label,ico,extra='')=>'<button type="button" id="'+id+'" class="icon-btn" title="'+esc(label)+'" aria-label="'+esc(label)+'" '+extra+'>'+icon(ico)+'</button>';
 function notice(message){const n=$('#notice');if(!n)return;n.textContent=message;n.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>n.hidden=true,3800);}
@@ -65,12 +65,16 @@ function showDialog({title,description='',value=null,confirmText='ذخیره',da
 }
 function updateAccountUi(){
   const usable=state.connected;
-  const chip=$('#accountChip');if(chip){chip.classList.toggle('online',usable);chip.innerHTML='<span class="state-dot"></span>'+(usable?'ChatGPT · متصل':state.connecting?'در حال اتصال…':'اتصال به ChatGPT');}
-  const label=$('#accountStatus');if(label)label.textContent=usable?'متصل به '+accountName():state.account?.session?.status==='connected'?'وارد شده‌اید؛ اجازه مصرف اشتراک داده نشده است':'هنوز به ChatGPT متصل نیستید';
-  const picker=$('#accountPicker');if(picker){const profiles=state.account?.profiles||[];const active=state.account?.session?.profileId||'';picker.innerHTML='<option value="">انتخاب حساب ChatGPT</option>'+profiles.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.identity?.email||p.label||'حساب بدون نام')+(p.sharing?' · فعال':' · نیازمند ورود')+'</option>').join('');picker.value=profiles.some(p=>p.id===active)?active:'';picker.disabled=state.connecting||profiles.length===0;}
-  const addAccount=$('#addChatGPTAccount');if(addAccount)addAccount.disabled=state.connecting;
-  const details=$('#accountDetails');if(details)details.textContent=state.account?.session?.error?.message||(usable?'پاسخ‌ها از سهمیه مجاز حساب ChatGPT شما استفاده می‌کنند.':'برای شروع گفتگو، با حساب خود در مرورگر وارد شوید و دسترسی را تأیید کنید.');
-  const connect=$('#connectChatGPT');if(connect){connect.hidden=usable;connect.disabled=state.connecting;connect.textContent=state.connecting?'منتظر تأیید در مرورگر…':'Continue with ChatGPT';}
+  const s=state.account?.session||{},inProgress=state.connecting||s.status==='connecting';
+  const chip=$('#accountChip');if(chip){chip.classList.toggle('online',usable);chip.classList.toggle('pending',!usable&&inProgress);chip.innerHTML='<span class="state-dot"></span>'+(usable?'ChatGPT · متصل':inProgress?'ChatGPT · در حال اتصال':'اتصال به ChatGPT');}
+  const label=$('#accountStatus');if(label)label.textContent=usable?'متصل به '+accountName():inProgress?'ورود در مرورگر هنوز کامل نشده است':s.status==='connected'?'حساب شناسایی شد، ولی مجوز استفاده از سهمیه فعال نیست':s.status==='reauth_required'?'اتصال منقضی شده؛ دوباره وارد شو':'حساب ChatGPT هنوز متصل نیست';
+  const picker=$('#accountPicker');if(picker){const profiles=state.account?.profiles||[];const active=s.profileId||'';picker.innerHTML='<option value="">انتخاب حساب ChatGPT</option>'+profiles.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.identity?.email||p.label||'حساب بدون نام')+(p.sharing?' · مجاز':p.status==='connecting'?' · در حال اتصال':' · نیازمند ورود')+'</option>').join('');picker.value=profiles.some(p=>p.id===active)?active:'';picker.disabled=inProgress||profiles.length===0;}
+  const addAccount=$('#addChatGPTAccount');if(addAccount)addAccount.disabled=inProgress;
+  const details=$('#accountDetails');if(details)details.textContent=s.error?.message||(usable?'مجوز استفاده از ChatGPT فعال است. برای بررسی واقعی یک پاسخ، دکمه «آزمایش پاسخ» را بزن.':inProgress?'مرورگر را بررسی کن: باید دسترسی را تأیید کنی و صفحه به 127.0.0.1 برگردد. فقط وارد شدن به ایمیل کافی نیست.':s.status==='connected'?'در تنظیمات حساب روی Continue with ChatGPT بزن و اجازه استفاده از سهمیه را تأیید کن.':'برای اتصال، دکمه ورود را بزن و در صفحه رسمی OpenAI مجوز را تأیید کن.');
+  const hint=$('#connectionHelp');if(hint){hint.hidden=usable;hint.textContent=inProgress?'در حال انتظار برای پاسخ صفحه ورود… اگر پنجره مرورگر بسته شده یا گیر کرده، «لغو ورود» را بزن و دوباره امتحان کن.':s.status==='connected'?'ورود هویتی انجام شده، اما اختیار استفاده از سهمیه ChatGPT صادر نشده است. با تأیید مجدد می‌توان آن را فعال کرد.':s.error?.message?'پیام بالا از سرویس ورود است. برای تلاش دوباره ابتدا وضعیت فعلی را بررسی کن.':'برای امنیت، ایمیل و رمز خود را فقط در صفحه رسمی OpenAI وارد کن.';}
+  const cancel=$('#cancelChatGPTSignIn');if(cancel)cancel.hidden=!inProgress;
+  const test=$('#testChatGPTConnection');if(test){test.hidden=!usable;test.disabled=state.testing;}
+  const connect=$('#connectChatGPT');if(connect){connect.hidden=usable||inProgress;connect.disabled=inProgress;connect.textContent=s.status==='connected'?'تأیید مجوز استفاده از ChatGPT':'Continue with ChatGPT';}
   const disconnect=$('#disconnectChatGPT');if(disconnect)disconnect.hidden=!usable;
   const usage=$('#chatgptUsage');if(usage)usage.hidden=!usable;
   const model=$('#modelSelect');if(model)model.disabled=!usable||state.models.length===0;
@@ -88,13 +92,27 @@ async function syncAccount(fresh=false){
   }catch(e){state.connected=false;state.account={session:{status:'disconnected',error:{message:String(e.message||e)}}};state.models=[];updateAccountUi();}
 }
 async function connectChatGPT(){
-  if(state.connecting)return;
+  if(state.connecting||state.account?.session?.status==='connecting'){notice('ورود قبلی هنوز در جریان است. ابتدا آن را تکمیل یا لغو کن.');return;}
   state.connecting=true;updateAccountUi();setStatus('منتظر تأیید حساب در مرورگر…');
   try{
     await api().signInChatGPT({...(state.account?.session?.profileId?{profileId:state.account.session.profileId}:{}),reconsent:state.account?.session?.status==='connected'});
     await syncAccount(true);
     notice(state.connected?'حساب ChatGPT متصل شد.':'اتصال انجام شد، اما مجوز استفاده از سهمیه فعال نیست.');
   }catch(e){withError(e);await syncAccount();}finally{state.connecting=false;updateAccountUi();setStatus('آماده');}
+}
+async function cancelChatGPTSignIn(){
+  try{await api().cancelChatGPTSignIn();notice('تلاش قبلی لغو شد. حالا می‌توانی دوباره وارد شوی.');}
+  catch(e){withError(e)}finally{await syncAccount();}
+}
+async function checkAccountStatus(){
+  if(state.checking)return;state.checking=true;const btn=$('#setupRefresh');btn.disabled=true;btn.textContent='در حال بررسی…';
+  try{await syncAccount(true);const s=state.account?.session||{};notice(state.connected?'حساب آماده است.':s.status==='connecting'?'ورود هنوز تکمیل نشده؛ مرورگر و تأیید مجوز را بررسی کن.':s.status==='connected'?'حساب شناسایی شد؛ مجوز استفاده از ChatGPT هنوز فعال نیست.':'اتصال فعال نیست. برای اتصال دوباره وارد شو.');}
+  catch(e){withError(e)}finally{state.checking=false;btn.disabled=false;btn.textContent='بررسی وضعیت';}
+}
+async function testConnection(){
+  if(state.testing)return;state.testing=true;updateAccountUi();setStatus('آزمایش پاسخ ChatGPT…');
+  try{const result=await api().testChatGPTConnection();if(result?.ok)notice('پاسخ واقعی از '+String(result.model||'ChatGPT')+' دریافت شد ('+Math.round(result.latencyMs/1000)+' ثانیه).');else notice('آزمایش پاسخ ناموفق بود: '+String(result?.error||'خطای نامشخص'));}
+  catch(e){withError(e)}finally{state.testing=false;updateAccountUi();setStatus('آماده');}
 }
 async function addChatGPTAccount(){
   if(state.connecting)return;state.connecting=true;updateAccountUi();
@@ -256,7 +274,7 @@ function template(){
     '<section id="panel-account" class="settings-content">'+
       '<div class="account-identity"><div class="account-symbol">'+icon('spark',22)+'</div><div><strong id="accountStatus">متصل نیست</strong><p id="accountDetails">با ChatGPT وارد شو تا گفتگو فعال شود.</p></div></div>'+
       '<div class="account-switcher"><label for="accountPicker">حساب فعال</label><select id="accountPicker" aria-label="انتخاب حساب ChatGPT"><option value="">انتخاب حساب ChatGPT</option></select><button id="addChatGPTAccount" type="button">'+icon('plus',16)+' افزودن حساب دیگر</button></div>'+
-      '<div class="settings-actions"><button id="connectChatGPT" class="primary-button">Continue with ChatGPT</button><button id="chatgptUsage" hidden>نمایش مصرف و محدودیت</button><button id="disconnectChatGPT" hidden>قطع اتصال</button><button id="setupRefresh">بررسی وضعیت</button></div>'+
+      '<p id="connectionHelp" class="connection-help" role="status">برای ورود، حساب OpenAI مورد نظرت را در مرورگر انتخاب کن.</p><div class="settings-actions"><button id="connectChatGPT" class="primary-button">Continue with ChatGPT</button><button id="cancelChatGPTSignIn" hidden>لغو ورود معلق</button><button id="testChatGPTConnection" hidden>آزمایش پاسخ واقعی</button><button id="chatgptUsage" hidden>نمایش مصرف و محدودیت</button><button id="disconnectChatGPT" hidden>قطع اتصال</button><button id="setupRefresh">بررسی وضعیت</button></div>'+
       '<p class="settings-note">ورود در مرورگر رسمی انجام می‌شود. حساب Chrome به‌طور خودکار انتخاب نمی‌شود؛ در صفحه ورود حساب موردنظرت را انتخاب کن. این اتصال ممکن است محدودیت سهمیه داشته باشد.</p>'+
     '</section>'+
     '<section id="panel-voice" class="settings-content" hidden>'+
@@ -332,11 +350,13 @@ export async function mountChatSurface(){
   window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#setup').hidden){$('#setup').hidden=true;}});
   for(const tab of ['account','voice','privacy'])$('#tab-'+tab).onclick=()=>chooseSettingsTab(tab);
   $('#connectChatGPT').onclick=connectChatGPT;
+  $('#cancelChatGPTSignIn').onclick=cancelChatGPTSignIn;
+  $('#testChatGPTConnection').onclick=testConnection;
   $('#addChatGPTAccount').onclick=addChatGPTAccount;
   $('#accountPicker').onchange=e=>switchChatGPTAccount(e.target.value);
   $('#disconnectChatGPT').onclick=disconnectChatGPT;
   $('#chatgptUsage').onclick=()=>api().openChatGPTUsage().catch(withError);
-  $('#setupRefresh').onclick=async()=>{await syncAccount(true);notice('وضعیت اتصال به‌روزرسانی شد.');};
+  $('#setupRefresh').onclick=checkAccountStatus;
   $('#modelSelect').onchange=e=>{state.model=e.target.value;notice('مدل ChatGPT انتخاب شد.');};
   $('#voiceEnabled').onchange=e=>voice.setEnabled(e.target.checked);
   $('#voiceAutoRead').onchange=e=>{state.autoRead=e.target.checked;localStorage.setItem(VOICE_READ_KEY,state.autoRead?'1':'0');$('#autoSpeak').classList.toggle('active',state.autoRead);};
@@ -355,5 +375,7 @@ export async function mountChatSurface(){
   api().onFocusInput?.(()=>$('#input').focus());
   api().onOpenSettings?.(payload=>openSettings(payload?.section==='voice'?'voice':'account'));
   api().onPrefillPrompt?.(payload=>{const text=payload?.text||'';if(text){$('#input').value=text;grow();if(payload.submit)sendMessage(text);}});
+  const poll=setInterval(()=>{if(state.account?.session?.status==='connecting'&&!state.connecting)syncAccount().catch(()=>{});},3000);
+  window.addEventListener('beforeunload',()=>clearInterval(poll),{once:true});
   busyUI();grow();$('#input').focus();
 }
