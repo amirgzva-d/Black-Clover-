@@ -32,8 +32,8 @@ Global requirements:
 |---|---|---|---|
 | 01 | Audio / Media | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
 | 02 | Display / Brightness | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
-| 03 | Files / Folders | NEXT | WAITING |
-| 04 | App Install / Update | QUEUED | WAITING |
+| 03 | Files / Folders | DESIGN COMPLETE v1 | WAITING |
+| 04 | App Install / Update | NEXT | WAITING |
 | 05 | Windows Settings | QUEUED | WAITING |
 | 06 | Troubleshooting / Repair | QUEUED | WAITING |
 | 07 | Web Search / Research | QUEUED | WAITING |
@@ -2402,3 +2402,1043 @@ Validate the local implementation against current Microsoft documentation for:
 - SetDisplayConfig
 
 Canonical MARIA intents remain stable even if the Windows adapter implementation changes.
+
+
+---
+
+## 03 — Files / Folders / Local Storage Intelligence
+
+**Status:** DESIGN COMPLETE v1 — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`file.*\`, \`folder.*\`, \`path.*\`, \`storage.*\`  
+**Owner modules:** Brain / Intent Router / Context Engine / File Resolver / File Operation Adapter / Content Reader / Verifier / Undo Manager  
+**Offline capable:** yes for local/network-mounted storage available to Windows  
+**Risk class:** L0-L5 depending on read/write/delete/protected-path operation  
+**Primary platform:** Windows
+
+### 1. Purpose
+
+MARIA must understand natural requests about local files and folders without relying on exact command strings.
+
+Core scope:
+- create folders/files
+- open/reveal files and folders
+- search/find by name, type, extension, path, date, size, content and context
+- rename
+- copy
+- move
+- duplicate
+- delete to Recycle Bin
+- permanent delete only with strict confirmation
+- restore when possible
+- copy path/name/content
+- read supported text-like files
+- open with a requested application
+- show properties
+- select/refer to current Explorer selection
+- resolve Desktop/Downloads/Documents and user aliases
+- bulk operations
+- conflict handling
+- ordering/filtering
+- safe folder organization
+- archive hand-off to archive skill
+- content/file hand-off to Office/Translation/Browser/etc.
+- typo/STT/context handling
+- verification/undo
+- multi-step plans and routines
+
+Examples are language data, not an exact-string if/else table.
+
+---
+
+### 2. Semantic object model
+
+Every file request resolves into:
+- operation
+- one or more source items
+- optional destination
+- optional new name
+- optional application
+- optional content query
+- optional scope/location
+- optional filters
+- conflict policy
+- risk/permission
+- context reference
+- verification rule
+- undo strategy
+
+Canonical item types:
+- file
+- folder
+- shortcut
+- archive
+- drive
+- removable drive
+- network path
+- selected Explorer item
+- recent item
+- downloaded item
+- generated item
+- unknown/reparse-point item
+
+---
+
+### 3. Canonical intents
+
+#### 3.1 Create
+- \`folder.create\`
+- \`folder.create_nested\`
+- \`file.create_empty\`
+- \`file.create_text\`
+
+#### 3.2 Open / reveal / launch
+- \`file.open\`
+- \`file.open_with\`
+- \`folder.open\`
+- \`file.reveal_in_explorer\`
+- \`path.open\`
+
+#### 3.3 Search / resolve
+- \`file.find\`
+- \`folder.find\`
+- \`file.find_recent\`
+- \`file.find_downloaded\`
+- \`file.find_by_type\`
+- \`file.find_by_content\`
+- \`file.find_by_date\`
+- \`file.find_by_size\`
+- \`path.resolve_alias\`
+
+#### 3.4 Rename
+- \`file.rename\`
+- \`folder.rename\`
+- \`items.rename_batch\`
+
+#### 3.5 Copy / duplicate
+- \`file.copy\`
+- \`folder.copy\`
+- \`items.copy\`
+- \`file.duplicate\`
+- \`folder.duplicate\`
+
+#### 3.6 Move
+- \`file.move\`
+- \`folder.move\`
+- \`items.move\`
+
+#### 3.7 Delete / restore
+- \`file.delete_recycle\`
+- \`folder.delete_recycle\`
+- \`items.delete_recycle\`
+- \`file.delete_permanent\`
+- \`folder.delete_permanent\`
+- \`items.delete_permanent\`
+- \`recycle.restore_last\`
+- \`recycle.open\`
+
+#### 3.8 Read / copy information
+- \`file.read_text\`
+- \`file.copy_content\`
+- \`file.copy_path\`
+- \`file.copy_name\`
+- \`file.get_properties\`
+- \`file.get_location\`
+- \`file.get_size\`
+- \`file.get_modified_time\`
+
+#### 3.9 Explorer / selection
+- \`explorer.get_selection\`
+- \`explorer.open_location\`
+- \`explorer.refresh\`
+- \`explorer.select_item\`
+
+#### 3.10 Organization
+- \`folder.list\`
+- \`folder.sort_view\`
+- \`folder.organize_items\`
+- \`folder.group_items\`
+- \`items.filter\`
+
+#### 3.11 Archive hand-off
+- \`archive.zip\`
+- \`archive.extract\`
+- \`archive.inspect\`
+
+The archive executor belongs to Capability 18, but File Brain must understand these requests and route them correctly.
+
+---
+
+### 4. Shared slots / parameters
+
+- \`source_items\`: one or many resolved stable paths/items
+- \`source_reference\`: explicit_path | selected | this | that | last_created | last_downloaded | recent | search_result
+- \`destination\`
+- \`new_name\`
+- \`extension\`
+- \`application\`
+- \`location_scope\`: current_folder | desktop | downloads | documents | drive | all_user_files | explicit_path
+- \`query\`
+- \`content_query\`
+- \`file_type\`
+- \`min_size\`, \`max_size\`
+- \`date_after\`, \`date_before\`
+- \`recursive\`
+- \`include_hidden\`
+- \`include_system\`
+- \`conflict_policy\`: ask | skip | overwrite | rename_copy | merge
+- \`delete_mode\`: recycle | permanent
+- \`sort_by\`: name | type | modified | created | size
+- \`sort_direction\`: asc | desc
+- \`batch_scope\`
+- \`confidence\`
+- \`source\`: voice | text | routine | event
+- \`undo_snapshot_id\`
+
+---
+
+### 5. Create folder/file language
+
+Folder examples:
+- "یه پوشه بساز"
+- "فولدر جدید بساز"
+- "روی دسکتاپ یه پوشه به اسم پروژه بساز"
+- "داخل Downloads پوشه تصاویر درست کن"
+- "تو این پوشه یکی به اسم Backup بساز"
+- "پوشه پروژه/عکس/نهایی رو بساز"
+- "یه فولدر خالی اینجا"
+- "New Folder بساز"
+- "فولدر پروزه درست کن" (typo)
+- "پوشه جدبد" (typo/incomplete)
+
+Text file examples:
+- "یه فایل متنی بساز"
+- "تو این پوشه notes.txt بساز"
+- "این متن رو تو یه فایل ذخیره کن"
+- "یه فایل خالی به اسم test ایجاد کن"
+
+Rules:
+- nested path creation must validate every component.
+- invalid Windows filename characters must be caught.
+- reserved device names must not silently be used.
+- if extension is omitted, do not invent one unless intent clearly implies a text file or learned preference.
+
+---
+
+### 6. Open / reveal / open-with language
+
+Examples:
+- "این فایل رو باز کن"
+- "فایل اکسل رو باز کن"
+- "اون PDF رو بیار"
+- "آخرین فایلی که دانلود کردم باز کن"
+- "پروژه ماریا رو باز کن"
+- "این پوشه رو باز کن"
+- "محل فایل رو نشون بده"
+- "تو اکسپلورر نشونش بده"
+- "فایل رو با VS Code باز کن"
+- "این عکس رو با Photoshop باز کن"
+- "PDF رو با Edge باز کن"
+- "همین رو با برنامه دیگه باز کن"
+- "Open with فتوشاپ"
+- typo/STT: "فایلو باز کون", "اکسل رو واز کن", "وی اس کد بازش"
+
+Semantic distinction:
+- open file => launch associated application.
+- reveal => open containing folder and select item.
+- open-with => explicit application target.
+- open folder => Explorer/location navigation.
+- "بازش کن" inherits the last resolved item only while context is valid.
+
+---
+
+### 7. Find/Search language
+
+MARIA must support layered search.
+
+#### By name
+- "فایل قرارداد رو پیدا کن"
+- "هرچی اسمش Maria هست پیدا کن"
+- "پوشه پروژه سایت کجاست"
+- "اون فایل که اسمش invoice بود"
+
+#### By type/extension
+- "همه PDFهای این پوشه"
+- "فایل‌های اکسل دسکتاپ"
+- "عکس‌های PNG"
+- "ویدئوهای mp4"
+- "فقط فایل‌های py پروژه"
+
+#### By date
+- "فایل‌های امروز"
+- "چیزی که دیروز دانلود کردم"
+- "آخرین PDF"
+- "فایل‌های هفته قبل"
+- "جدیدترین نسخه پروژه"
+
+#### By size
+- "فایل‌های خیلی حجیم"
+- "بزرگ‌ترین فایل Downloads"
+- "فایل‌های بالای 1 گیگ"
+- "چیزهای بیشتر از 500 مگ"
+
+#### By content
+- "فایلی که داخلش نوشته invoice 2026 رو پیدا کن"
+- "توی پروژه بگرد این تابع کجا نوشته شده"
+- "کدوم txt این شماره رو داره"
+
+#### Contextual
+- "همون فایل اکسل دیروزی"
+- "فایلی که قبل‌تر باز کردیم"
+- "آخرین چیزی که دانلود شد"
+- "این فایلی که سلکت کردم"
+
+Search order may use:
+1. explicit path/scope
+2. selected/current folder
+3. learned project locations
+4. known user folders
+5. Windows indexed search when available
+6. bounded recursive filesystem search
+7. content index/tool when required
+
+Never silently scan the entire machine with an expensive recursive content search when a narrower scope is available.
+
+---
+
+### 8. Rename language
+
+Examples:
+- "اسم این فایل رو عوض کن"
+- "بذارش final.pdf"
+- "اسم پوشه رو پروژه جدید کن"
+- "این رو Rename کن به backup"
+- "پسوند رو دست نزن فقط اسمش عوض شه"
+- "اسم همه اینا رو مرتب کن"
+- "به اول اسم این فایل‌ها 2026 اضافه کن"
+- "شماره‌گذاریشون کن"
+- "فقط این یکی اسمش بشه logo-final"
+- typo: "اسمشو عوض کون", "رینیمش کن", "تقییر اسم"
+
+Rules:
+- preserve extension by default when user changes "name" unless they explicitly target extension.
+- extension changes are a separate semantic mutation and may affect usability.
+- batch rename requires preview when pattern can affect many items.
+- collisions must use conflict policy; never silently overwrite another item because of rename.
+
+---
+
+### 9. Copy / duplicate language
+
+Examples:
+- "این فایل رو کپی کن"
+- "یه کپی ازش بگیر"
+- "از این پوشه بکاپ بگیر"
+- "این رو کپی کن تو دسکتاپ"
+- "همه این فایل‌ها رو ببر یه نسخه تو Backup"
+- "این فایل بمونه، یه نسخه‌ش بره اونجا"
+- "Duplicate کن"
+- "یه نسخه با اسم copy بساز"
+- "فقط همین سه تا رو کپی کن"
+- "از پوشه پروژه یه نسخه تو درایو D بساز"
+
+Semantic distinction:
+- copy/duplicate leaves source in place.
+- move removes source from original location after successful transfer.
+- "ببر یه نسخه" => copy, not move.
+- "منتقل کن" => move.
+- "بکاپ بگیر" may mean copy/snapshot/archive; resolve based on destination/context.
+
+Conflict policies:
+- ask
+- skip
+- overwrite only with explicit permission
+- rename-copy ("file (2).ext")
+- merge folders after policy evaluation
+
+For large operations, progress must be observable and cancellation supported when adapter permits.
+
+---
+
+### 10. Move language
+
+Examples:
+- "این رو ببر Downloads"
+- "منتقلش کن دسکتاپ"
+- "این پوشه رو جابجا کن"
+- "فایل‌های انتخاب شده برن تو Archive"
+- "این فایل رو از C ببر D"
+- "همه عکس‌ها رو ببر پوشه Images"
+- "نه کپی نکن، منتقلش کن"
+- "move کن به این مسیر"
+- typo: "جابجا کون", "منتکل کن"
+
+Rules:
+- verify destination copy/create before considering source move complete.
+- cross-volume moves may internally become copy+delete; result must still be verified.
+- moving protected/in-use files requires stricter handling.
+- never move a source into its own descendant path.
+
+---
+
+### 11. Delete / Recycle Bin / permanent delete
+
+#### Recycle delete examples
+- "این فایل رو حذف کن"
+- "بندازش سطل آشغال"
+- "این پوشه رو پاک کن"
+- "این سه تا رو حذف کن"
+- "فایل قدیمی رو بردار"
+- "بفرست Recycle Bin"
+- typo: "هزف کن", "پاکش کون"
+
+Default safety policy:
+- ordinary "حذف/پاک کن" => Recycle Bin when supported.
+- MARIA should prefer reversible deletion for user files.
+
+#### Permanent delete examples
+- "برای همیشه پاکش کن"
+- "کامل حذف کن"
+- "Permanent delete"
+- "از سطل هم ردش کن"
+- "طوری پاک کن که نره Recycle Bin"
+
+Permanent deletion is high risk:
+- explicit confirmation required for non-trivial items.
+- show exact item(s), count and approximate total size before bulk permanent deletion.
+- protected/system/project-critical paths require elevated safety checks.
+
+#### Restore examples
+- "برگردونش"
+- "فایل حذف شده رو برگردون"
+- "آخرین چیزی که پاک کردم restore"
+- "از سطل آشغال برش گردون"
+
+Restoration depends on Recycle Bin metadata/state. If unavailable, never claim success.
+
+---
+
+### 12. Read file / copy content / path
+
+#### Read
+- "این فایل رو بخون"
+- "داخلش چی نوشته"
+- "متن فایل رو برام بخون"
+- "این txt رو باز نکن فقط محتواشو بخون"
+- "README رو بخون"
+
+#### Copy content
+- "متن این فایل رو کپی کن"
+- "محتواشو بذار کلیپ‌بورد"
+- "همه متنش رو کپی کن"
+- "فقط خط‌های انتخاب شده رو کپی کن" => Selection/Clipboard hand-off when applicable
+
+#### Copy path
+- "آدرس این فایل رو کپی کن"
+- "مسیرشو بده"
+- "Path رو کپی کن"
+- "اسم فایل رو کپی کن"
+- "مسیر پوشه رو بذار کلیپ‌بورد"
+
+Rules:
+- large/binary files are not blindly read as text.
+- detect supported text/structured formats and hand off rich formats to their owning skill.
+- Office/PDF/image reading may use Office/PDF/OCR capabilities rather than raw bytes.
+- path copy and content copy are separate intents.
+
+---
+
+### 13. Current selection / deictic references
+
+MARIA must resolve:
+- "این فایل"
+- "این پوشه"
+- "اون یکی"
+- "همینا"
+- "این سه تا"
+- "فایلی که انتخاب کردم"
+- "همون قبلی"
+- "اون که الان روش کلیک کردم"
+
+Context sources:
+1. Explorer current selection
+2. current foreground file dialog selection if safely accessible
+3. last explicit file/folder
+4. last successful file operation
+5. active application document path
+6. recent search result
+7. learned project context
+
+Do not apply destructive actions to "این" when there is no unique current selection.
+
+---
+
+### 14. Path aliases / natural locations
+
+Built-in aliases:
+- دسکتاپ / Desktop
+- دانلود / Downloads
+- اسناد / Documents
+- عکس‌ها / Pictures
+- ویدئوها / Videos
+- موزیک / Music
+- خانه / User profile
+- سطل آشغال / Recycle Bin
+
+User-learned aliases:
+- "پروژه ماریا"
+- "پروژه سایت"
+- "فولدر کار"
+- "بکاپ"
+- "فایل‌های شرکت"
+
+Example:
+"وقتی میگم پروژه ماریا منظورم D:\\Projects\\Maria هست."
+
+Aliases bind to stable canonical paths and must be editable/reversible.
+
+---
+
+### 15. Conflict resolution
+
+Possible conflicts:
+- destination file already exists
+- folder exists
+- rename collision
+- read-only item
+- file locked/in use
+- permission denied
+- invalid path
+- path too long for a specific downstream tool
+- source/destination same item
+- move into descendant
+- network/removable destination disappears
+
+MARIA policies:
+- low-confidence overwrite is forbidden.
+- never silently overwrite important content.
+- for simple direct user commands, use configured default conflict policy.
+- for bulk operations, preview conflicts or summarize before execution.
+- "جایگزین کن" => overwrite intent.
+- "اگه هست ردش کن" => skip.
+- "اسم جدید بده" / "کپی جدا بساز" => rename_copy.
+- "پوشه‌ها رو ادغام کن" => merge only after item-level conflict policy is known.
+
+---
+
+### 16. Protected/sensitive path policy
+
+Sensitive examples:
+- Windows system directories
+- Program Files application trees
+- boot/system files
+- other users' profile data
+- app databases while apps are running
+- repository metadata and project configuration when bulk deleting
+- hidden/system/reparse-point paths
+
+Rules:
+- detect protected/system attributes and known protected locations.
+- refuse unsafe assumptions.
+- direct explicit user intent may still require elevated confirmation/privilege.
+- do not recursively follow reparse points/junctions by default.
+- do not interpret a symlink/junction target as an ordinary child path without explicit policy.
+
+---
+
+### 17. Normalization / typo / STT
+
+Pipeline:
+1. Unicode normalization
+2. Persian/Arabic letter normalization
+3. digit normalization
+4. spacing/ZWNJ normalization
+5. path token preservation
+6. extension preservation
+7. app/file entity extraction
+8. fuzzy spelling recovery
+9. ASR phonetic recovery
+10. intent classification
+11. slot/path parsing
+12. context resolution
+13. confidence/risk
+14. execution
+15. verification
+
+Representative noisy examples:
+- "فایلو باز کون"
+- "پوشه جدبد بساز"
+- "اسمشو تقییر بده"
+- "کپی کن تو دسکتاپپ"
+- "جابجا کون دانلود"
+- "هزفش کن"
+- "رینیمش کن"
+- "پی دی اف دیروزی رو پیذا کن"
+- "اکسل اخری"
+- "فولدر پروزه ماریا"
+- "پط فایل رو کپی کن"
+
+Filename/path tokens get conservative correction. MARIA must not typo-correct a real filename into a different existing file without strong evidence.
+
+---
+
+### 18. Large language-coverage framework
+
+Every high-frequency file intent gets evaluation variants across:
+1. imperative
+2. polite
+3. conversational
+4. shorthand
+5. incomplete
+6. reordered
+7. filler-heavy
+8. Persian-English mixed
+9. typo
+10. STT
+11. explicit path
+12. natural location alias
+13. selected item
+14. last item
+15. recent item
+16. plural/batch
+17. numeric count
+18. date reference
+19. type/extension
+20. content-based reference
+21. negation
+22. correction
+23. conflict instruction
+24. conditional
+25. timed
+26. undo
+27. cross-domain ambiguity
+28. inaccessible item
+29. multiple matches
+30. protected target
+
+Minimum evaluation target for high-frequency intents:
+- 75+ curated natural variants per intent family
+- 50+ typo/STT variants
+- 30+ context-dependent variants
+- 25+ negative/counterexample cases
+- 20+ boundary/error cases
+
+Priority intent families:
+- find
+- open
+- create folder
+- rename
+- copy
+- move
+- recycle delete
+- permanent delete
+- copy path/content
+- selected-item resolution
+
+---
+
+### 19. Ambiguity policy
+
+Examples that require resolution:
+- "فایل پروژه رو باز کن" when multiple files match.
+- "این رو پاک کن" with no selection.
+- "ببرش اونجا" when destination is unclear.
+- "اسمشو final کن" when multiple selected items exist.
+- "آخرین فایل" when multiple sources have same timestamp.
+
+Suggested:
+- >=0.92 + low-risk unique target => execute.
+- 0.80..0.91 => execute only for reversible non-destructive actions when target is unique.
+- destructive/bulk/protected operations use stricter rules regardless of score.
+- multiple plausible files => show/ask concise disambiguation, favor recent/contextually relevant candidates without pretending certainty.
+
+---
+
+### 20. Permission / risk
+
+L0 read-only:
+- search/find
+- list
+- properties
+- copy path
+- read supported file content
+
+L1 reversible/non-destructive:
+- open
+- create folder/file
+- copy
+- duplicate
+
+L2 state-changing/reversible:
+- rename
+- move
+- recycle-bin delete
+- bulk organization with clear preview
+
+L3 potentially disruptive:
+- overwrite
+- bulk rename/move
+- operations on active project/application files
+- network/removable destinations
+
+L4 destructive:
+- permanent delete
+- broad recursive deletion
+- overwrite many files
+
+L5 protected/system-critical:
+- system/boot/protected OS paths
+- destructive elevated operations
+
+Confirmation depends on directness, reversibility, scope and target sensitivity.
+
+---
+
+### 21. Execution contract
+
+Normalized payload example:
+
+    intent: file.move
+    source_items:
+      - C:\\Users\\...\\Downloads\\report.xlsx
+    destination: D:\\Work\\Reports
+    conflict_policy: ask
+    source: voice
+    confidence: 0.98
+    risk: L2
+    undo_snapshot_id: ...
+
+Executor never reparses natural language.
+
+---
+
+### 22. Windows implementation direction
+
+Primary user-visible file operations should prefer Windows Shell semantics when appropriate.
+
+Use \`IFileOperation\` for Shell-style:
+- create
+- copy
+- move
+- rename
+- delete
+- progress/error callbacks
+- multi-item operations
+
+Important:
+- queued operations are actually executed by \`PerformOperations\`.
+- after execution, check abort/cancellation state rather than assuming success.
+- direct filesystem APIs/.NET can be used for controlled internal operations where Shell behavior is unnecessary.
+- use stable canonical paths and refresh item identity after rename/move.
+- Explorer selection integration should be isolated behind an adapter.
+- search may use Windows Search/index when available, then bounded fallback scanning.
+
+For change monitoring/automation, a watcher such as .NET \`FileSystemWatcher\` may observe changes in selected scopes, but verification must still query final filesystem state.
+
+---
+
+### 23. Verification
+
+Every mutation:
+- create => path exists and type matches.
+- copy => destination item exists; optionally compare size/hash according to policy.
+- move => destination exists AND old source no longer exists at old path.
+- rename => new path exists AND old path absent.
+- recycle delete => source absent; recycle metadata may be checked where supported.
+- permanent delete => source absent.
+- open => process/document activation can be best-effort verified.
+- copy path/content => clipboard content must match intended payload.
+
+Large file integrity:
+- default verify metadata/size.
+- hash verification available for important transfer/backup operations.
+- never hash huge files automatically when unnecessary.
+
+---
+
+### 24. Undo / rollback
+
+Possible undo:
+- rename => rename back if no conflict
+- move => move back
+- create => remove newly created item safely if unchanged
+- recycle delete => restore when Recycle Bin supports it
+- copy => optionally remove created copy if untouched
+- batch operation => store operation journal
+
+Undo journal fields:
+- operation_id
+- original path
+- new path
+- item identity/fingerprint
+- operation time
+- conflict policy
+- reversible_until
+- verification state
+
+Do not undo blindly if the target changed since the operation.
+
+---
+
+### 25. Failure / recovery
+
+Locked file:
+- identify process when safe/available.
+- report "فایل در حال استفاده است".
+- do not force-close apps without a separate explicit intent.
+
+Permission denied:
+- distinguish ordinary access denial from elevation requirement.
+- do not silently elevate.
+
+Destination unavailable:
+- removable/network drive disappeared => pause/fail safely, never redirect elsewhere.
+
+Partial batch:
+- report succeeded/failed counts.
+- keep item-level results.
+- offer retry only for failed subset.
+
+Operation canceled:
+- treat as canceled, not success, even if low-level API call returned nominal success.
+
+---
+
+### 26. Multi-step composition
+
+Examples:
+
+"آخرین فایل اکسل Downloads رو پیدا کن و ببر تو پوشه گزارش‌ها":
+1. search Downloads for xlsx/xls
+2. sort by recent
+3. resolve unique item
+4. resolve Reports alias/path
+5. move
+6. verify
+7. snapshot undo
+
+"این سه فایل رو کپی کن تو Backup بعد زیپشون کن":
+1. get selection
+2. copy
+3. verify copied items
+4. hand off copied items to Archive skill
+5. verify archive
+
+"پروژه ماریا رو باز کن و README رو بخون":
+1. resolve project alias
+2. open folder/project
+3. find README
+4. read supported text
+5. return content/summary through conversation
+
+"فایل دیروزی رو پیدا کن، اسمش رو final کن و با Excel بازش کن":
+1. find by date/context
+2. rename preserving extension
+3. verify
+4. open_with Excel
+5. verify best-effort
+
+---
+
+### 27. Skill / Agent package
+
+#### FileResolverAgent
+Resolves paths, aliases, selections, recent items, search results and ambiguous references.
+
+#### FileSearchSkill
+Name/type/date/size/content search with index + bounded fallback.
+
+#### FileOperationSkill
+Create/copy/move/rename/delete using Shell/native adapters.
+
+#### FileOpenSkill
+Open/open-with/reveal/location navigation.
+
+#### FileContentSkill
+Safe text/metadata reading and copy-content/path/name actions.
+
+#### RecycleBinSkill
+Reversible delete and restore workflows.
+
+#### FileConflictResolver
+Overwrite/skip/rename-copy/merge policies.
+
+#### FileLanguageAgent
+Normalization, typo/STT recovery, semantic classification and slot extraction. No filesystem mutation.
+
+#### FileVerifier
+Post-operation filesystem/state checks.
+
+#### FileUndoManager
+Operation journal and safe reversible rollback.
+
+#### FilePolicyGuard
+Protected/system/reparse-point risk evaluation.
+
+All register through MARIA Skill Registry / Tool Registry.
+
+---
+
+### 28. Response behavior
+
+Normal:
+- "پوشه ساخته شد."
+- "فایل به Desktop منتقل شد."
+- "اسمش شد final.xlsx."
+- "سه فایل کپی شدند."
+- "فایل رفت داخل Recycle Bin."
+
+Disambiguation:
+- "سه فایل با این اسم پیدا کردم؛ کدوم؟"
+
+Partial:
+- "از ۱۲ فایل، ۱۰ تا منتقل شدند؛ ۲ تا در حال استفاده‌اند."
+
+Verification failure:
+- "فرمان اجرا شد اما فایل مقصد ایجاد نشد؛ عملیات را موفق حساب نکردم."
+
+No false success.
+
+---
+
+### 29. Test matrix
+
+Create:
+- F-A01 folder current location
+- F-A02 folder Desktop
+- F-A03 nested path
+- F-A04 invalid name
+- F-A05 existing folder conflict
+
+Open:
+- F-B01 explicit file
+- F-B02 selected file
+- F-B03 open-with
+- F-B04 reveal
+- F-B05 missing item
+
+Search:
+- F-C01 name
+- F-C02 extension
+- F-C03 today/yesterday
+- F-C04 size
+- F-C05 content
+- F-C06 multiple matches
+- F-C07 recent downloaded
+- F-C08 alias scope
+
+Rename:
+- F-D01 file preserve extension
+- F-D02 folder
+- F-D03 explicit extension change
+- F-D04 collision
+- F-D05 batch preview
+
+Copy:
+- F-E01 file
+- F-E02 folder
+- F-E03 multi-item
+- F-E04 overwrite conflict
+- F-E05 removable destination loss
+- F-E06 verify size/hash policy
+
+Move:
+- F-F01 same volume
+- F-F02 cross volume
+- F-F03 destination missing
+- F-F04 move into descendant rejected
+- F-F05 partial batch
+
+Delete:
+- F-G01 recycle file
+- F-G02 recycle folder
+- F-G03 restore last
+- F-G04 permanent explicit + confirm
+- F-G05 protected path blocked/escalated safely
+- F-G06 ambiguous "این رو پاک کن" no selection => no action
+
+Read/copy:
+- F-H01 text read
+- F-H02 binary not raw-read
+- F-H03 copy path
+- F-H04 copy content
+- F-H05 large file policy
+
+Typos/STT:
+- F-I01 "فایلو باز کون"
+- F-I02 "اسمشو تقییر بده"
+- F-I03 "جابجا کون"
+- F-I04 "پی دی اف دیروزی"
+- F-I05 mixed English paths/app names
+
+Context:
+- F-J01 selected item "این"
+- F-J02 last searched file "همونو"
+- F-J03 stale context
+- F-J04 correction "نه اون یکی"
+- F-J05 last downloaded
+
+Undo/verify:
+- F-K01 undo rename
+- F-K02 undo move
+- F-K03 restore recycle
+- F-K04 changed target blocks unsafe undo
+- F-K05 low-level nominal success but aborted => not success
+
+---
+
+### 30. Acceptance criteria
+
+Files/Folders v1 is locally releasable only when:
+
+1. high-frequency intents survive Persian colloquial, typo and STT evaluation.
+2. selected-item and recent-item references resolve reliably.
+3. copy and move remain semantically distinct.
+4. ordinary delete defaults to reversible Recycle Bin where supported.
+5. permanent deletion always follows strict safety policy.
+6. rename preserves extension unless explicitly changed.
+7. conflicts never silently overwrite important existing files.
+8. reparse points/protected paths are handled safely.
+9. all mutations are verified.
+10. reversible operations create undo journal entries.
+11. partial batch operations report item-level failures.
+12. no operation silently redirects to a different destination when a drive disappears.
+13. Shell operations correctly detect aborted/canceled executions.
+14. real integration tests pass on the user's Windows MARIA environment.
+15. only then status changes to IMPLEMENTED.
+
+---
+
+### 31. Local implementation plan
+
+When the user's system is online:
+1. inspect current MARIA file/tools architecture.
+2. add FileResolverAgent and stable path model.
+3. integrate Explorer selection adapter.
+4. implement find/open/create.
+5. implement Shell IFileOperation adapter.
+6. implement copy/move/rename.
+7. add Recycle Bin delete/restore.
+8. add conflict policies.
+9. add protected-path guard.
+10. add content/path copy/read.
+11. add verifier.
+12. add undo journal.
+13. connect context and aliases.
+14. run the full test matrix against real files/drives.
+15. test network/removable/locked/permission cases.
+16. mark only passing features IMPLEMENTED.
+
+---
+
+### 32. Official Windows implementation references
+
+Validate local behavior against current Microsoft documentation for:
+- IFileOperation
+- CopyItem / CopyItems
+- MoveItem / MoveItems
+- RenameItem / RenameItems
+- DeleteItem / DeleteItems
+- PerformOperations / GetAnyOperationsAborted
+- FileSystemWatcher when scoped change monitoring is needed
+
+Canonical MARIA intents remain stable even if the platform adapter changes.
