@@ -30,8 +30,8 @@ Global requirements:
 
 | # | Capability | Design | Local implementation |
 |---|---|---|---|
-| 01 | Audio / Media | DESIGN COMPLETE v1 | WAITING FOR LOCAL SYSTEM |
-| 02 | Display / Brightness | DESIGN COMPLETE v1 | WAITING FOR LOCAL SYSTEM |
+| 01 | Audio / Media | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
+| 02 | Display / Brightness | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
 | 03 | Files / Folders | NEXT | WAITING |
 | 04 | App Install / Update | QUEUED | WAITING |
 | 05 | Windows Settings | QUEUED | WAITING |
@@ -57,7 +57,7 @@ Global requirements:
 
 ## 01 — Audio & Media Control
 
-**Status:** DESIGN COMPLETE v1 — WAITING FOR LOCAL IMPLEMENTATION  
+**Status:** DESIGN COMPLETE v2 EXTENDED — WAITING FOR LOCAL IMPLEMENTATION  
 **Capability family:** 'audio.*', 'media.*'  
 **Owner modules:** Brain / Intent Router / Context Engine / Windows Audio Adapter / Media Adapter  
 **Offline capable:** yes for Windows audio + local media controls  
@@ -988,6 +988,226 @@ Implementation should be validated against current Microsoft documentation for:
 - Windows.Media.Control / GlobalSystemMediaTransportControlsSessionManager
 
 The implementation layer may change as Windows evolves; the canonical MARIA intents must remain stable.
+
+
+---
+
+### 24. Audio v2 — MARIA's Own Voice / TTS as a First-Class Target
+
+MARIA's own spoken voice must be a separate audio target from Windows master volume, media sessions, microphone state, and app audio.
+
+#### Canonical target
+- \`assistant_voice\`
+- aliases: \`maria_voice\`, \`tts_output\`
+
+#### Canonical intents
+- \`assistant.voice.volume.get\`
+- \`assistant.voice.volume.set\`
+- \`assistant.voice.volume.increase\`
+- \`assistant.voice.volume.decrease\`
+- \`assistant.voice.mute\`
+- \`assistant.voice.unmute\`
+- \`assistant.voice.toggle_mute\`
+- \`assistant.voice.restore_previous\`
+- \`assistant.voice.mode.text_only\`
+- \`assistant.voice.mode.voice_and_text\`
+- \`assistant.voice.rate.get\`
+- \`assistant.voice.rate.set\`
+- \`assistant.voice.rate.increase\`
+- \`assistant.voice.rate.decrease\`
+- \`assistant.voice.pitch.get\`
+- \`assistant.voice.pitch.set\`
+- \`assistant.voice.select\`
+- \`assistant.voice.style.set\`
+
+Rate/pitch/voice/style are capability-gated by the active TTS engine.
+
+#### Semantic separation
+- "خودت ساکت" => mute MARIA TTS only; MARIA continues working and can still show text.
+- "فقط بنویس" => text-only response mode, not Windows mute.
+- "کل سیستم ساکت" => system master mute.
+- "Chrome ساکت" => Chrome/session mute.
+- "حرف نزن" => MARIA voice output disabled; does not stop task execution.
+- "متوقف شو" / "همه کارها رو متوقف کن" => Agent emergency-stop intent, NOT voice mute.
+- "آروم‌تر حرف بزن" can mean lower TTS volume or slower speech. Resolve from context/preference; if genuinely ambiguous, clarify once and learn the user's choice.
+- "صداتو عوض کن" => voice/persona TTS selection, not volume.
+
+#### Phrase bank — MARIA mute/text-only
+The intent model must recognize, among many others:
+- "ماریا ساکت"
+- "ساکت باش"
+- "الان ساکت"
+- "فعلا حرف نزن"
+- "دیگه با صدا جواب نده"
+- "فقط تایپ کن"
+- "فقط بنویس"
+- "جواب رو فقط متن بده"
+- "صداتو ببند"
+- "خودتو میوت کن"
+- "خودت mute"
+- "حرف نزن ولی کارو انجام بده"
+- "بی‌صدا کار کن"
+- "صدا نداشته باش"
+- "لازم نیست حرف بزنی"
+- "جواب صوتی نده"
+- "صدات خاموش"
+- "ویست رو قطع کن"
+- noisy/typo variants such as "ساکت باص", "حرف نزنن", "صداتو قط کن", "فقط بنویث"
+
+#### Phrase bank — MARIA unmute/voice return
+- "دوباره حرف بزن"
+- "صداتو وصل کن"
+- "حالا با صدا جواب بده"
+- "از میوت در بیا"
+- "صدات برگرده"
+- "ویس رو روشن کن"
+- "مثل قبل حرف بزن"
+- "حالت صوتی رو فعال کن"
+- "دیگه فقط متن نباشه"
+- "بخون برام"
+- "این دفعه صوتی بگو"
+
+#### Phrase bank — MARIA voice volume
+- "صدای خودتو 20 کن"
+- "صدات رو ۵۰ درصد کن"
+- "یکم آروم‌تر"
+- "صدای خودت خیلی بلنده"
+- "یه ذره صداتو کم کن"
+- "صدات رو زیاد کن"
+- "بلندتر حرف بزن"
+- "تا آخر صداتو زیاد کن"
+- "نصف صدای خودت"
+- "صدات رو نصف الان کن"
+- "ده تا صدای خودتو ببر بالا"
+- "باز یکم کمتر"
+- "همین صدای خودت رو کم کن"
+- "نه سیستم نه، صدای خودت"
+- "فقط صدای ماریا تغییر کنه"
+
+#### Phrase bank — speech rate
+- "کندتر حرف بزن"
+- "آهسته‌تر بخون"
+- "خیلی تند حرف می‌زنی"
+- "سرعت حرف زدنت رو کم کن"
+- "کمی سریع‌تر"
+- "تندتر بخون"
+- "سرعتت معمولی"
+- "برگرد روی سرعت پیش‌فرض"
+
+#### Phrase bank — voice/persona
+- "صداتو عوض کن"
+- "با صدای قبلی حرف بزن"
+- "صدای پیش‌فرضت"
+- "صدای دخترانه رو فعال کن"
+- "این ویس رو انتخاب کن"
+- "برگرد روی صدای اصلی ماریا"
+
+#### MARIA voice state
+Keep separate state:
+- tts_enabled
+- tts_volume
+- tts_rate
+- tts_pitch
+- tts_voice_id
+- tts_style
+- response_mode: text_only | voice_and_text | voice_preferred
+- previous_voice_snapshot
+
+No system volume API should be called for a pure assistant-voice request unless the user explicitly targets the system.
+
+---
+
+### 25. Audio v2 — Expanded Utterance Coverage Framework
+
+For every audio intent, evaluation data must be generated across ALL of these language families:
+
+1. direct imperative
+2. polite request
+3. conversational complaint
+4. shorthand / one-word
+5. incomplete phrase
+6. reordered words
+7. Persian written numbers
+8. Latin digits
+9. Persian digits
+10. percentages
+11. fractions
+12. relative values
+13. vague values
+14. repeated follow-up
+15. pronoun/deictic reference
+16. explicit app/device target
+17. implicit foreground target
+18. mixed Persian-English
+19. typo noise
+20. ASR/STT phonetic noise
+21. extra filler words
+22. correction ("نه، فقط...")
+23. negation ("به سیستم دست نزن")
+24. compound command
+25. temporal command
+26. conditional command
+27. undo/restore
+28. comparison ("از قبلی کمتر")
+29. constraint ("فقط همین برنامه")
+30. cross-domain ambiguous phrase
+
+Each canonical intent must have a curated seed bank plus generated paraphrases. Generated paraphrases are evaluation/training material only; runtime must still use semantic intent recognition rather than exact-string matching.
+
+Minimum evaluation target for high-frequency intents:
+- 50+ curated human-style Persian variants per intent
+- 50+ noisy/typo/STT variants per intent
+- 25+ context-dependent variants per intent
+- 20+ negative/cross-domain counterexamples per intent
+
+High-frequency audio intents include:
+- system set/increase/decrease
+- mute/unmute
+- app/session set/increase/decrease/mute
+- assistant voice mute/unmute/set
+- play/pause/stop
+- microphone mute/unmute
+- output select
+- restore/undo
+
+---
+
+### 26. Audio v2 — Skill / Agent Package
+
+The local implementation should expose independent reusable skills:
+
+#### AudioMasterSkill
+Owns master endpoint level and mute.
+
+#### AudioSessionSkill
+Owns per-app/session volume and mute.
+
+#### AssistantVoiceSkill
+Owns MARIA TTS volume, response mode, rate, pitch, voice and restore.
+
+#### AudioDeviceSkill
+Owns input/output enumeration, aliases and switching.
+
+#### MicrophoneSkill
+Owns mic state/level with privacy gates.
+
+#### MediaTransportSkill
+Owns media play/pause/seek/track operations.
+
+#### AudioContextResolver
+Resolves "این", "اون", "همونو", "فقط فیلم", foreground app, active media and previous target.
+
+#### AudioLanguageAgent
+Performs normalization, fuzzy/ASR recovery, semantic intent classification and slot extraction. It emits canonical actions only; it never executes OS mutations.
+
+#### AudioVerifier
+Reads post-action state and produces verified/partial/failed results.
+
+#### AudioUndoManager
+Stores bounded reversible snapshots.
+
+These components must register in MARIA's shared Skill Registry / Tool Registry rather than being hard-wired into the chat UI.
+
 
 ---
 
@@ -1927,7 +2147,251 @@ When the user's Windows system is online:
 
 ---
 
-### 33. Official Windows implementation references
+
+### 33. Display v2 — Profiles / Modes
+
+Profiles are semantic MARIA presets. They must be explicit, inspectable, reversible, and hardware-aware.
+
+#### Canonical intents
+- \`display.profile.get\`
+- \`display.profile.apply\`
+- \`display.profile.study\`
+- \`display.profile.reading\`
+- \`display.profile.normal\`
+- \`display.profile.balanced\`
+- \`display.profile.windows_recommended\`
+- \`display.profile.night_comfort\`
+- \`display.profile.presentation\`
+- \`display.profile.restore_previous\`
+- \`display.profile.create_custom\`
+- \`display.profile.update_custom\`
+
+#### Study / Reading profile
+"حالت مطالعه" is a MARIA profile, not assumed to be one exact built-in Windows switch.
+
+It may combine, according to device support and user preference:
+- moderate brightness
+- optional Night Light / warmer color
+- Windows recommended resolution
+- Windows recommended scaling
+- comfortable refresh mode
+- distraction/focus settings through the separate Focus/Automation capability
+- optional text-size/accessibility preference
+- optional app-specific reading settings when composed with Browser/Office skills
+
+It MUST NOT silently change multiple disruptive settings the first time. The first application can preview proposed changes or use a conservative default. Once the user explicitly approves a profile, MARIA may reuse it.
+
+Language examples:
+- "حالت مطالعه رو فعال کن"
+- "مود مطالعه"
+- "برای درس خوندن تنظیمش کن"
+- "صفحه رو برای مطالعه مناسب کن"
+- "reading mode"
+- "حالت خوندن"
+- "برای کتاب خوندن بهترش کن"
+- "چشمم اذیت نشه حالت مطالعه"
+- "یه حالت مناسب درس بذار"
+- typo/STT: "حالت مطالغه", "مود مطالع", "ریدینگ مود"
+
+#### Normal / Balanced profile
+Examples:
+- "حالت معمولی"
+- "برگرد معمولی"
+- "normal"
+- "balanced"
+- "متعادلش کن"
+- "حالت متناسب"
+- "نه خیلی روشن نه تاریک"
+- "برگرد روی تنظیم روزمره"
+- "مود عادی"
+
+This is a MARIA user/profile concept. It may store a user-approved everyday snapshot.
+
+#### Windows Recommended / Default profile
+Examples:
+- "دیفالت ویندوز بذار"
+- "برگرد تنظیمات پیشنهادی ویندوز"
+- "Windows default"
+- "recommended settings"
+- "رزولوشن پیشنهادی"
+- "اسکیل پیشنهادی ویندوز"
+- "هرچی خود ویندوز پیشنهاد میده"
+- "تنظیم استاندارد ویندوز"
+- "برگرد روی حالت اصلی ویندوز"
+
+Semantics:
+- resolution => use Windows/native "Recommended" mode when discoverable.
+- scaling => prefer Windows recommended/default scaling where discoverable.
+- brightness => if a Windows brightness policy/ALS policy exists, use policy restore rather than inventing a brightness number.
+- topology => do NOT arbitrarily change monitor topology merely because user asked for "Windows default"; preserve current topology unless the phrase/context explicitly includes display layout.
+- Night Light/HDR => preserve current state unless "همه تنظیمات تصویر رو دیفالت کن" is explicitly and safely scoped.
+
+Microsoft Support notes that Windows typically marks recommended resolution and scale options. The local adapter should query/resolve the recommended mode instead of hard-coding values.
+
+#### Night / Eye-comfort profile
+Examples:
+- "حالت شب"
+- "برای شب مناسبش کن"
+- "چشمم اذیت نشه"
+- "گرم‌ترش کن"
+- "نور آبی کمتر"
+- "night comfort"
+
+Must distinguish from merely enabling Windows Night Light.
+
+#### Restore previous profile
+Examples:
+- "برگرد قبل"
+- "تنظیم قبلی صفحه"
+- "پروفایل قبلی"
+- "از حالت مطالعه درش بیار"
+- "همونی که قبلش بود"
+
+Always snapshot before applying a multi-setting profile.
+
+---
+
+### 34. Display v2 — Larger Language Matrix
+
+Every high-frequency display intent must include broad seed/evaluation coverage across:
+- direct
+- polite
+- colloquial
+- complaint
+- shorthand
+- typo
+- STT noise
+- numbers
+- relative values
+- vague values
+- fractions
+- selected monitor
+- monitor by physical position
+- learned alias
+- multi-monitor plural
+- correction
+- negation
+- cross-domain ambiguity
+- profile/mode wording
+- Windows-default/recommended wording
+- restore/undo
+- conditional/time-based phrasing
+
+Minimum evaluation target:
+- 50+ curated natural Persian variants for each high-frequency intent
+- 50+ typo/STT variants
+- 25+ context-dependent variants
+- 20+ negative/cross-domain counterexamples
+
+High-frequency display intents:
+- brightness set/increase/decrease
+- monitor power off
+- night light enable/disable
+- profile study/normal/windows-recommended
+- topology extend/duplicate
+- resolution recommended/set
+- restore previous
+
+Representative extended phrase bank:
+
+Brightness increase:
+- "نور رو بیشتر کن"
+- "روشن‌ترش کن"
+- "یه کم نور بده"
+- "خیلی تاریکه"
+- "ده تا ببر بالا"
+- "باز یه ذره"
+- "نور این صفحه بیشتر"
+- "فقط مانیتور دوم روشن‌تر"
+- "براینتس بالا"
+- "نور صفه زیاد"
+
+Brightness decrease:
+- "نور کم"
+- "کمترش کن"
+- "یه خورده تاریک‌تر"
+- "چشممو میزنه کمش کن"
+- "ده تا پایین"
+- "خیلی روشنه"
+- "فقط همین صفحه کم شه"
+- "brightness down"
+- "روشناییشو بیار پایین"
+
+Recommended/default:
+- "دیفالت کن"
+- "استاندارد کن"
+- "بذار خود ویندوز"
+- "تنظیم پیشنهادی"
+- "recommended"
+- "تنظیم اصلی"
+- "برگرد فابریک ویندوز"
+- "مثل اول ویندوز"
+- "رزولوشن و اسکیل استاندارد"
+- "هرچی مناسب این مانیتوره بذار"
+
+Study:
+- "مطالعه"
+- "حالت مطالعه"
+- "برای درس"
+- "برای خوندن"
+- "reading"
+- "study mode"
+- "چشم راحت"
+- "مود کتاب"
+- "برای متن خوندن"
+- "حالت درس خوندن"
+
+Context corrections:
+- "نه نور رو میگم"
+- "نه تم نه، خود صفحه"
+- "نه مانیتور دوم، لپ‌تاپ"
+- "نه رزولوشن، اسکیل"
+- "فقط همین یکی"
+- "به اون یکی دست نزن"
+- "همه به جز اصلی"
+
+---
+
+### 35. Display v2 — Skill / Agent Package
+
+#### BrightnessSkill
+Internal/external brightness get/set/relative/fade/policy restore.
+
+#### MonitorResolverSkill
+Stable monitor identity, physical arrangement, friendly names and aliases.
+
+#### DisplayProfileSkill
+Study/Reading/Normal/Balanced/Windows Recommended/Night/custom profiles with snapshots.
+
+#### DisplayTopologySkill
+Extend/duplicate/internal/external/primary-display operations with rollback.
+
+#### DisplayModeSkill
+Resolution, refresh rate and orientation.
+
+#### DisplayComfortSkill
+Night Light, color-temperature, adaptive/ALS and eye-comfort integrations where supported.
+
+#### DisplayLanguageAgent
+Normalization, typo/STT recovery, semantic intent and slot extraction. No direct OS mutation.
+
+#### DisplayVerifier
+Re-queries actual state after change.
+
+#### DisplayRollbackManager
+Stores safe snapshots and timed rollback for risky mode/topology changes.
+
+All modules register through shared Skill Registry and declare:
+- capabilities
+- supported hardware
+- risk level
+- confirmation policy
+- verification method
+- undo support
+- offline availability
+
+
+### 36. Official Windows implementation references
 
 Validate the local implementation against current Microsoft documentation for:
 - WmiMonitorBrightness
