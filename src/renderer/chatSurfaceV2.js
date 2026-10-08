@@ -6,6 +6,8 @@ import DOMPurify from 'dompurify';
 const $=q=>document.querySelector(q);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const CHATGPT_AUTO='chatgpt:auto';
+const PROVIDERS=['gemini','anthropic','deepseek','github','groq','openrouter','qwen','mistral','openai'];
+const PROVIDER_NAMES={gemini:'Gemini',anthropic:'Claude',deepseek:'DeepSeek',github:'GitHub Models',groq:'Groq',openrouter:'OpenRouter',qwen:'Qwen',mistral:'Mistral',openai:'OpenAI API'};
 const VOICE_READ_KEY='maria:chat:autoRead';
 const ICONS={
   menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
@@ -41,7 +43,7 @@ marked.setOptions({gfm:true,breaks:true});
 const markdown=s=>DOMPurify.sanitize(marked.parse(String(s||'')),{USE_PROFILES:{html:true}});
 const safeUrl=raw=>{try{const u=new URL(raw);return /^https?:$/.test(u.protocol)?u.href:null;}catch{return null;}};
 const api=()=>window.blackClover;
-const state={id:null,chat:null,list:[],folders:[],folder:'all',search:'',model:CHATGPT_AUTO,connected:false,connecting:false,account:null,models:[],sidebar:true,web:false,deep:false,autoRead:localStorage.getItem(VOICE_READ_KEY)==='1',checking:false,testing:false};
+const state={id:null,chat:null,list:[],folders:[],folder:'all',search:'',model:CHATGPT_AUTO,connected:false,connecting:false,account:null,models:[],sidebar:true,web:false,deep:false,autoRead:localStorage.getItem(VOICE_READ_KEY)==='1',checking:false,testing:false,providerSettings:[],configuredProviders:[]};
 let busy=false,cancelled=false,activeChatId=null,streamContent='',activeStream=null,mic=null,toastTimer=null;
 const button=(id,label,ico,extra='')=>'<button type="button" id="'+id+'" class="icon-btn" title="'+esc(label)+'" aria-label="'+esc(label)+'" '+extra+'>'+icon(ico)+'</button>';
 function notice(message){const n=$('#notice');if(!n)return;n.textContent=message;n.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>n.hidden=true,3800);}
@@ -78,15 +80,17 @@ function updateAccountUi(){
   const connect=$('#connectChatGPT');if(connect){connect.hidden=usable||inProgress;connect.disabled=inProgress;connect.textContent=s.status==='connected'?'تأیید مجوز استفاده از ChatGPT':'Continue with ChatGPT';}
   const disconnect=$('#disconnectChatGPT');if(disconnect)disconnect.hidden=!usable;
   const usage=$('#chatgptUsage');if(usage)usage.hidden=!usable;
-  const model=$('#modelSelect');if(model)model.disabled=!usable||state.models.length===0;
-  const banner=$('#connectBanner');if(banner)banner.hidden=usable;
+  const model=$('#modelSelect');if(model)model.disabled=false;
+  const banner=$('#connectBanner');if(banner)banner.hidden=usable||state.model!==CHATGPT_AUTO&& !state.model.startsWith('chatgpt:');
   const select=$('#modelSelect');if(select){
     const previous=state.model;
-    select.innerHTML='<option value="'+CHATGPT_AUTO+'">ChatGPT · خودکار</option>'+state.models.map(m=>'<option value="chatgpt:'+esc(m.slug)+'">'+esc(m.displayName||m.slug)+'</option>').join('');
-    state.model=state.models.some(m=>'chatgpt:'+m.slug===previous)?previous:CHATGPT_AUTO;
+    select.innerHTML='<option value="'+CHATGPT_AUTO+'">ChatGPT · خودکار'+(usable?'':' (نیازمند مجوز)')+'</option>'+state.models.map(m=>'<option value="chatgpt:'+esc(m.slug)+'">'+esc(m.displayName||m.slug)+'</option>').join('')+state.configuredProviders.map(p=>'<option value="online:'+esc(p.provider)+'">'+esc(PROVIDER_NAMES[p.provider]||p.label)+' · '+esc(p.model)+'</option>').join('');
+    state.model=previous;
     select.value=state.model;
   }
 }
+async function syncProviders(){try{const result=await api().brainSettings();state.providerSettings=result.providers||[];state.configuredProviders=state.providerSettings.filter(p=>p.configured&&p.enabled);renderProviderSettings();updateAccountUi();}catch(e){notice('خواندن اتصال مدل‌ها ناموفق بود: '+String(e.message||e));}}
+function renderProviderSettings(){const host=$('#providerCards');if(!host)return;host.innerHTML=state.providerSettings.filter(p=>PROVIDERS.includes(p.provider)).map(p=>'<div class="maria-provider-card"><div class="maria-provider-heading"><strong>'+esc(PROVIDER_NAMES[p.provider]||p.label)+'</strong><small>'+(p.configured?'کلید ذخیره شده':'بدون کلید')+'</small></div><p>'+esc(p.note||'')+'</p><label>مدل<input data-provider-model="'+esc(p.provider)+'" value="'+esc(p.model)+'" spellcheck="false"></label><label>کلید API<input data-provider-key="'+esc(p.provider)+'" type="password" placeholder="'+(p.configured?'کلید قبلی محفوظ است':'API key')+'" autocomplete="off"></label><div class="maria-provider-actions"><button data-provider-save="'+esc(p.provider)+'">ذخیره اتصال</button><button data-provider-test="'+esc(p.provider)+'" '+(!p.configured?'disabled':'')+'>آزمایش</button><button data-provider-remove="'+esc(p.provider)+'" '+(!p.configured?'disabled':'')+'>حذف کلید</button></div></div>').join('');}
 async function syncAccount(fresh=false){
   try{const r=fresh?await api().refreshChatGPTModels():{status:await api().chatgptStatus()};
     state.account=r.status||r;const s=state.account?.session||{};state.connected=s.status==='connected'&&s.sharing===true&&!s.error;state.models=state.connected?(state.account.models||[]):[];updateAccountUi();
@@ -198,12 +202,12 @@ function busyUI(){
 }
 async function sendMessage(text){
   const value=String(text||'').trim();if(!value||busy)return;
-  if(!state.connected)notice('حساب ChatGPT متصل نیست؛ فقط فرمان‌های مستقیم ویندوز قابل اجرا هستند.');
+  if(!state.connected&&state.model.startsWith('chatgpt:'))notice('حساب ChatGPT مجوز ندارد؛ می‌توانی از مدل‌های دیگر استفاده کنی.');
   await ensureChat();busy=true;cancelled=false;activeChatId=state.id;busyUI();const start=performance.now();
   const current=state.id;const old=state.chat;
   $('#input').value='';grow();state.chat={...old,messages:[...(old.messages||[]),{id:'pending-'+Date.now(),role:'user',text:value}]};renderMessages();
   setStatus('در حال پاسخ…');try{
-    const response=await api().chat(value,{conversationId:current,modelOverride:state.model,provider:'chatgpt',profile:state.deep?'complex':'chat',webSearch:state.web});
+    const response=await api().chat(value,{conversationId:current,modelOverride:state.model,provider:state.model.startsWith('online:')?state.model.slice(7):'chatgpt',profile:state.deep?'complex':'chat',webSearch:state.web});
     wipeStream();await loadChat(current);
     if(response?.requiresConfirmation&&response.confirmationId)confirmation(response.confirmationId,response.text);
     if(response?.cancelled){setStatus('متوقف شد');return;}
@@ -217,7 +221,7 @@ async function stopResponse(){
 }
 async function retryMessage(userMessage){
   if(busy)return;const current=state.id;busy=true;cancelled=false;activeChatId=current;busyUI();setStatus('در حال بازنویسی…');
-  try{const r=await api().replayMessage({conversationId:current,messageId:userMessage.id,model:state.model,provider:'chatgpt',profile:state.deep?'complex':'chat'});
+  try{const r=await api().replayMessage({conversationId:current,messageId:userMessage.id,model:state.model,provider:state.model.startsWith('online:')?state.model.slice(7):'chatgpt',profile:state.deep?'complex':'chat'});
     wipeStream();await loadChat(current);if(r?.requiresConfirmation)confirmation(r.confirmationId,r.text);if(r?.ok===false)notice(r?.text||'تولید دوباره موفق نبود.');
   }catch(e){withError(e);}finally{busy=false;activeChatId=null;busyUI();setStatus('آماده');}
 }
@@ -230,7 +234,7 @@ function openSettings(tab='account'){
   $('#setup').hidden=false;chooseSettingsTab(tab);syncAccount().catch(()=>{});
 }
 function chooseSettingsTab(tab){
-  for(const key of ['account','voice','privacy']){$('#tab-'+key).classList.toggle('active',tab===key);$('#panel-'+key).hidden=tab!==key;}
+  for(const key of ['account','providers','voice','privacy']){$('#tab-'+key).classList.toggle('active',tab===key);$('#panel-'+key).hidden=tab!==key;}
 }
 function startMicrophone(){
   const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;
@@ -271,13 +275,14 @@ function template(){
   '<div id="notice" role="status" class="toast" hidden></div>'+
   '<div id="setup" class="settings-overlay" hidden><section class="settings-panel" role="dialog" aria-modal="true" aria-label="تنظیمات MARIA">'+
     '<header><strong>تنظیمات MARIA</strong>'+button('setupClose','بستن تنظیمات','close')+'</header>'+
-    '<nav class="settings-tabs"><button id="tab-account" class="active">حساب ChatGPT</button><button id="tab-voice">صدا</button><button id="tab-privacy">حریم خصوصی</button></nav>'+
+    '<nav class="settings-tabs"><button id="tab-account" class="active">حساب ChatGPT</button><button id="tab-providers">مدل‌های دیگر</button><button id="tab-voice">صدا</button><button id="tab-privacy">حریم خصوصی</button></nav>'+
     '<section id="panel-account" class="settings-content">'+
       '<div class="account-identity"><div class="account-symbol">'+icon('spark',22)+'</div><div><strong id="accountStatus">متصل نیست</strong><p id="accountDetails">با ChatGPT وارد شو تا گفتگو فعال شود.</p></div></div>'+
       '<div class="account-switcher"><label for="accountPicker">حساب فعال</label><select id="accountPicker" aria-label="انتخاب حساب ChatGPT"><option value="">انتخاب حساب ChatGPT</option></select><button id="addChatGPTAccount" type="button">'+icon('plus',16)+' افزودن حساب دیگر</button></div>'+
       '<p id="connectionHelp" class="connection-help" role="status">برای ورود، حساب OpenAI مورد نظرت را در مرورگر انتخاب کن.</p><div class="settings-actions"><button id="connectChatGPT" class="primary-button">Continue with ChatGPT</button><button id="cancelChatGPTSignIn" hidden>لغو ورود معلق</button><button id="testChatGPTConnection" hidden>آزمایش پاسخ واقعی</button><button id="chatgptUsage" hidden>نمایش مصرف و محدودیت</button><button id="disconnectChatGPT" hidden>قطع اتصال</button><button id="setupRefresh">بررسی وضعیت</button></div>'+
       '<p class="settings-note">ورود در مرورگر رسمی انجام می‌شود. حساب Chrome به‌طور خودکار انتخاب نمی‌شود؛ در صفحه ورود حساب موردنظرت را انتخاب کن. این اتصال ممکن است محدودیت سهمیه داشته باشد.</p>'+
     '</section>'+
+    '<section id="panel-providers" class="settings-content" hidden><p class="settings-note">Gemini، Claude و DeepSeek با کلید API رسمی وصل می‌شوند. کلیدها در فضای امن ویندوز رمزگذاری می‌شوند. اشتراک سایت این سرویس‌ها الزاماً اعتبار API نیست.</p><div id="providerCards" class="maria-provider-list"></div></section>'+ 
     '<section id="panel-voice" class="settings-content" hidden>'+
       '<label class="setting-row"><span><b>فعال بودن صدای MARIA</b><small>پخش صوتی پاسخ‌ها با موتور صوتی نصب‌شده</small></span><input id="voiceEnabled" type="checkbox"></label>'+
       '<label class="setting-row"><span><b>خواندن خودکار پاسخ</b><small>پس از دریافت پاسخ، MARIA آن را می‌خواند</small></span><input id="voiceAutoRead" type="checkbox"></label>'+
@@ -295,7 +300,7 @@ export async function mountChatSurface(){
   $('#autoSpeak').classList.toggle('active',state.autoRead);$('#voiceEnabled').checked=voice.enabled;$('#voiceAutoRead').checked=state.autoRead;
   $('#voiceRate').value=voice.rate;$('#voiceRateValue').textContent=voice.rate.toFixed(2)+'×';
   $('#voicePitch').value=voice.pitch;$('#voicePitchValue').textContent=voice.pitch.toFixed(2)+'×';
-  await syncAccount();await refreshList();await ensureChat();renderHeader();renderMessages();
+  await syncAccount();await syncProviders();await refreshList();await ensureChat();renderHeader();renderMessages();
   $('#newChat').onclick=()=>createChat().catch(withError);
   $('#allChats').onclick=()=>{state.folder='all';refreshList().catch(withError);};
   $('#chatSearch').oninput=e=>{state.search=e.target.value;refreshList().catch(withError);};
@@ -349,7 +354,7 @@ export async function mountChatSurface(){
   $('#setupClose').onclick=()=>{$('#setup').hidden=true;};
   $('#setup').onclick=e=>{if(e.target===$('#setup'))$('#setup').hidden=true;};
   window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#setup').hidden){$('#setup').hidden=true;}});
-  for(const tab of ['account','voice','privacy'])$('#tab-'+tab).onclick=()=>chooseSettingsTab(tab);
+  for(const tab of ['account','providers','voice','privacy'])$('#tab-'+tab).onclick=()=>chooseSettingsTab(tab);
   $('#connectChatGPT').onclick=connectChatGPT;
   $('#cancelChatGPTSignIn').onclick=cancelChatGPTSignIn;
   $('#testChatGPTConnection').onclick=testConnection;
@@ -358,7 +363,8 @@ export async function mountChatSurface(){
   $('#disconnectChatGPT').onclick=disconnectChatGPT;
   $('#chatgptUsage').onclick=()=>api().openChatGPTUsage().catch(withError);
   $('#setupRefresh').onclick=checkAccountStatus;
-  $('#modelSelect').onchange=e=>{state.model=e.target.value;notice('مدل ChatGPT انتخاب شد.');};
+  $('#providerCards').onclick=async e=>{const b=e.target.closest('button[data-provider-save],button[data-provider-test],button[data-provider-remove]');if(!b)return;const provider=b.dataset.providerSave||b.dataset.providerTest||b.dataset.providerRemove;try{b.disabled=true;if(b.dataset.providerSave){const key=$('[data-provider-key="'+provider+'"]').value,model=$('[data-provider-model="'+provider+'"]').value.trim();await api().saveBrainProvider({provider,apiKey:key,model,enabled:true});await syncProviders();notice('اتصال '+PROVIDER_NAMES[provider]+' ذخیره شد.');}else if(b.dataset.providerRemove){const yes=await showDialog({title:'حذف کلید '+PROVIDER_NAMES[provider],description:'کلید ذخیره‌شده از MARIA پاک می‌شود.',danger:true,confirmText:'حذف کلید'});if(yes){await api().removeBrainProvider(provider);state.model=CHATGPT_AUTO;await syncProviders();notice('کلید حذف شد.');}}else{const result=await api().testBrainProvider(provider);notice(result.ok?'اتصال '+PROVIDER_NAMES[provider]+' برقرار است.':'آزمایش '+PROVIDER_NAMES[provider]+' ناموفق بود؛ کلید، سهمیه و شبکه را بررسی کن.');}}catch(error){withError(error);}finally{b.disabled=false;}};
+  $('#modelSelect').onchange=e=>{state.model=e.target.value;updateAccountUi();notice('مدل '+(state.model.startsWith('online:')?PROVIDER_NAMES[state.model.slice(7)]:'ChatGPT')+' انتخاب شد.');};
   $('#voiceEnabled').onchange=e=>voice.setEnabled(e.target.checked);
   $('#voiceAutoRead').onchange=e=>{state.autoRead=e.target.checked;localStorage.setItem(VOICE_READ_KEY,state.autoRead?'1':'0');$('#autoSpeak').classList.toggle('active',state.autoRead);};
   $('#voiceRate').oninput=e=>{voice.configure({rate:Number(e.target.value)});$('#voiceRateValue').textContent=Number(e.target.value).toFixed(2)+'×';};

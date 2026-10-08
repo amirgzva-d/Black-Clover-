@@ -281,3 +281,18 @@ body.chat-v3 .toast{background:#2d3134;border-color:#69746c;border-radius:12px}
 @media(max-width:960px){body.chat-v3 .ideas{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){body.chat-v3 .ideas{grid-template-columns:1fr}body.chat-v3 .messages{padding:18px 18px!important}body.chat-v3 .composer-wrap{padding:0 13px 12px}body.chat-v3 .account-chip{max-width:130px;overflow:hidden;text-overflow:ellipsis}body.chat-v3 .welcome{gap:9px}body.chat-v3 .welcome h1{font-size:22px}}
 @media(prefers-reduced-motion:reduce){body.chat-v3 *,body.chat-v3 *::before,body.chat-v3 *::after{animation:none!important;scroll-behavior:auto!important;transition:none!important}}
+
+body.chat-v3 .maria-provider-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:15px}
+body.chat-v3 .maria-provider-card{border:1px solid #44484a;background:#2b2d30;border-radius:15px;padding:15px;display:flex;flex-direction:column;gap:10px}
+body.chat-v3 .maria-provider-heading{display:flex;justify-content:space-between;align-items:center;gap:8px}
+body.chat-v3 .maria-provider-heading strong{font-size:14px}
+body.chat-v3 .maria-provider-heading small{font-size:11px;color:#b5c4b8}
+body.chat-v3 .maria-provider-card p{font-size:11px;color:#b8babd;line-height:1.8;margin:0}
+body.chat-v3 .maria-provider-card label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:#d4d6d8}
+body.chat-v3 .maria-provider-card input{width:100%;min-width:0;background:#1e2022;border:1px solid #4b5054;color:#f1f1f1;padding:9px 10px;border-radius:9px;direction:ltr;text-align:left}
+body.chat-v3 .maria-provider-card input:focus{outline:1px solid #91baa0}
+body.chat-v3 .maria-provider-actions{display:flex;gap:7px;flex-wrap:wrap}
+body.chat-v3 .maria-provider-actions button{font-size:11px;padding:8px 10px;border-radius:8px;border:1px solid #54595c;background:#393d40;color:#f0f1f1;cursor:pointer}
+body.chat-v3 .maria-provider-actions button:first-child{background:#d7eadd;color:#233d2c;border-color:#d7eadd}
+body.chat-v3 .maria-provider-actions button:disabled{opacity:.4;cursor:not-allowed}
+@media(max-width:620px){body.chat-v3 .maria-provider-list{grid-template-columns:1fr}}

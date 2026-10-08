@@ -5,14 +5,7 @@ import {BrainRouter} from '../src/agent/BrainRouter.js';
 
 const read=file=>fs.readFile(new URL('../'+file,import.meta.url),'utf8');
 
-test('MARIA chat defaults only to ChatGPT and does not present competing models',async()=>{
-  const s=await read('src/renderer/chatSurfaceV2.js');
-  assert.match(s,/const CHATGPT_AUTO='chatgpt:auto'/);
-  assert.match(s,/modelOverride:state\.model,provider:'chatgpt'/);
-  assert.match(s,/state\.models\.map\(m=>/);
-  assert.doesNotMatch(s,/window\.blackClover\.modelCatalog|providerList|openaiApiKey|githubBrain|online:groq|ollama:/);
-  assert.match(s,/if\(!state\.connected\)notice/);
-});
+test('ChatGPT default and optional explicit model selector',async()=>{const ui=await read('src/renderer/chatSurfaceV2.js');assert.match(ui,/const CHATGPT_AUTO='chatgpt:auto'/);assert.match(ui,/state.configuredProviders.map/);assert.match(ui,/modelOverride:state.model/);assert.match(ui,/provider:state.model.startsWith/);});
 
 test('voice controls map to actual persisted voice settings and speech preview',async()=>{
   const s=await read('src/renderer/chatSurfaceV2.js');
