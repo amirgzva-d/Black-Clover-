@@ -1,7 +1,7 @@
 # MARIA — Master Capability & Skill Specification
 
 **Canonical design file:** YES  
-**Branch:** \`design/maria-skill-specs\`  
+**Branch:** `design/maria-skill-specs`  
 **Purpose:** One source of truth for every MARIA capability before local implementation.  
 **Local implementation rule:** No capability is marked IMPLEMENTED until it runs and verifies successfully on the user's actual Windows MARIA environment.
 
@@ -9,7 +9,7 @@
 
 Every capability in this file must use the shared MARIA pipeline:
 
-\`Normalize → Typo/STT Recovery → Semantic Intent → Slot Extraction → Context Resolution → Confidence → Permission/Risk → Plan → Execute → Verify → Undo/Memory\`
+`Normalize → Typo/STT Recovery → Semantic Intent → Slot Extraction → Context Resolution → Confidence → Permission/Risk → Plan → Execute → Verify → Undo/Memory`
 
 Global requirements:
 - Natural-language understanding, not exact-string if/else matching.
@@ -994,7 +994,7 @@ The implementation layer may change as Windows evolves; the canonical MARIA inte
 ## 02 — Display / Brightness / Monitor Control
 
 **Status:** DESIGN COMPLETE v1 — WAITING FOR LOCAL IMPLEMENTATION  
-**Capability family:** \`display.*\`, \`brightness.*\`, \`monitor.*\`  
+**Capability family:** `display.*`, `brightness.*`, `monitor.*`  
 **Owner modules:** Brain / Intent Router / Context Engine / Display Resolver / Windows Display Adapter  
 **Offline capable:** yes for core Windows/local monitor control  
 **Risk class:** L0-L3 depending on topology/resolution/persistent changes  
@@ -1069,72 +1069,72 @@ Examples:
 ### 3. Canonical intents
 
 #### 3.1 Brightness
-- \`display.brightness.get\`
-- \`display.brightness.set\`
-- \`display.brightness.increase\`
-- \`display.brightness.decrease\`
-- \`display.brightness.maximum\`
-- \`display.brightness.minimum\`
-- \`display.brightness.half_max\`
-- \`display.brightness.scale_current\`
-- \`display.brightness.restore_previous\`
-- \`display.brightness.fade\`
+- `display.brightness.get`
+- `display.brightness.set`
+- `display.brightness.increase`
+- `display.brightness.decrease`
+- `display.brightness.maximum`
+- `display.brightness.minimum`
+- `display.brightness.half_max`
+- `display.brightness.scale_current`
+- `display.brightness.restore_previous`
+- `display.brightness.fade`
 
 #### 3.2 Monitor discovery/state
-- \`display.monitor.list\`
-- \`display.monitor.get_active\`
-- \`display.monitor.identify\`
-- \`display.monitor.get_primary\`
-- \`display.monitor.set_primary\`
+- `display.monitor.list`
+- `display.monitor.get_active`
+- `display.monitor.identify`
+- `display.monitor.get_primary`
+- `display.monitor.set_primary`
 
 #### 3.3 Monitor power
-- \`display.power.off\`
-- \`display.power.wake\`
-- \`display.power.restore_previous\`
+- `display.power.off`
+- `display.power.wake`
+- `display.power.restore_previous`
 
 #### 3.4 Night Light / color temperature
-- \`display.night_light.get\`
-- \`display.night_light.enable\`
-- \`display.night_light.disable\`
-- \`display.night_light.toggle\`
-- \`display.color_temperature.get\`
-- \`display.color_temperature.set\`
+- `display.night_light.get`
+- `display.night_light.enable`
+- `display.night_light.disable`
+- `display.night_light.toggle`
+- `display.color_temperature.get`
+- `display.color_temperature.set`
 
 These intents are capability-gated. Use only supported/documented mechanisms or a reliable UI/settings adapter; do not make undocumented registry edits the primary implementation.
 
 #### 3.5 Adaptive brightness / ambient light
-- \`display.adaptive_brightness.get\`
-- \`display.adaptive_brightness.enable\`
-- \`display.adaptive_brightness.disable\`
-- \`display.adaptive_brightness.set_target\`
+- `display.adaptive_brightness.get`
+- `display.adaptive_brightness.enable`
+- `display.adaptive_brightness.disable`
+- `display.adaptive_brightness.set_target`
 
 Only when hardware/driver support is detected.
 
 #### 3.6 Topology
-- \`display.topology.get\`
-- \`display.topology.extend\`
-- \`display.topology.duplicate\`
-- \`display.topology.internal_only\`
-- \`display.topology.external_only\`
-- \`display.topology.restore_previous\`
+- `display.topology.get`
+- `display.topology.extend`
+- `display.topology.duplicate`
+- `display.topology.internal_only`
+- `display.topology.external_only`
+- `display.topology.restore_previous`
 
 #### 3.7 Resolution / refresh / orientation
-- \`display.resolution.get\`
-- \`display.resolution.list_supported\`
-- \`display.resolution.set\`
-- \`display.refresh_rate.get\`
-- \`display.refresh_rate.list_supported\`
-- \`display.refresh_rate.set\`
-- \`display.orientation.get\`
-- \`display.orientation.set\`
+- `display.resolution.get`
+- `display.resolution.list_supported`
+- `display.resolution.set`
+- `display.refresh_rate.get`
+- `display.refresh_rate.list_supported`
+- `display.refresh_rate.set`
+- `display.orientation.get`
+- `display.orientation.set`
 
 #### 3.8 Scale / HDR
-- \`display.scale.get\`
-- \`display.scale.set\`
-- \`display.hdr.get\`
-- \`display.hdr.enable\`
-- \`display.hdr.disable\`
-- \`display.hdr.toggle\`
+- `display.scale.get`
+- `display.scale.set`
+- `display.hdr.get`
+- `display.hdr.enable`
+- `display.hdr.disable`
+- `display.hdr.toggle`
 
 These are capability-gated and require extra validation because Windows/driver support varies.
 
@@ -1143,29 +1143,29 @@ These are capability-gated and require extra validation because Windows/driver s
 ### 4. Slots / parameters
 
 Shared slots:
-- \`target\`
-  - \`primary_monitor\`
-  - \`internal_display\`
-  - \`external_display\`
-  - \`monitor:<stable_id>\`
-  - \`monitor_index:<n>\`
-  - \`all_monitors\`
-  - \`active_context_monitor\`
-- \`value\`: normalized numeric value
-- \`delta\`: change magnitude
-- \`unit\`: \`points\` | \`percent\` | \`adaptive\`
-- \`fraction\`
-- \`width\`
-- \`height\`
-- \`refresh_hz\`
-- \`orientation\`: landscape | portrait | landscape_flipped | portrait_flipped
-- \`scale_percent\`
-- \`topology\`: extend | duplicate | internal_only | external_only
-- \`duration_ms\`
-- \`temporary_until\`
-- \`restore_source\`
-- \`confidence\`
-- \`source\`: voice | text | routine | event
+- `target`
+  - `primary_monitor`
+  - `internal_display`
+  - `external_display`
+  - `monitor:<stable_id>`
+  - `monitor_index:<n>`
+  - `all_monitors`
+  - `active_context_monitor`
+- `value`: normalized numeric value
+- `delta`: change magnitude
+- `unit`: `points` | `percent` | `adaptive`
+- `fraction`
+- `width`
+- `height`
+- `refresh_hz`
+- `orientation`: landscape | portrait | landscape_flipped | portrait_flipped
+- `scale_percent`
+- `topology`: extend | duplicate | internal_only | external_only
+- `duration_ms`
+- `temporary_until`
+- `restore_source`
+- `confidence`
+- `source`: voice | text | routine | event
 
 Initial adaptive brightness defaults:
 - "یه ذره" => 5 points
@@ -1626,20 +1626,20 @@ The executor receives normalized semantics only; it must not reinterpret natural
 
 #### Internal/laptop brightness
 Prefer Windows-supported monitor brightness mechanisms where available:
-- WMI \`WmiMonitorBrightness\` for current supported levels/state
-- \`WmiMonitorBrightnessMethods.WmiSetBrightness\` for supported internal-monitor brightness control
+- WMI `WmiMonitorBrightness` for current supported levels/state
+- `WmiMonitorBrightnessMethods.WmiSetBrightness` for supported internal-monitor brightness control
 
 #### External monitor brightness
 For physical monitors that support VESA MCCS/DDC-CI:
-- High-Level Monitor Configuration APIs such as \`GetMonitorBrightness\` / \`SetMonitorBrightness\`
+- High-Level Monitor Configuration APIs such as `GetMonitorBrightness` / `SetMonitorBrightness`
 - capability detection is mandatory
 
 Microsoft notes that physical-monitor configuration depends on monitor MCCS implementation and may behave inconsistently on arbitrary monitors. Therefore external-monitor control must be hardware-tested before MARIA marks it supported.
 
 #### Display topology/modes
 Use Windows Display Configuration APIs:
-- \`QueryDisplayConfig\`
-- \`SetDisplayConfig\`
+- `QueryDisplayConfig`
+- `SetDisplayConfig`
 - stable source/target mapping
 - capture current topology/mode before mutation
 
