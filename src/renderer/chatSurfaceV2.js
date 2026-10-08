@@ -255,7 +255,7 @@ function template(){
     '<nav class="settings-tabs"><button id="tab-account" class="active">حساب ChatGPT</button><button id="tab-voice">صدا</button><button id="tab-privacy">حریم خصوصی</button></nav>'+
     '<section id="panel-account" class="settings-content">'+
       '<div class="account-identity"><div class="account-symbol">'+icon('spark',22)+'</div><div><strong id="accountStatus">متصل نیست</strong><p id="accountDetails">با ChatGPT وارد شو تا گفتگو فعال شود.</p></div></div>'+
-      '<div class="account-switcher"><label for="accountPicker">حساب فعال</label><select id="accountPicker" aria-label="انتخاب حساب ChatGPT"><option value="">انتخاب حساب ChatGPT</option></select><button id="addChatGPTAccount" type="button">'+icon('plus',16)+' افزودن حساب دیگر</button></div>'+ 
+      '<div class="account-switcher"><label for="accountPicker">حساب فعال</label><select id="accountPicker" aria-label="انتخاب حساب ChatGPT"><option value="">انتخاب حساب ChatGPT</option></select><button id="addChatGPTAccount" type="button">'+icon('plus',16)+' افزودن حساب دیگر</button></div>'+
       '<div class="settings-actions"><button id="connectChatGPT" class="primary-button">Continue with ChatGPT</button><button id="chatgptUsage" hidden>نمایش مصرف و محدودیت</button><button id="disconnectChatGPT" hidden>قطع اتصال</button><button id="setupRefresh">بررسی وضعیت</button></div>'+
       '<p class="settings-note">ورود در مرورگر رسمی انجام می‌شود. حساب Chrome به‌طور خودکار انتخاب نمی‌شود؛ در صفحه ورود حساب موردنظرت را انتخاب کن. این اتصال ممکن است محدودیت سهمیه داشته باشد.</p>'+
     '</section>'+
