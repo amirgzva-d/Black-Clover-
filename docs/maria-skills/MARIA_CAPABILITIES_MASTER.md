@@ -5179,3 +5179,73 @@ When system is online:
 11. run full Windows test matrix.
 12. hand failures into Capability 06 Troubleshooting.
 13. mark only passing features IMPLEMENTED.
+
+
+---
+
+## Deferred Final Enhancements / End-of-Design Reminder
+
+These items are intentionally **NOT being implemented yet**. Revisit them after the remaining capability changes requested by the user are finished.
+
+### A. Email Checking / Notification Experience
+
+At the end of the current design pass, explicitly remind the user to return to this area and design the final experience for:
+- checking newly arrived emails/messages
+- proactive "new email arrived" announcements
+- sender/subject previews
+- read-aloud on request
+- unread count/state
+- important-email detection
+- notification center behavior
+- account-aware inbox switching
+- compact app-like inbox panel
+- notification UX inspired by the example app/screens the user referenced
+- background watcher/event integration
+- privacy modes for sensitive mail
+- "بخونش / خلاصه کن / جواب بده / پیوست رو باز کن" continuation flow
+
+This should be integrated with:
+- EmailWatcher
+- Proactive Assistant
+- ConnectorEventBus
+- AssistantVoiceSkill
+- NotificationFocusSkill
+- Gmail/Email connectors
+- Multi-Account Resolver
+
+### B. Coucou-Inspired Capability Review
+
+After the remaining requested capability changes are designed, review Coucou-like interaction ideas and extract useful patterns for MARIA, including where appropriate:
+- ambient/proactive desktop presence
+- lightweight always-available assistant interactions
+- context-aware quick actions
+- non-intrusive notifications
+- personality-aware reactions
+- fast voice/text handoff
+- desktop companion behaviors
+- idle/return-to-PC behavior
+- concise action confirmations
+- quick utility shortcuts
+- app/context awareness
+
+Do not clone proprietary internals or branding. Use only general interaction patterns and reimplement them as MARIA-native capabilities.
+
+### C. Mandatory Skill + Language Coverage Rule
+
+For every capability designed from this point forward:
+
+1. define a dedicated Skill or Skill family;
+2. define supporting Agent/Resolver/Verifier/Undo/Policy modules where needed;
+3. define stable canonical intents and typed slots;
+4. define context resolution and ambiguity policy;
+5. define permissions/risk;
+6. define verification and rollback;
+7. define failure recovery;
+8. define integration tests;
+9. define language datasets under the global 500–1000-per-high-frequency-intent standard;
+10. for a capability family with many intents, target **thousands of total utterance variants** across the family;
+11. include typo, STT, slang, short/incomplete, mixed Persian-English, context, correction, negation, conditional, timed, undo and cross-domain counterexamples;
+12. runtime understanding must remain semantic/contextual rather than exact-string matching.
+
+The goal is maximum practical robustness and professional behavior, not merely a large phrase count.
+
