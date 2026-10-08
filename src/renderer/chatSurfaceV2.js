@@ -262,7 +262,7 @@ function template(){
   '<main class="workspace">'+
     '<header class="topbar">'+
       '<div class="top-left">'+button('sidebarToggle','باز و بسته کردن منو','menu')+'<div class="app-title">MARIA</div><select id="modelSelect" title="انتخاب مدل ChatGPT"><option value="chatgpt:auto">ChatGPT · خودکار</option></select></div>'+
-      '<div class="top-right"><button id="accountChip" class="account-chip"><span class="state-dot"></span>اتصال به ChatGPT</button>'+button('minimizeChat','کوچک‌کردن','minimize')+button('closeChat','بستن پنجره','close')+'</div>'+
+      '<div class="top-right"><button id="accountChip" class="account-chip"><span class="state-dot"></span>اتصال به ChatGPT</button>'+'<button id="showAvatar" class="maria-avatar-return" type="button" title="بازگشت به کاراکتر و منوی پایین">کاراکتر و منو</button>'+button('minimizeChat','کوچک‌کردن','minimize')+button('closeChat','بستن پنجره','close')+'</div>'+
     '</header>'+
     '<div class="subbar"><button id="chatTitle" title="تغییر نام گفتگو">گفتگوی جدید</button><span id="status">آماده</span><small id="latency"></small><select id="folderSelect" title="انتقال گفتگو به پوشه"><option value="">بدون پروژه</option></select>'+button('pinChat','پین گفتگو','pin')+button('shareChat','کپی تمام گفتگو','copy')+button('exportChat','ذخیره گفتگو به فایل','export')+'</div>'+
     '<div id="connectBanner" class="connect-banner" hidden><span>برای پاسخ گرفتن از ChatGPT، حسابت را متصل کن.</span><button id="bannerConnect">اتصال حساب '+icon('arrow',14)+'</button></div>'+
@@ -374,6 +374,7 @@ export async function mountChatSurface(){
   $('#voicePitch').oninput=e=>{voice.configure({pitch:Number(e.target.value)});$('#voicePitchValue').textContent=Number(e.target.value).toFixed(2)+'×';};
   $('#voicePreview').onclick=()=>voice.speak('سلام! من ماریا هستم. صدای من رو می‌شنوی؟').then(ok=>{if(!ok)notice('موتور صدای فارسی در دسترس نیست.');});
   $('#voiceStop').onclick=()=>voice.stop('user-stop');
+  $('#showAvatar').onclick=()=>api().hideChat().catch(withError);
   $('#minimizeChat').onclick=()=>api().minimizeChat().catch(withError);
   $('#closeChat').onclick=()=>api().hideChat().catch(withError);
   api().onEvent?.(event=>{
