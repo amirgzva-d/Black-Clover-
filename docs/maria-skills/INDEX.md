@@ -12,8 +12,8 @@ From this point forward, every new capability specification is appended to the s
 | 04 | App install / update | DESIGN COMPLETE v2 EXTENDED | WAITING |
 | 05 | Windows settings | DESIGN COMPLETE v1 | WAITING |
 | 06 | Troubleshooting / repair | DESIGN COMPLETE v1 | WAITING |
-| 07 | Web search / research | NEXT | WAITING |
-| 08 | Browser automation | QUEUED | WAITING |
+| 07 | Web search / research | DESIGN COMPLETE v1 | WAITING |
+| 08 | Browser automation | NEXT | WAITING |
 | 09 | YouTube / web media | QUEUED | WAITING |
 | 10 | Messaging / forwarding | QUEUED | WAITING |
 | 11 | Timed / conditional actions | QUEUED | WAITING |
