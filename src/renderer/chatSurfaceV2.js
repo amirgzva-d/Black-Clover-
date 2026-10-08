@@ -50,11 +50,25 @@ function withError(error){notice(String(error?.message||error||'خطای نام�
 function scrollEnd(){const x=$('#messages');if(x)x.scrollTop=x.scrollHeight;}
 function grow(){const input=$('#input');if(!input)return;input.style.height='auto';input.style.height=Math.min(180,Math.max(45,input.scrollHeight))+'px';}
 function wipeStream(){activeStream?.remove();activeStream=null;streamContent='';}
-function accountName(){return String(state.account?.session?.profileLabel||'حساب ChatGPT');}
+function accountName(){return String(state.account?.session?.identity?.email||state.account?.session?.profileLabel||'حساب ChatGPT');}
+function showDialog({title,description='',value=null,confirmText='ذخیره',danger=false,multiline=false}={}){
+  const modal=$('#actionDialog'),heading=$('#actionDialogTitle'),desc=$('#actionDialogDescription'),input=$('#actionDialogInput'),textarea=$('#actionDialogTextarea'),accept=$('#actionDialogAccept'),cancel=$('#actionDialogCancel');
+  return new Promise(resolve=>{
+    let finished=false;
+    const close=result=>{if(finished)return;finished=true;modal.hidden=true;input.onkeydown=null;modal.onkeydown=null;accept.onclick=null;cancel.onclick=null;modal.onclick=null;resolve(result);};
+    heading.textContent=title;desc.textContent=description;desc.hidden=!description;input.hidden=value===null||multiline;textarea.hidden=!multiline;input.value=value===null?'':String(value);textarea.value=value===null?'':String(value);accept.textContent=confirmText;accept.classList.toggle('danger-button',danger);modal.hidden=false;
+    accept.onclick=()=>{const text=value===null?true:(multiline?textarea:input).value.trim();if(text===false||text==='')return;close(text);};
+    cancel.onclick=()=>close(null);modal.onclick=e=>{if(e.target===modal)close(null);};
+    modal.onkeydown=e=>{if(e.key==='Escape'){e.preventDefault();close(null);}if(e.key==='Enter'&&e.target===input){e.preventDefault();accept.click();}};
+    queueMicrotask(()=>{if(!modal.hidden)(value===null?cancel:(multiline?textarea:input)).focus();});
+  });
+}
 function updateAccountUi(){
   const usable=state.connected;
   const chip=$('#accountChip');if(chip){chip.classList.toggle('online',usable);chip.innerHTML='<span class="state-dot"></span>'+(usable?'ChatGPT · متصل':state.connecting?'در حال اتصال…':'اتصال به ChatGPT');}
   const label=$('#accountStatus');if(label)label.textContent=usable?'متصل به '+accountName():state.account?.session?.status==='connected'?'وارد شده‌اید؛ اجازه مصرف اشتراک داده نشده است':'هنوز به ChatGPT متصل نیستید';
+  const picker=$('#accountPicker');if(picker){const profiles=state.account?.profiles||[];const active=state.account?.session?.profileId||'';picker.innerHTML='<option value="">انتخاب حساب ChatGPT</option>'+profiles.map(p=>'<option value="'+esc(p.id)+'">'+esc(p.identity?.email||p.label||'حساب بدون نام')+(p.sharing?' · فعال':' · نیازمند ورود')+'</option>').join('');picker.value=profiles.some(p=>p.id===active)?active:'';picker.disabled=state.connecting||profiles.length===0;}
+  const addAccount=$('#addChatGPTAccount');if(addAccount)addAccount.disabled=state.connecting;
   const details=$('#accountDetails');if(details)details.textContent=state.account?.session?.error?.message||(usable?'پاسخ‌ها از سهمیه مجاز حساب ChatGPT شما استفاده می‌کنند.':'برای شروع گفتگو، با حساب خود در مرورگر وارد شوید و دسترسی را تأیید کنید.');
   const connect=$('#connectChatGPT');if(connect){connect.hidden=usable;connect.disabled=state.connecting;connect.textContent=state.connecting?'منتظر تأیید در مرورگر…':'Continue with ChatGPT';}
   const disconnect=$('#disconnectChatGPT');if(disconnect)disconnect.hidden=!usable;
@@ -77,14 +91,37 @@ async function connectChatGPT(){
   if(state.connecting)return;
   state.connecting=true;updateAccountUi();setStatus('منتظر تأیید حساب در مرورگر…');
   try{
-    await api().signInChatGPT({reconsent:state.account?.session?.status==='connected'});
+    await api().signInChatGPT({...(state.account?.session?.profileId?{profileId:state.account.session.profileId}:{}),reconsent:state.account?.session?.status==='connected'});
     await syncAccount(true);
     notice(state.connected?'حساب ChatGPT متصل شد.':'اتصال انجام شد، اما مجوز استفاده از سهمیه فعال نیست.');
   }catch(e){withError(e);await syncAccount();}finally{state.connecting=false;updateAccountUi();setStatus('آماده');}
 }
+async function addChatGPTAccount(){
+  if(state.connecting)return;state.connecting=true;updateAccountUi();
+  try{await api().signInChatGPT({newProfile:true});await syncAccount(true);notice(state.connected?'حساب جدید فعال شد.':'حساب اضافه شد؛ برای ادامه مجوز را بررسی کن.');}
+  catch(error){withError(error);await syncAccount();}
+  finally{state.connecting=false;updateAccountUi();}
+}
+async function switchChatGPTAccount(id){
+  if(!id||state.connecting)return;const old=state.account?.session?.profileId;
+  if(id===old)return;state.connecting=true;updateAccountUi();
+  try{await api().selectChatGPTProfile(id);state.model=CHATGPT_AUTO;await syncAccount(true);notice(state.connected?'حساب انتخاب‌شده فعال شد.':'حساب انتخاب شد؛ برای فعال شدن با آن وارد شو.');}
+  catch(error){withError(error);await syncAccount();}
+  finally{state.connecting=false;updateAccountUi();}
+}
 async function disconnectChatGPT(){
-  if(!confirm('اتصال این حساب از MARIA قطع شود؟'))return;
+  if(!await showDialog({title:'قطع اتصال ChatGPT',description:'اتصال حساب فعال از MARIA قطع می‌شود؛ گفتگوهای ذخیره‌شده پاک نخواهند شد.',danger:true,confirmText:'قطع اتصال'}))return;
   try{await api().disconnectChatGPT();state.model=CHATGPT_AUTO;await syncAccount();notice('اتصال حساب قطع شد.');}catch(e){withError(e);}
+}
+function editProjectDialog(folder){
+  const modal=$('#projectDialog'),name=$('#projectEditName'),instructions=$('#projectEditInstructions'),save=$('#projectEditSave'),cancel=$('#projectEditCancel');
+  return new Promise(resolve=>{
+    let done=false;const close=result=>{if(done)return;done=true;modal.hidden=true;save.onclick=null;cancel.onclick=null;modal.onclick=null;modal.onkeydown=null;resolve(result);};
+    $('#projectDialogTitle').textContent='تنظیمات پروژه';name.value=folder.name;instructions.value=folder.instructions||'';modal.hidden=false;
+    save.onclick=()=>{if(!name.value.trim()){name.focus();return;}close({name:name.value.trim(),instructions:instructions.value.trim()});};
+    cancel.onclick=()=>close(null);modal.onclick=e=>{if(e.target===modal)close(null);};modal.onkeydown=e=>{if(e.key==='Escape')close(null);};
+    queueMicrotask(()=>name.focus());
+  });
 }
 function messageButtons(message,index){
   if(message.role==='user')return '<button title="کپی پیام" data-message-action="copy">'+icon('copy',15)+'</button><button title="ویرایش پیام" data-message-action="edit">'+icon('edit',15)+'</button>';
@@ -108,7 +145,7 @@ function renderMessages(){
 function renderChats(){
   const root=$('#chatList');if(!root)return;
   root.innerHTML=state.list.map(c=>'<div class="chat-entry '+(c.id===state.id?'selected':'')+'" data-chat="'+esc(c.id)+'"><button type="button" data-chat-open="'+esc(c.id)+'" title="'+esc(c.title)+'"><span>'+esc(c.title)+'</span></button><div class="item-actions"><button title="'+(c.pinned?'برداشتن پین':'پین گفتگو')+'" data-chat-action="pin">'+icon('pin',14)+'</button><button title="تغییر نام" data-chat-action="rename">'+icon('edit',14)+'</button><button title="حذف گفتگو" data-chat-action="delete">'+icon('trash',14)+'</button></div></div>').join('')||'<p class="empty-list">گفتگویی پیدا نشد.</p>';
-  const folders=$('#folderList');folders.innerHTML=state.folders.map(f=>'<div class="folder-entry '+(state.folder===f.id?'selected':'')+'" data-folder="'+esc(f.id)+'"><button data-folder-open="'+esc(f.id)+'">'+icon('folder',15)+'<span>'+esc(f.name)+'</span></button><button title="تغییر نام" data-folder-action="rename">'+icon('edit',14)+'</button><button title="حذف پوشه" data-folder-action="delete">'+icon('trash',14)+'</button></div>').join('')||'<p class="empty-list">پوشه‌ای ساخته نشده است.</p>';
+  const folders=$('#folderList');folders.innerHTML=state.folders.map(f=>'<div class="folder-entry '+(state.folder===f.id?'selected':'')+'" data-folder="'+esc(f.id)+'"><button data-folder-open="'+esc(f.id)+'">'+icon('folder',15)+'<span>'+esc(f.name)+(f.instructions?' · ✦':'')+'</span></button><button title="دستورالعمل‌ها و تنظیمات پروژه" data-folder-action="settings">'+icon('settings',14)+'</button><button title="حذف پروژه" data-folder-action="delete">'+icon('trash',14)+'</button></div>').join('')||'<p class="empty-list">هنوز پروژه‌ای ساخته نشده.</p>';
   const select=$('#folderSelect');if(select){select.innerHTML='<option value="">بدون پروژه</option>'+state.folders.map(f=>'<option value="'+esc(f.id)+'">'+esc(f.name)+'</option>').join('');select.value=state.chat?.folderId||'';}
 }
 async function refreshList(){
@@ -194,7 +231,7 @@ function template(){
     '<button class="new-chat" id="newChat">'+icon('plus',18)+'گفتگوی جدید</button>'+
     '<label class="search-box">'+icon('search',16)+'<input id="chatSearch" autocomplete="off" placeholder="جستجو در گفتگوها"></label>'+
     '<div class="side-scroll"><button class="side-caption" id="allChats">گفتگوهای اخیر</button><div id="chatList"></div>'+
-    '<div class="projects-label"><span>پوشه‌های گفتگو</span><button title="افزودن پوشه" id="newFolder">'+icon('plus',16)+'</button></div><div id="folderList"></div></div>'+
+    '<div class="projects-label"><span>پروژه‌ها</span><button title="ساخت پروژه" id="newFolder">'+icon('plus',16)+'</button></div><div id="folderList"></div></div>'+
     '<div class="side-foot"><button id="workMode">'+icon('work',17)+'پروژه‌های MARIA</button><button id="settings">'+icon('settings',17)+'تنظیمات</button></div>'+
   '</aside>'+
   '<main class="workspace">'+
@@ -218,6 +255,7 @@ function template(){
     '<nav class="settings-tabs"><button id="tab-account" class="active">حساب ChatGPT</button><button id="tab-voice">صدا</button><button id="tab-privacy">حریم خصوصی</button></nav>'+
     '<section id="panel-account" class="settings-content">'+
       '<div class="account-identity"><div class="account-symbol">'+icon('spark',22)+'</div><div><strong id="accountStatus">متصل نیست</strong><p id="accountDetails">با ChatGPT وارد شو تا گفتگو فعال شود.</p></div></div>'+
+      '<div class="account-switcher"><label for="accountPicker">حساب فعال</label><select id="accountPicker" aria-label="انتخاب حساب ChatGPT"><option value="">انتخاب حساب ChatGPT</option></select><button id="addChatGPTAccount" type="button">'+icon('plus',16)+' افزودن حساب دیگر</button></div>'+ 
       '<div class="settings-actions"><button id="connectChatGPT" class="primary-button">Continue with ChatGPT</button><button id="chatgptUsage" hidden>نمایش مصرف و محدودیت</button><button id="disconnectChatGPT" hidden>قطع اتصال</button><button id="setupRefresh">بررسی وضعیت</button></div>'+
       '<p class="settings-note">ورود در مرورگر رسمی انجام می‌شود. حساب Chrome به‌طور خودکار انتخاب نمی‌شود؛ در صفحه ورود حساب موردنظرت را انتخاب کن. این اتصال ممکن است محدودیت سهمیه داشته باشد.</p>'+
     '</section>'+
@@ -230,7 +268,7 @@ function template(){
       '<small class="settings-note" id="voiceEngineNote">کیفیت صدا به موتور صوتی و صداهای نصب‌شده در ویندوز بستگی دارد.</small>'+
     '</section>'+
     '<section id="panel-privacy" class="settings-content" hidden><p>گفتگوهای MARIA روی این کامپیوتر ذخیره می‌شوند. متن درخواست‌های مجاز برای پاسخ به مدل ChatGPT ارسال می‌شود. ابزارهای کنترل کامپیوتر از مسیر بررسی مجوزهای MARIA اجرا می‌شوند.</p><p>فایل‌های خصوصی به‌صورت خودکار به ChatGPT فرستاده نمی‌شوند. برای حذف گفتگوها از کنار نام گفتگو گزینه حذف را بزن.</p></section>'+
-  '</section></div>';
+  '</section></div><div id="projectDialog" class="action-dialog-overlay" hidden><section class="action-dialog project-edit" role="dialog" aria-modal="true" aria-labelledby="projectDialogTitle"><div class="dialog-icon">'+icon('folder',23)+'</div><h3 id="projectDialogTitle">تنظیمات پروژه</h3><label>نام پروژه<input type="text" id="projectEditName" maxlength="120" aria-label="نام پروژه"></label><label>دستورالعمل مخصوص این پروژه<textarea id="projectEditInstructions" maxlength="5000" rows="7" placeholder="مثلاً همیشه برای این پروژه کوتاه و دقیق جواب بده و از اصطلاحات فارسی استفاده کن."></textarea></label><p>این دستورالعمل در تمام گفتگوهای این پروژه به MARIA داده می‌شود؛ فایل‌های خصوصی خودکار ارسال نمی‌شوند.</p><div class="action-dialog-buttons"><button id="projectEditCancel" type="button">انصراف</button><button id="projectEditSave" type="button">ذخیره پروژه</button></div></section></div><div id="actionDialog" class="action-dialog-overlay" hidden><section class="action-dialog" role="dialog" aria-modal="true" aria-labelledby="actionDialogTitle"><div class="dialog-icon">'+icon('chat',23)+'</div><h3 id="actionDialogTitle"></h3><p id="actionDialogDescription"></p><input type="text" id="actionDialogInput" maxlength="120" aria-label="نام جدید" autocomplete="off"><textarea id="actionDialogTextarea" rows="5" maxlength="5000" hidden aria-label="متن جدید"></textarea><div class="action-dialog-buttons"><button type="button" id="actionDialogCancel">انصراف</button><button type="button" id="actionDialogAccept">ذخیره</button></div></section></div>';
 }
 export async function mountChatSurface(){
   document.body.classList.add('chat-v3','surface-chat');
@@ -242,20 +280,21 @@ export async function mountChatSurface(){
   $('#newChat').onclick=()=>createChat().catch(withError);
   $('#allChats').onclick=()=>{state.folder='all';refreshList().catch(withError);};
   $('#chatSearch').oninput=e=>{state.search=e.target.value;refreshList().catch(withError);};
-  $('#newFolder').onclick=async()=>{const name=prompt('نام پوشه گفتگوها');if(name?.trim()){try{await api().createChatFolder(name.trim());await refreshList();}catch(e){withError(e);}}};
+  $('#newFolder').onclick=async()=>{const name=await showDialog({title:'پروژه جدید',description:'برای مرتب کردن گفتگوها یک پروژه بساز.',value:'',confirmText:'ساخت پروژه'});if(name){try{const folder=await api().createChatFolder(name);state.folder=folder.id;await refreshList();notice('پروژه ساخته شد.');}catch(e){withError(e);}}};
   $('#chatList').onclick=async e=>{if(busy)return notice('برای تغییر گفتگو ابتدا پاسخ را متوقف کن.');
     const row=e.target.closest('[data-chat]');if(!row)return;const id=row.dataset.chat,action=e.target.closest('[data-chat-action]')?.dataset.chatAction;
     try{if(!action)return await loadChat(id);const item=state.list.find(c=>c.id===id);if(!item)return;
-      if(action==='pin')await api().updateChat(id,{pinned:!item.pinned});
-      if(action==='rename'){const title=prompt('نام گفتگو',item.title);if(title?.trim())await api().updateChat(id,{title:title.trim()});}
-      if(action==='delete'){if(!confirm('این گفتگو حذف شود؟'))return;await api().removeChat(id);if(id===state.id){state.id=null;state.chat=null;await ensureChat();}}
+      if(action==='pin'){await api().updateChat(id,{pinned:!item.pinned});notice(item.pinned?'گفتگو از پین خارج شد.':'گفتگو پین شد.');}
+      if(action==='rename'){const title=await showDialog({title:'تغییر نام گفتگو',description:'نام جدید گفتگو را وارد کن.',value:item.title,confirmText:'ذخیره نام'});if(title){await api().updateChat(id,{title});notice('نام گفتگو تغییر کرد.');}}
+      if(action==='delete'){const ok=await showDialog({title:'حذف گفتگو',description:'«'+item.title+'» به‌طور دائمی حذف می‌شود و بازگردانی ندارد.',confirmText:'حذف گفتگو',danger:true});if(!ok)return;await api().removeChat(id);if(id===state.id){state.id=null;state.chat=null;await ensureChat();}notice('گفتگو حذف شد.');}
       if(id===state.id&&state.id)await loadChat(id);else await refreshList();
     }catch(error){withError(error);}};
   $('#folderList').onclick=async e=>{const row=e.target.closest('[data-folder]');if(!row)return;const id=row.dataset.folder,action=e.target.closest('[data-folder-action]')?.dataset.folderAction;
     if(busy)return notice('بعد از پایان پاسخ، پوشه را تغییر بده.');
     try{
-      if(action==='rename'){const f=state.folders.find(x=>x.id===id),name=prompt('نام پوشه',f?.name||'');if(name?.trim())await api().renameChatFolder(id,name.trim());}
-      else if(action==='delete'){if(confirm('پوشه حذف شود؟ گفتگوها باقی می‌مانند.')){await api().removeChatFolder(id);state.folder='all';}}
+      if(action==='settings'){const f=state.folders.find(x=>x.id===id),changes=f&&await editProjectDialog(f);if(changes){await api().updateChatFolder(id,changes);notice('تنظیمات پروژه ذخیره شد.');}}
+      if(action==='rename'){const f=state.folders.find(x=>x.id===id),name=await showDialog({title:'تغییر نام پروژه',value:f?.name||'',confirmText:'ذخیره'});if(name)await api().renameChatFolder(id,name);}
+      else if(action==='delete'){const ok=await showDialog({title:'حذف پروژه',description:'فقط پوشه حذف می‌شود و گفتگوهای داخل آن باقی می‌مانند.',confirmText:'حذف پوشه',danger:true});if(ok){await api().removeChatFolder(id);state.folder='all';}}
       else state.folder=id;
       await refreshList();
     }catch(error){withError(error);}};
@@ -268,7 +307,7 @@ export async function mountChatSurface(){
     try{
       if(action==='copy'){await navigator.clipboard.writeText(message.text);notice('متن کپی شد.');}
       if(action==='speak')voice.speak(message.text);
-      if(action==='edit'){const edited=prompt('متن پیام را ویرایش کن',message.text);if(edited?.trim()){await api().updateChatMessage(state.id,message.id,{text:edited});if(message.role==='user')await retryMessage(message);else await loadChat(state.id);}}
+      if(action==='edit'){const edited=await showDialog({title:'ویرایش پیام',description:'متن جدید پیام را وارد کن.',value:message.text,multiline:true,confirmText:'ذخیره پیام'});if(edited?.trim()){await api().updateChatMessage(state.id,message.id,{text:edited});if(message.role==='user')await retryMessage(message);else await loadChat(state.id);}}
       if(action==='retry'){const i=state.chat.messages.findIndex(m=>m.id===message.id),prior=state.chat.messages.slice(0,i).reverse().find(m=>m.role==='user');if(prior)await retryMessage(prior);}
     }catch(error){withError(error);}};
   $('#form').onsubmit=e=>{e.preventDefault();if(busy)return stopResponse();sendMessage($('#input').value).catch(withError);};
@@ -283,7 +322,7 @@ export async function mountChatSurface(){
   $('#pinChat').onclick=async()=>{if(!state.id)return;try{await api().updateChat(state.id,{pinned:!state.chat.pinned});await loadChat(state.id);}catch(e){withError(e);}};
   $('#shareChat').onclick=async()=>{if(state.id){try{await api().copyChat(state.id);notice('کل گفتگو کپی شد.');}catch(e){withError(e);}}};
   $('#exportChat').onclick=()=>state.id&&api().exportChat(state.id).catch(withError);
-  $('#chatTitle').onclick=async()=>{const title=prompt('نام گفتگو',state.chat?.title||'');if(title?.trim()){await api().updateChat(state.id,{title:title.trim()});await loadChat(state.id);}};
+  $('#chatTitle').onclick=async()=>{if(!state.id)return;try{const title=await showDialog({title:'تغییر نام گفتگو',value:state.chat?.title||'',confirmText:'ذخیره نام'});if(title){await api().updateChat(state.id,{title});await loadChat(state.id);notice('نام گفتگو تغییر کرد.');}}catch(e){withError(e);}};
   $('#folderSelect').onchange=async e=>{await api().updateChat(state.id,{folderId:e.target.value||null});await loadChat(state.id);};
   $('#accountChip').onclick=()=>openSettings('account');
   $('#bannerConnect').onclick=()=>openSettings('account');
@@ -293,6 +332,8 @@ export async function mountChatSurface(){
   window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#setup').hidden){$('#setup').hidden=true;}});
   for(const tab of ['account','voice','privacy'])$('#tab-'+tab).onclick=()=>chooseSettingsTab(tab);
   $('#connectChatGPT').onclick=connectChatGPT;
+  $('#addChatGPTAccount').onclick=addChatGPTAccount;
+  $('#accountPicker').onchange=e=>switchChatGPTAccount(e.target.value);
   $('#disconnectChatGPT').onclick=disconnectChatGPT;
   $('#chatgptUsage').onclick=()=>api().openChatGPTUsage().catch(withError);
   $('#setupRefresh').onclick=async()=>{await syncAccount(true);notice('وضعیت اتصال به‌روزرسانی شد.');};

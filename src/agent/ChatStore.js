@@ -37,7 +37,7 @@ async function load(){
     const raw=JSON.parse(await fs.readFile(filePath(),'utf8'));
     return {
       version:1,
-      folders:Array.isArray(raw?.folders)?raw.folders.map(x=>({id:String(x.id||crypto.randomUUID()),name:cleanTitle(x.name),createdAt:String(x.createdAt||now())})):[],
+      folders:Array.isArray(raw?.folders)?raw.folders.map(x=>({id:String(x.id||crypto.randomUUID()),name:cleanTitle(x.name),instructions:String(x.instructions||'').slice(0,5000),createdAt:String(x.createdAt||now())})):[],
       conversations:Array.isArray(raw?.conversations)?raw.conversations.map(normalizeConversation):[]
     };
   }catch{return defaultState();}
@@ -104,7 +104,8 @@ export class ChatStore{
     const state=await load(),target=state.conversations.find(x=>x.id===copy.id);target.messages=keep.map(x=>normalizeMessage({...x,id:crypto.randomUUID()}));target.updatedAt=now();await save(state);return target;
   }
   async folders(){return (await load()).folders.sort((a,b)=>a.name.localeCompare(b.name,'fa'));}
-  async createFolder(name){const state=await load(),item={id:crypto.randomUUID(),name:cleanTitle(name),createdAt:now()};state.folders.push(item);await save(state);return item;}
+  async createFolder(name){const state=await load(),item={id:crypto.randomUUID(),name:cleanTitle(name),instructions:'',createdAt:now()};state.folders.push(item);await save(state);return item;}
+  async updateFolder(id,patch={}){const state=await load(),item=state.folders.find(x=>x.id===String(id||''));if(!item)throw new Error('Project not found');if(typeof patch.name==='string')item.name=cleanTitle(patch.name);if(typeof patch.instructions==='string')item.instructions=patch.instructions.trim().slice(0,5000);await save(state);return item;}
   async renameFolder(id,name){const state=await load(),item=state.folders.find(x=>x.id===String(id||''));if(!item)throw new Error('Folder not found');item.name=cleanTitle(name);await save(state);return item;}
   async removeFolder(id){const state=await load(),key=String(id||''),before=state.folders.length;state.folders=state.folders.filter(x=>x.id!==key);for(const chat of state.conversations)if(chat.folderId===key)chat.folderId=null;if(state.folders.length===before)return false;await save(state);return true;}
   async transcript(id){

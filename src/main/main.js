@@ -49,7 +49,7 @@ async function chatAgentFor(conversationId){
   const id=String(conversationId||'');if(!id)return agent;
   let session=chatAgents.get(id);if(session)return session;
   const conversation=await chats.get(id);if(!conversation)throw new Error('Conversation not found');
-  session=new Agent({emit:send,enableScheduler:false,client:new BrainRouter({chatgptPlan})});session.loadConversation(conversation.messages||[]);chatAgents.set(id,session);return session;
+  const folder=conversation.folderId?(await chats.folders()).find(x=>x.id===conversation.folderId):null;const projectInstructions=folder?.instructions?'\n\n[USER PROJECT INSTRUCTIONS – '+folder.name+']\n'+folder.instructions+'\n[/USER PROJECT INSTRUCTIONS]':'';session=new Agent({emit:send,enableScheduler:false,client:new BrainRouter({chatgptPlan}),systemContext:projectInstructions});session.loadConversation(conversation.messages||[]);chatAgents.set(id,session);return session;
 }
 function invalidateChatAgent(id){if(id)chatAgents.delete(String(id));}
 
@@ -133,6 +133,7 @@ ipcMain.handle('brain:github-login',async()=>{if(!brainStore)brainStore=new Brai
 ipcMain.handle('chatgpt:status',()=>chatgptPlan.status());
 ipcMain.handle('chatgpt:sign-in',async(_e,options={})=>{const state=await chatgptPlan.signIn(options||{});chatAgents.clear();return {state,status:await chatgptPlan.status(),catalog:await agent.modelCatalog()};});
 ipcMain.handle('chatgpt:cancel-sign-in',()=>{chatgptPlan.cancelSignIn();return {ok:true};});
+ipcMain.handle('chatgpt:select-profile',async(_e,profileId)=>{const state=await chatgptPlan.selectProfile(String(profileId||''));chatAgents.clear();return {state,status:await chatgptPlan.status()};});
 ipcMain.handle('chatgpt:disconnect',async()=>{const state=await chatgptPlan.disconnect();chatAgents.clear();return {state,status:await chatgptPlan.status(),catalog:await agent.modelCatalog()};});
 ipcMain.handle('chatgpt:usage',()=>chatgptPlan.openUsage());
 ipcMain.handle('chatgpt:refresh-models',async()=>{await chatgptPlan.models({fresh:true});return {status:await chatgptPlan.status(),catalog:await agent.modelCatalog()};});
@@ -140,7 +141,7 @@ ipcMain.handle('chats:pick-files',async()=>{const picked=await dialog.showOpenDi
 ipcMain.handle('chats:list',(_e,filter={})=>chats.list(filter||{}));
 ipcMain.handle('chats:get',(_e,id)=>chats.get(String(id||'')));
 ipcMain.handle('chats:create',(_e,payload)=>chats.create(payload||{}));
-ipcMain.handle('chats:update',async(_e,payload)=>{const item=await chats.update(String(payload?.id||''),payload?.patch||{});return item;});
+ipcMain.handle('chats:update',async(_e,payload)=>{const id=String(payload?.id||''),item=await chats.update(id,payload?.patch||{});invalidateChatAgent(id);return item;});
 ipcMain.handle('chats:remove',async(_e,id)=>{id=String(id||'');invalidateChatAgent(id);return chats.remove(id);});
 ipcMain.handle('chats:message-append',async(_e,payload)=>{const id=String(payload?.conversationId||'');const item=await chats.appendMessage(id,payload?.message||{});invalidateChatAgent(id);return item;});
 ipcMain.handle('chats:message-update',async(_e,payload)=>{const id=String(payload?.conversationId||'');const item=await chats.updateMessage(id,String(payload?.messageId||''),payload?.patch||{});invalidateChatAgent(id);return item;});
@@ -148,8 +149,9 @@ ipcMain.handle('chats:message-remove',async(_e,payload)=>{const id=String(payloa
 ipcMain.handle('chats:branch',(_e,payload)=>chats.branch(String(payload?.conversationId||''),payload?.messageId));
 ipcMain.handle('chats:folders',()=>chats.folders());
 ipcMain.handle('chats:folder-create',(_e,name)=>chats.createFolder(String(name||'')));
-ipcMain.handle('chats:folder-rename',(_e,payload)=>chats.renameFolder(String(payload?.id||''),String(payload?.name||'')));
-ipcMain.handle('chats:folder-remove',(_e,id)=>chats.removeFolder(String(id||'')));
+ipcMain.handle('chats:folder-rename',async(_e,payload)=>{const out=await chats.renameFolder(String(payload?.id||''),String(payload?.name||''));chatAgents.clear();return out;});
+ipcMain.handle('chats:folder-update',async(_e,payload)=>{const out=await chats.updateFolder(String(payload?.id||''),payload?.patch||{});chatAgents.clear();return out;});
+ipcMain.handle('chats:folder-remove',async(_e,id)=>{const result=await chats.removeFolder(String(id||''));chatAgents.clear();return result;});
 ipcMain.handle('chats:copy',async(_e,id)=>{const text=await chats.transcript(String(id||''));clipboard.writeText(text);return {ok:true};});
 ipcMain.handle('chats:export',async(_e,id)=>{const item=await chats.get(String(id||''));if(!item)throw new Error('Conversation not found');const text=await chats.transcript(item.id),safe=item.title.replace(/[<>:"/\\|?*]+/g,' ').trim()||'Maria Chat';const picked=await dialog.showSaveDialog(chatWin||undefined,{title:'ذخیره گفتگو',defaultPath:path.join(app.getPath('documents'),safe+'.md'),filters:[{name:'Markdown',extensions:['md']},{name:'Text',extensions:['txt']}]});if(picked.canceled||!picked.filePath)return {ok:false,canceled:true};fs.writeFileSync(picked.filePath,text,'utf8');return {ok:true,path:picked.filePath};});
 ipcMain.handle('agent:replay',async(_e,payload)=>{

@@ -18,7 +18,7 @@ const cleanError=error=>{
   return error instanceof Error?error:new Error(String(error||'ChatGPT request failed'));
 };
 const usableSession=s=>Boolean(s?.status==='connected'&&s?.sharing===true&&!s?.error);
-const publicSession=s=>({status:String(s?.status||'disconnected'),sharing:Boolean(s?.sharing),profileId:s?.profileId||null,profileLabel:s?.profileLabel||null,error:s?.error?{code:s.error.code||'',message:s.error.message||'',retryable:Boolean(s.error.retryable),status:s.error.status||null}:null});
+const publicSession=s=>({status:String(s?.status||'disconnected'),sharing:Boolean(s?.sharing),profileId:s?.profileId||null,profileLabel:s?.profileLabel||null,identity:s?.identity?{name:s.identity.name||null,email:s.identity.email||null}:null,error:s?.error?{code:s.error.code||'',message:s.error.message||'',retryable:Boolean(s.error.retryable),status:s.error.status||null}:null});
 
 export class ChatGPTPlanService{
   constructor(){this.client=null;this.controllers=new Set();this.modelsCache=[];this.modelsAt=0;}
@@ -42,7 +42,8 @@ export class ChatGPTPlanService{
   }
   async session(){try{return await this.ensure().getSession();}catch(error){return {status:'disconnected',sharing:false,error:{message:String(error?.message||error)}};}}
   async profiles(){try{return await this.ensure().listProfiles();}catch{return[];}}
-  async signIn(options={}){return this.ensure().signIn(options);}
+  async signIn(options={}){const state=await this.ensure().signIn(options);this.modelsCache=[];this.modelsAt=0;return state;}
+  async selectProfile(profileId){if(!profileId||typeof profileId!=='string')throw new Error('A saved ChatGPT profile must be selected.');const state=await this.ensure().selectProfile(profileId);this.modelsCache=[];this.modelsAt=0;return state;}
   cancelSignIn(){this.client?.cancelSignIn?.();}
   async disconnect(){if(this.client)await this.client.disconnect();this.modelsCache=[];this.modelsAt=0;return this.session();}
   async openUsage(){await shell.openExternal(CHATGPT_USAGE_URL);return {ok:true};}
@@ -53,7 +54,7 @@ export class ChatGPTPlanService{
   }
   async status(){
     const [session,profiles,models]=await Promise.all([this.session(),this.profiles(),this.models()]);
-    return {session:publicSession(session),profiles:profiles.map(x=>({id:x.id,label:x.label,status:x.status,sharing:Boolean(x.sharing)})),models:models.map(x=>({slug:x.slug,displayName:x.displayName}))};
+    return {session:publicSession(session),profiles:profiles.map(x=>({id:x.id,label:x.label,status:x.status,sharing:Boolean(x.sharing),identity:x.identity?{name:x.identity.name||null,email:x.identity.email||null}:null})),models:models.map(x=>({slug:x.slug,displayName:x.displayName}))};
   }
   async available(){const s=await this.session();return usableSession(s);}
   cancel(){for(const c of this.controllers)try{c.abort();}catch{}this.controllers.clear();}

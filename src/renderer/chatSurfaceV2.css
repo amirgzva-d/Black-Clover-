@@ -166,3 +166,43 @@ body.chat-v3 .workspace > .subbar{flex:0 0 38px}
 body.chat-v3 .workspace > .messages{flex:1 1 0!important;height:auto!important;max-height:none!important}
 body.chat-v3 .workspace > .composer-wrap{flex:0 0 auto}
 body.chat-v3 .workspace > .connect-banner,body.chat-v3 .workspace > .activity,body.chat-v3 .workspace > .confirm-box{flex:0 0 auto}
+
+/* Profile selector: the OpenAI-verified identity is displayed after OAuth. */
+body.chat-v3 .account-switcher{display:flex;flex-direction:column;gap:9px;background:#2e2e2e;border:1px solid #444;border-radius:13px;padding:13px}
+body.chat-v3 .account-switcher label{font-size:12px;color:#ddd;font-weight:600}
+body.chat-v3 #accountPicker{height:40px;width:100%;border-radius:9px;border:1px solid #515151;padding:0 12px;background:#202020;color:#eee;direction:ltr;text-align:left}
+body.chat-v3 #accountPicker:disabled{opacity:.55}
+body.chat-v3 #addChatGPTAccount{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:39px;background:#3b3b3b;border:1px solid #575757;border-radius:9px;font-size:12px}
+body.chat-v3 #addChatGPTAccount:hover{background:#494949}
+body.chat-v3 #connectChatGPT:disabled,body.chat-v3 #addChatGPTAccount:disabled{opacity:.55;cursor:wait}
+/* Chat action icons must be accessible without precision mouse hovering. */
+body.chat-v3 .chat-entry .item-actions{display:flex;opacity:.48;transition:opacity .12s}
+body.chat-v3 .chat-entry:hover .item-actions,body.chat-v3 .chat-entry:focus-within .item-actions{opacity:1}
+body.chat-v3 .chat-entry>button:first-child{padding-left:84px}
+body.chat-v3 .folder-entry>button:not(:first-child){opacity:.5}
+body.chat-v3 .folder-entry:hover>button:not(:first-child),body.chat-v3 .folder-entry:focus-within>button:not(:first-child){opacity:1}
+body.chat-v3 .action-dialog-overlay{position:fixed;inset:0;z-index:150;display:grid;place-items:center;padding:22px;background:rgba(0,0,0,.76);backdrop-filter:blur(5px)}
+body.chat-v3 .action-dialog-overlay[hidden]{display:none!important}
+body.chat-v3 .action-dialog{width:min(420px,100%);padding:24px;border-radius:19px;border:1px solid #505050;background:#272727;box-shadow:0 20px 75px #000a;direction:rtl;display:flex;flex-direction:column;gap:14px}
+body.chat-v3 .dialog-icon{display:grid;place-items:center;width:43px;height:43px;background:#363636;border-radius:13px;color:#e8e8e8}
+body.chat-v3 .action-dialog h3{margin:0;font-size:17px;font-weight:650}
+body.chat-v3 .action-dialog p{margin:0;color:#b5b5b5;font-size:12px;line-height:1.9;overflow-wrap:anywhere}
+body.chat-v3 .action-dialog input{height:42px;padding:0 12px;border:1px solid #555;border-radius:10px;background:#1d1d1d;color:#fff;font-size:13px;outline:none}
+body.chat-v3 .action-dialog input:focus{border-color:#999}
+body.chat-v3 .action-dialog input[hidden]{display:none}
+body.chat-v3 .action-dialog-buttons{display:flex;align-items:center;justify-content:flex-end;gap:9px;margin-top:6px}
+body.chat-v3 .action-dialog-buttons button{height:38px;min-width:90px;border-radius:10px;background:#3b3b3b;border:1px solid #575757;font-size:12px}
+body.chat-v3 .action-dialog-buttons button:hover{filter:brightness(1.17)}
+body.chat-v3 #actionDialogAccept{background:#f1f1f1;color:#202020;border-color:#f1f1f1;font-weight:600}
+body.chat-v3 #actionDialogAccept.danger-button{background:#bf4646;border-color:#bf4646;color:#fff}
+@media(max-width:700px){body.chat-v3 .chat-entry .item-actions{opacity:1}body.chat-v3 .account-switcher{padding:10px}}
+
+body.chat-v3 .project-edit label{display:flex;flex-direction:column;gap:7px;font-size:12px;color:#ddd}
+body.chat-v3 .project-edit textarea{width:100%;resize:vertical;min-height:104px;max-height:250px;background:#1c1c1c;color:#eee;padding:12px;border-radius:10px;border:1px solid #555;font-size:12px;line-height:1.8}
+body.chat-v3 .project-edit textarea:focus{outline:2px solid #888}
+body.chat-v3 .project-edit p{font-size:11px;color:#a9a9a9;line-height:1.8}
+body.chat-v3 .folder-entry>button:first-child{padding-left:62px}
+body.chat-v3 .folder-entry>button:not(:first-child){opacity:.65}
+
+body.chat-v3 .action-dialog #actionDialogTextarea{resize:vertical;min-height:90px;max-height:280px;background:#1e1e1e;color:#eee;border:1px solid #555;border-radius:10px;padding:12px;line-height:1.7;font-size:12px}
+body.chat-v3 .action-dialog #actionDialogTextarea[hidden]{display:none}
