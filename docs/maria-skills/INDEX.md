@@ -13,8 +13,8 @@ From this point forward, every new capability specification is appended to the s
 | 05 | Windows settings | DESIGN COMPLETE v1 | WAITING |
 | 06 | Troubleshooting / repair | DESIGN COMPLETE v1 | WAITING |
 | 07 | Web search / research | DESIGN COMPLETE v1 | WAITING |
-| 08 | Browser automation | NEXT | WAITING |
-| 09 | YouTube / web media | QUEUED | WAITING |
+| 08 | Browser automation | DESIGN COMPLETE v1 ADVANCED | WAITING |
+| 09 | YouTube / web media | NEXT | WAITING |
 | 10 | Messaging / forwarding | QUEUED | WAITING |
 | 11 | Timed / conditional actions | QUEUED | WAITING |
 | 12 | Power / lock / security | QUEUED | WAITING |
