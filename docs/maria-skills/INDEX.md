@@ -9,7 +9,7 @@ From this point forward, every new capability specification is appended to the s
 | 01 | Audio / media control | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
 | 02 | Display / brightness | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
 | 03 | Files & folders | DESIGN COMPLETE v2 EXTENDED | WAITING |
-| 04 | App install / update | DESIGN COMPLETE v1 | WAITING |
+| 04 | App install / update | DESIGN COMPLETE v2 EXTENDED | WAITING |
 | 05 | Windows settings | NEXT | WAITING |
 | 06 | Troubleshooting / repair | QUEUED | WAITING |
 | 07 | Web search / research | QUEUED | WAITING |
