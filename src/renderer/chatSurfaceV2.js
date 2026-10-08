@@ -4,419 +4,315 @@ import {marked} from 'marked';
 import DOMPurify from 'dompurify';
 
 const $=q=>document.querySelector(q);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const LEGACY_HISTORY_KEY='blackClover:chatV2History';
-const MODEL_KEY='blackClover:selectedModel';
-const V3_KEY='blackClover:chatV3Ready';
-const MODEL_MIGRATION_KEY='blackClover:chatV5AutoModel';
-const icon=name=>({
-  menu:'<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
-  plus:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
-  search:'<svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>',
-  folder:'<svg viewBox="0 0 24 24"><path d="M3 6h7l2 2h9v10H3z"/></svg>',
-  paperclip:'<svg viewBox="0 0 24 24"><path d="m9 12 6-6a4 4 0 0 1 6 6l-8 8a6 6 0 0 1-8-8l8-8"/></svg>',
-  globe:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.3 2.5 3.4 5.5 3.4 9S14.3 18.5 12 21M12 3C9.7 5.5 8.6 8.5 8.6 12S9.7 18.5 12 21"/></svg>',
-  work:'<svg viewBox="0 0 24 24"><rect x="4" y="6" width="16" height="13" rx="2"/><path d="M9 6V4h6v2M4 11h16"/></svg>',
-  send:'<svg viewBox="0 0 24 24"><path d="m21 3-7 18-4-8-8-4Z"/><path d="m21 3-11 10"/></svg>',
-  stop:'<svg viewBox="0 0 24 24"><rect x="7" y="7" width="10" height="10" rx="2"/></svg>',
-  mic:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
-  sound:'<svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4Z"/><path d="M15 9a4 4 0 0 1 0 6M18 6a8 8 0 0 1 0 12"/></svg>',
-  copy:'<svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V5H5v11h3"/></svg>',
-  edit:'<svg viewBox="0 0 24 24"><path d="m4 20 4-1 11-11-3-3L5 16z"/><path d="m14 7 3 3"/></svg>',
-  trash:'<svg viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3M8 7l1 13h6l1-13"/></svg>',
-  retry:'<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2 5"/><path d="M20 4v7h-7"/></svg>',
-  branch:'<svg viewBox="0 0 24 24"><circle cx="6" cy="5" r="2"/><circle cx="18" cy="7" r="2"/><circle cx="6" cy="19" r="2"/><path d="M6 7v10M8 11h5a5 5 0 0 0 5-2"/></svg>',
-  pin:'<svg viewBox="0 0 24 24"><path d="m9 4 6 0 1 5 3 3H5l3-3z"/><path d="M12 12v8"/></svg>',
-  share:'<svg viewBox="0 0 24 24"><circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="m8 11 8-5M8 13l8 5"/></svg>',
-  export:'<svg viewBox="0 0 24 24"><path d="M12 3v12M8 11l4 4 4-4"/><path d="M5 20h14"/></svg>',
-  settings:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.5 1a7 7 0 0 0-2.2-1.3L14 3h-4l-.2 2.5a7 7 0 0 0-2.2 1.3l-2.5-1-2 3.4 2 1.6A7 7 0 0 0 5 12c0 .4 0 .8.1 1.2l-2 1.6 2 3.4 2.5-1a7 7 0 0 0 2.2 1.3L10 21h4l.2-2.5a7 7 0 0 0 2.2-1.3l2.5 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2Z"/></svg>',
-  minimize:'<svg viewBox="0 0 24 24"><path d="M5 12h14"/></svg>',
-  close:'<svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg>'
-}[name]||'');
-
+const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const CHATGPT_AUTO='chatgpt:auto';
+const VOICE_READ_KEY='maria:chat:autoRead';
+const ICONS={
+  menu:'<path d="M4 6h16M4 12h16M4 18h16"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>',
+  search:'<circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>',
+  chat:'<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8A8.5 8.5 0 0 1 12.5 20a8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7A8.4 8.4 0 0 1 4 11.5a8.5 8.5 0 0 1 8.5-8.5h.5a8.5 8.5 0 0 1 8 8z"/>',
+  folder:'<path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3z"/>',
+  settings:'<path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.1 2.1-.1-.1a1.7 1.7 0 0 0-1.9-.3l-.2.1V21h-3v-2.2l-.3-.1a1.7 1.7 0 0 0-1.9.3l-.1.1-2.1-2.1.1-.1a1.7 1.7 0 0 0 .3-1.9l-.1-.2H6v-3h2.2l.1-.3a1.7 1.7 0 0 0-.3-1.9L8 9.5l2.1-2.1.1.1a1.7 1.7 0 0 0 1.9.3l.2-.1V5h3v2.2l.3.1a1.7 1.7 0 0 0 1.9-.3l.1-.1L19.7 9l-.1.1a1.7 1.7 0 0 0-.3 1.9l.1.2H21v3h-1.8Z" transform="translate(-1.5,-1.1) scale(1.12)"/>',
+  copy:'<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>',
+  edit:'<path d="m16 4 4 4M4 20l4-.8L20 7a2.8 2.8 0 0 0-4-4L4 15z"/>',
+  trash:'<path d="M3 6h18M8 6V4h8v2M6 6l1 15h10l1-15M10 10v7M14 10v7"/>',
+  retry:'<path d="M3 11a9 9 0 1 1 2.6 6.4M3 4v7h7"/>',
+  pin:'<path d="m9 4 6 0 1 5 3 3H5l3-3zM12 12v9"/>',
+  mic:'<rect x="9" y="2" width="6" height="13" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/>',
+  sound:'<path d="M11 5 6 9H3v6h3l5 4zM15 9a5 5 0 0 1 0 6M18 6a9 9 0 0 1 0 12"/>',
+  send:'<path d="m22 2-7 20-4-9-9-4Z M22 2 11 13"/>',
+  stop:'<rect x="6" y="6" width="12" height="12" rx="2"/>',
+  globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 4 6 4 9s-1 6-4 9M12 3c-3 3-4 6-4 9s1 6 4 9"/>',
+  check:'<path d="m5 12 4 4L19 6"/>',
+  arrow:'<path d="m9 18 6-6-6-6"/>',
+  chevron:'<path d="m6 9 6 6 6-6"/>',
+  refresh:'<path d="M20 11a8 8 0 0 0-14-5L4 8M4 4v4h4M4 13a8 8 0 0 0 14 5l2-2m0 4v-4h-4"/>',
+  cloud:'<path d="M20 16a4 4 0 0 0-4-4h-1a6 6 0 1 0-11 4h16Z"/>',
+  minimize:'<path d="M5 12h14"/>',
+  close:'<path d="M6 6l12 12M18 6 6 18"/>',
+  code:'<path d="m8 8-4 4 4 4m8-8 4 4-4 4m-3-11-2 14"/>',
+  work:'<rect x="3" y="7" width="18" height="14" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 12h18"/>',
+  spark:'<path d="m12 2 2.5 7.5L22 12l-7.5 2.5L12 22l-2.5-7.5L2 12l7.5-2.5z"/>',
+  export:'<path d="M12 3v13m-5-5 5 5 5-5M4 17v4h16v-4"/>'
+};
+const icon=(name,size=18)=>'<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(ICONS[name]||ICONS.spark)+'</svg>';
 marked.setOptions({gfm:true,breaks:true});
-const markdown=text=>DOMPurify.sanitize(marked.parse(String(text||'')),{USE_PROFILES:{html:true}});
-const safeHttp=raw=>{try{const u=new URL(String(raw||''));return ['http:','https:'].includes(u.protocol)?u.href:'';}catch{return'';}};
-const sourceHtml=message=>{const sources=Array.isArray(message?.meta?.sources)?message.meta.sources:[],rows=sources.map((s,i)=>{const url=safeHttp(s?.url);return url?`<button class="source-chip" data-source-url="${esc(url)}"><span>${i+1}</span>${esc(s?.title||new URL(url).hostname)}</button>`:'';}).filter(Boolean);return rows.length?`<div class="message-sources"><small>منابع</small>${rows.join('')}</div>`:'';};
-const attachmentHtml=message=>{const items=Array.isArray(message?.meta?.attachments)?message.meta.attachments:[];return items.length?`<div class="message-attachments">${items.map(x=>`<span class="attachment-chip">${icon('paperclip')}<b>${esc(x.name||'فایل')}</b></span>`).join('')}</div>`:'';};
-const state={currentId:null,conversation:null,chats:[],folders:[],folderFilter:'all',search:'',model:'auto',web:false,depth:'auto',sidebar:true,attachments:[]};
-const queue=[];let running=false,listening=false,streamRow=null,streamBody=null,streamText='',ignoreCurrent=false;
-
-function toast(text){
-  const el=$('#toast');if(!el)return;el.textContent=text;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),1800);
+const markdown=s=>DOMPurify.sanitize(marked.parse(String(s||'')),{USE_PROFILES:{html:true}});
+const safeUrl=raw=>{try{const u=new URL(raw);return /^https?:$/.test(u.protocol)?u.href:null;}catch{return null;}};
+const api=()=>window.blackClover;
+const state={id:null,chat:null,list:[],folders:[],folder:'all',search:'',model:CHATGPT_AUTO,connected:false,connecting:false,account:null,models:[],sidebar:true,web:false,deep:false,autoRead:localStorage.getItem(VOICE_READ_KEY)==='1'};
+let busy=false,cancelled=false,activeChatId=null,streamContent='',activeStream=null,mic=null,toastTimer=null;
+const button=(id,label,ico,extra='')=>'<button type="button" id="'+id+'" class="icon-btn" title="'+esc(label)+'" aria-label="'+esc(label)+'" '+extra+'>'+icon(ico)+'</button>';
+function notice(message){const n=$('#notice');if(!n)return;n.textContent=message;n.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>n.hidden=true,3800);}
+function setStatus(message){const x=$('#status');if(x)x.textContent=message;}
+function withError(error){notice(String(error?.message||error||'خطای نامشخص'));}
+function scrollEnd(){const x=$('#messages');if(x)x.scrollTop=x.scrollHeight;}
+function grow(){const input=$('#input');if(!input)return;input.style.height='auto';input.style.height=Math.min(180,Math.max(45,input.scrollHeight))+'px';}
+function wipeStream(){activeStream?.remove();activeStream=null;streamContent='';}
+function accountName(){return String(state.account?.session?.profileLabel||'حساب ChatGPT');}
+function updateAccountUi(){
+  const usable=state.connected;
+  const chip=$('#accountChip');if(chip){chip.classList.toggle('online',usable);chip.innerHTML='<span class="state-dot"></span>'+(usable?'ChatGPT · متصل':state.connecting?'در حال اتصال…':'اتصال به ChatGPT');}
+  const label=$('#accountStatus');if(label)label.textContent=usable?'متصل به '+accountName():state.account?.session?.status==='connected'?'وارد شده‌اید؛ اجازه مصرف اشتراک داده نشده است':'هنوز به ChatGPT متصل نیستید';
+  const details=$('#accountDetails');if(details)details.textContent=state.account?.session?.error?.message||(usable?'پاسخ‌ها از سهمیه مجاز حساب ChatGPT شما استفاده می‌کنند.':'برای شروع گفتگو، با حساب خود در مرورگر وارد شوید و دسترسی را تأیید کنید.');
+  const connect=$('#connectChatGPT');if(connect){connect.hidden=usable;connect.disabled=state.connecting;connect.textContent=state.connecting?'منتظر تأیید در مرورگر…':'Continue with ChatGPT';}
+  const disconnect=$('#disconnectChatGPT');if(disconnect)disconnect.hidden=!usable;
+  const usage=$('#chatgptUsage');if(usage)usage.hidden=!usable;
+  const model=$('#modelSelect');if(model)model.disabled=!usable||state.models.length===0;
+  const banner=$('#connectBanner');if(banner)banner.hidden=usable;
+  const select=$('#modelSelect');if(select){
+    const previous=state.model;
+    select.innerHTML='<option value="'+CHATGPT_AUTO+'">ChatGPT · خودکار</option>'+state.models.map(m=>'<option value="chatgpt:'+esc(m.slug)+'">'+esc(m.displayName||m.slug)+'</option>').join('');
+    state.model=state.models.some(m=>'chatgpt:'+m.slug===previous)?previous:CHATGPT_AUTO;
+    select.value=state.model;
+  }
 }
-function setActivity(text=''){const el=$('#activity');if(!el)return;el.hidden=!text;$('#activityText').textContent=text||'';}
-function scrollBottom(){const m=$('#messages');if(m)m.scrollTo({top:m.scrollHeight,behavior:'auto'});}
-function autoGrow(){const el=$('#input');if(!el)return;el.style.height='auto';el.style.height=Math.min(180,Math.max(44,el.scrollHeight))+'px';}
-function renderPendingAttachments(){const tray=$('#attachmentTray');if(!tray)return;tray.innerHTML=state.attachments.map((x,i)=>`<span class="pending-file">${icon('paperclip')}<b>${esc(x.name||'فایل')}</b><button type="button" data-remove-attachment="${i}">×</button></span>`).join('');tray.hidden=!state.attachments.length;}
-function currentUserBefore(index){for(let i=index-1;i>=0;i--)if(state.conversation?.messages?.[i]?.role==='user')return state.conversation.messages[i];return null;}
-
-function messageActions(message,index){
-  const common=`
-    <button data-msg-action="copy" title="کپی">${icon('copy')}</button>
-    <button data-msg-action="speak" title="خواندن با صدا">${icon('sound')}</button>
-    <button data-msg-action="branch" title="ساخت چت جدید از اینجا">${icon('branch')}</button>
-    <button data-msg-action="edit" title="ویرایش">${icon('edit')}</button>
-    <button data-msg-action="delete" title="حذف">${icon('trash')}</button>`;
-  const retry=message.role==='assistant'&&currentUserBefore(index)?`<button data-msg-action="retry" title="پاسخ دوباره">${icon('retry')}</button>`:'';
-  return retry+common;
+async function syncAccount(fresh=false){
+  try{const r=fresh?await api().refreshChatGPTModels():{status:await api().chatgptStatus()};
+    state.account=r.status||r;const s=state.account?.session||{};state.connected=s.status==='connected'&&s.sharing===true&&!s.error;state.models=state.connected?(state.account.models||[]):[];updateAccountUi();
+  }catch(e){state.connected=false;state.account={session:{status:'disconnected',error:{message:String(e.message||e)}}};state.models=[];updateAccountUi();}
 }
-
+async function connectChatGPT(){
+  if(state.connecting)return;
+  state.connecting=true;updateAccountUi();setStatus('منتظر تأیید حساب در مرورگر…');
+  try{
+    await api().signInChatGPT({reconsent:state.account?.session?.status==='connected'});
+    await syncAccount(true);
+    notice(state.connected?'حساب ChatGPT متصل شد.':'اتصال انجام شد، اما مجوز استفاده از سهمیه فعال نیست.');
+  }catch(e){withError(e);await syncAccount();}finally{state.connecting=false;updateAccountUi();setStatus('آماده');}
+}
+async function disconnectChatGPT(){
+  if(!confirm('اتصال این حساب از MARIA قطع شود؟'))return;
+  try{await api().disconnectChatGPT();state.model=CHATGPT_AUTO;await syncAccount();notice('اتصال حساب قطع شد.');}catch(e){withError(e);}
+}
+function messageButtons(message,index){
+  if(message.role==='user')return '<button title="کپی پیام" data-message-action="copy">'+icon('copy',15)+'</button><button title="ویرایش پیام" data-message-action="edit">'+icon('edit',15)+'</button>';
+  return '<button title="کپی پاسخ" data-message-action="copy">'+icon('copy',15)+'</button><button title="پخش صدا" data-message-action="speak">'+icon('sound',15)+'</button>'+(index>0?'<button title="تولید دوباره پاسخ" data-message-action="retry">'+icon('retry',15)+'</button>':'');
+}
+function sourceMarkup(message){
+  const sources=Array.isArray(message.meta?.sources)?message.meta.sources:[];
+  const html=sources.slice(0,8).map((s,i)=>{const url=safeUrl(s?.url);return url?'<button type="button" class="source-chip" data-link="'+esc(url)+'">'+(i+1)+' · '+esc(s.title||new URL(url).host)+'</button>':'';}).join('');
+  return html?'<div class="sources">'+html+'</div>':'';
+}
 function renderMessages(){
-  const box=$('#messages');if(!box)return;
-  const rows=state.conversation?.messages||[];
+  const root=$('#messages');if(!root)return;
+  const rows=state.chat?.messages||[];
   if(!rows.length){
-    box.innerHTML=`<section class="empty-chat"><div class="maria-mark">✦</div><h2>چطور می‌تونم کمکت کنم؟</h2><p>سؤال بپرس، تحقیق بخواه یا چند کار را در یک پیام بگو. Maria ادامه همین گفتگو را به خاطر می‌سپارد.</p><div class="starter-grid"><button data-starter="در مورد یک موضوع جدید تحقیق عمیق کن و با منبع توضیح بده">تحقیق عمیق</button><button data-starter="این مشکل را مرحله به مرحله تحلیل کن و بهترین راه حل را بده">حل مسئله</button><button data-starter="چند کار مختلف برای کامپیوترم دارم؛ یکی یکی انجام بده و نتیجه هر مرحله را بررسی کن">اجرای چندکار</button></div></section>`;
-    return;
+    root.innerHTML='<div class="welcome"><div class="welcome-symbol">'+icon('spark',36)+'</div><h1>چطور می‌تونم کمکت کنم؟</h1><p>از MARIA سؤال بپرس یا ازش بخواه کاری روی کامپیوتر انجام بده.</p><div class="ideas"><button data-starter="سلام ماریا، خودت رو معرفی کن">گفتگوی دوستانه</button><button data-starter="صدای ویندوز را قطع کن">کنترل کامپیوتر</button><button data-starter="آخرین اخبار هوش مصنوعی را همراه منابع پیدا کن">جستجو و تحقیق</button></div></div>';
+    scrollEnd();return;
   }
-  box.innerHTML=rows.map((m,i)=>`
-    <article class="message-row ${m.role}" data-message-id="${esc(m.id)}" data-index="${i}">
-      <div class="message-avatar">${m.role==='user'?'ش':'✦'}</div>
-      <div class="message-main">
-        <div class="message-meta"><b>${m.role==='user'?'شما':'Maria'}</b>${m.editedAt?'<span>ویرایش‌شده</span>':''}</div>
-        ${attachmentHtml(m)}
-        <div class="message-content">${markdown(m.text)}</div>
-        ${sourceHtml(m)}
-        <div class="message-tools">${messageActions(m,i)}</div>
-      </div>
-    </article>`).join('');
-  scrollBottom();
+  root.innerHTML=rows.map((m,i)=>'<article class="message '+(m.role==='user'?'user':'assistant')+'" data-id="'+esc(m.id)+'" data-index="'+i+'"><div class="message-line"><div class="bubble">'+markdown(m.text)+'</div></div>'+sourceMarkup(m)+'<div class="message-actions">'+messageButtons(m,i)+'</div></article>').join('');
+  scrollEnd();
 }
-
-function renderSidebar(){
-  const list=$('#chatList');if(!list)return;
-  const rows=state.chats||[];
-  list.innerHTML=rows.length?rows.map(c=>`
-    <div class="chat-item ${c.id===state.currentId?'active':''}" data-chat-id="${esc(c.id)}">
-      <button class="chat-open" title="${esc(c.title)}"><span class="chat-pin">${c.pinned?'◆':''}</span><span class="chat-title">${esc(c.title)}</span></button>
-      <div class="chat-item-actions">
-        <button data-chat-action="pin" title="پین">${c.pinned?'◆':'◇'}</button>
-        <button data-chat-action="rename" title="تغییر نام">✎</button>
-        <button data-chat-action="delete" title="حذف">×</button>
-      </div>
-    </div>`).join(''):'<div class="side-empty">گفتگویی پیدا نشد</div>';
-  const folders=$('#folderList');
-  folders.innerHTML=state.folders.map(f=>`<div class="folder-wrap"><button class="folder-row ${state.folderFilter===f.id?'active':''}" data-folder-id="${esc(f.id)}">${icon('folder')}<span>${esc(f.name)}</span></button><button class="folder-rename" data-folder-rename="${esc(f.id)}" title="تغییر نام پروژه">✎</button><button class="folder-delete" data-folder-delete="${esc(f.id)}" title="حذف پروژه">×</button></div>`).join('')||'<div class="side-empty project-empty">هنوز پروژه‌ای نیست</div>';
-  const folderSelect=$('#folderSelect');
-  if(folderSelect){
-    folderSelect.innerHTML='<option value="">بدون پروژه</option>'+state.folders.map(f=>`<option value="${esc(f.id)}">${esc(f.name)}</option>`).join('');
-    folderSelect.value=state.conversation?.folderId||'';
-  }
+function renderChats(){
+  const root=$('#chatList');if(!root)return;
+  root.innerHTML=state.list.map(c=>'<div class="chat-entry '+(c.id===state.id?'selected':'')+'" data-chat="'+esc(c.id)+'"><button type="button" data-chat-open="'+esc(c.id)+'" title="'+esc(c.title)+'"><span>'+esc(c.title)+'</span></button><div class="item-actions"><button title="'+(c.pinned?'برداشتن پین':'پین گفتگو')+'" data-chat-action="pin">'+icon('pin',14)+'</button><button title="تغییر نام" data-chat-action="rename">'+icon('edit',14)+'</button><button title="حذف گفتگو" data-chat-action="delete">'+icon('trash',14)+'</button></div></div>').join('')||'<p class="empty-list">گفتگویی پیدا نشد.</p>';
+  const folders=$('#folderList');folders.innerHTML=state.folders.map(f=>'<div class="folder-entry '+(state.folder===f.id?'selected':'')+'" data-folder="'+esc(f.id)+'"><button data-folder-open="'+esc(f.id)+'">'+icon('folder',15)+'<span>'+esc(f.name)+'</span></button><button title="تغییر نام" data-folder-action="rename">'+icon('edit',14)+'</button><button title="حذف پوشه" data-folder-action="delete">'+icon('trash',14)+'</button></div>').join('')||'<p class="empty-list">پوشه‌ای ساخته نشده است.</p>';
+  const select=$('#folderSelect');if(select){select.innerHTML='<option value="">بدون پروژه</option>'+state.folders.map(f=>'<option value="'+esc(f.id)+'">'+esc(f.name)+'</option>').join('');select.value=state.chat?.folderId||'';}
 }
-
-function updateHeader(){
-  const c=state.conversation;
-  $('#chatTitle').textContent=c?.title||'گفتگوی جدید';
-  $('#pinChat').classList.toggle('active',Boolean(c?.pinned));
-  $('#webToggle').classList.toggle('active',state.web);
-  $('#webToggle').innerHTML=icon('globe')+`<span>${state.web?'وب روشن':'وب'}</span>`;
-}
-
 async function refreshList(){
-  const filter={query:state.search};
-  if(state.folderFilter!=='all')filter.folderId=state.folderFilter||null;
-  state.chats=await window.blackClover.listChats(filter);
-  state.folders=await window.blackClover.listChatFolders();
-  renderSidebar();
+  const filters={query:state.search};if(state.folder!=='all')filters.folderId=state.folder;
+  [state.list,state.folders]=await Promise.all([api().listChats(filters),api().listChatFolders()]);
+  renderChats();
 }
-async function loadConversation(id){
-  const c=await window.blackClover.getChat(id);if(!c)return false;
-  state.currentId=c.id;state.conversation=c;renderMessages();updateHeader();await refreshList();return true;
+async function loadChat(id){
+  const c=await api().getChat(id);if(!c)throw Error('این گفتگو پیدا نشد.');
+  state.id=c.id;state.chat=c;renderMessages();renderHeader();await refreshList();
 }
-async function newChat(folderId=null){
-  const c=await window.blackClover.createChat({folderId});state.currentId=c.id;state.conversation=c;state.search='';$('#chatSearch').value='';await refreshList();renderMessages();updateHeader();$('#input').focus();
+async function createChat(){
+  if(busy)return notice('ابتدا پاسخ فعلی را متوقف کن.');
+  const c=await api().createChat({folderId:state.folder==='all'?null:state.folder});
+  state.id=c.id;state.chat=c;state.search='';$('#chatSearch').value='';await refreshList();renderHeader();renderMessages();$('#input').focus();
 }
-async function ensureCurrent(){if(state.currentId&&state.conversation)return;const rows=await window.blackClover.listChats({});if(rows.length)await loadConversation(rows[0].id);else await newChat();}
-
-async function migrateLegacy(){
-  if(localStorage.getItem(V3_KEY)==='1')return;
-  const old=(()=>{try{return JSON.parse(localStorage.getItem(LEGACY_HISTORY_KEY)||'[]');}catch{return[];}})();
-  const existing=await window.blackClover.listChats({});
-  if(!existing.length&&Array.isArray(old)&&old.some(x=>x?.text)){
-    const c=await window.blackClover.createChat({title:'گفتگوی قبلی'});
-    for(const item of old.slice(-220))if(item?.text)await window.blackClover.appendChatMessage(c.id,{role:item.role==='user'?'user':'assistant',text:item.text,at:item.at});
-  }
-  localStorage.setItem(V3_KEY,'1');
+async function ensureChat(){if(state.id&&state.chat)return;const list=await api().listChats({});if(list.length)await loadChat(list[0].id);else await createChat();}
+function renderHeader(){
+  $('#chatTitle').textContent=state.chat?.title||'گفتگوی جدید';
+  $('#pinChat').classList.toggle('active',Boolean(state.chat?.pinned));
+  $('#webToggle').classList.toggle('active',state.web);$('#webToggle').setAttribute('aria-pressed',String(state.web));
+  $('#deepToggle').classList.toggle('active',state.deep);$('#deepToggle').setAttribute('aria-pressed',String(state.deep));
 }
-
-function addStream(delta){
-  if(ignoreCurrent)return;
-  if(!streamRow){
-    const box=$('#messages');$('#messages .empty-chat')?.remove();
-    streamRow=document.createElement('article');streamRow.className='message-row assistant streaming';
-    streamRow.innerHTML='<div class="message-avatar">✦</div><div class="message-main"><div class="message-meta"><b>Maria</b><span>در حال نوشتن…</span></div><div class="message-content"></div></div>';
-    box.append(streamRow);streamBody=streamRow.querySelector('.message-content');
-  }
-  streamText+=String(delta||'');streamBody.innerHTML=markdown(streamText);scrollBottom();
+function pushStream(delta){
+  if(!busy||cancelled||activeChatId!==state.id)return;
+  if(!activeStream){$('#messages .welcome')?.remove();activeStream=document.createElement('article');activeStream.className='message assistant stream';activeStream.innerHTML='<div class="message-line"><div class="bubble"></div></div>';$('#messages').appendChild(activeStream);}
+  streamContent+=String(delta||'');activeStream.querySelector('.bubble').innerHTML=markdown(streamContent);scrollEnd();
 }
-function clearStream(){streamRow?.remove();streamRow=null;streamBody=null;streamText='';}
-
-async function sendOne(item){
-  const text=String(item?.text??item??''),attachments=Array.isArray(item?.attachments)?item.attachments:[];
-  await ensureCurrent();ignoreCurrent=false;const started=performance.now();
-  setActivity('در حال فکر کردن…');$('#status').textContent='در حال پاسخ…';
-  const model=state.model||'auto',profile=state.depth==='deep'?'complex':state.depth==='fast'?'chat':null;
-  try{
-    const response=await window.blackClover.chat(text,{conversationId:state.currentId,modelOverride:model,profile,webSearch:state.web,attachments});
-    if(ignoreCurrent)return;
-    clearStream();await loadConversation(state.currentId);
-    const ms=Math.round(performance.now()-started),brain=response?.brain||{};
-    $('#status').textContent=brain.model?`آماده • ${brain.model}`:'آماده';
-    $('#latency').textContent=ms<1000?`${ms}ms`:`${(ms/1000).toFixed(1)}s`;
-    if(response?.requiresConfirmation)showConfirm(response.confirmationId,response.text);
-    if(response?.text&&voice.enabled&&$('#autoSpeak').checked)voice.speak(response.text);
-  }catch(error){
-    clearStream();toast('خطا: '+(error?.message||error));$('#status').textContent='خطا';
-  }finally{setActivity('');await refreshList();}
+function busyUI(){
+  const send=$('#send');send.innerHTML=icon(busy?'stop':'send');send.title=busy?'توقف پاسخ':'ارسال پیام';send.classList.toggle('danger',busy);
 }
-
-async function pump(){
-  if(running)return;running=true;syncSendButton();
-  try{while(queue.length){const item=queue.shift();await sendOne(item);}}finally{running=false;syncSendButton();if(!voice.speaking)$('#status').textContent='آماده';$('#input').focus();}
+async function sendMessage(text){
+  const value=String(text||'').trim();if(!value||busy)return;
+  if(!state.connected)notice('حساب ChatGPT متصل نیست؛ فقط فرمان‌های مستقیم ویندوز قابل اجرا هستند.');
+  await ensureChat();busy=true;cancelled=false;activeChatId=state.id;busyUI();const start=performance.now();
+  const current=state.id;const old=state.chat;
+  $('#input').value='';grow();state.chat={...old,messages:[...(old.messages||[]),{id:'pending-'+Date.now(),role:'user',text:value}]};renderMessages();
+  setStatus('در حال پاسخ…');try{
+    const response=await api().chat(value,{conversationId:current,modelOverride:state.model,provider:'chatgpt',profile:state.deep?'complex':'chat',webSearch:state.web});
+    wipeStream();await loadChat(current);
+    if(response?.requiresConfirmation&&response.confirmationId)confirmation(response.confirmationId,response.text);
+    if(response?.cancelled){setStatus('متوقف شد');return;}
+    if(response?.ok===false){notice(response.text||'درخواست انجام نشد.');setStatus('خطا در پاسخ');}
+    else {$('#latency').textContent=((performance.now()-start)/1000).toFixed(1)+'s';setStatus('آماده');if(response?.text&&state.autoRead&&voice.enabled)voice.speak(response.text);}
+  }catch(e){wipeStream();await loadChat(current).catch(()=>{});withError(e);setStatus('خطا در اتصال');}
+  finally{busy=false;activeChatId=null;busyUI();}
 }
-function enqueue(text){
-  text=String(text||'').trim();const attachments=[...state.attachments];if(!text&&!attachments.length)return;
-  if(!text&&attachments.length)text='این فایل را بررسی کن.';
-  voice.stop?.('user-input');queue.push({text,attachments});state.attachments=[];renderPendingAttachments();$('#input').value='';autoGrow();
-  if(state.conversation){const temp={id:'temp-'+Date.now(),role:'user',text,at:Date.now(),meta:{attachments}};state.conversation={...state.conversation,messages:[...(state.conversation.messages||[]),temp]};renderMessages();}
-  pump();
+async function stopResponse(){
+  if(!busy)return;cancelled=true;setStatus('در حال توقف…');try{await api().cancelChat(activeChatId||'');}catch(e){withError(e);}
 }
-function syncSendButton(){
-  const btn=$('#send');if(!btn)return;btn.innerHTML=running?icon('stop'):icon('send');btn.title=running?'توقف':'ارسال';btn.classList.toggle('stop',running);
+async function retryMessage(userMessage){
+  if(busy)return;const current=state.id;busy=true;cancelled=false;activeChatId=current;busyUI();setStatus('در حال بازنویسی…');
+  try{const r=await api().replayMessage({conversationId:current,messageId:userMessage.id,model:state.model,provider:'chatgpt',profile:state.deep?'complex':'chat'});
+    wipeStream();await loadChat(current);if(r?.requiresConfirmation)confirmation(r.confirmationId,r.text);if(r?.ok===false)notice(r?.text||'تولید دوباره موفق نبود.');
+  }catch(e){withError(e);}finally{busy=false;activeChatId=null;busyUI();setStatus('آماده');}
 }
-
-async function replayFrom(messageId){
-  ignoreCurrent=false;setActivity('در حال ساخت پاسخ جدید…');clearStream();
-  try{await window.blackClover.replayMessage({conversationId:state.currentId,messageId,model:state.model||'auto',profile:state.depth==='deep'?'complex':null,provider:'auto'});await loadConversation(state.currentId);}catch(e){toast('بازسازی پاسخ ناموفق بود: '+(e.message||e));}finally{setActivity('');}
+function confirmation(id,description){
+  const modal=$('#confirm');modal.hidden=false;modal.innerHTML='<div><b>تأیید اجرای دستور</b><p>'+esc(description||'این فرمان نیازمند اجازه تو است.')+'</p></div><div class="confirm-actions"><button type="button" id="decline">لغو</button><button type="button" id="approve">تأیید و اجرا</button></div>';
+  async function resolve(approved){modal.hidden=true;setStatus('در حال اجرای دستور…');try{const r=await api().confirm(id,approved);await loadChat(state.id);if(r?.requiresConfirmation&&r.confirmationId)confirmation(r.confirmationId,r.text);else if(r?.ok===false)notice(r.text);}catch(e){withError(e);}finally{setStatus('آماده');}}
+  $('#approve').onclick=()=>resolve(true);$('#decline').onclick=()=>resolve(false);
 }
-function editMessage(message,row){
-  const body=row.querySelector('.message-content'),actions=row.querySelector('.message-tools');
-  const area=document.createElement('textarea');area.className='inline-edit';area.value=message.text;body.replaceChildren(area);
-  actions.innerHTML='<button data-edit-save>ذخیره</button><button data-edit-cancel>لغو</button>';area.focus();area.setSelectionRange(area.value.length,area.value.length);
-  actions.querySelector('[data-edit-cancel]').onclick=()=>renderMessages();
-  actions.querySelector('[data-edit-save]').onclick=async()=>{
-    const text=area.value.trim();if(!text)return;
-    await window.blackClover.updateChatMessage(state.currentId,message.id,{text});
-    if(message.role==='user')await replayFrom(message.id);else await loadConversation(state.currentId);
-  };
+function openSettings(tab='account'){
+  $('#setup').hidden=false;chooseSettingsTab(tab);syncAccount().catch(()=>{});
 }
-async function deleteMessage(message){
-  if(!confirm('این پیام حذف شود؟'))return;await window.blackClover.removeChatMessage(state.currentId,message.id);await loadConversation(state.currentId);
+function chooseSettingsTab(tab){
+  for(const key of ['account','voice','privacy']){$('#tab-'+key).classList.toggle('active',tab===key);$('#panel-'+key).hidden=tab!==key;}
 }
-async function branchFrom(message){const c=await window.blackClover.branchChat(state.currentId,message.id);await loadConversation(c.id);toast('شاخه جدید ساخته شد');}
-
-function showConfirm(id,text){
-  const box=$('#confirm');box.hidden=false;box.innerHTML=`<div><b>تأیید لازم</b><span>${esc(text)}</span></div><div><button data-no>انجام نده</button><button data-yes>تأیید و ادامه</button></div>`;
-  const done=async approved=>{box.hidden=true;setActivity('در حال ادامه…');try{const r=await window.blackClover.confirm(id,approved);await loadConversation(state.currentId);if(r?.requiresConfirmation)showConfirm(r.confirmationId,r.text);}finally{setActivity('');}};
-  box.querySelector('[data-yes]').onclick=()=>done(true);box.querySelector('[data-no]').onclick=()=>done(false);
-}
-
-async function populateModels(){
-  const select=$('#modelSelect');
-  try{
-    const catalog=await window.blackClover.modelCatalog();select.innerHTML=catalog.filter(x=>x.available||x.id==='auto').map(x=>`<option value="${esc(x.id)}">${esc(x.label)}</option>`).join('');
-    const saved=localStorage.getItem(MODEL_KEY);if(localStorage.getItem(MODEL_MIGRATION_KEY)!=='1'||!catalog.some(x=>x.id===saved)){localStorage.setItem(MODEL_KEY,'auto');localStorage.setItem(MODEL_MIGRATION_KEY,'1');}
-    state.model=localStorage.getItem(MODEL_KEY)||'auto';select.value=state.model;
-  }catch{select.innerHTML='<option value="auto">Auto • Maria</option>';state.model='auto';}
-}
-async function refreshBrainSettings(){
-  try{
-    const [s,cg]=await Promise.all([window.blackClover.brainSettings(),window.blackClover.chatgptStatus?.().catch(()=>null)]),root=$('#providerList'),session=cg?.session||{status:'disconnected',sharing:false};
-    const chatgptUsable=session.status==='connected'&&session.sharing&&!session.error,chatgptLabel=session.error?'اتصال انجام شده • استفاده از پلن برای این اتصال در دسترس نیست':session.status==='connected'?(chatgptUsable?'متصل و آماده':'متصل • دسترسی مدل فعال نیست'):session.status==='connecting'?'در حال اتصال…':'متصل نیست';
-    root.innerHTML=`<article class="provider-card featured"><div><b>ChatGPT • OpenAI</b><span>اتصال رسمی حساب ChatGPT؛ برای تحلیل و سؤال‌های سنگین در حالت Auto.</span></div><i class="${chatgptUsable?'ok':''}">${esc(chatgptLabel)}</i></article>`+
-      s.providers.map(p=>`<article class="provider-card" data-provider="${esc(p.provider)}"><div><b>${esc(p.label)}</b><span>${esc(p.note||'')}</span></div><div class="provider-side"><i class="${p.configured?'ok':''}">${p.configured?'متصل':'اختیاری'}</i>${['openai','groq','gemini','openrouter','qwen'].includes(p.provider)?`<button data-provider-config="${esc(p.provider)}">${p.configured?'ویرایش':'اتصال'}</button>`:''}${p.configured&&p.provider!=='github'?`<button data-provider-remove="${esc(p.provider)}">حذف</button>`:''}</div></article>`).join('');
-    const chatBtn=$('#chatgptConnect');chatBtn.dataset.connected=session.status==='connected'?'1':'0';chatBtn.dataset.sharing=chatgptUsable?'1':'0';chatBtn.textContent=session.status==='connected'?(chatgptUsable?'قطع اتصال ChatGPT':'اتصال دوباره ChatGPT'):'Continue with ChatGPT';
-    $('#chatgptUsage').hidden=session.status!=='connected';const indicator=$('#planIndicator');if(indicator){indicator.classList.toggle('connected',chatgptUsable);indicator.textContent=chatgptUsable?'ChatGPT • متصل':session.status==='connected'?'ChatGPT • بدون سهمیه':'ChatGPT • متصل نیست';}
-    $('#githubBrain').textContent=s.githubCli?.authenticated?'GitHub Models متصل است':'اتصال رایگان GitHub Models';
-  }catch{}
-}
-
-async function startMic(){
-  if(listening)return;voice.stop?.('listening');
+function startMicrophone(){
   const Rec=window.SpeechRecognition||window.webkitSpeechRecognition;
-  if(!Rec){toast('Speech Recognition مرورگر در دسترس نیست');return;}
-  const rec=new Rec();rec.lang='fa-IR';rec.interimResults=false;rec.continuous=false;listening=true;$('#mic').classList.add('active');$('#status').textContent='گوش می‌دهم…';window.blackClover.setUiState?.('listening','Listening • در حال شنیدن').catch(()=>{});
-  rec.onresult=e=>{const t=e.results?.[0]?.[0]?.transcript;if(t)enqueue(t);};
-  rec.onerror=e=>{toast('میکروفن: '+(e.error||'خطا'));window.blackClover.setUiState?.('error','Voice • خطای میکروفن').catch(()=>{});};
-  rec.onend=()=>{listening=false;$('#mic').classList.remove('active');$('#status').textContent='آماده';window.blackClover.setUiState?.('online','Online • آماده').catch(()=>{});};rec.start();
+  if(!Rec){notice('تبدیل گفتار به متن در نسخه فعلی مرورگر/ویندوز فعال نیست.');return;}
+  if(mic)return;
+  voice.stop('listen');
+  const rec=new Rec();mic=rec;rec.lang='fa-IR';rec.interimResults=false;$('#mic').classList.add('active');setStatus('در حال گوش دادن…');api().setUiState?.('listening','در حال شنیدن').catch(()=>{});
+  rec.onresult=e=>{const text=e.results?.[0]?.[0]?.transcript;if(text){$('#input').value=text;grow();$('#input').focus();}};
+  rec.onerror=e=>notice('میکروفن: '+(e.error||'خطا'));
+  rec.onend=()=>{mic=null;$('#mic').classList.remove('active');setStatus('آماده');api().setUiState?.('online','آماده').catch(()=>{});};
+  try{rec.start();}catch(e){mic=null;withError(e);}
 }
-
+function template(){
+  return '<div class="pro-shell">'+
+  '<aside id="sidebar" class="sidebar">'+
+    '<div class="brand"><div class="brand-icon">'+icon('spark',21)+'</div><strong>MARIA</strong><span>Assistant</span></div>'+
+    '<button class="new-chat" id="newChat">'+icon('plus',18)+'گفتگوی جدید</button>'+
+    '<label class="search-box">'+icon('search',16)+'<input id="chatSearch" autocomplete="off" placeholder="جستجو در گفتگوها"></label>'+
+    '<div class="side-scroll"><button class="side-caption" id="allChats">گفتگوهای اخیر</button><div id="chatList"></div>'+
+    '<div class="projects-label"><span>پوشه‌های گفتگو</span><button title="افزودن پوشه" id="newFolder">'+icon('plus',16)+'</button></div><div id="folderList"></div></div>'+
+    '<div class="side-foot"><button id="workMode">'+icon('work',17)+'پروژه‌های MARIA</button><button id="settings">'+icon('settings',17)+'تنظیمات</button></div>'+
+  '</aside>'+
+  '<main class="workspace">'+
+    '<header class="topbar">'+
+      '<div class="top-left">'+button('sidebarToggle','باز و بسته کردن منو','menu')+'<div class="app-title">MARIA</div><select id="modelSelect" title="انتخاب مدل ChatGPT"><option value="chatgpt:auto">ChatGPT · خودکار</option></select></div>'+
+      '<div class="top-right"><button id="accountChip" class="account-chip"><span class="state-dot"></span>اتصال به ChatGPT</button>'+button('minimizeChat','کوچک‌کردن','minimize')+button('closeChat','بستن پنجره','close')+'</div>'+
+    '</header>'+
+    '<div class="subbar"><button id="chatTitle" title="تغییر نام گفتگو">گفتگوی جدید</button><span id="status">آماده</span><small id="latency"></small><select id="folderSelect" title="انتقال گفتگو به پوشه"><option value="">بدون پروژه</option></select>'+button('pinChat','پین گفتگو','pin')+button('shareChat','کپی تمام گفتگو','copy')+button('exportChat','ذخیره گفتگو به فایل','export')+'</div>'+
+    '<div id="connectBanner" class="connect-banner" hidden><span>برای پاسخ گرفتن از ChatGPT، حسابت را متصل کن.</span><button id="bannerConnect">اتصال حساب '+icon('arrow',14)+'</button></div>'+
+    '<div id="activity" class="activity" hidden><span class="pulse"></span><span id="activityText"></span></div>'+
+    '<section class="messages" id="messages" aria-live="polite"></section>'+
+    '<div id="confirm" class="confirm-box" hidden></div>'+
+    '<footer class="composer-wrap"><form id="form" class="composer"><textarea id="input" placeholder="پیامی برای MARIA بنویس…" rows="1" aria-label="متن پیام"></textarea>'+
+      '<div class="composer-bottom"><div class="composer-left"><button type="button" id="webToggle" class="tool-chip" title="جستجوی منابع به‌روز">'+icon('globe',17)+'جستجو</button><button type="button" id="deepToggle" class="tool-chip" title="پاسخ دقیق‌تر">'+icon('spark',16)+'عمیق</button><button type="button" id="autoSpeak" class="tool-chip" title="خواندن خودکار جواب">'+icon('sound',16)+'صدا</button></div>'+
+      '<div class="composer-right">'+button('mic','گفتن پیام با میکروفن','mic')+'<button type="submit" id="send" title="ارسال پیام" class="send-btn">'+icon('send',19)+'</button></div></div></form>'+
+      '<small class="composer-hint">MARIA ممکن است اشتباه کند. نتیجه فرمان‌های مهم را بررسی کن.</small></footer>'+
+  '</main></div>'+
+  '<div id="notice" role="status" class="toast" hidden></div>'+
+  '<div id="setup" class="settings-overlay" hidden><section class="settings-panel" role="dialog" aria-modal="true" aria-label="تنظیمات MARIA">'+
+    '<header><strong>تنظیمات MARIA</strong>'+button('setupClose','بستن تنظیمات','close')+'</header>'+
+    '<nav class="settings-tabs"><button id="tab-account" class="active">حساب ChatGPT</button><button id="tab-voice">صدا</button><button id="tab-privacy">حریم خصوصی</button></nav>'+
+    '<section id="panel-account" class="settings-content">'+
+      '<div class="account-identity"><div class="account-symbol">'+icon('spark',22)+'</div><div><strong id="accountStatus">متصل نیست</strong><p id="accountDetails">با ChatGPT وارد شو تا گفتگو فعال شود.</p></div></div>'+
+      '<div class="settings-actions"><button id="connectChatGPT" class="primary-button">Continue with ChatGPT</button><button id="chatgptUsage" hidden>نمایش مصرف و محدودیت</button><button id="disconnectChatGPT" hidden>قطع اتصال</button><button id="setupRefresh">بررسی وضعیت</button></div>'+
+      '<p class="settings-note">ورود در مرورگر رسمی انجام می‌شود. حساب Chrome به‌طور خودکار انتخاب نمی‌شود؛ در صفحه ورود حساب موردنظرت را انتخاب کن. این اتصال ممکن است محدودیت سهمیه داشته باشد.</p>'+
+    '</section>'+
+    '<section id="panel-voice" class="settings-content" hidden>'+
+      '<label class="setting-row"><span><b>فعال بودن صدای MARIA</b><small>پخش صوتی پاسخ‌ها با موتور صوتی نصب‌شده</small></span><input id="voiceEnabled" type="checkbox"></label>'+
+      '<label class="setting-row"><span><b>خواندن خودکار پاسخ</b><small>پس از دریافت پاسخ، MARIA آن را می‌خواند</small></span><input id="voiceAutoRead" type="checkbox"></label>'+
+      '<label class="setting-slider"><b>سرعت گفتار</b><input id="voiceRate" type="range" min="0.75" max="1.3" step="0.05"><output id="voiceRateValue"></output></label>'+
+      '<label class="setting-slider"><b>زیر و بمی صدا</b><input id="voicePitch" type="range" min="0.75" max="1.3" step="0.05"><output id="voicePitchValue"></output></label>'+
+      '<div class="settings-actions"><button id="voicePreview">آزمایش صدا</button><button id="voiceStop">توقف صدا</button></div>'+
+      '<small class="settings-note" id="voiceEngineNote">کیفیت صدا به موتور صوتی و صداهای نصب‌شده در ویندوز بستگی دارد.</small>'+
+    '</section>'+
+    '<section id="panel-privacy" class="settings-content" hidden><p>گفتگوهای MARIA روی این کامپیوتر ذخیره می‌شوند. متن درخواست‌های مجاز برای پاسخ به مدل ChatGPT ارسال می‌شود. ابزارهای کنترل کامپیوتر از مسیر بررسی مجوزهای MARIA اجرا می‌شوند.</p><p>فایل‌های خصوصی به‌صورت خودکار به ChatGPT فرستاده نمی‌شوند. برای حذف گفتگوها از کنار نام گفتگو گزینه حذف را بزن.</p></section>'+
+  '</section></div>';
+}
 export async function mountChatSurface(){
   document.body.classList.add('chat-v3','surface-chat');
-  const root=$('#app');
-  root.innerHTML=`
-  <div class="pro-shell">
-    <aside id="sidebar" class="sidebar">
-      <div class="sidebar-top">
-        <div class="app-switcher"><span class="app-logo">✦</span><div><b>MARIA</b><small>Chat</small></div></div>
-        <button id="newChat" class="new-chat" title="گفتگوی جدید">${icon('plus')}<span>گفتگوی جدید</span></button>
-        <label class="search-box">${icon('search')}<input id="chatSearch" placeholder="جستجو"></label>
-      </div>
-      <div class="side-scroll">
-        <div class="side-section-head"><button id="allChats" class="side-heading-button">گفتگوهای اخیر</button></div>
-        <div id="chatList" class="chat-list"></div>
-        <div class="side-section-head project-head"><span>پروژه‌ها</span><button id="projectApiConfig" title="اتصال OpenAI API برای پروژه‌ها">API</button><button id="newFolder" title="پروژه / پوشه جدید">${icon('plus')}</button></div>
-        <div id="folderList" class="folder-list"></div>
-      </div>
-      <div class="side-foot">
-        <button id="settings">${icon('settings')}<span>تنظیمات</span></button>
-      </div>
-    </aside>
-
-    <section class="workspace">
-      <header class="topbar">
-        <div class="top-left">
-          <button id="sidebarToggle" class="icon-btn" title="فهرست">${icon('menu')}</button>
-          <div class="mode-switch">
-            <button id="chatMode" class="mode-tab active">Chat</button>
-            <button id="workMode" class="mode-tab">${icon('work')}<span>Work</span></button>
-          </div>
-          <select id="modelSelect" class="model-select" title="انتخاب مدل"><option value="auto">Auto • Maria</option></select><button id="planIndicator" type="button" title="حساب ChatGPT و تنظیمات API">ChatGPT • متصل نیست</button>
-        </div>
-        <div class="top-actions">
-          <button id="shareChat" class="share-btn" title="اشتراک">${icon('share')}<span>اشتراک</span></button>
-          <button id="pinChat" class="icon-btn" title="پین">${icon('pin')}</button>
-          <button id="exportChat" class="icon-btn" title="ذخیره">${icon('export')}</button>
-          <button id="minimizeChat" class="icon-btn window-btn">${icon('minimize')}</button>
-          <button id="closeChat" class="icon-btn window-btn close">${icon('close')}</button>
-        </div>
-      </header>
-
-      <div class="chat-subbar">
-        <button id="chatTitle" class="title-btn">گفتگوی جدید</button>
-        <div class="chat-submeta"><span id="status">آماده</span><small id="latency"></small><select id="folderSelect" title="پروژه / پوشه"><option value="">بدون پروژه</option></select></div>
-      </div>
-
-      <div id="activity" class="activity" hidden><span class="pulse"></span><span id="activityText"></span></div>
-      <section id="messages" class="messages"></section>
-      <div id="confirm" class="confirm-box" hidden></div>
-
-      <footer class="composer-wrap">
-        <form id="form" class="composer">
-          <div id="attachmentTray" class="attachment-tray" hidden></div>
-          <textarea id="input" rows="1" placeholder="پیامی برای Maria بنویس…"></textarea>
-          <div class="composer-bottom">
-            <div class="composer-tools">
-              <button id="attach" type="button" class="round-tool" title="پیوست فایل">${icon('paperclip')}</button>
-              <button id="webToggle" type="button" class="tool-pill">${icon('globe')}<span>وب</span></button>
-              <select id="depthSelect" class="depth-select" title="عمق پاسخ"><option value="auto">خودکار</option><option value="fast">سریع</option><option value="deep">عمیق</option></select>
-              <label class="voice-toggle" title="خواندن پاسخ"><input id="autoSpeak" type="checkbox">${icon('sound')}</label>
-            </div>
-            <div class="composer-actions">
-              <button id="mic" type="button" class="round-tool" title="صدا">${icon('mic')}</button>
-              <button id="send" type="submit" class="send-btn">${icon('send')}</button>
-            </div>
-          </div>
-        </form>
-        <small class="composer-hint">Maria ممکن است اشتباه کند؛ برای کارهای مهم نتیجه را بررسی کن.</small>
-      </footer>
-    </section>
-  </div>
-  <div id="toast" class="toast"></div>
-  <div id="setup" class="settings-overlay" hidden>
-    <section class="settings-panel">
-      <header><div><b>تنظیمات چت و مغز</b><span>Maria به‌صورت خودکار بهترین مسیر آماده را انتخاب می‌کند.</span></div><button id="setupClose">×</button></header>
-      <div class="settings-callout"><b>Smart Brain</b><span>فرمان‌های ساده مستقیم اجرا می‌شوند؛ سؤال‌های سنگین به Provider قوی آنلاین می‌روند و در صورت خطا Local جایگزین می‌شود.</span></div>
-      <div id="providerList" class="provider-list"></div>
-      <div class="settings-actions"><button id="chatgptConnect">Continue with ChatGPT</button><button id="chatgptUsage" hidden>مدیریت مصرف ChatGPT</button><button id="githubBrain">اتصال رایگان GitHub Models</button><button id="setupRefresh">بررسی دوباره</button></div>
-      <section id="apiSetup" class="api-setup" hidden>
-        <b>اتصال OpenAI API (پرداخت جدا از اشتراک ChatGPT)</b>
-        <p>پس از خرید اعتبار API، کلید خود را اینجا وارد کن. کلید فقط در حافظه رمزنگاری‌شده ویندوز ذخیره می‌شود و هرگز در GitHub قرار نمی‌گیرد.</p>
-        <label>API Key <input id="openaiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…"></label>
-        <label>مدل <select id="openaiModel"><option value="gpt-6-luna">GPT-6 Luna • اقتصادی</option><option value="gpt-6.1-sol">GPT-6.1 Sol • قوی</option><option value="gpt-6-astra">GPT-6 Astra • پیشرفته</option></select></label>
-        <div class="settings-actions"><button id="saveOpenaiApi" type="button">ذخیره و بررسی اتصال</button><button id="closeApiSetup" type="button">بستن</button></div>
-        <small>این اتصال اختیاری است. وقتی ChatGPT با حساب خودت متصل باشد، برای شروع نیاز به خرید API نداری.</small>
-      </section>
-    </section>
-  </div>`;
-
-  await migrateLegacy();await populateModels();await refreshList();await ensureCurrent();updateHeader();renderMessages();renderPendingAttachments();
-  if(state.currentId)await loadConversation(state.currentId);
-
-  $('#newChat').onclick=()=>newChat(state.folderFilter==='all'?null:state.folderFilter);
-  $('#allChats').onclick=async()=>{state.folderFilter='all';await refreshList();};
-  $('#newFolder').onclick=async()=>{const name=prompt('نام پوشه جدید');if(name?.trim()){await window.blackClover.createChatFolder(name.trim());await refreshList();}};
-  $('#chatSearch').oninput=async e=>{state.search=e.target.value;await refreshList();};
-  $('#folderList').onclick=async e=>{
-    const rename=e.target.closest('[data-folder-rename]');if(rename){e.stopPropagation();const f=state.folders.find(x=>x.id===rename.dataset.folderRename),name=prompt('نام جدید پوشه',f?.name||'');if(name?.trim()){await window.blackClover.renameChatFolder(rename.dataset.folderRename,name.trim());await refreshList();}return;}
-    const del=e.target.closest('[data-folder-delete]');if(del){e.stopPropagation();if(confirm('پوشه حذف شود؟ گفتگوها حذف نمی‌شوند.')){await window.blackClover.removeChatFolder(del.dataset.folderDelete);state.folderFilter='all';await refreshList();}return;}
-    const row=e.target.closest('[data-folder-id]');if(row){state.folderFilter=row.dataset.folderId;await refreshList();}
-  };
-  $('#chatList').onclick=async e=>{
-    const row=e.target.closest('[data-chat-id]');if(!row)return;const id=row.dataset.chatId,action=e.target.closest('[data-chat-action]')?.dataset.chatAction;
-    if(!action){await loadConversation(id);return;}
-    const item=state.chats.find(x=>x.id===id);if(!item)return;
-    if(action==='pin'){await window.blackClover.updateChat(id,{pinned:!item.pinned});await refreshList();if(id===state.currentId)await loadConversation(id);}
-    if(action==='rename'){const name=prompt('نام گفتگو',item.title);if(name?.trim()){await window.blackClover.updateChat(id,{title:name.trim()});if(id===state.currentId)await loadConversation(id);else await refreshList();}}
-    if(action==='delete'&&confirm('این گفتگو کامل حذف شود؟')){await window.blackClover.removeChat(id);if(id===state.currentId){state.currentId=null;state.conversation=null;await ensureCurrent();}await refreshList();}
-  };
-
+  $('#app').innerHTML=template();
+  $('#autoSpeak').classList.toggle('active',state.autoRead);$('#voiceEnabled').checked=voice.enabled;$('#voiceAutoRead').checked=state.autoRead;
+  $('#voiceRate').value=voice.rate;$('#voiceRateValue').textContent=voice.rate.toFixed(2)+'×';
+  $('#voicePitch').value=voice.pitch;$('#voicePitchValue').textContent=voice.pitch.toFixed(2)+'×';
+  await syncAccount();await refreshList();await ensureChat();renderHeader();renderMessages();
+  $('#newChat').onclick=()=>createChat().catch(withError);
+  $('#allChats').onclick=()=>{state.folder='all';refreshList().catch(withError);};
+  $('#chatSearch').oninput=e=>{state.search=e.target.value;refreshList().catch(withError);};
+  $('#newFolder').onclick=async()=>{const name=prompt('نام پوشه گفتگوها');if(name?.trim()){try{await api().createChatFolder(name.trim());await refreshList();}catch(e){withError(e);}}};
+  $('#chatList').onclick=async e=>{if(busy)return notice('برای تغییر گفتگو ابتدا پاسخ را متوقف کن.');
+    const row=e.target.closest('[data-chat]');if(!row)return;const id=row.dataset.chat,action=e.target.closest('[data-chat-action]')?.dataset.chatAction;
+    try{if(!action)return await loadChat(id);const item=state.list.find(c=>c.id===id);if(!item)return;
+      if(action==='pin')await api().updateChat(id,{pinned:!item.pinned});
+      if(action==='rename'){const title=prompt('نام گفتگو',item.title);if(title?.trim())await api().updateChat(id,{title:title.trim()});}
+      if(action==='delete'){if(!confirm('این گفتگو حذف شود؟'))return;await api().removeChat(id);if(id===state.id){state.id=null;state.chat=null;await ensureChat();}}
+      if(id===state.id&&state.id)await loadChat(id);else await refreshList();
+    }catch(error){withError(error);}};
+  $('#folderList').onclick=async e=>{const row=e.target.closest('[data-folder]');if(!row)return;const id=row.dataset.folder,action=e.target.closest('[data-folder-action]')?.dataset.folderAction;
+    if(busy)return notice('بعد از پایان پاسخ، پوشه را تغییر بده.');
+    try{
+      if(action==='rename'){const f=state.folders.find(x=>x.id===id),name=prompt('نام پوشه',f?.name||'');if(name?.trim())await api().renameChatFolder(id,name.trim());}
+      else if(action==='delete'){if(confirm('پوشه حذف شود؟ گفتگوها باقی می‌مانند.')){await api().removeChatFolder(id);state.folder='all';}}
+      else state.folder=id;
+      await refreshList();
+    }catch(error){withError(error);}};
   $('#messages').onclick=async e=>{
-    const starter=e.target.closest('[data-starter]');if(starter){enqueue(starter.dataset.starter);return;}
-    const source=e.target.closest('[data-source-url]');if(source){await window.blackClover.openExternal(source.dataset.sourceUrl);return;}
-    const link=e.target.closest('a[href]');if(link){e.preventDefault();const url=safeHttp(link.getAttribute('href'));if(url)await window.blackClover.openExternal(url);return;}
-    const row=e.target.closest('[data-message-id]');if(!row)return;const message=state.conversation?.messages?.find(x=>x.id===row.dataset.messageId);if(!message)return;
-    const action=e.target.closest('[data-msg-action]')?.dataset.msgAction;if(!action)return;
-    if(action==='copy'){await navigator.clipboard.writeText(message.text);toast('پیام کپی شد');}
-    if(action==='speak'){voice.speak(message.text);}
-    if(action==='edit'){editMessage(message,row);}
-    if(action==='delete'){await deleteMessage(message);}
-    if(action==='branch'){await branchFrom(message);}
-    if(action==='retry'){const index=state.conversation.messages.findIndex(x=>x.id===message.id),user=currentUserBefore(index);if(user)await replayFrom(user.id);}
-  };
-
-  $('#form').onsubmit=async e=>{e.preventDefault();if(running){ignoreCurrent=true;await window.blackClover.cancelChat?.(state.currentId);clearStream();setActivity('');toast('پاسخ متوقف شد');return;}enqueue($('#input').value);};
-  $('#input').oninput=autoGrow;
-  $('#input').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();$('#form').requestSubmit();}};
-  $('#mic').onclick=()=>startMic().catch(e=>toast(String(e.message||e)));
-  $('#attach').onclick=async()=>{try{const picked=await window.blackClover.pickChatFiles();if(picked?.length){const seen=new Set(state.attachments.map(x=>x.path));for(const item of picked)if(item?.path&&!seen.has(item.path)&&state.attachments.length<8){state.attachments.push(item);seen.add(item.path);}renderPendingAttachments();}}catch(e){toast('پیوست فایل ناموفق بود: '+(e?.message||e));}};
-  $('#attachmentTray').onclick=e=>{const b=e.target.closest('[data-remove-attachment]');if(!b)return;state.attachments.splice(Number(b.dataset.removeAttachment),1);renderPendingAttachments();};
-  $('#workMode').onclick=()=>window.blackClover.showProjects();
-  $('#chatMode').onclick=()=>$('#input').focus();
+    const starter=e.target.closest('[data-starter]');if(starter)return sendMessage(starter.dataset.starter);
+    const link=e.target.closest('[data-link]');if(link)return api().openExternal(link.dataset.link).catch(withError);
+    const anchor=e.target.closest('a[href]');if(anchor){e.preventDefault();const url=safeUrl(anchor.getAttribute('href'));if(url)api().openExternal(url).catch(withError);return;}
+    const row=e.target.closest('[data-id]');if(!row||busy)return;const action=e.target.closest('[data-message-action]')?.dataset.messageAction;
+    const message=state.chat?.messages?.find(m=>m.id===row.dataset.id);if(!action||!message)return;
+    try{
+      if(action==='copy'){await navigator.clipboard.writeText(message.text);notice('متن کپی شد.');}
+      if(action==='speak')voice.speak(message.text);
+      if(action==='edit'){const edited=prompt('متن پیام را ویرایش کن',message.text);if(edited?.trim()){await api().updateChatMessage(state.id,message.id,{text:edited});if(message.role==='user')await retryMessage(message);else await loadChat(state.id);}}
+      if(action==='retry'){const i=state.chat.messages.findIndex(m=>m.id===message.id),prior=state.chat.messages.slice(0,i).reverse().find(m=>m.role==='user');if(prior)await retryMessage(prior);}
+    }catch(error){withError(error);}};
+  $('#form').onsubmit=e=>{e.preventDefault();if(busy)return stopResponse();sendMessage($('#input').value).catch(withError);};
+  $('#input').oninput=grow;
+  $('#input').onkeydown=e=>{if(e.key==='Enter'&&!e.shiftKey&&!e.isComposing){e.preventDefault();$('#form').requestSubmit();}};
   $('#sidebarToggle').onclick=()=>{state.sidebar=!state.sidebar;$('#sidebar').classList.toggle('collapsed',!state.sidebar);};
-  $('#modelSelect').onchange=e=>{state.model=e.target.value;localStorage.setItem(MODEL_KEY,state.model);toast(state.model==='auto'?'انتخاب مغز روی Auto':'مدل انتخاب شد');};
-  $('#depthSelect').onchange=e=>{state.depth=e.target.value;};
-  $('#webToggle').onclick=()=>{state.web=!state.web;updateHeader();};
-  $('#folderSelect').onchange=async e=>{if(!state.currentId)return;await window.blackClover.updateChat(state.currentId,{folderId:e.target.value||null});await loadConversation(state.currentId);};
-  $('#pinChat').onclick=async()=>{if(!state.currentId)return;await window.blackClover.updateChat(state.currentId,{pinned:!state.conversation.pinned});await loadConversation(state.currentId);};
-  $('#chatTitle').onclick=async()=>{if(!state.currentId)return;const name=prompt('نام گفتگو',state.conversation.title);if(name?.trim()){await window.blackClover.updateChat(state.currentId,{title:name.trim()});await loadConversation(state.currentId);}};
-  $('#shareChat').onclick=async()=>{if(state.currentId){await window.blackClover.copyChat(state.currentId);toast('کل گفتگو برای اشتراک کپی شد');}};
-  $('#exportChat').onclick=()=>state.currentId&&window.blackClover.exportChat(state.currentId);
-  $('#settings').onclick=()=>{$('#setup').hidden=false;refreshBrainSettings();};
-  $('#planIndicator').onclick=()=>{$('#setup').hidden=false;refreshBrainSettings();};
-  $('#projectApiConfig').onclick=async()=>{$('#setup').hidden=false;const s=await window.blackClover.brainSettings();$('#openaiModel').value=s.providers.find(x=>x.provider==='openai')?.model||'gpt-6-luna';$('#apiSetup').hidden=false;refreshBrainSettings();};
+  $('#webToggle').onclick=()=>{state.web=!state.web;renderHeader();};
+  $('#deepToggle').onclick=()=>{state.deep=!state.deep;renderHeader();};
+  $('#autoSpeak').onclick=()=>{state.autoRead=!state.autoRead;localStorage.setItem(VOICE_READ_KEY,state.autoRead?'1':'0');$('#autoSpeak').classList.toggle('active',state.autoRead);$('#voiceAutoRead').checked=state.autoRead;};
+  $('#mic').onclick=startMicrophone;
+  $('#workMode').onclick=()=>api().showProjects().catch(withError);
+  $('#pinChat').onclick=async()=>{if(!state.id)return;try{await api().updateChat(state.id,{pinned:!state.chat.pinned});await loadChat(state.id);}catch(e){withError(e);}};
+  $('#shareChat').onclick=async()=>{if(state.id){try{await api().copyChat(state.id);notice('کل گفتگو کپی شد.');}catch(e){withError(e);}}};
+  $('#exportChat').onclick=()=>state.id&&api().exportChat(state.id).catch(withError);
+  $('#chatTitle').onclick=async()=>{const title=prompt('نام گفتگو',state.chat?.title||'');if(title?.trim()){await api().updateChat(state.id,{title:title.trim()});await loadChat(state.id);}};
+  $('#folderSelect').onchange=async e=>{await api().updateChat(state.id,{folderId:e.target.value||null});await loadChat(state.id);};
+  $('#accountChip').onclick=()=>openSettings('account');
+  $('#bannerConnect').onclick=()=>openSettings('account');
+  $('#settings').onclick=()=>openSettings('account');
   $('#setupClose').onclick=()=>{$('#setup').hidden=true;};
-  $('#setupRefresh').onclick=async()=>{await refreshBrainSettings();await populateModels();};
-  $('#providerList').onclick=async e=>{
-    const config=e.target.closest('[data-provider-config]'),remove=e.target.closest('[data-provider-remove]');
-    if(config){
-      if(config.dataset.provider==='openai'){const settings=await window.blackClover.brainSettings();$('#openaiModel').value=settings.providers.find(x=>x.provider==='openai')?.model||'gpt-6-luna';$('#apiSetup').hidden=false;$('#openaiApiKey').focus();return;}const provider=config.dataset.provider,key=prompt(`کلید API رایگان ${provider} را وارد کن. کلید به‌صورت رمز‌شده در Windows ذخیره می‌شود:`);if(!key?.trim())return;try{const settings=await window.blackClover.brainSettings(),p=settings.providers.find(x=>x.provider===provider),model=prompt('مدل (خالی = مدل پیشنهادی):',p?.model||'')||p?.model||'';await window.blackClover.saveBrainProvider({provider,apiKey:key.trim(),model});const test=await window.blackClover.testBrainProvider(provider);toast(test.ok?`${provider} متصل شد`:`${provider} ذخیره شد ولی تست اتصال موفق نبود`);await refreshBrainSettings();await populateModels();}catch(err){toast(err?.message||String(err));}return;}
-    if(remove){const provider=remove.dataset.provider;if(confirm(`اتصال ${provider} حذف شود؟`)){await window.blackClover.removeBrainProvider(provider);await refreshBrainSettings();await populateModels();}}
-  };
-  $('#closeApiSetup').onclick=()=>{$('#apiSetup').hidden=true;$('#openaiApiKey').value='';};
-  $('#saveOpenaiApi').onclick=async()=>{
-    const key=$('#openaiApiKey').value.trim(),model=$('#openaiModel').value,btn=$('#saveOpenaiApi');
-    if(!key){toast('کلید OpenAI API را وارد کن');return;}
-    try{btn.disabled=true;await window.blackClover.saveBrainProvider({provider:'openai',apiKey:key,model});
-      $('#openaiApiKey').value='';const result=await window.blackClover.testBrainProvider('openai');
-      toast(result.ok?'اتصال API فعال شد':'کلید ذخیره شد؛ تست اتصال موفق نبود');
-      await refreshBrainSettings();await populateModels();
-    }catch(error){toast(error?.message||String(error));}finally{btn.disabled=false;}
-  };
-  $('#chatgptConnect').onclick=async e=>{const b=e.currentTarget;try{b.disabled=true;if(b.dataset.connected==='1'&&b.dataset.sharing==='1'){if(confirm('اتصال ChatGPT از MARIA قطع شود؟'))await window.blackClover.disconnectChatGPT();}else await window.blackClover.signInChatGPT({reconsent:b.dataset.connected==='1'});await refreshBrainSettings();await populateModels();toast('وضعیت ChatGPT به‌روز شد');}catch(err){toast(err?.message||String(err));}finally{b.disabled=false;}};
-  $('#chatgptUsage').onclick=()=>window.blackClover.openChatGPTUsage();
-  $('#githubBrain').onclick=async()=>{try{await window.blackClover.connectGithubBrain();toast('پنجره اتصال GitHub باز شد');}catch(e){toast(e.message||String(e));}};
-  $('#minimizeChat').onclick=()=>window.blackClover.minimizeChat();
-  $('#closeChat').onclick=()=>window.blackClover.hideChat();
-
-  window.blackClover.onEvent?.(event=>{
-    if(event.type==='stream'){addStream(event.delta||'');return;}
-    if(event.type==='thinking'){if(running)setActivity(event.kind==='grounded-research'?'در حال تحقیق و خواندن منابع…':'در حال فکر کردن…');return;}
-    if(event.type==='tool'){if(running)setActivity('در حال اجرای '+event.name+'…');return;}
-    if(event.type==='reminder'||event.type==='break-reminder'){toast(event.text||event.item?.message||'یادآوری');}
+  $('#setup').onclick=e=>{if(e.target===$('#setup'))$('#setup').hidden=true;};
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#setup').hidden){$('#setup').hidden=true;}});
+  for(const tab of ['account','voice','privacy'])$('#tab-'+tab).onclick=()=>chooseSettingsTab(tab);
+  $('#connectChatGPT').onclick=connectChatGPT;
+  $('#disconnectChatGPT').onclick=disconnectChatGPT;
+  $('#chatgptUsage').onclick=()=>api().openChatGPTUsage().catch(withError);
+  $('#setupRefresh').onclick=async()=>{await syncAccount(true);notice('وضعیت اتصال به‌روزرسانی شد.');};
+  $('#modelSelect').onchange=e=>{state.model=e.target.value;notice('مدل ChatGPT انتخاب شد.');};
+  $('#voiceEnabled').onchange=e=>voice.setEnabled(e.target.checked);
+  $('#voiceAutoRead').onchange=e=>{state.autoRead=e.target.checked;localStorage.setItem(VOICE_READ_KEY,state.autoRead?'1':'0');$('#autoSpeak').classList.toggle('active',state.autoRead);};
+  $('#voiceRate').oninput=e=>{voice.configure({rate:Number(e.target.value)});$('#voiceRateValue').textContent=Number(e.target.value).toFixed(2)+'×';};
+  $('#voicePitch').oninput=e=>{voice.configure({pitch:Number(e.target.value)});$('#voicePitchValue').textContent=Number(e.target.value).toFixed(2)+'×';};
+  $('#voicePreview').onclick=()=>voice.speak('سلام! من ماریا هستم. صدای من رو می‌شنوی؟').then(ok=>{if(!ok)notice('موتور صدای فارسی در دسترس نیست.');});
+  $('#voiceStop').onclick=()=>voice.stop('user-stop');
+  $('#minimizeChat').onclick=()=>api().minimizeChat().catch(withError);
+  $('#closeChat').onclick=()=>api().hideChat().catch(withError);
+  api().onEvent?.(event=>{
+    if(event.type==='stream')pushStream(event.delta);
+    if(event.type==='thinking'&&busy)setStatus(event.kind==='grounded-research'?'در حال بررسی منابع…':'در حال پردازش…');
+    if(event.type==='tool'&&busy)setStatus('در حال اجرای دستور…');
+    if(event.type==='reminder'||event.type==='break-reminder')notice(event.text||event.item?.message||'یادآوری');
   });
-  window.blackClover.onFocusInput?.(()=>{$('#input').focus();});
-  window.blackClover.onOpenSettings?.(payload=>{$('#setup').hidden=false;refreshBrainSettings();if(payload?.section==='voice')setTimeout(()=>document.querySelector('#voicePersonalityPanel')?.scrollIntoView({behavior:'smooth',block:'start'}),160);});
-  window.blackClover.onPrefillPrompt?.(payload=>{const t=payload?.text||'';if(!t)return;$('#input').value=t;autoGrow();if(payload.submit)enqueue(t);});
-  autoGrow();syncSendButton();$('#input').focus();refreshBrainSettings().catch(()=>{});
+  api().onFocusInput?.(()=>$('#input').focus());
+  api().onOpenSettings?.(payload=>openSettings(payload?.section==='voice'?'voice':'account'));
+  api().onPrefillPrompt?.(payload=>{const text=payload?.text||'';if(text){$('#input').value=text;grow();if(payload.submit)sendMessage(text);}});
+  busyUI();grow();$('#input').focus();
 }

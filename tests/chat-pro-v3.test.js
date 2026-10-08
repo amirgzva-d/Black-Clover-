@@ -11,8 +11,8 @@ test('professional chat surface exposes ChatGPT-like conversation controls',asyn
     read('src/main/main.js'),
     read('src/renderer/chatSurfaceV2.css')
   ]);
-  for(const token of ['newChat','chatSearch','folderList','modelSelect','depthSelect','webToggle','pinChat','shareChat','exportChat'])assert.ok(chat.includes(token),token);
-  for(const action of ["data-msg-action=\"copy\"","data-msg-action=\"speak\"","data-msg-action=\"branch\"","data-msg-action=\"edit\"","data-msg-action=\"delete\"","data-msg-action=\"retry\""])assert.ok(chat.includes(action),action);
+  for(const token of ['newChat','chatSearch','folderList','modelSelect','deepToggle','webToggle','pinChat','shareChat','exportChat'])assert.ok(chat.includes(token),token);
+  for(const action of ["data-message-action=\"copy\"","data-message-action=\"speak\"","data-message-action=\"edit\"","data-message-action=\"retry\""])assert.ok(chat.includes(action),action);
   for(const token of ['listChats','getChat','createChat','updateChat','removeChat','branchChat','createChatFolder','renameChatFolder','removeChatFolder','copyChat','exportChat','cancelChat'])assert.ok(preload.includes(token),token);
   for(const channel of ["'chats:list'","'chats:get'","'chats:create'","'chats:update'","'chats:remove'","'chats:branch'","'agent:replay'","'agent:cancel'"])assert.ok(main.includes(channel),channel);
   assert.match(chat,/DOMPurify\.sanitize/);
@@ -20,11 +20,11 @@ test('professional chat surface exposes ChatGPT-like conversation controls',asyn
   assert.match(chat,/source-chip/);
   assert.match(chat,/openExternal/);
   assert.match(chat,/voice\.speak\(message\.text\)/);
-  assert.match(chat,/window\.blackClover\.cancelChat/);
-  assert.match(chat,/model:'auto'/);
+  assert.match(chat,/api\(\)\.cancelChat/);
+  assert.match(chat,/const CHATGPT_AUTO='chatgpt:auto'/);
   assert.doesNotMatch(chat,/MODEL_ID='ollama:qwen2\.5:3b'/);
   assert.match(css,/\.sidebar/);
-  assert.match(css,/\.message-sources/);
+  assert.match(css,/\.sources/);
   assert.match(css,/\.composer/);
 });
 
@@ -64,6 +64,6 @@ test('web research UI is wired from request through persisted sources',async()=>
   assert.match(chat,/webSearch:state\.web/);
   assert.match(agent,/Boolean\(effectiveChatOptions\.webSearch\)/);
   assert.match(main,/sources:response\.sources\|\|\[\]/);
-  assert.match(chat,/message\?\.meta\?\.sources/);
+  assert.match(chat,/message\.meta\?\.sources/);
   assert.match(grounded,/research_topic/);
 });

@@ -55,10 +55,10 @@ test('character and motion use staged preview before apply',async()=>{
 
 test('chat surface always has close and minimize controls',async()=>{
   const chat=await read('src/renderer/chatSurfaceV2.js');
-  assert.match(chat,/id="closeChat"/);
-  assert.match(chat,/id="minimizeChat"/);
-  assert.match(chat,/blackClover\.hideChat/);
-  assert.match(chat,/blackClover\.minimizeChat/);
+  assert.match(chat,/button\('closeChat'/);
+  assert.match(chat,/button\('minimizeChat'/);
+  assert.match(chat,/api\(\)\.hideChat/);
+  assert.match(chat,/api\(\)\.minimizeChat/);
 });
 
 test('built-in character apply is persisted through explicit apply IPC',async()=>{

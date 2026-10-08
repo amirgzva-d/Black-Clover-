@@ -40,11 +40,11 @@ test('desktop UI has independent chat pins reminders and nonblocking queue',asyn
   for(const token of ['showPins','showReminders','listPins','listReminders'])assert.ok(preload.includes(token),token);
   assert.match(ui,/mountDataSurface/);
   assert.match(renderer,/chatSurfaceV2/);
-  assert.match(chat,/const queue=\[\]/);
+  assert.match(chat,/let busy=false,cancelled=false/);
   assert.doesNotMatch(chat,/input\.disabled\s*=\s*true/);
-  assert.match(chat,/conversationId:state\.currentId/);
-  assert.match(chat,/modelOverride:model/);
-  assert.match(chat,/LEGACY_HISTORY_KEY/);
+  assert.match(chat,/conversationId:current/);
+  assert.match(chat,/modelOverride:state\.model/);
+  assert.match(chat,/const CHATGPT_AUTO='chatgpt:auto'/);
   assert.match(chat,/listChats/);
   assert.match(chat,/createChat/);
   assert.match(chat,/cancelChat/);
