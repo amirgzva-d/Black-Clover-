@@ -73,7 +73,7 @@ function showChat({focus=true}={}){showAvatar();const w=showAnimated(createChatW
 function showUtility(surface){showAvatar();return showAnimated(createUtilityWindow(surface),utilityBounds());}
 function showProjects(){showAvatar();return showAnimated(createProjectsWindow(),projectsBounds());}
 function showAssetSurface(surface){showAvatar();return showAnimated(createAssetWindow(surface),assetBounds());}
-function hideChat(){hideAnimated(chatWin);}
+function hideChat(){hideAnimated(chatWin);if(!quitting){const w=showAvatar();w.showInactive();w.moveTop();}}
 function hideAvatar(){hideAnimated(avatarWin);}
 function hideUtility(surface){hideAnimated(surface==='pins'?pinsWin:remindersWin);}
 function hideProjects(){hideAnimated(projectsWin);}
