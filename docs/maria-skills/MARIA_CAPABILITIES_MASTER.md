@@ -26,15 +26,93 @@ Global requirements:
 - Multi-step Planner/Routine compatibility.
 - Real-device integration tests before implementation status is considered complete.
 
+
+## Global Language Dataset Standard — 500–1000 Utterances per High-Frequency Intent
+
+For every high-frequency canonical intent in MARIA, the design target is **500–1000 unique utterance examples** for training/evaluation coverage. These examples are NOT runtime if/else rules.
+
+Each intent language pack should cover a balanced mix of:
+1. formal Persian
+2. colloquial Persian
+3. extremely short commands
+4. incomplete commands
+5. reordered wording
+6. polite requests
+7. complaints/indirect requests
+8. Persian digits
+9. Arabic digits
+10. Latin digits
+11. written numbers
+12. percentages
+13. fractions
+14. relative values
+15. vague values
+16. repeated follow-ups
+17. "این/اون/همونو/قبلی"
+18. explicit target
+19. implicit active target
+20. selected-object references
+21. mixed Persian-English
+22. keyboard-typed typos
+23. missing spaces
+24. repeated letters
+25. wrong Persian/Arabic characters
+26. phonetic STT errors
+27. filler/noise words
+28. self-correction
+29. negation
+30. exclusion ("به X دست نزن")
+31. multi-action command
+32. timed command
+33. conditional command
+34. undo/restore
+35. comparison to previous state
+36. source/destination references
+37. singular/plural
+38. one/many items
+39. app/site/device aliases
+40. user-learned aliases
+41. cross-domain ambiguity
+42. negative counterexamples
+43. unsupported-target examples
+44. permission-denied examples
+45. boundary values
+46. failure-recovery phrasing
+47. confirmations
+48. cancellation
+49. continuation after a previous turn
+50. adversarially similar but wrong intents
+
+Recommended dataset distribution per high-frequency intent:
+- 250–400 curated natural utterances
+- 150–250 typo/STT/noise variants
+- 75–150 context-dependent utterances
+- 50–100 negative/counterexample utterances
+- 25–75 boundary/failure utterances
+
+Target total: **500 minimum, 1000 preferred** for core daily intents.
+
+Data quality rules:
+- deduplicate semantically identical trivial variants;
+- preserve truly different syntax and pragmatics;
+- keep held-out evaluation data separate from training examples;
+- tag every utterance with canonical intent, slots, target, context requirements and expected action;
+- do not train executable behavior from user secrets;
+- secrets/tokens/passwords/OTP values must be redacted or synthetic in datasets;
+- semantic classifier + slot extractor + fuzzy/STT recovery + context resolver remain the runtime architecture.
+
+A LanguagePackBuilder should materialize these examples into versioned training/evaluation packs when MARIA's local training/evaluation pipeline is available.
+
+
 ## Capability status
 
 | # | Capability | Design | Local implementation |
 |---|---|---|---|
 | 01 | Audio / Media | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
 | 02 | Display / Brightness | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
-| 03 | Files / Folders | DESIGN COMPLETE v1 | WAITING |
-| 04 | App Install / Update | NEXT | WAITING |
-| 05 | Windows Settings | QUEUED | WAITING |
+| 03 | Files / Folders | DESIGN COMPLETE v2 EXTENDED | WAITING |
+| 04 | App Install / Update | DESIGN COMPLETE v1 | WAITING |
+| 05 | Windows Settings | NEXT | WAITING |
 | 06 | Troubleshooting / Repair | QUEUED | WAITING |
 | 07 | Web Search / Research | QUEUED | WAITING |
 | 08 | Browser Automation | QUEUED | WAITING |
@@ -3430,7 +3508,122 @@ When the user's system is online:
 
 ---
 
-### 32. Official Windows implementation references
+
+### 32. Files v2 — Archive / ZIP / Extract Routing
+
+Archive operations are understood by File Brain and executed by ArchiveSkill.
+
+Canonical intents:
+- \`archive.create\`
+- \`archive.zip\`
+- \`archive.extract\`
+- \`archive.extract_here\`
+- \`archive.extract_to\`
+- \`archive.list_contents\`
+- \`archive.test_integrity\`
+- \`archive.add_items\`
+- \`archive.remove_items\`
+- \`archive.rename_entry\`
+- \`archive.convert_container\`
+
+Representative language:
+- "این پوشه رو زیپ کن"
+- "از این فایل‌ها یه zip بساز"
+- "همه اینا رو فشرده کن"
+- "زیپش کن و بذار دسکتاپ"
+- "اسم فایل زیپ بشه backup"
+- "این zip رو باز کن"
+- "اکسترکتش کن"
+- "اینجا استخراج کن"
+- "داخل یه پوشه جدید درش بیار"
+- "تو Downloads اکسترکت کن"
+- "محتویات زیپ رو نشون بده"
+- "بدون استخراج ببین داخلش چیه"
+- "این آرشیو سالمه؟"
+- "فایل جدید رو به همین آرشیو اضافه کن"
+- "این یکی رو از آرشیو بردار"
+- noisy: "اکسترک کن", "زیپش کون", "استخراجش کن", "فشردش کن"
+
+Supported archive types are capability-gated:
+- ZIP as baseline
+- TAR/GZIP where available
+- 7z/RAR only when a safe compatible local tool/library is installed and registered
+
+Security:
+- protect against path traversal/Zip Slip
+- reject extraction paths escaping destination
+- inspect suspicious absolute/parent-relative entries
+- preserve a list of created files for undo/cleanup
+- do not automatically execute extracted files
+
+Verification:
+- create => archive exists and can be reopened
+- extract => expected entries exist
+- integrity test => adapter reports valid or exact failure
+- partial extraction => report item-level result
+
+---
+
+### 33. Files v2 — True Format Conversion
+
+Changing a filename extension is NOT considered conversion.
+
+Canonical intents:
+- \`file.convert\`
+- \`image.convert\`
+- \`audio.convert\`
+- \`video.convert\`
+- \`document.convert\`
+- \`spreadsheet.convert\`
+- \`archive.convert_container\`
+
+Examples:
+- "این عکس رو PNG کن"
+- "JPG رو WebP کن"
+- "این ویدیو رو MP4 کن"
+- "صداشو MP3 کن"
+- "این Word رو PDF کن"
+- "Excel رو CSV کن"
+- "این فایل رو به فرمت مناسب تبدیل کن"
+- "پسوندشو فقط عوض نکن، واقعاً تبدیلش کن"
+- "نسخه اصلی بمونه، یه خروجی PDF بساز"
+- "جای قبلی ذخیره کن"
+- "با کیفیت اصلی تبدیل کن"
+- "حجمش کمتر بشه ولی کیفیت زیاد خراب نشه"
+
+ConversionRegistry must declare explicit source→target support. Never claim universal conversion.
+
+Possible implementation backends, capability-gated:
+- images: trusted image codecs/libraries
+- audio/video: FFmpeg or another registered media converter
+- office documents: application/API-supported export when available
+- spreadsheets: native Excel/Office export when available
+- archives: registered archive backend
+
+Slots:
+- source
+- target_format
+- output_path
+- preserve_original
+- quality
+- bitrate
+- resolution
+- codec
+- page_range
+- sheet
+- overwrite_policy
+
+Rules:
+- preserve original by default.
+- destructive in-place replacement requires explicit request.
+- unsupported source→target pair => explain, do not rename extension.
+- metadata preservation should be configurable.
+- conversion output must be opened/probed to verify format where feasible.
+
+Language dataset target for archive/convert high-frequency intents: 500–1000 examples each under the global standard.
+
+
+### 34. Official Windows implementation references
 
 Validate local behavior against current Microsoft documentation for:
 - IFileOperation
@@ -3442,3 +3635,542 @@ Validate local behavior against current Microsoft documentation for:
 - FileSystemWatcher when scoped change monitoring is needed
 
 Canonical MARIA intents remain stable even if the platform adapter changes.
+
+
+---
+
+## 04 — App Install / Update / Account & Web-App Access
+
+**Status:** DESIGN COMPLETE v1 — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`app.*\`, \`package.*\`, \`install.*\`, \`update.*\`, \`account.*\`, \`auth.*\`, \`webapp.*\`  
+**Owner modules:** App Resolver / Package Source Resolver / Download Verifier / Installer Skill / Update Skill / Browser Agent / Account Session Agent / Verification Code Broker / Permission Guard / Verifier  
+**Offline capable:** partial; installed-app inspection is offline, discovery/download/account login requires network  
+**Risk class:** L0–L5  
+**Primary platform:** Windows + authorized browser/account integrations
+
+### 1. Purpose
+
+MARIA must be able to:
+- detect whether an app is installed
+- open it if installed
+- discover a safe official source if not installed
+- download/install with user-approved scope
+- choose/install to a requested path when the installer/package supports it
+- update installed apps
+- verify installed version
+- open web versions when appropriate
+- use an already-authorized browser profile/session
+- navigate to sites such as Pinterest or ChatGPT
+- sign in using an explicitly selected user account
+- retrieve a one-time verification code from an explicitly authorized mailbox integration when permitted
+- enter that code into the intended login flow
+- notify the user about incoming account messages/events through the Email/Automation capabilities
+- interact with authorized web apps and desktop apps through shared Browser/App Automation
+- never store user passwords or OTPs in normal memory/logs
+
+### 2. Canonical intents
+
+App state:
+- \`app.get_installed\`
+- \`app.find_installed\`
+- \`app.open\`
+- \`app.open_or_install\`
+- \`app.get_version\`
+- \`app.get_install_location\`
+
+Discovery/install:
+- \`app.search_official\`
+- \`app.download_installer\`
+- \`app.install\`
+- \`app.install_to_path\`
+- \`app.install_silent\`
+- \`app.install_store\`
+- \`app.install_package_manager\`
+- \`app.cancel_install\`
+- \`app.repair\`
+- \`app.uninstall\`
+
+Update:
+- \`app.check_update\`
+- \`app.update\`
+- \`app.update_all_approved\`
+- \`app.rollback_update\`
+
+Web/app routing:
+- \`webapp.open\`
+- \`webapp.open_in_browser\`
+- \`webapp.open_desktop_app\`
+- \`webapp.choose_best_surface\`
+
+Account/auth:
+- \`account.select\`
+- \`account.sign_in\`
+- \`account.sign_out\`
+- \`account.session.get\`
+- \`auth.request_code\`
+- \`auth.retrieve_code_authorized_mailbox\`
+- \`auth.enter_code\`
+- \`auth.complete_login\`
+- \`auth.cancel_login\`
+
+### 3. Natural language examples
+
+Install/open:
+- "Pinterest رو باز کن"
+- "پینترست دارم؟"
+- "اگه نصبه بازش کن، اگه نیست نصبش کن"
+- "Pinterest ندارم نصبش کن"
+- "نسخه ویندوزش رو پیدا کن"
+- "اگه برنامه نداره نسخه وب رو باز کن"
+- "از سایت اصلیش بگیر"
+- "از Microsoft Store نصب کن"
+- "با winget نصبش کن"
+- "تو مسیر D:\\Apps نصبش کن"
+- "مثل دفعه قبل نصبش کن"
+- typo/STT: "پینترس", "پین ترست", "نصبش کون", "ورژن ویندوز"
+
+Update:
+- "آپدیتش کن"
+- "نسخه جدید داره؟"
+- "آخرین نسخه رو نصب کن"
+- "همه برنامه‌هایی که تأیید کردم آپدیت کن"
+- "فقط Pinterest رو آپدیت کن"
+- "اگه نسخه جدید امنه نصبش کن"
+- "برگرد نسخه قبلی" (only when rollback is actually supported)
+
+Browser/web:
+- "برو Pinterest"
+- "پینترست رو تو Chrome باز کن"
+- "با همون پروفایل کروم من بازش کن"
+- "نسخه وبش رو بیار"
+- "ChatGPT رو تو برنامه باز کن"
+- "ChatGPT رو تو Chrome بیار"
+- "اگر برنامه بازه همون رو بیار جلو"
+
+### 4. Install source priority
+
+Default trust priority:
+1. Microsoft Store / Windows package source when authentic and appropriate
+2. official vendor domain/repository
+3. trusted package manager source with verified publisher/package identity
+4. other sources only with explicit user approval
+
+Never silently download an installer from arbitrary search-result mirrors.
+
+Package resolver records:
+- package name
+- publisher
+- source
+- version
+- architecture
+- signature/hash if available
+- installer type
+- requested scope
+- install path support
+- reboot requirement
+
+### 5. Installer types / paths
+
+Recognize:
+- MSIX/AppX
+- MSI
+- EXE installers
+- Store packages
+- package-manager manifests
+- portable archives
+
+"Install to D:\\Apps" is best-effort and only valid if package/installer supports custom location.
+MARIA must not claim a custom path was used if the installer ignores it.
+
+### 6. Download and security verification
+
+Before execution:
+- validate source URL/domain
+- prefer HTTPS
+- verify Authenticode/digital signature when applicable
+- compare publisher identity where available
+- verify package-manager metadata/hash where available
+- scan through available Windows security mechanisms when appropriate
+- never auto-run an untrusted unsigned binary merely because it downloaded successfully
+
+Results:
+- trusted_verified
+- publisher_verified
+- hash_verified
+- source_verified_only
+- unverified_requires_user_decision
+- blocked
+
+### 7. Pinterest / website example plan
+
+User:
+"برو Pinterest؛ اگه برنامه ندارم نصبش کن، وگرنه بازش کن."
+
+Planner:
+1. resolve Pinterest entity
+2. inspect installed apps/PWA
+3. if installed => open
+4. else choose official web/PWA/store route
+5. if user requested install => install approved package/PWA when available
+6. verify launch
+7. preserve selected browser profile/session context
+
+User:
+"تو Chrome وارد Pinterest شو."
+
+Planner:
+1. open authorized Chrome profile
+2. navigate to official Pinterest site
+3. inspect existing session
+4. if already signed in => stop login flow
+5. if not signed in => Account Session Agent begins authorized login
+
+### 8. Account selection
+
+MARIA must distinguish:
+- browser profile
+- site account
+- email mailbox
+- OS account
+
+Examples:
+- "با این ایمیل وارد شو"
+- "با حساب کاریم"
+- "همون Gmail قبلی"
+- "با اکانت دوم"
+- "با پروفایل Chrome شخصی"
+
+Account aliases may be learned only as non-secret identifiers.
+Never store plaintext passwords in MARIA memory.
+
+### 9. Login and one-time verification codes
+
+Authorized flow:
+
+1. user explicitly chooses/authorizes an account.
+2. site requests verification code.
+3. Verification Code Broker receives the expected site/domain + destination mailbox identity.
+4. MARIA uses an authorized Gmail/Email connector or explicitly authorized mailbox session.
+5. search only the narrow relevant recent verification message.
+6. extract the one-time code.
+7. hold it in ephemeral secure memory only.
+8. enter it into the exact active login flow.
+9. discard/redact code after use.
+10. verify login success.
+11. never write OTP into long-term memory, logs, training datasets, analytics or chat history when avoidable.
+
+Examples:
+- "کد که به جیمیل میاد خودت بردار بزن"
+- "اگه Pinterest کد خواست از Gmail بیار"
+- "کد ورود رو از ایمیلم بردار"
+- "اون کد جدید رو بذار اینجا"
+- "کد همین سایت رو وارد کن"
+
+Safety:
+- no bypass of MFA or security checks.
+- only user's explicitly authorized mailbox/account.
+- do not retrieve unrelated codes.
+- do not auto-approve security prompts that require physical/user confirmation.
+- CAPTCHA/biometric/physical-security prompts remain user-mediated when required.
+- codes must be scoped to expected service and recent time window.
+- if multiple codes exist, do not guess.
+
+### 10. Email notifications / "برات ایمیل اومده"
+
+This capability composes with Email + Automation:
+- email.read_unread
+- email.find_recent
+- email.notify_new
+- email.summarize
+- auth.retrieve_code_authorized_mailbox
+
+Examples:
+- "اگه ایمیل جدید اومد بهم بگو"
+- "ایمیل‌های مهم رو بخون"
+- "کد Pinterest اومد خبرم کن"
+- "پیام حسابم رو بخون"
+
+Persistent monitoring requires an explicit connected mailbox and an automation/event watcher.
+
+### 11. ChatGPT interaction
+
+Supported surfaces may include:
+- ChatGPT desktop app when installed/authorized
+- ChatGPT in an authorized browser profile
+
+Canonical routing:
+- \`webapp.chatgpt.open\`
+- \`webapp.chatgpt.select_surface\`
+- \`webapp.chatgpt.open_chat\`
+- \`webapp.chatgpt.type_message\`
+- \`webapp.chatgpt.send_message\`
+- \`webapp.chatgpt.read_response\`
+- \`webapp.chatgpt.copy_response\`
+
+Examples:
+- "ChatGPT رو باز کن"
+- "نسخه برنامه رو بیار"
+- "تو Chrome ChatGPT رو باز کن"
+- "برو این چت"
+- "این متن رو بنویس"
+- "جوابش رو برام بخون"
+- "جواب رو کپی کن"
+
+This is authorized UI automation. It must not attempt to extract hidden credentials/session tokens.
+
+### 12. Browser/app context
+
+Context resolver tracks:
+- current browser profile
+- current site/domain
+- current logged-in account identity label
+- active desktop app
+- last selected account
+- last successful auth flow
+- expected verification service
+- current login step
+
+Short follow-ups:
+- "با اون یکی ایمیل"
+- "همون حساب شخصی"
+- "کدش رو بیار"
+- "حالا بزن ادامه"
+- "جوابشو بخون"
+
+must resolve only while the auth/task context remains live.
+
+### 13. Credential / secret policy
+
+MARIA Memory may store:
+- account nickname
+- email address identifier if user chooses
+- browser profile name
+- preferred account per service
+
+MARIA Memory must NOT store:
+- plaintext password
+- OTP/verification code
+- recovery code
+- session cookie
+- access token
+- refresh token
+- secret key
+
+Use OS/browser/connector credential stores and active sessions where possible.
+
+### 14. Permissions / confirmations
+
+L0:
+- inspect whether app installed
+- get version
+- open official website
+
+L1:
+- open installed app
+- open authorized browser profile
+
+L2:
+- download verified installer
+- check updates
+
+L3:
+- install/update app
+- modify system-wide installation
+- sign in using already authorized account/session
+
+L4:
+- uninstall
+- execute unverified installer
+- automated email-code retrieval + entry when not explicitly enabled for that service/workflow
+
+L5:
+- destructive/elevated system changes
+- unsafe/unverified binary execution
+
+### 15. Verification
+
+Install:
+- package registered / executable exists
+- reported version matches requested/available version
+- app launches when safe to test
+
+Update:
+- version changes and app remains launchable
+
+Login:
+- site/app shows authenticated account state matching intended account
+
+OTP:
+- code is used only in expected flow
+- success verified, then ephemeral secret destroyed/redacted
+
+Browser:
+- verify correct official domain, not lookalike domain
+
+### 16. Undo / rollback
+
+Possible:
+- cancel in-progress download/install when supported
+- uninstall newly installed app if user explicitly requests rollback
+- update rollback only if package supports known safe rollback
+- sign out of newly created web session
+- close PWA/shortcut created by install process
+
+Do not promise rollback for installers that do not support it.
+
+### 17. Failure recovery
+
+No app:
+- route to official install/web option.
+
+Installer doesn't support requested path:
+- tell user and use supported default only with permission.
+
+Login code not found:
+- refresh narrow mailbox search once.
+- verify expected destination.
+- do not scan unrelated old security emails broadly.
+- ask user if flow requires a different mailbox.
+
+Wrong account already logged in:
+- do not sign out automatically if it may destroy unsaved context; clarify/switch profile safely.
+
+CAPTCHA/biometric prompt:
+- hand control to user for the required step, then resume.
+
+### 18. Language dataset targets
+
+For these high-frequency intents, target **750–1000 utterances each**:
+- app.open_or_install
+- app.install
+- app.update
+- webapp.open
+- account.select
+- account.sign_in
+- auth.retrieve_code_authorized_mailbox
+- auth.enter_code
+- webapp.chatgpt.open
+- webapp.chatgpt.type_message
+
+For lower-frequency intents, target at least 500.
+
+All follow the Global Language Dataset Standard.
+
+### 19. Skill / Agent package
+
+#### AppResolverAgent
+Maps spoken names/aliases to installed apps, packages, PWAs or web apps.
+
+#### PackageSourceResolver
+Finds trusted official/store/package-manager candidates.
+
+#### InstallerSkill
+Downloads/installs approved packages and tracks progress.
+
+#### UpdateSkill
+Version discovery and verified update.
+
+#### DownloadVerifier
+Source/signature/hash/publisher checks.
+
+#### BrowserAgent
+Authorized browser navigation and UI control.
+
+#### AccountSessionAgent
+Account/profile selection and login state.
+
+#### VerificationCodeBroker
+Narrow, ephemeral retrieval/use of OTP codes from explicitly authorized mail integrations.
+
+#### AuthPolicyGuard
+Prevents secret persistence, wrong-domain entry, unauthorized mailbox access and unsafe MFA automation.
+
+#### WebAppAutomationSkill
+Pinterest/ChatGPT/other authorized web-app workflows.
+
+#### AppVerifier
+Post-install/update/open/login verification.
+
+All register through MARIA Skill Registry / Tool Registry.
+
+### 20. Test matrix
+
+Install:
+- installed app => opens, no reinstall
+- missing app => official source
+- custom path supported
+- custom path unsupported
+- unsigned/unverified installer
+- package-manager install
+- Store/PWA fallback
+- cancel install
+- install failure
+- verify version
+
+Update:
+- up-to-date
+- update available
+- signature mismatch
+- rollback supported/unsupported
+
+Pinterest/browser:
+- existing logged-in session
+- no session
+- correct profile
+- wrong profile
+- official domain validation
+- PWA vs browser selection
+
+Auth:
+- password manager/browser handles credential
+- OTP requested
+- authorized Gmail contains one matching recent code
+- multiple codes => no guess
+- code expired
+- wrong service email ignored
+- login success
+- CAPTCHA => user handoff
+- secret not persisted
+
+ChatGPT:
+- desktop app available
+- browser fallback
+- open selected chat
+- type/send/read/copy response
+- wrong account/profile protection
+
+### 21. Acceptance criteria
+
+1. "open/install if missing" flows are idempotent.
+2. official/trusted source priority works.
+3. no arbitrary mirror installer is auto-executed.
+4. requested install path is verified, not assumed.
+5. app/version state is verified after install/update.
+6. browser automation validates official domain.
+7. account aliases never contain passwords.
+8. OTP is ephemeral and service-scoped.
+9. no OTP/password/token appears in persistent MARIA memory/logs.
+10. CAPTCHA/biometric/security-key steps hand off safely.
+11. logged-in state is verified against intended account.
+12. ChatGPT/Pinterest automation uses authorized app/browser sessions only.
+13. language packs reach 500–1000 utterances per important intent.
+14. real Windows/browser/account integration tests pass before IMPLEMENTED.
+
+### 22. Local implementation plan
+
+When the MARIA Windows system is online:
+1. inspect installed-app inventory and current launcher.
+2. add AppResolverAgent.
+3. add trusted package source discovery.
+4. integrate Store/WinGet/installer adapters.
+5. add DownloadVerifier.
+6. add installer progress + cancel + verifier.
+7. integrate browser profile/session resolver.
+8. add Pinterest web/PWA workflow.
+9. integrate authorized Gmail/Email source for narrow OTP retrieval.
+10. add VerificationCodeBroker with ephemeral secret handling.
+11. add ChatGPT app/browser workflow.
+12. generate/version 500–1000 utterance language packs.
+13. run install/update/login/OTP test matrix.
+14. only then mark capability IMPLEMENTED.
+
