@@ -1,15 +1,15 @@
 # MARIA Capability Design Index
 
-**Canonical source of truth:** \`MARIA_CAPABILITIES_MASTER.md\`
+**Canonical source of truth:** `MARIA_CAPABILITIES_MASTER.md`
 
 From this point forward, every new capability specification is appended to the single master file so the local MARIA system can ingest one document when it comes online.
 
 | # | Capability | Master status | Local implementation |
 |---|---|---|---|
-| 01 | Audio / media control | DESIGN COMPLETE v1 | WAITING FOR LOCAL SYSTEM |
-| 02 | Display / brightness | DESIGN COMPLETE v1 | WAITING FOR LOCAL SYSTEM |
-| 03 | Files & folders | NEXT | WAITING |
-| 04 | App install / update | QUEUED | WAITING |
+| 01 | Audio / media control | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
+| 02 | Display / brightness | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
+| 03 | Files & folders | DESIGN COMPLETE v1 | WAITING |
+| 04 | App install / update | NEXT | WAITING |
 | 05 | Windows settings | QUEUED | WAITING |
 | 06 | Troubleshooting / repair | QUEUED | WAITING |
 | 07 | Web search / research | QUEUED | WAITING |
