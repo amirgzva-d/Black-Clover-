@@ -112,8 +112,8 @@ A LanguagePackBuilder should materialize these examples into versioned training/
 | 02 | Display / Brightness | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
 | 03 | Files / Folders | DESIGN COMPLETE v2 EXTENDED | WAITING |
 | 04 | App Install / Update | DESIGN COMPLETE v2 EXTENDED | WAITING |
-| 05 | Windows Settings | NEXT | WAITING |
-| 06 | Troubleshooting / Repair | QUEUED | WAITING |
+| 05 | Windows Settings | DESIGN COMPLETE v1 | WAITING |
+| 06 | Troubleshooting / Repair | NEXT | WAITING |
 | 07 | Web Search / Research | QUEUED | WAITING |
 | 08 | Browser Automation | QUEUED | WAITING |
 | 09 | YouTube / Web Media | QUEUED | WAITING |
@@ -4715,3 +4715,467 @@ When the MARIA Windows system is online:
 13. run install/update/login/OTP test matrix.
 14. only then mark capability IMPLEMENTED.
 
+
+
+---
+
+## 05 — Windows Settings / System Configuration
+
+**Status:** DESIGN COMPLETE v1 — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`windows.settings.*\`, \`network.*\`, \`wifi.*\`, \`bluetooth.*\`, \`power.*\`, \`theme.*\`, \`notifications.*\`, \`input.*\`, \`privacy.*\`  
+**Owner modules:** Settings Resolver / Windows Settings Adapter / Network Adapter / Bluetooth Adapter / Power Policy Adapter / Notification Adapter / Input-Language Adapter / Policy Guard / Verifier / Undo Manager  
+**Offline capable:** yes for most local settings; internet-dependent settings remain partial  
+**Risk class:** L0–L5 depending on scope  
+**Primary platform:** Windows
+
+### 1. Purpose
+
+MARIA must control Windows settings through canonical intents rather than brittle UI macros whenever a structured/native path exists.
+
+Core scope:
+- Wi‑Fi on/off/connect/disconnect/status
+- Bluetooth on/off/pair/connect/disconnect/status
+- airplane mode where controllable
+- network status/IP/DNS basics
+- default network selection
+- power mode / battery saver
+- sleep/display timeout policies
+- lock-screen related local settings
+- theme/light/dark
+- accent/transparency where supported
+- notifications / Do Not Disturb / Focus
+- default apps / file associations where safely supported
+- startup apps inspection and enable/disable where supported
+- language / keyboard layout switching
+- region/date/time/timezone settings where supported
+- mouse/keyboard/accessibility common settings
+- taskbar/basic shell preferences where stable and supported
+- privacy toggles where a documented or reliable settings adapter exists
+- Windows Update status/check/restart scheduling hand-off
+- open exact Settings pages
+- restore/undo for reversible changes
+- context-aware multi-setting profiles
+
+### 2. Canonical intents
+
+#### Wi‑Fi / network
+- \`wifi.get\`
+- \`wifi.enable\`
+- \`wifi.disable\`
+- \`wifi.toggle\`
+- \`wifi.list_networks\`
+- \`wifi.connect\`
+- \`wifi.disconnect\`
+- \`wifi.get_current_network\`
+- \`network.get_status\`
+- \`network.get_ip\`
+- \`network.get_dns\`
+- \`network.flush_dns\`
+- \`network.adapter.enable\`
+- \`network.adapter.disable\`
+
+#### Bluetooth
+- \`bluetooth.get\`
+- \`bluetooth.enable\`
+- \`bluetooth.disable\`
+- \`bluetooth.toggle\`
+- \`bluetooth.device.list\`
+- \`bluetooth.device.pair\`
+- \`bluetooth.device.connect\`
+- \`bluetooth.device.disconnect\`
+- \`bluetooth.device.forget\`
+
+#### Power / battery
+- \`power.mode.get\`
+- \`power.mode.set\`
+- \`power.battery_saver.enable\`
+- \`power.battery_saver.disable\`
+- \`power.sleep_timeout.get\`
+- \`power.sleep_timeout.set\`
+- \`power.display_timeout.get\`
+- \`power.display_timeout.set\`
+- \`power.lid_action.get\`
+- \`power.lid_action.set\`
+
+#### Theme / appearance
+- \`windows.theme.get\`
+- \`windows.theme.light\`
+- \`windows.theme.dark\`
+- \`windows.theme.system_default\`
+- \`windows.transparency.enable\`
+- \`windows.transparency.disable\`
+- \`windows.accent.get\`
+- \`windows.accent.set\`
+
+#### Notifications / focus
+- \`notifications.get\`
+- \`notifications.enable\`
+- \`notifications.disable\`
+- \`notifications.app.set\`
+- \`focus.dnd.enable\`
+- \`focus.dnd.disable\`
+- \`focus.session.start\`
+- \`focus.session.stop\`
+
+#### Input / language
+- \`input.language.list\`
+- \`input.language.get\`
+- \`input.language.switch\`
+- \`input.keyboard_layout.list\`
+- \`input.keyboard_layout.switch\`
+
+#### Date/time/region
+- \`system.time.get\`
+- \`system.timezone.get\`
+- \`system.timezone.set\`
+- \`system.time.sync\`
+- \`system.region.get\`
+- \`system.region.set\`
+
+#### Default apps / startup
+- \`default_app.get\`
+- \`default_app.set\`
+- \`startup_app.list\`
+- \`startup_app.enable\`
+- \`startup_app.disable\`
+
+#### Settings navigation
+- \`settings.open\`
+- \`settings.open_page\`
+- \`settings.search\`
+
+### 3. Natural language examples
+
+Wi‑Fi:
+- "وای‌فای رو روشن کن"
+- "WiFi خاموش"
+- "اینترنت بی‌سیمو قطع کن"
+- "به شبکه خونه وصل شو"
+- "شبکه‌های اطرافو نشون بده"
+- "از این وای‌فای قطع شو"
+- "الان به چی وصلم"
+- "نت وصله؟"
+- "وای فای رو خاموش نکن فقط از این شبکه قطع شو"
+- noisy: "وایفای رو روش کن", "وای فای قط", "به نت خونه وصل"
+
+Bluetooth:
+- "بلوتوث رو روشن کن"
+- "Bluetooth off"
+- "هدفونم رو وصل کن"
+- "موس بلوتوث رو قطع کن"
+- "دستگاه‌های بلوتوث رو نشون بده"
+- "این دستگاه رو فراموش کن"
+- "به Sony وصل شو"
+- "نه بلوتوث خاموش نشه، فقط هدفون قطع شه"
+
+Power:
+- "حالت باتری سیور"
+- "Battery Saver رو روشن کن"
+- "حالت بهترین عملکرد"
+- "متعادل بذار"
+- "بعد ده دقیقه بخوابه"
+- "صفحه بعد پنج دقیقه خاموش شه"
+- "وقتی در لپتاپ بسته شد Sleep کن"
+- "برگرد تنظیم پیش‌فرض برق"
+
+Theme:
+- "ویندوز رو دارک کن"
+- "حالت روشن"
+- "تم سیستم"
+- "برگرد پیش‌فرض"
+- "Transparency رو خاموش کن"
+- "رنگ اصلی ویندوز رو عوض کن"
+
+Notifications/focus:
+- "اعلان‌ها رو ساکت کن"
+- "مزاحم نشو روشن"
+- "فقط اعلان Telegram خاموش"
+- "Focus رو یک ساعت روشن کن"
+- "Do Not Disturb رو بردار"
+- "اعلان‌ها بمونه ولی صدا نداشته باشه" => compose notification + audio semantics carefully
+
+Language:
+- "کیبورد انگلیسی"
+- "فارسی کن"
+- "زبان تایپ رو عوض کن"
+- "بین فارسی و انگلیسی سوییچ کن"
+- "Arabic layout رو حذف نکن فقط English رو فعال کن"
+
+Timezone:
+- "تایم زون رو عوض کن"
+- "ساعت ویندوز رو سینک کن"
+- "منطقه زمانی روی تهران"
+- "برگرد خودکار"
+
+Default apps:
+- "PDFها با Edge باز شن"
+- "عکس‌ها با Photos"
+- "Chrome مرورگر پیش‌فرض"
+- "پسوند .py با VS Code باز شه"
+
+Startup:
+- "چه برنامه‌هایی با ویندوز بالا میان"
+- "Telegram موقع روشن شدن اجرا نشه"
+- "این برنامه Startup باشه"
+
+### 4. Semantic distinctions
+
+- "وای‌فای رو قطع کن" => disable Wi‑Fi adapter/radio.
+- "از وای‌فای قطع شو" => disconnect current network, keep radio on.
+- "هدفون رو قطع کن" => disconnect Bluetooth device, not Bluetooth radio off.
+- "صفحه رو خاموش کن" => Display skill, not power plan.
+- "بعد 5 دقیقه صفحه خاموش شه" => display timeout policy.
+- "دارک کن" can target Windows theme, app theme or webpage theme; use context.
+- "ساکت کن" may target notifications or audio; context determines domain.
+
+### 5. Context resolver
+
+Inputs:
+- active Settings page
+- foreground app
+- last settings domain
+- connected network/device
+- selected Bluetooth device
+- current power source
+- current power plan/mode
+- current theme
+- current language/layout
+- recent user correction
+- learned aliases
+
+Example:
+Previous: "هدفون Sony رو وصل کن"
+Then: "قطعش کن"
+=> Bluetooth device disconnect.
+
+Previous: "اعلان Telegram رو ببند"
+Then: "دوباره روشنش کن"
+=> Telegram notifications, not global notifications.
+
+### 6. Settings profiles
+
+Canonical:
+- \`settings.profile.apply\`
+- \`settings.profile.work\`
+- \`settings.profile.study\`
+- \`settings.profile.gaming\`
+- \`settings.profile.battery\`
+- \`settings.profile.quiet\`
+- \`settings.profile.default\`
+- \`settings.profile.restore_previous\`
+
+Profiles are compositions, not hidden magic.
+
+Example "حالت مطالعه":
+- DisplayProfile.study
+- Focus/DND user-approved rule
+- optional notification suppression
+- optional power policy
+- preserve network unless profile explicitly changes it
+
+Example "حالت باتری":
+- battery saver
+- reduced brightness via Display skill
+- optional shorter display timeout
+- no destructive network changes unless user configured them
+
+### 7. Permission / risk
+
+L0:
+- read current settings/status
+
+L1:
+- toggle Wi‑Fi/Bluetooth
+- switch keyboard layout
+- theme changes
+- DND/focus
+
+L2:
+- connect/disconnect networks/devices
+- change timeout/power mode
+- startup app toggle
+
+L3:
+- pair/forget Bluetooth device
+- default app associations
+- DNS/network adapter changes
+- region/timezone changes
+
+L4:
+- privileged network/system configuration
+- broad privacy-policy changes
+- system-wide startup/service modifications
+
+L5:
+- security-critical or organization-managed policy modification
+
+### 8. Security rules
+
+- never expose saved Wi‑Fi passwords in normal responses.
+- connecting to known networks can use OS credential store.
+- new network password entry is secret and must not enter conversational memory.
+- Bluetooth pairing codes are ephemeral.
+- enterprise/managed policy settings must not be bypassed.
+- do not silently disable firewall/security controls; those belong to a separate security policy domain with strict confirmation.
+
+### 9. Execution strategy
+
+Preference hierarchy:
+1. documented Windows API / WinRT / COM
+2. supported PowerShell/CIM/WMI command with structured verification
+3. \`ms-settings:\` navigation for user-visible Settings pages
+4. UI automation only if no stable structured control exists
+
+Avoid registry hacks as the primary path when a supported API/settings route exists.
+
+### 10. Verification
+
+Examples:
+- Wi‑Fi enable => radio state re-read.
+- network connect => current SSID/profile re-read.
+- Bluetooth device connect => device connection state re-read where exposed.
+- theme => registry/API state + visible shell state where feasible.
+- DND/focus => state re-read.
+- startup app => startup registration state re-read.
+- default app => association re-query.
+- timeout => power policy re-read.
+
+No false "done".
+
+### 11. Undo
+
+Snapshot previous:
+- Wi‑Fi radio/current connection
+- Bluetooth radio/device state when reversible
+- power mode/timeouts
+- theme/transparency/accent
+- notification/focus state
+- default app association
+- startup app state
+- timezone/region
+
+Undo only when state has not changed incompatibly since snapshot.
+
+### 12. Failure / recovery
+
+- adapter unavailable => open correct Settings page rather than fake success.
+- organization-managed setting => report managed/locked.
+- device disappeared => do not act on a same-name replacement without re-resolution.
+- network connection failed => report Windows error category and hand off to Troubleshooting.
+- default-app protection blocks direct assignment => open supported Windows Default Apps page and guide/automate only within allowed mechanism.
+
+### 13. Large language packs
+
+Target 500–1000 utterances for high-frequency intents:
+- wifi.enable/disable/connect/disconnect
+- bluetooth.enable/disable/device.connect/device.disconnect
+- power.battery_saver
+- power.display_timeout.set
+- windows.theme.light/dark
+- focus.dnd.enable/disable
+- input.language.switch
+- settings.profile.apply
+
+Each gets typo/STT/context/counterexample/boundary packs under the global standard.
+
+### 14. Skill / Agent package
+
+- \`WindowsSettingsResolver\`
+- \`WiFiSkill\`
+- \`NetworkSkill\`
+- \`BluetoothSkill\`
+- \`PowerPolicySkill\`
+- \`ThemeSkill\`
+- \`NotificationFocusSkill\`
+- \`InputLanguageSkill\`
+- \`RegionTimeSkill\`
+- \`DefaultAppsSkill\`
+- \`StartupAppsSkill\`
+- \`SettingsNavigationSkill\`
+- \`SettingsProfileSkill\`
+- \`SettingsLanguageAgent\`
+- \`SettingsVerifier\`
+- \`SettingsUndoManager\`
+- \`SettingsPolicyGuard\`
+
+All register through Skill Registry / Tool Registry.
+
+### 15. Test matrix
+
+Wi‑Fi:
+- on/off
+- connect known network
+- disconnect only
+- missing network
+- wrong/expired credentials
+- airplane/managed conflicts
+- verify SSID
+
+Bluetooth:
+- on/off
+- connect known device
+- disconnect device
+- pair
+- forget + confirmation
+- duplicate names
+- unavailable adapter
+
+Power:
+- saver on/off
+- display timeout
+- sleep timeout
+- AC vs battery policy
+- restore
+
+Theme/focus:
+- light/dark
+- DND
+- app-specific notification
+- cross-domain "ساکت"
+
+Input:
+- Persian/English switch
+- missing layout
+- learned alias
+
+Default/startup:
+- app association supported
+- protected/default UI fallback
+- startup enable/disable
+
+Policy:
+- managed setting
+- permission denied
+- verifier mismatch
+- undo after external change
+
+### 16. Acceptance criteria
+
+1. common Wi‑Fi/Bluetooth commands are understood despite colloquial/typo/STT variation.
+2. disconnect-current and disable-radio remain distinct.
+3. device-specific disconnect never silently turns off whole Bluetooth.
+4. power timeout and immediate display-off remain distinct.
+5. context prevents theme/notification/audio command collisions.
+6. secret values never enter long-term memory/logs.
+7. every state mutation is verified.
+8. unsupported/managed settings produce an honest result.
+9. reversible changes support snapshots/undo where practical.
+10. 500–1000 utterance packs exist for high-frequency intents.
+11. real Windows integration tests pass before IMPLEMENTED.
+
+### 17. Local implementation plan
+
+When system is online:
+1. inventory Windows version/edition and management state.
+2. inspect existing MARIA settings handlers.
+3. implement WiFiSkill + verifier.
+4. implement BluetoothSkill + device resolver.
+5. implement PowerPolicySkill.
+6. implement theme/focus/input language.
+7. add Settings page URI fallback.
+8. add default/startup capability gates.
+9. add permission/policy guard.
+10. generate 500–1000 utterance packs.
+11. run full Windows test matrix.
+12. hand failures into Capability 06 Troubleshooting.
+13. mark only passing features IMPLEMENTED.
