@@ -1,4 +1,6 @@
 import path from 'node:path';
+import fs from 'node:fs';
+import {spawn} from 'node:child_process';
 import {app,safeStorage,shell} from 'electron';
 import {createChatGPT,CHATGPT_USAGE_URL,ChatGPTError} from '@siwc/local';
 
@@ -35,6 +37,22 @@ export class ChatGPTPlanService{
       openBrowser:async raw=>{
         const target=new URL(raw);
         if(target.origin!=='https://auth.openai.com')throw new Error('Unexpected ChatGPT sign-in destination.');
+        // Use the user's existing Chrome identity (Amir Mohmd), not the Windows default browser.
+        // Never read Chrome cookies or authentication data.
+        if(process.platform==='win32'){
+          const chrome=path.join(process.env.PROGRAMFILES||'C:\\Program Files','Google','Chrome','Application','chrome.exe');
+          const profileState=path.join(process.env.LOCALAPPDATA||'', 'Google','Chrome','User Data','Local State');
+          try{
+            const profiles=JSON.parse(fs.readFileSync(profileState,'utf8')).profile?.info_cache||{};
+            const matched=Object.entries(profiles).find(([,v])=>/Amir\s*Moh(?:a)?md/i.test(String(v.gaia_name||'')));
+            if(matched&&fs.existsSync(chrome)){
+              const child=spawn(chrome,['--profile-directory='+matched[0],target.href],{detached:true,stdio:'ignore',windowsHide:false});
+              child.once('error',error=>console.warn('Chrome profile opener:',error.message));
+              child.unref();
+              return;
+            }
+          }catch(error){console.warn('Chrome profile lookup:',error.message);}
+        }
         await shell.openExternal(target.href);
       }
     });

@@ -298,3 +298,5 @@ body.chat-v3 .maria-provider-actions button:disabled{opacity:.4;cursor:not-allow
 @media(max-width:620px){body.chat-v3 .maria-provider-list{grid-template-columns:1fr}}
 
 body.chat-v3 .maria-avatar-return{background:#393342;border:1px solid #665575;border-radius:9px;color:#f0e7ff;font-size:12px;font-weight:600;padding:8px 12px;white-space:nowrap}body.chat-v3 .maria-avatar-return:hover{background:#524365} @media(max-width:700px){body.chat-v3 .maria-avatar-return{font-size:10px;padding:7px 8px}}
+
+body.chat-v3 .maria-free-gemini{border:1px solid #446b60;background:#18362e66;padding:13px;border-radius:12px;margin-bottom:14px}body.chat-v3 .maria-free-gemini strong{font-size:14px;color:#a8f2d6}body.chat-v3 .maria-free-gemini p{font-size:12px;line-height:1.8;color:#c5d7d0}body.chat-v3 .maria-free-gemini button{padding:9px 13px;border-radius:9px;border:1px solid #6da58e;background:#244c3d;color:#e3fff0}

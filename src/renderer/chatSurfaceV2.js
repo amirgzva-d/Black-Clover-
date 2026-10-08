@@ -286,6 +286,7 @@ function template(){
       '<p class="settings-note">ورود در مرورگر رسمی انجام می‌شود. حساب Chrome به‌طور خودکار انتخاب نمی‌شود؛ در صفحه ورود حساب موردنظرت را انتخاب کن. این اتصال ممکن است محدودیت سهمیه داشته باشد.</p>'+
     '</section>'+
     '<section id="panel-providers" class="settings-content" hidden><p class="settings-note">Gemini، Claude و DeepSeek با کلید API رسمی وصل می‌شوند. کلیدها در فضای امن ویندوز رمزگذاری می‌شوند. اشتراک سایت این سرویس‌ها الزاماً اعتبار API نیست.</p><div id="providerCards" class="maria-provider-list"></div></section>'+ 
+      '<div class="maria-free-gemini"><strong>Gemini — سهمیه رایگان API</strong><p>برای اتصال رایگان، از Google AI Studio کلید بگیر؛ میزان سهمیه به حساب و منطقه بستگی دارد. نیازی به خرید اشتراک ChatGPT یا Gemini نیست.</p><button id="openGeminiKeys" type="button">ساخت کلید رایگان Gemini</button></div>'+
     '<section id="panel-voice" class="settings-content" hidden>'+
       '<label class="setting-row"><span><b>فعال بودن صدای MARIA</b><small>پخش صوتی پاسخ‌ها با موتور صوتی نصب‌شده</small></span><input id="voiceEnabled" type="checkbox"></label>'+
       '<label class="setting-row"><span><b>خواندن خودکار پاسخ</b><small>پس از دریافت پاسخ، MARIA آن را می‌خواند</small></span><input id="voiceAutoRead" type="checkbox"></label>'+
@@ -300,6 +301,7 @@ function template(){
 export async function mountChatSurface(){
   document.body.classList.add('chat-v3','surface-chat');
   $('#app').innerHTML=template();
+  $('#openGeminiKeys').onclick=()=>api().openExternal('https://aistudio.google.com/api-keys').catch(withError);
   $('#autoSpeak').classList.toggle('active',state.autoRead);$('#voiceEnabled').checked=voice.enabled;$('#voiceAutoRead').checked=state.autoRead;
   $('#voiceRate').value=voice.rate;$('#voiceRateValue').textContent=voice.rate.toFixed(2)+'×';
   $('#voicePitch').value=voice.pitch;$('#voicePitchValue').textContent=voice.pitch.toFixed(2)+'×';
