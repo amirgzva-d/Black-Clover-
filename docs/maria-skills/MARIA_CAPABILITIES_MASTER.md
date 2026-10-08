@@ -113,8 +113,8 @@ A LanguagePackBuilder should materialize these examples into versioned training/
 | 03 | Files / Folders | DESIGN COMPLETE v2 EXTENDED | WAITING |
 | 04 | App Install / Update | DESIGN COMPLETE v2 EXTENDED | WAITING |
 | 05 | Windows Settings | DESIGN COMPLETE v1 | WAITING |
-| 06 | Troubleshooting / Repair | NEXT | WAITING |
-| 07 | Web Search / Research | QUEUED | WAITING |
+| 06 | Troubleshooting / Repair | DESIGN COMPLETE v1 | WAITING |
+| 07 | Web Search / Research | NEXT | WAITING |
 | 08 | Browser Automation | QUEUED | WAITING |
 | 09 | YouTube / Web Media | QUEUED | WAITING |
 | 10 | Messaging / Forwarding | QUEUED | WAITING |
@@ -5249,3 +5249,1130 @@ For every capability designed from this point forward:
 
 The goal is maximum practical robustness and professional behavior, not merely a large phrase count.
 
+
+
+---
+
+## 06 — Troubleshooting / Diagnosis / Repair Intelligence
+
+**Status:** DESIGN COMPLETE v1 — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`diagnose.*\`, \`troubleshoot.*\`, \`repair.*\`, \`health.*\`, \`logs.*\`, \`recovery.*\`  
+**Owner modules:** Diagnostic Orchestrator / Evidence Collector / Symptom Resolver / Hypothesis Engine / Knowledge Resolver / Web Research Adapter / Repair Planner / Repair Executor / Verifier / Rollback Manager / Safety Guard / Learning Store  
+**Offline capable:** partial-to-strong; local diagnosis is offline, live research requires network  
+**Risk class:** L0–L5  
+**Primary platform:** Windows
+
+### 1. Purpose
+
+MARIA must not behave like a generic "try rebooting" chatbot.
+
+It must be able to:
+- understand the user's symptom in natural Persian
+- distinguish symptom from root cause
+- inspect relevant system/app/network/device state
+- reproduce or observe the failure when safe
+- gather logs and machine evidence
+- correlate errors across sources
+- generate multiple hypotheses
+- rank hypotheses by evidence and prior success
+- search official/current sources when local knowledge is insufficient
+- propose or execute the least invasive appropriate fix
+- verify whether the original symptom is actually resolved
+- rollback when possible
+- continue to the next hypothesis if the first fix fails
+- remember successful machine-specific fixes without blindly reusing them
+- explain what was found in simple language
+- avoid destructive or security-sensitive repair without permission
+- stop when confidence is low or user intervention is required
+
+This capability is an agent loop, not a single command handler.
+
+---
+
+### 2. Core Troubleshooting Loop
+
+Canonical loop:
+
+1. **Understand symptom**
+2. **Scope target**
+3. **Capture baseline**
+4. **Collect evidence**
+5. **Reproduce/observe if safe**
+6. **Build hypotheses**
+7. **Rank by evidence + risk + cost**
+8. **Select least-invasive valid test/fix**
+9. **Execute with permission**
+10. **Verify original symptom**
+11. **Rollback if degraded**
+12. **Continue / escalate / research**
+13. **Store diagnosis outcome**
+14. **Explain final result**
+
+MARIA must separate:
+- evidence
+- inference
+- hypothesis
+- action
+- verification result
+
+It must never present a hypothesis as a confirmed cause without evidence.
+
+---
+
+### 3. Canonical intents
+
+#### General diagnosis
+- \`diagnose.start\`
+- \`diagnose.quick\`
+- \`diagnose.deep\`
+- \`diagnose.explain_error\`
+- \`diagnose.collect_evidence\`
+- \`diagnose.reproduce\`
+- \`diagnose.compare_before_after\`
+- \`diagnose.list_hypotheses\`
+- \`diagnose.get_confidence\`
+- \`diagnose.stop\`
+
+#### System health
+- \`health.system.summary\`
+- \`health.cpu.inspect\`
+- \`health.memory.inspect\`
+- \`health.storage.inspect\`
+- \`health.network.inspect\`
+- \`health.process.inspect\`
+- \`health.service.inspect\`
+- \`health.driver.inspect\`
+- \`health.device.inspect\`
+- \`health.update.inspect\`
+- \`health.boot.inspect\`
+- \`health.power.inspect\`
+
+#### Logs / evidence
+- \`logs.event.query\`
+- \`logs.event.correlate\`
+- \`logs.app.collect\`
+- \`logs.crash.collect\`
+- \`logs.update.collect\`
+- \`logs.network.collect\`
+- \`logs.export_bundle\`
+
+#### Repair
+- \`repair.plan\`
+- \`repair.preview\`
+- \`repair.execute\`
+- \`repair.retry\`
+- \`repair.rollback\`
+- \`repair.verify\`
+- \`repair.escalate\`
+- \`repair.cancel\`
+
+#### Common targeted repair families
+- \`repair.app.restart\`
+- \`repair.app.reset_cache\`
+- \`repair.app.repair_install\`
+- \`repair.app.reinstall\`
+- \`repair.service.restart\`
+- \`repair.network.renew\`
+- \`repair.network.flush_dns\`
+- \`repair.network.reset_stack\`
+- \`repair.device.reconnect\`
+- \`repair.driver.update\`
+- \`repair.driver.rollback\`
+- \`repair.windows.sfc_verify\`
+- \`repair.windows.sfc_scan\`
+- \`repair.windows.dism_check\`
+- \`repair.windows.dism_scan\`
+- \`repair.windows.dism_restore\`
+- \`repair.windows.update_retry\`
+- \`repair.disk.scan\`
+- \`repair.disk.check_schedule\`
+- \`repair.temp.cleanup\`
+- \`repair.restore_point.create\`
+
+Some actions are capability- and permission-gated.
+
+---
+
+### 4. Symptom categories
+
+MARIA must classify symptoms into one or more domains:
+
+- application crash
+- application not opening
+- application freeze/hang
+- slow application
+- high CPU
+- high memory
+- high disk usage
+- storage full
+- file access/permission error
+- corrupted file
+- missing DLL/runtime
+- Windows service failure
+- Wi‑Fi disconnect
+- no internet
+- DNS issue
+- Bluetooth issue
+- audio missing/distorted
+- microphone issue
+- brightness/display issue
+- external monitor issue
+- driver/device problem
+- USB/peripheral issue
+- printer issue
+- update failure
+- installer failure
+- boot/startup problem
+- shutdown/sleep problem
+- battery/power problem
+- browser/site issue
+- certificate/TLS issue
+- account/login issue
+- performance regression
+- thermal/power throttling when measurable
+- Windows component corruption
+- unknown/other
+
+Multiple domains may coexist.
+
+Example:
+"کروم باز میشه ولی هیچ سایتی لود نمیشه"
+=> Browser + Network/DNS, not automatically "Chrome broken".
+
+---
+
+### 5. Language understanding examples
+
+General:
+- "این چرا کار نمی‌کنه؟"
+- "مشکلش چیه"
+- "درستش کن"
+- "ببین چرا باز نمیشه"
+- "این خطا رو حل کن"
+- "سیستم یه مشکلی پیدا کرده"
+- "یه بررسی کامل بکن"
+- "خودت بفهم مشکل از کجاست"
+- "ارور میده درستش کن"
+- "هر کاری لازمه بکن ولی چیزی رو پاک نکن"
+- "فقط دلیلشو پیدا کن، فعلاً دست نزن"
+- "اول بررسی کن بعد بگو چیکار می‌خوای بکنی"
+
+App:
+- "Photoshop باز نمیشه"
+- "تلگرام هی بسته میشه"
+- "Excel هنگ کرده"
+- "VS Code کند شده"
+- "Chrome رم خیلی می‌خوره"
+- "این برنامه launch نمیشه"
+- "برنامه بازه ولی جواب نمیده"
+
+Network:
+- "اینترنت ندارم"
+- "وای فای وصله ولی نت نیست"
+- "فقط بعضی سایتا باز نمیشن"
+- "DNS مشکل داره؟"
+- "پینگ بالاست"
+- "اینترنت هی قطع و وصل میشه"
+- "روی گوشی نت دارم رو لپتاپ ندارم"
+
+Audio:
+- "صدا کلاً رفته"
+- "فقط Chrome صدا نداره"
+- "هدفون وصله ولی صدا از اسپیکره"
+- "میکروفون کار نمی‌کنه"
+- "صدا خرخر می‌کنه"
+
+Display:
+- "نور صفحه تغییر نمی‌کنه"
+- "مانیتور دوم نمیاد"
+- "رزولوشن بهم ریخته"
+- "صفحه سیاه شد"
+- "بعد آپدیت تصویر مشکل داره"
+
+Update/install:
+- "آپدیت ویندوز گیر کرده"
+- "این برنامه نصب نمیشه"
+- "installer ارور میده"
+- "آپدیت کرد خراب شد"
+- "برگرد نسخه قبل"
+
+Storage/file:
+- "فایل باز نمیشه"
+- "دسترسی ندارم"
+- "درایو پر شده"
+- "این فایل خراب شده؟"
+- "پوشه حذف نمیشه"
+
+Noisy/typo/STT:
+- "فوتوشاب باز نمیشع"
+- "نت وصله ولع کار نمیکنه"
+- "ارور میدع"
+- "ویندوز اپدیت گیر کردع"
+- "دی ان اس مشکل داره"
+- "سیسم کند شدع"
+- "دراور کارت گرافیک خرابه؟"
+
+---
+
+### 6. Diagnostic modes
+
+#### Quick
+Goal: fast low-cost diagnosis.
+
+Uses:
+- current target state
+- recent errors
+- process/service state
+- basic connectivity
+- obvious configuration mismatch
+
+No invasive scans by default.
+
+#### Standard
+Adds:
+- correlated Event Log queries
+- recent crash/update history
+- related service/device state
+- targeted network/process diagnostics
+- app logs when available
+
+#### Deep
+Adds:
+- broader log windows
+- system integrity checks
+- driver/version correlation
+- component-store checks
+- repeatable reproduction
+- controlled experiments
+- live web/vendor research
+
+Deep diagnosis may take longer and may need admin permission.
+
+#### Observe-only
+User says:
+"فقط بررسی کن، چیزی رو تغییر نده."
+
+Then no repair action is executed.
+
+---
+
+### 7. Evidence model
+
+Every evidence item stores:
+- source
+- timestamp
+- target
+- severity
+- event/error code
+- raw value/reference
+- normalized interpretation
+- confidence
+- privacy classification
+- correlation_id
+
+Evidence sources may include:
+
+#### Windows
+- Windows Event Log
+- Application log
+- System log
+- relevant operational logs
+- Windows Error Reporting/crash metadata when available
+- service state
+- process state
+- PnP/device state
+- driver version/state
+- Windows Update state/history
+- network adapter state
+- IP/DNS/routes
+- disk free space
+- file permissions/attributes
+- power/battery state
+- startup state
+- recent install/update state
+
+#### Application
+- app-specific log files
+- exit code
+- process crash state
+- installation metadata
+- configuration state
+- version
+- extensions/plugins where applicable
+
+#### User/context
+- screenshot/error text
+- what changed recently
+- last successful state
+- user-reported reproduction steps
+
+MARIA should collect only evidence relevant to the symptom.
+
+---
+
+### 8. Windows Event Log strategy
+
+Use structured querying, not dumping every event.
+
+Primary paths:
+- Windows Event Log API
+- PowerShell \`Get-WinEvent\`
+- .NET Eventing Reader where appropriate
+
+Filter by:
+- time window
+- provider
+- event ID
+- level
+- target process/service/device
+- correlation with symptom timestamp
+
+Do not treat every red Event Viewer entry as causal.
+
+Correlate:
+- event time
+- process/service
+- user action
+- crash time
+- install/update time
+- device connect/disconnect time
+
+---
+
+### 9. Hypothesis Engine
+
+Each hypothesis stores:
+- hypothesis_id
+- probable root cause
+- supporting evidence
+- contradicting evidence
+- confidence
+- estimated repair risk
+- estimated repair cost/time
+- diagnostic test
+- candidate fixes
+- verification target
+
+Example:
+
+Hypothesis A:
+"DNS resolution failure"
+Evidence:
+- Wi‑Fi connected
+- gateway reachable
+- direct IP connectivity works
+- DNS query fails
+Confidence: 0.91
+
+Hypothesis B:
+"Chrome-specific cache issue"
+Evidence:
+- no direct support
+Confidence: 0.22
+
+MARIA should test A first.
+
+---
+
+### 10. Repair escalation ladder
+
+Always prefer the lowest-impact effective action.
+
+Level 0 — explain only
+- no mutation
+
+Level 1 — harmless refresh
+- retry
+- refresh state
+- reopen view
+- reconnect session
+
+Level 2 — reversible local action
+- restart app
+- restart service
+- reconnect device/network
+- clear safe temporary cache
+- renew network lease
+- flush DNS
+
+Level 3 — configuration repair
+- restore known-good setting
+- repair app installation
+- update/rollback driver
+- reset a targeted component
+- reset network stack when justified
+
+Level 4 — system integrity repair
+- SFC
+- DISM health/restore
+- disk checks
+- broader Windows component repair
+
+Level 5 — destructive/high-impact
+- uninstall/reinstall with data risk
+- broad reset
+- destructive cleanup
+- system recovery/reset
+
+Level 5 always needs explicit confirmation and backup/rollback planning where possible.
+
+---
+
+### 11. SFC / DISM policy
+
+SFC and DISM are valid tools, not universal first steps.
+
+#### SFC
+- \`sfc /verifyonly\` for non-repair verification where appropriate
+- \`sfc /scannow\` scans protected system files and repairs incorrect versions when possible
+- administrative rights are required
+
+#### DISM
+Use staged health checks:
+- CheckHealth
+- ScanHealth
+- RestoreHealth
+
+\`Repair-WindowsImage -Online -RestoreHealth\` or equivalent DISM flow is a higher-cost Windows image repair operation.
+
+Policy:
+- do not run SFC/DISM for unrelated simple app problems without evidence.
+- record start/end/output/log path.
+- verify original symptom afterward.
+- if DISM needs a repair source, validate OS/version/source compatibility.
+- avoid chaining endless system scans.
+
+---
+
+### 12. Network diagnosis ladder
+
+Example "Wi‑Fi وصل است ولی اینترنت نیست":
+
+1. confirm Wi‑Fi radio
+2. confirm connected network
+3. verify adapter has valid IP
+4. verify gateway
+5. test local gateway reachability
+6. test external IP reachability
+7. test DNS resolution
+8. test target site only
+9. inspect proxy/VPN context
+10. inspect relevant errors
+11. choose repair
+
+Candidate fixes:
+- reconnect current network
+- DHCP renew
+- DNS flush
+- switch/restore DNS only with user approval
+- disable/re-enable adapter
+- reset stack only after evidence
+- VPN/proxy hand-off when implicated
+
+Do not reset the entire network for a single-site outage.
+
+---
+
+### 13. Application diagnosis ladder
+
+For "app doesn't open":
+
+1. resolve exact app/executable
+2. inspect process start/result
+3. check existing hung instance
+4. inspect recent Application log
+5. inspect app logs
+6. check missing/runtime dependency evidence
+7. inspect version/update recency
+8. inspect permissions/path
+9. test launch with safe normal context
+10. research exact error/version if needed
+
+Fix candidates:
+- terminate stale hung instance with permission when needed
+- restart
+- clear safe cache
+- repair install
+- update
+- rollback recent update
+- reinstall preserving user data where possible
+
+Never delete user profile/config blindly.
+
+---
+
+### 14. Performance diagnosis
+
+For "system slow":
+
+Evidence:
+- CPU utilization by process
+- memory commit/working set
+- disk utilization/queue
+- storage free space
+- startup apps
+- background updates
+- thermal/power mode if reliably available
+- antivirus/scan state when exposed
+- browser tab/process load
+- recent regressions
+
+MARIA must identify the bottleneck before suggesting "cleaner" actions.
+
+No generic registry cleaner or unsafe optimization tool.
+
+---
+
+### 15. Driver/device diagnosis
+
+Evidence:
+- PnP state
+- device error/problem code
+- driver provider/version/date
+- recent driver install/update
+- hardware connect/disconnect
+- related Event Log entries
+
+Actions:
+- reconnect/rescan
+- restart related device/service
+- update via trusted Windows/vendor source
+- rollback recent driver when supported
+- uninstall/re-enumerate only with clear plan
+
+Do not source drivers from random third-party download sites.
+
+---
+
+### 16. Search / research strategy
+
+When local evidence is insufficient, research uses ranked source priority:
+
+1. Microsoft official documentation/support
+2. device/software vendor official support
+3. official release notes / known-issues pages
+4. project official GitHub/issues for open-source software
+5. high-quality technical community sources
+6. general forums only as supporting evidence
+
+Search query should include:
+- exact error code
+- app/driver name
+- exact version/build
+- Windows version
+- relevant hardware model
+- key error text
+
+MARIA must distinguish:
+- official documented fix
+- known workaround
+- community anecdote
+- unverified suggestion
+
+Never execute a random internet command/script simply because a forum says so.
+
+---
+
+### 17. Web-fetched command safety
+
+Any command from web research must be:
+1. parsed
+2. explained
+3. classified by risk
+4. compared with official docs
+5. checked for scope
+6. checked for destructive behavior
+7. normalized into MARIA Tool actions
+8. permission-gated
+9. logged/audited
+10. verified after execution
+
+Prohibited auto-execution patterns include:
+- opaque downloaded scripts
+- destructive wildcard deletion
+- disabling security controls
+- credential exfiltration
+- persistence creation unrelated to repair
+- obfuscated PowerShell
+- "curl | powershell" style blind execution
+- arbitrary registry deletion without schema/rollback
+
+---
+
+### 18. Screenshot / error-text hand-off
+
+Troubleshooting composes with Screen Agent.
+
+Examples:
+- "این خطا چیه؟"
+- "از این ارور عکس گرفتم درستش کن"
+- "این پنجره رو ببین"
+- "کد خطا رو بخون"
+
+Flow:
+1. Screen Agent extracts visible error/context
+2. Troubleshooting normalizes error code/message
+3. resolve app/version
+4. collect local evidence
+5. search exact error if needed
+6. create repair plan
+7. execute only with proper permission
+8. verify symptom
+
+---
+
+### 19. Recent-change correlation
+
+High-value questions MARIA may infer/inspect:
+- did Windows update recently?
+- did app update recently?
+- did driver update recently?
+- was software installed/uninstalled?
+- did config change?
+- did device disconnect?
+- did disk become full?
+- did account/session expire?
+
+Recent-change correlation should rank hypotheses but not prove causality by itself.
+
+---
+
+### 20. Knowledge + memory
+
+#### Knowledge sources
+- Microsoft docs
+- vendor docs
+- known issue databases
+- MARIA internal troubleshooting playbooks
+- machine capability profile
+- prior verified repair outcomes
+
+#### Repair Memory record
+- symptom fingerprint
+- machine/app version
+- evidence fingerprint
+- confirmed root cause
+- fix applied
+- verification result
+- side effects
+- success score
+- date/build
+- invalidation conditions
+
+Example:
+A fix that worked on Chrome vX under Windows build Y must not be blindly applied after major version changes.
+
+---
+
+### 21. Learning policy
+
+MARIA may learn:
+- recurring machine-specific issue patterns
+- app-specific log locations
+- successful low-risk fixes
+- user preference for "diagnose first, ask before repair"
+- known aliases
+- preferred depth
+
+MARIA must not learn:
+- passwords/tokens
+- sensitive log content beyond needed references
+- unsafe commands
+- a single lucky fix as universal truth
+
+Each learned fix requires:
+- evidence match threshold
+- version compatibility
+- previous verification success
+- current safety validation
+
+---
+
+### 22. Permission / risk
+
+L0 — read-only diagnostics:
+- status
+- logs
+- versions
+- health summaries
+- web research
+
+L1 — low-risk:
+- retry
+- refresh
+- reopen
+- targeted reconnect
+- harmless cache refresh
+
+L2 — reversible:
+- restart app/service
+- flush DNS
+- renew network
+- reconnect device
+- temporary setting change
+
+L3 — meaningful system change:
+- driver update/rollback
+- network stack reset
+- app repair/reinstall
+- targeted config reset
+
+L4 — elevated repair:
+- SFC/DISM repair
+- disk repair scheduling
+- broad service/config repair
+- admin-level package changes
+
+L5 — destructive/recovery:
+- system reset
+- broad data deletion
+- destructive partition/disk operation
+- high-risk account/security repair
+
+Observe-only mode overrides repair permissions: no mutation.
+
+---
+
+### 23. Planner behavior examples
+
+#### Example A — "Chrome هیچ سایتی باز نمی‌کنه"
+Plan:
+1. confirm Chrome process
+2. test another browser/network probe
+3. test direct IP
+4. test DNS
+5. inspect proxy/VPN
+6. inspect Chrome/network error
+7. hypotheses
+8. apply lowest-risk fix
+9. retest site
+10. verify
+
+#### Example B — "Photoshop باز نمیشه"
+Plan:
+1. resolve installed version/path
+2. launch and capture exit/crash
+3. inspect app/system logs
+4. check recent update/plugin changes
+5. hypothesis ranking
+6. safe repair
+7. relaunch
+8. verify
+
+#### Example C — "بعد آپدیت مانیتور دوم نمیاد"
+Plan:
+1. enumerate displays
+2. inspect topology
+3. inspect GPU/display device state
+4. correlate recent driver/update
+5. attempt harmless re-detection
+6. if needed driver rollback/update plan
+7. verify external display
+8. rollback if degraded
+
+---
+
+### 24. Result states
+
+Diagnosis:
+- no_issue_detected
+- symptom_reproduced
+- likely_cause
+- confirmed_cause
+- multiple_possible_causes
+- insufficient_evidence
+- blocked_by_permission
+- requires_user_action
+- requires_restart
+- requires_offline_repair
+
+Repair:
+- verified_fixed
+- improved_not_fixed
+- action_succeeded_symptom_remains
+- failed
+- rolled_back
+- partial
+- pending_restart
+- pending_user_step
+
+MARIA must report the right state rather than always saying "درست شد".
+
+---
+
+### 25. Response behavior
+
+Good:
+- "مشکل از DNS بود؛ وای‌فای وصل بود ولی نام دامنه resolve نمی‌شد. DNS را refresh کردم و دوباره تست کردم؛ الان سایت باز می‌شود."
+- "دو علت محتمل پیدا کردم. فعلاً چیزی تغییر ندادم."
+- "Repair اجرا شد، ولی مشکل هنوز باقی است؛ مرحله بعد بررسی Driver است."
+- "تغییر جدید نتیجه را بدتر کرد، تنظیم قبلی را برگرداندم."
+
+Bad:
+- "درست شد" without verification
+- dumping 200 log lines
+- listing random internet fixes
+- claiming certainty from one generic Event Log entry
+
+---
+
+### 26. Language dataset standard
+
+High-frequency troubleshooting intents target **750–1000 utterances each**.
+
+Priority:
+- diagnose.start
+- diagnose.explain_error
+- diagnose.quick
+- diagnose.deep
+- repair.execute
+- repair.verify
+- repair.rollback
+- network problem diagnosis
+- app not opening
+- app crash/freeze
+- slow system
+- Windows Update failure
+- driver/device failure
+
+Each pack includes:
+- direct
+- vague
+- angry/frustrated wording
+- incomplete symptom
+- typo/STT
+- error-code language
+- screenshot context
+- recent-change context
+- "فقط بررسی کن"
+- "خودت درستش کن"
+- "چیزی پاک نکن"
+- "اگه مطمئنی انجام بده"
+- "اول بگو بعد انجام بده"
+- cross-domain counterexamples
+- false-friend phrases
+- failure/rollback follow-ups
+
+Capability family target: many thousands of total utterances.
+
+---
+
+### 27. Skill / Agent package
+
+#### DiagnosticOrchestrator
+Runs the troubleshoot loop and controls depth.
+
+#### SymptomResolver
+Maps natural language + context to target domains.
+
+#### EvidenceCollector
+Collects minimal relevant evidence.
+
+#### EventLogSkill
+Queries/correlates Windows events.
+
+#### SystemHealthSkill
+CPU/memory/storage/process/service/device snapshots.
+
+#### NetworkDiagnosticSkill
+Connectivity/DNS/adapter diagnosis.
+
+#### AppDiagnosticSkill
+Launch/crash/hang/version/log diagnosis.
+
+#### DriverDeviceDiagnosticSkill
+PnP/driver/device evidence.
+
+#### UpdateDiagnosticSkill
+Windows/app update history and failure evidence.
+
+#### HypothesisEngine
+Ranks causes with supporting/contradicting evidence.
+
+#### KnowledgeResolver
+Uses local knowledge/RAG and machine-specific playbooks.
+
+#### TroubleshootingWebResearchAgent
+Searches official/current sources and labels source quality.
+
+#### RepairPlanner
+Chooses least-invasive candidate action.
+
+#### RepairExecutor
+Executes normalized approved fixes.
+
+#### RepairSafetyGuard
+Rejects unsafe/untrusted repair actions.
+
+#### RepairVerifier
+Retests original symptom.
+
+#### RepairRollbackManager
+Restores previous state when possible.
+
+#### RepairLearningStore
+Stores verified machine-specific outcomes.
+
+All register through MARIA Skill Registry / Tool Registry.
+
+---
+
+### 28. Logging / audit
+
+Every repair session stores a redacted audit trail:
+- problem statement
+- target
+- evidence references
+- hypotheses
+- commands/actions
+- permissions
+- before state
+- after state
+- verification
+- rollback
+- final conclusion
+
+Sensitive fields are redacted.
+
+User can ask:
+- "چی کار کردی؟"
+- "چه چیزایی تغییر داد؟"
+- "برگردون"
+- "لاگ تعمیر رو نشون بده"
+
+---
+
+### 29. Test matrix
+
+#### General
+T-A01 vague "کار نمی‌کنه"
+T-A02 exact error code
+T-A03 observe-only
+T-A04 user allows auto-fix
+T-A05 low confidence => clarify
+
+#### App
+T-B01 app won't start
+T-B02 crash
+T-B03 hang
+T-B04 high memory
+T-B05 bad plugin/config
+T-B06 reinstall preserves user data policy
+
+#### Network
+T-C01 Wi‑Fi off
+T-C02 connected/no DHCP
+T-C03 gateway down
+T-C04 external IP works/DNS fails
+T-C05 one site down
+T-C06 VPN/proxy issue
+T-C07 no broad reset for one-site issue
+
+#### Windows integrity
+T-D01 SFC not justified => not run
+T-D02 verify-only
+T-D03 SFC repair
+T-D04 DISM CheckHealth
+T-D05 DISM ScanHealth
+T-D06 DISM RestoreHealth
+T-D07 source mismatch
+T-D08 restart required
+
+#### Driver/device
+T-E01 missing device
+T-E02 error code
+T-E03 recent bad driver
+T-E04 rollback
+T-E05 trusted update source
+T-E06 random driver site rejected
+
+#### Performance
+T-F01 CPU bottleneck
+T-F02 memory bottleneck
+T-F03 disk full
+T-F04 background update
+T-F05 no generic cleanup recommendation
+
+#### Research
+T-G01 official Microsoft fix
+T-G02 vendor fix
+T-G03 GitHub known issue
+T-G04 forum-only workaround labeled weak
+T-G05 malicious/opaque command rejected
+
+#### Verify/rollback
+T-H01 action succeeds + symptom fixed
+T-H02 action succeeds + symptom remains
+T-H03 action worsens condition => rollback
+T-H04 verifier unavailable
+T-H05 partial fix
+
+#### Language
+T-I01 typos
+T-I02 STT
+T-I03 frustration
+T-I04 incomplete symptom
+T-I05 "چیزی رو پاک نکن"
+T-I06 "فقط دلیلشو پیدا کن"
+
+---
+
+### 30. Acceptance criteria
+
+1. MARIA never equates a symptom with root cause without evidence.
+2. Event logs are filtered/correlated, not blindly dumped.
+3. official/vendor sources outrank random forums.
+4. web commands are safety-reviewed before execution.
+5. least-invasive repair is attempted first.
+6. SFC/DISM are not generic first-line fixes.
+7. original symptom is explicitly retested after repair.
+8. failed repair never produces false "fixed" status.
+9. rollback executes when a repair worsens a reversible state.
+10. observe-only mode causes zero mutations.
+11. dangerous operations require explicit permission.
+12. repair memory is version/evidence scoped.
+13. high-frequency intents reach 750–1000 language examples.
+14. real machine tests pass for app/network/driver/update/system cases.
+15. only then status changes to IMPLEMENTED.
+
+---
+
+### 31. Local implementation plan
+
+When the Windows system is online:
+
+1. inspect current MARIA executor/permission architecture.
+2. add DiagnosticOrchestrator.
+3. add EvidenceCollector.
+4. integrate Windows Event Log / Get-WinEvent adapter.
+5. add process/service/device/network health adapters.
+6. add SymptomResolver.
+7. implement HypothesisEngine.
+8. add local RAG troubleshooting knowledge.
+9. add official-source Web Research adapter.
+10. implement RepairPlanner + SafetyGuard.
+11. implement low-risk repair actions first.
+12. add SFC/DISM staged repair adapter.
+13. add RepairVerifier.
+14. add Rollback Manager.
+15. add Repair Learning Store.
+16. generate 750–1000 utterance packs for priority intents.
+17. run synthetic failure tests.
+18. run real controlled Windows failures.
+19. audit false-positive/unsafe-action rates.
+20. mark only passing modules IMPLEMENTED.
+
+---
+
+### 32. Official Windows implementation references
+
+Validate implementation against current Microsoft documentation for:
+- Windows Event Log API
+- Get-WinEvent
+- System.Diagnostics.Eventing.Reader
+- SFC
+- DISM / Repair-WindowsImage
+- Windows Update repair guidance
+- relevant Win32/PowerShell/CIM APIs for service, process, PnP, network and storage diagnostics
+
+Canonical MARIA diagnosis/repair intents remain stable even if the adapter changes.
