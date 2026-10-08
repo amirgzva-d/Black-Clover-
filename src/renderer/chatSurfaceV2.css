@@ -355,3 +355,18 @@ body.chat-v3 .maria-shell-status{display:none!important}
   body.chat-v3 .starter-grid{grid-template-columns:1fr}
   body.chat-v3 .message-row.user .message-content{max-width:88%}
 }
+
+/* MARIA account and paid API configuration */
+body.chat-v3 .api-setup{margin-top:12px;padding:14px;border:1px solid var(--line);border-radius:12px;background:#292929;display:flex;flex-direction:column;gap:10px}
+body.chat-v3 .api-setup[hidden]{display:none!important}
+body.chat-v3 .api-setup p,body.chat-v3 .api-setup small{margin:0;color:#a8a8a8;font-size:11px;line-height:1.75}
+body.chat-v3 .api-setup label{display:flex;flex-direction:column;gap:5px;font-size:11px;color:#ddd}
+body.chat-v3 .api-setup input,body.chat-v3 .api-setup select{width:100%;height:38px;border:1px solid #454545;border-radius:8px;background:#1c1c1c;color:#f4f4f4;padding:0 12px;outline:none;direction:ltr;text-align:left;font-size:12px}
+body.chat-v3 .api-setup input:focus,body.chat-v3 .api-setup select:focus{border-color:#999}
+body.chat-v3 .settings-actions button:disabled{opacity:.45;cursor:wait}
+body.chat-v3 #chatgptConnect{background:#eee;color:#171717;border-color:#eee}
+body.chat-v3 #chatgptConnect:hover{background:#fff}
+body.chat-v3 #planIndicator{height:30px;padding:0 9px;font-size:10px;border:1px solid #404040;border-radius:18px;background:transparent;color:#a8a8a8;cursor:pointer;white-space:nowrap}
+body.chat-v3 #planIndicator.connected{color:#8ee2ab;border-color:rgba(78,186,115,.3);background:rgba(78,186,115,.08)}
+body.chat-v3 #planIndicator:hover{background:#333}
+@media(max-width:760px){body.chat-v3 #planIndicator{font-size:0;width:28px;padding:0}body.chat-v3 #planIndicator::before{content:'●';font-size:12px}}

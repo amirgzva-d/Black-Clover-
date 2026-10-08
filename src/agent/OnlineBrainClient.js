@@ -39,7 +39,7 @@ export class OnlineBrainClient{
   cancel(){for(const controller of this.controllers)try{controller.__manualCancel=true;controller.abort();}catch{}this.controllers.clear();}
   get configured(){return Boolean(this.provider&&this.apiKey&&this.baseUrl&&this.model);}
   headers(){return {'content-type':'application/json','authorization':'Bearer '+this.apiKey};}
-  body(messages,tools=[],stream=false){const body={model:this.model,messages,stream,temperature:.5,top_p:.9};if(tools?.length){body.tools=tools;body.tool_choice='auto';}return body;}
+  body(messages,tools=[],stream=false){const isNewOpenAI=this.provider==='openai'&&/^gpt-(5|6)/i.test(this.model);const body={model:this.model,messages,stream};if(!isNewOpenAI){body.temperature=.5;body.top_p=.9;}if(tools?.length){body.tools=tools;body.tool_choice='auto';if(isNewOpenAI)body.reasoning_effort='none';}return body;}
   async chat(messages,tools=[]){
     if(!this.configured)throw new Error('Online brain is not configured');const controller=new AbortController();this.controllers.add(controller);
     try{const r=await timeoutFetch(this.baseUrl+'/chat/completions',{method:'POST',headers:this.headers(),body:JSON.stringify(this.body(messages,tools,false))},this.timeoutMs,controller);if(!r.ok){const t=(await r.text()).slice(0,900);throw new Error(this.provider+' HTTP '+r.status+': '+t);}const data=await r.json(),message=data?.choices?.[0]?.message;if(!message)throw new Error(this.provider+' returned no message');return {message,usage:data.usage,provider:this.provider,model:this.model};}

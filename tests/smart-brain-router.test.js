@@ -43,14 +43,15 @@ test('private context never auto-routes to ChatGPT plan',async()=>{
   assert.equal(brain.lastProvider,'ollama');
 });
 
-test('tool-using turns keep Agent-compatible brain instead of text-only ChatGPT plan',async()=>{
+test('tool-using turns forward allowlisted tools to connected ChatGPT plan',async()=>{
   const local=localClient('ابزار محلی'),plan=chatgptStub();
   const brain=new BrainRouter({local,chatLocal:local,legacyLocal:local,researchLocal:local,codingLocal:local,online:{configured:false,catalog(){return[];},cancel(){}},chatgptPlan:plan,networkTtlMs:0});
   brain.network=async()=>true;
   const tools=[{type:'function',function:{name:'set_volume',description:'x',parameters:{type:'object',properties:{}}}}];
   const out=await brain.chat([{role:'user',content:'صدا را کم کن'}],tools,{allowOnline:true,profile:'general'});
-  assert.equal(out.message.content,'ابزار محلی');
-  assert.equal(plan.calls.length,0);
+  assert.equal(out.message.content,'پاسخ سنگین');
+  assert.equal(plan.calls.length,1);
+  assert.equal(brain.lastProvider,'chatgpt');
 });
 
 test('brain cancellation reaches all configured brain backends',()=>{

@@ -101,11 +101,13 @@ export class BrainRouter{
 
     if(forceChatGPT){
       if(!allowOnline)this.lastFallbackReason='chatgpt-blocked-private';
-      else if(tools?.length)this.lastFallbackReason='chatgpt-tools-use-agent-brain';
+
       else if(!await this.network())this.lastFallbackReason='chatgpt-offline';
       else if(!this.chatgptPlan||!await this.chatgptPlan.available())this.lastFallbackReason='chatgpt-not-connected';
-      else try{const out=await this.chatgptPlan.chat(messages,{model,onDelta});this.lastMode='chatgpt-plan';this.lastProvider='chatgpt';this.lastModel=out.model;this.lastFallbackReason='';return out;}catch(error){if(/cancel/i.test(errorMessage(error)))throw error;this.lastFallbackReason='chatgpt-failed: '+errorMessage(error);}
+      else try{const out=await this.chatgptPlan.chat(messages,{model,tools,onDelta:tools?.length?null:onDelta});this.lastMode='chatgpt-plan';this.lastProvider='chatgpt';this.lastModel=out.model;this.lastFallbackReason='';return out;}catch(error){if(/cancel/i.test(errorMessage(error)))throw error;this.lastFallbackReason='chatgpt-failed: '+errorMessage(error);}
     }
+
+    if(forceChatGPT&&this.lastFallbackReason)throw new Error('مدل ChatGPT انتخاب شده آماده نیست: '+this.lastFallbackReason);
 
     if(forceOllamaCloud){
       if(!allowOnline)this.lastFallbackReason='ollama-cloud-blocked-private';
@@ -144,9 +146,9 @@ export class BrainRouter{
       }
     }
 
-    const preferChatGPT=!forceLocal&&!forceOllamaCloud&&!forceOnline&&!forceChatGPT&&allowOnline&&!tools?.length&&policy!=='local-first'&&this.chatgptPlan&&(profile!=='chat'||!this.online?.configured);
+    const preferChatGPT=!forceLocal&&!forceOllamaCloud&&!forceOnline&&!forceChatGPT&&allowOnline&&policy!=='local-first'&&this.chatgptPlan;
     if(preferChatGPT&&await this.network()&&await this.chatgptPlan.available().catch(()=>false)){
-      try{const out=await this.chatgptPlan.chat(messages,{model:'auto',onDelta});this.lastMode='chatgpt-plan';this.lastProvider='chatgpt';this.lastModel=out.model;this.lastFallbackReason='';return out;}catch(error){if(/cancel/i.test(errorMessage(error)))throw error;this.lastFallbackReason='chatgpt-failed: '+errorMessage(error);}
+      try{const out=await this.chatgptPlan.chat(messages,{model:'auto',tools,onDelta:tools?.length?null:onDelta});this.lastMode='chatgpt-plan';this.lastProvider='chatgpt';this.lastModel=out.model;this.lastFallbackReason='';return out;}catch(error){if(/cancel/i.test(errorMessage(error)))throw error;this.lastFallbackReason='chatgpt-failed: '+errorMessage(error);}
     }
     const wantsOnline=!forceLocal&&!forceOllamaCloud&&!forceChatGPT&&allowOnline&&this.online?.configured&&policy!=='local-first';
     if(wantsOnline){

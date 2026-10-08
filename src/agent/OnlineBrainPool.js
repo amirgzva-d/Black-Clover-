@@ -3,7 +3,7 @@ import { OnlineBrainClient } from './OnlineBrainClient.js';
 const timeoutFetch=async(url,options={},timeoutMs=90000)=>{const c=new AbortController(),t=setTimeout(()=>c.abort(),timeoutMs);try{return await fetch(url,{...options,signal:c.signal});}finally{clearTimeout(t);}};
 export const BRAIN_PROVIDER_PRESETS=Object.freeze({
   github:{label:'GitHub Models • Free Tier',baseUrl:'https://models.github.ai/inference',model:'openai/gpt-4o-mini',note:'GitHub Models؛ سهمیه رایگان محدود برای حساب GitHub'},
-  openai:{label:'OpenAI / ChatGPT',baseUrl:'https://api.openai.com/v1',model:'gpt-4o-mini',note:'API پولی؛ مدل سریع و کم‌هزینه'},
+  openai:{label:'OpenAI API • کلید شخصی',baseUrl:'https://api.openai.com/v1',model:'gpt-6-luna',note:'API مستقل و پولی؛ کلید در Windows رمز می‌شود'},
   anthropic:{label:'Claude',baseUrl:'https://api.anthropic.com',model:'claude-sonnet-4-6',note:'API Anthropic'},
   deepseek:{label:'DeepSeek',baseUrl:'https://api.deepseek.com',model:'deepseek-chat',note:'تحلیل و کدنویسی'},
   qwen:{label:'Qwen Cloud',baseUrl:'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',model:'qwen3.7-flash',note:'سهمیه رایگان اولیه ممکن است در دسترس باشد'},

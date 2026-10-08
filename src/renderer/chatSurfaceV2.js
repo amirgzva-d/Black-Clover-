@@ -224,9 +224,9 @@ async function refreshBrainSettings(){
     const [s,cg]=await Promise.all([window.blackClover.brainSettings(),window.blackClover.chatgptStatus?.().catch(()=>null)]),root=$('#providerList'),session=cg?.session||{status:'disconnected',sharing:false};
     const chatgptUsable=session.status==='connected'&&session.sharing&&!session.error,chatgptLabel=session.error?'اتصال انجام شده • استفاده از پلن برای این اتصال در دسترس نیست':session.status==='connected'?(chatgptUsable?'متصل و آماده':'متصل • دسترسی مدل فعال نیست'):session.status==='connecting'?'در حال اتصال…':'متصل نیست';
     root.innerHTML=`<article class="provider-card featured"><div><b>ChatGPT • OpenAI</b><span>اتصال رسمی حساب ChatGPT؛ برای تحلیل و سؤال‌های سنگین در حالت Auto.</span></div><i class="${chatgptUsable?'ok':''}">${esc(chatgptLabel)}</i></article>`+
-      s.providers.map(p=>`<article class="provider-card" data-provider="${esc(p.provider)}"><div><b>${esc(p.label)}</b><span>${esc(p.note||'')}</span></div><div class="provider-side"><i class="${p.configured?'ok':''}">${p.configured?'متصل':'اختیاری'}</i>${['groq','gemini','openrouter','qwen'].includes(p.provider)?`<button data-provider-config="${esc(p.provider)}">${p.configured?'ویرایش':'اتصال'}</button>`:''}${p.configured&&p.provider!=='github'?`<button data-provider-remove="${esc(p.provider)}">حذف</button>`:''}</div></article>`).join('');
+      s.providers.map(p=>`<article class="provider-card" data-provider="${esc(p.provider)}"><div><b>${esc(p.label)}</b><span>${esc(p.note||'')}</span></div><div class="provider-side"><i class="${p.configured?'ok':''}">${p.configured?'متصل':'اختیاری'}</i>${['openai','groq','gemini','openrouter','qwen'].includes(p.provider)?`<button data-provider-config="${esc(p.provider)}">${p.configured?'ویرایش':'اتصال'}</button>`:''}${p.configured&&p.provider!=='github'?`<button data-provider-remove="${esc(p.provider)}">حذف</button>`:''}</div></article>`).join('');
     const chatBtn=$('#chatgptConnect');chatBtn.dataset.connected=session.status==='connected'?'1':'0';chatBtn.dataset.sharing=chatgptUsable?'1':'0';chatBtn.textContent=session.status==='connected'?(chatgptUsable?'قطع اتصال ChatGPT':'اتصال دوباره ChatGPT'):'Continue with ChatGPT';
-    $('#chatgptUsage').hidden=session.status!=='connected';
+    $('#chatgptUsage').hidden=session.status!=='connected';const indicator=$('#planIndicator');if(indicator){indicator.classList.toggle('connected',chatgptUsable);indicator.textContent=chatgptUsable?'ChatGPT • متصل':session.status==='connected'?'ChatGPT • بدون سهمیه':'ChatGPT • متصل نیست';}
     $('#githubBrain').textContent=s.githubCli?.authenticated?'GitHub Models متصل است':'اتصال رایگان GitHub Models';
   }catch{}
 }
@@ -255,7 +255,7 @@ export async function mountChatSurface(){
       <div class="side-scroll">
         <div class="side-section-head"><button id="allChats" class="side-heading-button">گفتگوهای اخیر</button></div>
         <div id="chatList" class="chat-list"></div>
-        <div class="side-section-head project-head"><span>پروژه‌ها</span><button id="newFolder" title="پروژه / پوشه جدید">${icon('plus')}</button></div>
+        <div class="side-section-head project-head"><span>پروژه‌ها</span><button id="projectApiConfig" title="اتصال OpenAI API برای پروژه‌ها">API</button><button id="newFolder" title="پروژه / پوشه جدید">${icon('plus')}</button></div>
         <div id="folderList" class="folder-list"></div>
       </div>
       <div class="side-foot">
@@ -271,7 +271,7 @@ export async function mountChatSurface(){
             <button id="chatMode" class="mode-tab active">Chat</button>
             <button id="workMode" class="mode-tab">${icon('work')}<span>Work</span></button>
           </div>
-          <select id="modelSelect" class="model-select" title="انتخاب مدل"><option value="auto">Auto • Maria</option></select>
+          <select id="modelSelect" class="model-select" title="انتخاب مدل"><option value="auto">Auto • Maria</option></select><button id="planIndicator" type="button" title="حساب ChatGPT و تنظیمات API">ChatGPT • متصل نیست</button>
         </div>
         <div class="top-actions">
           <button id="shareChat" class="share-btn" title="اشتراک">${icon('share')}<span>اشتراک</span></button>
@@ -319,6 +319,14 @@ export async function mountChatSurface(){
       <div class="settings-callout"><b>Smart Brain</b><span>فرمان‌های ساده مستقیم اجرا می‌شوند؛ سؤال‌های سنگین به Provider قوی آنلاین می‌روند و در صورت خطا Local جایگزین می‌شود.</span></div>
       <div id="providerList" class="provider-list"></div>
       <div class="settings-actions"><button id="chatgptConnect">Continue with ChatGPT</button><button id="chatgptUsage" hidden>مدیریت مصرف ChatGPT</button><button id="githubBrain">اتصال رایگان GitHub Models</button><button id="setupRefresh">بررسی دوباره</button></div>
+      <section id="apiSetup" class="api-setup" hidden>
+        <b>اتصال OpenAI API (پرداخت جدا از اشتراک ChatGPT)</b>
+        <p>پس از خرید اعتبار API، کلید خود را اینجا وارد کن. کلید فقط در حافظه رمزنگاری‌شده ویندوز ذخیره می‌شود و هرگز در GitHub قرار نمی‌گیرد.</p>
+        <label>API Key <input id="openaiApiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-…"></label>
+        <label>مدل <select id="openaiModel"><option value="gpt-6-luna">GPT-6 Luna • اقتصادی</option><option value="gpt-6.1-sol">GPT-6.1 Sol • قوی</option><option value="gpt-6-astra">GPT-6 Astra • پیشرفته</option></select></label>
+        <div class="settings-actions"><button id="saveOpenaiApi" type="button">ذخیره و بررسی اتصال</button><button id="closeApiSetup" type="button">بستن</button></div>
+        <small>این اتصال اختیاری است. وقتی ChatGPT با حساب خودت متصل باشد، برای شروع نیاز به خرید API نداری.</small>
+      </section>
     </section>
   </div>`;
 
@@ -375,12 +383,25 @@ export async function mountChatSurface(){
   $('#shareChat').onclick=async()=>{if(state.currentId){await window.blackClover.copyChat(state.currentId);toast('کل گفتگو برای اشتراک کپی شد');}};
   $('#exportChat').onclick=()=>state.currentId&&window.blackClover.exportChat(state.currentId);
   $('#settings').onclick=()=>{$('#setup').hidden=false;refreshBrainSettings();};
+  $('#planIndicator').onclick=()=>{$('#setup').hidden=false;refreshBrainSettings();};
+  $('#projectApiConfig').onclick=async()=>{$('#setup').hidden=false;const s=await window.blackClover.brainSettings();$('#openaiModel').value=s.providers.find(x=>x.provider==='openai')?.model||'gpt-6-luna';$('#apiSetup').hidden=false;refreshBrainSettings();};
   $('#setupClose').onclick=()=>{$('#setup').hidden=true;};
   $('#setupRefresh').onclick=async()=>{await refreshBrainSettings();await populateModels();};
   $('#providerList').onclick=async e=>{
     const config=e.target.closest('[data-provider-config]'),remove=e.target.closest('[data-provider-remove]');
-    if(config){const provider=config.dataset.provider,key=prompt(`کلید API رایگان ${provider} را وارد کن. کلید به‌صورت رمز‌شده در Windows ذخیره می‌شود:`);if(!key?.trim())return;try{const settings=await window.blackClover.brainSettings(),p=settings.providers.find(x=>x.provider===provider),model=prompt('مدل (خالی = مدل پیشنهادی):',p?.model||'')||p?.model||'';await window.blackClover.saveBrainProvider({provider,apiKey:key.trim(),model});const test=await window.blackClover.testBrainProvider(provider);toast(test.ok?`${provider} متصل شد`:`${provider} ذخیره شد ولی تست اتصال موفق نبود`);await refreshBrainSettings();await populateModels();}catch(err){toast(err?.message||String(err));}return;}
+    if(config){
+      if(config.dataset.provider==='openai'){const settings=await window.blackClover.brainSettings();$('#openaiModel').value=settings.providers.find(x=>x.provider==='openai')?.model||'gpt-6-luna';$('#apiSetup').hidden=false;$('#openaiApiKey').focus();return;}const provider=config.dataset.provider,key=prompt(`کلید API رایگان ${provider} را وارد کن. کلید به‌صورت رمز‌شده در Windows ذخیره می‌شود:`);if(!key?.trim())return;try{const settings=await window.blackClover.brainSettings(),p=settings.providers.find(x=>x.provider===provider),model=prompt('مدل (خالی = مدل پیشنهادی):',p?.model||'')||p?.model||'';await window.blackClover.saveBrainProvider({provider,apiKey:key.trim(),model});const test=await window.blackClover.testBrainProvider(provider);toast(test.ok?`${provider} متصل شد`:`${provider} ذخیره شد ولی تست اتصال موفق نبود`);await refreshBrainSettings();await populateModels();}catch(err){toast(err?.message||String(err));}return;}
     if(remove){const provider=remove.dataset.provider;if(confirm(`اتصال ${provider} حذف شود؟`)){await window.blackClover.removeBrainProvider(provider);await refreshBrainSettings();await populateModels();}}
+  };
+  $('#closeApiSetup').onclick=()=>{$('#apiSetup').hidden=true;$('#openaiApiKey').value='';};
+  $('#saveOpenaiApi').onclick=async()=>{
+    const key=$('#openaiApiKey').value.trim(),model=$('#openaiModel').value,btn=$('#saveOpenaiApi');
+    if(!key){toast('کلید OpenAI API را وارد کن');return;}
+    try{btn.disabled=true;await window.blackClover.saveBrainProvider({provider:'openai',apiKey:key,model});
+      $('#openaiApiKey').value='';const result=await window.blackClover.testBrainProvider('openai');
+      toast(result.ok?'اتصال API فعال شد':'کلید ذخیره شد؛ تست اتصال موفق نبود');
+      await refreshBrainSettings();await populateModels();
+    }catch(error){toast(error?.message||String(error));}finally{btn.disabled=false;}
   };
   $('#chatgptConnect').onclick=async e=>{const b=e.currentTarget;try{b.disabled=true;if(b.dataset.connected==='1'&&b.dataset.sharing==='1'){if(confirm('اتصال ChatGPT از MARIA قطع شود؟'))await window.blackClover.disconnectChatGPT();}else await window.blackClover.signInChatGPT({reconsent:b.dataset.connected==='1'});await refreshBrainSettings();await populateModels();toast('وضعیت ChatGPT به‌روز شد');}catch(err){toast(err?.message||String(err));}finally{b.disabled=false;}};
   $('#chatgptUsage').onclick=()=>window.blackClover.openChatGPTUsage();
@@ -397,5 +418,5 @@ export async function mountChatSurface(){
   window.blackClover.onFocusInput?.(()=>{$('#input').focus();});
   window.blackClover.onOpenSettings?.(payload=>{$('#setup').hidden=false;refreshBrainSettings();if(payload?.section==='voice')setTimeout(()=>document.querySelector('#voicePersonalityPanel')?.scrollIntoView({behavior:'smooth',block:'start'}),160);});
   window.blackClover.onPrefillPrompt?.(payload=>{const t=payload?.text||'';if(!t)return;$('#input').value=t;autoGrow();if(payload.submit)enqueue(t);});
-  autoGrow();syncSendButton();$('#input').focus();
+  autoGrow();syncSendButton();$('#input').focus();refreshBrainSettings().catch(()=>{});
 }

@@ -57,14 +57,24 @@ export class ChatGPTPlanService{
   }
   async available(){const s=await this.session();return usableSession(s);}
   cancel(){for(const c of this.controllers)try{c.abort();}catch{}this.controllers.clear();}
-  async chat(messages=[],{model='auto',onDelta=null}={}){
+  async chat(messages=[],{model='auto',onDelta=null,tools=[]}={}){
     const session=await this.session();if(session.status!=='connected')throw new Error('Sign in with ChatGPT to continue.');if(!session.sharing||session.error)throw new Error(session.error?.message||'ChatGPT plan usage is not enabled for this connection.');
     const models=await this.models(),picked=model&&model!=='auto'?model:models[0]?.slug;if(!picked)throw new Error('No ChatGPT model is available for this account.');
-    const instructions=messages.filter(m=>m?.role==='system').map(m=>String(m.content||'')).filter(Boolean).join('\n\n');
-    const input=messages.filter(m=>['user','assistant','developer'].includes(m?.role)&&String(m.content||'').trim()).map(m=>({role:m.role,content:String(m.content)}));
+    let instructions=messages.filter(m=>m?.role==='system').map(m=>String(m.content||'')).filter(Boolean).join('\n\n');
+    // The current sign-in SDK handles text Responses only. Send an allowlisted tool
+    // description as instructions; the host validates any JSON tool request and
+    // executes it through MARIA's existing confirmation/permission layer.
+    if(tools.length){
+      const available=tools.slice(0,20).filter(x=>x?.function?.name).map(x=>({
+        name:x.function.name,description:String(x.function.description||'').slice(0,450),
+        parameters:x.function.parameters||{type:'object',properties:{}}
+      }));
+      instructions+='\n\nMARIA TOOL ROUTING: Choose from ONLY the permitted tools in the following JSON list. If a tool must run, output ONLY JSON of the form {"name":"tool_name","arguments":{"key":"value"}}. Never claim an action succeeded before its tool result is provided. When a tool result is present, answer using the actual result. If no tool is needed, reply naturally in Persian. Tools: '+JSON.stringify(available);
+    }
+    const input=messages.filter(m=>['user','assistant','developer','tool'].includes(m?.role)&&String(m.content||'').trim()).map(m=>({role:m.role==='tool'?'user':m.role,content:m.role==='tool'?'[MARIA TOOL RESULT '+String(m.tool_name||'')+'] '+String(m.content).slice(0,6000):String(m.content)}));
     const controller=new AbortController();this.controllers.add(controller);
     try{
-      const result=await this.ensure().streamResponse({model:picked,input,instructions:instructions||undefined,signal:controller.signal,onDelta:delta=>onDelta?.(delta)});
+      const result=await this.ensure().streamResponse({model:picked,input,instructions:instructions||undefined,signal:controller.signal,onDelta:delta=>{if(!tools.length)onDelta?.(delta);}});
       return {message:{role:'assistant',content:result.text},provider:'chatgpt',model:picked};
     }catch(error){const typed=cleanError(error);if(controller.signal.aborted||typed?.code==='cancelled')throw new Error('Request cancelled');throw typed;}finally{this.controllers.delete(controller);}
   }
