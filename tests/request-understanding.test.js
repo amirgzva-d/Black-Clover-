@@ -41,6 +41,8 @@ test('immediate follow-ups reuse the correct subject and its privacy',()=>{
   const research=resolveConversationContext('همونو سرچ کن بیار',[{role:'user',content:'هوش مصنوعی رو سرچ کن'}]);
   assert.equal(parseWebRequest(research.text)?.query,'هوش مصنوعی');
   assert.ok(resolveConversationContext('مزایاش چیه؟',[{role:'user',content:'درباره SSD توضیح بده'}]).text.includes('SSD'));
+  const storage=resolveConversationContext('حالا از نظر قیمت چطور؟',[{role:'user',content:'در یک جمله تفاوت SSD و HDD را بگو',_resolvedGoal:'در یک جمله تفاوت SSD و HDD را بگو'}]);
+  assert.match(storage.text,/SSD/i);assert.match(storage.text,/HDD/i);assert.match(storage.text,/قیمت/);
 });
 test('an unsupported second action prevents partial fast execution',()=>{
   const sequence=planFastSequence('نوت پد رو باز کن و بعد گزارش فروش رو ویرایش کن');

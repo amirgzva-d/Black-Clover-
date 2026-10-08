@@ -31,9 +31,11 @@ export class OllamaClient {
     this.temperature=temperature;
     this.think=think;
     this.numPredict=numPredict;
+    this.controllers=new Set();
   }
+  cancel(){for(const controller of this.controllers)try{controller.__manualCancel=true;controller.abort();}catch{}this.controllers.clear();}
   async request(path,options={}){
-    const controller=new AbortController();
+    const controller=new AbortController();this.controllers.add(controller);
     const timer=setTimeout(()=>controller.abort(),this.timeoutMs);
     try{
       const r=await fetch(this.baseUrl+path,{...options,signal:controller.signal});
@@ -44,19 +46,19 @@ export class OllamaClient {
       }
       return r;
     }catch(error){
-      if(error?.name==='AbortError')throw new Error('Ollama response timed out');
+      if(error?.name==='AbortError')throw new Error(controller.__manualCancel?'Request cancelled':'Ollama response timed out');
       throw error;
     }finally{
-      clearTimeout(timer);
+      clearTimeout(timer);this.controllers.delete(controller);
     }
   }
   async streamRequest(path,options={}){
-    const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),this.timeoutMs);
+    const controller=new AbortController();this.controllers.add(controller);const timer=setTimeout(()=>controller.abort(),this.timeoutMs);
     try{
       const r=await fetch(this.baseUrl+path,{...options,signal:controller.signal});
-      if(!r.ok){const body=(await r.text()).slice(0,500).replace(/\s+/g,' ').trim();const hint=r.status===403?' (این مدل Ollama Cloud نیاز به مجوز دارد)':'';clearTimeout(timer);throw new Error('Ollama HTTP '+r.status+hint+(body?': '+body:''));}
-      return {response:r,release:()=>clearTimeout(timer)};
-    }catch(error){clearTimeout(timer);if(error?.name==='AbortError')throw new Error('Ollama response timed out');throw error;}
+      if(!r.ok){const body=(await r.text()).slice(0,500).replace(/\s+/g,' ').trim();const hint=r.status===403?' (این مدل Ollama Cloud نیاز به مجوز دارد)':'';clearTimeout(timer);this.controllers.delete(controller);throw new Error('Ollama HTTP '+r.status+hint+(body?': '+body:''));}
+      return {response:r,release:()=>{clearTimeout(timer);this.controllers.delete(controller);}};
+    }catch(error){clearTimeout(timer);this.controllers.delete(controller);if(error?.name==='AbortError')throw new Error(controller.__manualCancel?'Request cancelled':'Ollama response timed out');throw error;}
   }
   body(messages,tools=[],stream=false){
     const body={model:this.model,messages,stream,keep_alive:this.keepAlive,think:this.think,options:{temperature:this.temperature,top_p:0.9,repeat_penalty:1.06,num_ctx:this.numCtx,num_predict:this.numPredict}};

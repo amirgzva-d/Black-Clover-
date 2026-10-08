@@ -9,7 +9,7 @@ export const BRAIN_PROVIDER_PRESETS=Object.freeze({
   qwen:{label:'Qwen Cloud',baseUrl:'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',model:'qwen3.7-flash',note:'سهمیه رایگان اولیه ممکن است در دسترس باشد'},
   gemini:{label:'Gemini',baseUrl:'https://generativelanguage.googleapis.com/v1beta/openai',model:'gemini-2.5-flash',note:'Free Tier محدود برای بعضی حساب‌ها/مدل‌ها'},
   openrouter:{label:'OpenRouter Free',baseUrl:'https://openrouter.ai/api/v1',model:'openrouter/free',note:'Router مدل‌های رایگان؛ محدودیت نرخ دارد'},
-  groq:{label:'Groq',baseUrl:'https://api.groq.com/openai/v1',model:'llama-3.3-70b-versatile',note:'پاسخ سریع؛ نیاز به API key'},
+  groq:{label:'Groq • Free Tier',baseUrl:'https://api.groq.com/openai/v1',model:'openai/gpt-oss-120b',note:'مدل بسیار سریع و قوی؛ پلن رایگان با محدودیت نرخ'},
   mistral:{label:'Mistral',baseUrl:'https://api.mistral.ai/v1',model:'mistral-small-latest',note:'Mistral Cloud'}
 });
 let RUNTIME_PROVIDER_CONFIG={};
@@ -52,8 +52,9 @@ export class OnlineBrainPool{
   get configured(){return this.clients.length>0;}
   get provider(){return this.last?.provider||this.clients[0]?.provider||null;}
   get model(){return this.last?.model||this.clients[0]?.model||null;}
+  cancel(){for(const client of this.clients)client?.cancel?.();}
   catalog(){return Object.entries(BRAIN_PROVIDER_PRESETS).map(([provider,p])=>{const c=this.clients.find(x=>x.provider===provider);return {provider,label:p.label,configured:Boolean(c),model:c?.model||p.model,baseUrl:c?.baseUrl||p.baseUrl,note:p.note};});}
-  ordered(profile='general'){const score=c=>{if(profile==='coding')return ({github:0,anthropic:1,openai:2,deepseek:3,qwen:4,openrouter:5,gemini:6,groq:7,mistral:8}[c.provider]??9);if(profile==='research')return ({github:0,openai:1,qwen:2,gemini:3,anthropic:4,deepseek:5,openrouter:6,groq:7,mistral:8}[c.provider]??9);return ({github:0,openrouter:1,qwen:2,gemini:3,deepseek:4,openai:5,anthropic:6,groq:7,mistral:8}[c.provider]??9);};return [...this.clients].sort((a,b)=>score(a)-score(b));}
+  ordered(profile='general'){const score=c=>{if(profile==='coding')return ({groq:0,github:1,gemini:2,openrouter:3,qwen:4,deepseek:5,anthropic:6,openai:7,mistral:8}[c.provider]??9);if(profile==='research')return ({gemini:0,groq:1,github:2,openrouter:3,qwen:4,anthropic:5,deepseek:6,openai:7,mistral:8}[c.provider]??9);return ({groq:0,github:1,gemini:2,openrouter:3,qwen:4,deepseek:5,anthropic:6,openai:7,mistral:8}[c.provider]??9);};return [...this.clients].sort((a,b)=>score(a)-score(b));}
   readyClients(base){const now=Date.now(),ready=base.filter(c=>(this.cooldowns.get(c.provider)||0)<=now);return ready.length?ready:base;}
   markFailure(client){const key=client.provider,count=(this.failures.get(key)||0)+1;this.failures.set(key,count);const wait=Math.min(120000,1500*Math.pow(2,Math.min(count-1,6)));this.cooldowns.set(key,Date.now()+wait);}
   markSuccess(client){this.failures.delete(client.provider);this.cooldowns.delete(client.provider);}
@@ -63,10 +64,10 @@ export class OnlineBrainPool{
       const out=onDelta&&typeof c.chatStream==='function'?await c.chatStream(messages,tools,onDelta):await c.chat(messages,tools);
       if(onDelta&&typeof c.chatStream!=='function'&&out?.message?.content)onDelta(String(out.message.content));
       this.last=c;this.markSuccess(c);return out;
-    }catch(error){this.markFailure(c);throw error;}
+    }catch(error){if(!/Request cancelled/i.test(String(error?.message||error)))this.markFailure(c);throw error;}
   }
-  async chat(messages,tools=[],{profile='general',provider='auto',model='auto'}={}){const chosen=String(provider||'auto').toLowerCase(),base=chosen==='auto'?this.ordered(profile):this.clients.filter(c=>c.provider===chosen);if(chosen!=='auto'&&!base.length)throw new Error(chosen+' is not configured. Add its API key in Brain settings first.');const errors=[];for(const c of this.readyClients(base)){try{return await this.runClient(c,messages,tools,null,model);}catch(e){errors.push(c.provider+': '+e.message);if(chosen!=='auto')break;}}throw new Error(errors.join(' | ')||'No online provider configured');}
-  async chatStream(messages,tools=[],{profile='general',provider='auto',model='auto'}={},onDelta=()=>{}){const chosen=String(provider||'auto').toLowerCase(),base=chosen==='auto'?this.ordered(profile):this.clients.filter(c=>c.provider===chosen);if(chosen!=='auto'&&!base.length)throw new Error(chosen+' is not configured. Add its API key in Brain settings first.');const errors=[];for(const c of this.readyClients(base)){try{return await this.runClient(c,messages,tools,onDelta,model);}catch(e){errors.push(c.provider+': '+e.message);if(chosen!=='auto')break;}}throw new Error(errors.join(' | ')||'No online provider configured');}
+  async chat(messages,tools=[],{profile='general',provider='auto',model='auto'}={}){const chosen=String(provider||'auto').toLowerCase(),base=chosen==='auto'?this.ordered(profile):this.clients.filter(c=>c.provider===chosen);if(chosen!=='auto'&&!base.length)throw new Error(chosen+' is not configured. Add its API key in Brain settings first.');const errors=[];for(const c of this.readyClients(base)){try{return await this.runClient(c,messages,tools,null,model);}catch(e){if(/Request cancelled/i.test(String(e?.message||e)))throw e;errors.push(c.provider+': '+e.message);if(chosen!=='auto')break;}}throw new Error(errors.join(' | ')||'No online provider configured');}
+  async chatStream(messages,tools=[],{profile='general',provider='auto',model='auto'}={},onDelta=()=>{}){const chosen=String(provider||'auto').toLowerCase(),base=chosen==='auto'?this.ordered(profile):this.clients.filter(c=>c.provider===chosen);if(chosen!=='auto'&&!base.length)throw new Error(chosen+' is not configured. Add its API key in Brain settings first.');const errors=[];for(const c of this.readyClients(base)){try{return await this.runClient(c,messages,tools,onDelta,model);}catch(e){if(/Request cancelled/i.test(String(e?.message||e)))throw e;errors.push(c.provider+': '+e.message);if(chosen!=='auto')break;}}throw new Error(errors.join(' | ')||'No online provider configured');}
   async health(){const states={};for(const c of this.clients)states[c.provider]=await c.health();return states;}
 }
 export const onlineBrainPoolFromEnv=()=>new OnlineBrainPool();

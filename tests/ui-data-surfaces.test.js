@@ -42,10 +42,15 @@ test('desktop UI has independent chat pins reminders and nonblocking queue',asyn
   assert.match(renderer,/chatSurfaceV2/);
   assert.match(chat,/const queue=\[\]/);
   assert.doesNotMatch(chat,/input\.disabled\s*=\s*true/);
-  assert.match(chat,/modelOverride:selectedModel/);
-  assert.match(chat,/HISTORY_KEY/);
+  assert.match(chat,/conversationId:state\.currentId/);
+  assert.match(chat,/modelOverride:model/);
+  assert.match(chat,/LEGACY_HISTORY_KEY/);
+  assert.match(chat,/listChats/);
+  assert.match(chat,/createChat/);
+  assert.match(chat,/cancelChat/);
+  assert.match(chat,/webSearch:state\.web/);
   assert.match(chat,/event\.type==='stream'/);
-  assert.match(chat,/voice\.speak\(response\.text\)/);
+  assert.match(chat,/voice\.speak\(message\.text\)/);
 });
 
 

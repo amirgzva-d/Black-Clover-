@@ -1,14 +1,14 @@
-const timeoutFetch=async(url,options={},timeoutMs=30000)=>{
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
+const timeoutFetch=async(url,options={},timeoutMs=30000,externalController=null)=>{
+  const controller=externalController||new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{return await fetch(url,{...options,signal:controller.signal});}finally{clearTimeout(timer);}
 };
-const streamFetch=async(url,options={},timeoutMs=30000)=>{
-  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
+const streamFetch=async(url,options={},timeoutMs=30000,externalController=null)=>{
+  const controller=externalController||new AbortController(),timer=setTimeout(()=>controller.abort(),timeoutMs);
   try{
     const response=await fetch(url,{...options,signal:controller.signal});
     if(!response.ok){clearTimeout(timer);const t=(await response.text()).slice(0,900);throw new Error('HTTP '+response.status+': '+t);}
     return {response,release:()=>clearTimeout(timer)};
-  }catch(error){clearTimeout(timer);if(error?.name==='AbortError')throw new Error('Online brain timed out');throw error;}
+  }catch(error){clearTimeout(timer);if(error?.name==='AbortError')throw new Error(controller.__manualCancel?'Request cancelled':'Online brain timed out');throw error;}
 };
 const parseSse=async(response,onDelta=()=>{})=>{
   if(!response.body)throw new Error('Online streaming response has no body');
@@ -35,22 +35,21 @@ const parseSse=async(response,onDelta=()=>{})=>{
   return {text,usage};
 };
 export class OnlineBrainClient{
-  constructor({provider,apiKey,baseUrl,model,timeoutMs=30000}={}){this.provider=provider;this.apiKey=apiKey;this.baseUrl=String(baseUrl||'').replace(/\/$/,'');this.model=model;this.timeoutMs=timeoutMs;}
+  constructor({provider,apiKey,baseUrl,model,timeoutMs=30000}={}){this.provider=provider;this.apiKey=apiKey;this.baseUrl=String(baseUrl||'').replace(/\/$/,'');this.model=model;this.timeoutMs=timeoutMs;this.controllers=new Set();}
+  cancel(){for(const controller of this.controllers)try{controller.__manualCancel=true;controller.abort();}catch{}this.controllers.clear();}
   get configured(){return Boolean(this.provider&&this.apiKey&&this.baseUrl&&this.model);}
   headers(){return {'content-type':'application/json','authorization':'Bearer '+this.apiKey};}
   body(messages,tools=[],stream=false){const body={model:this.model,messages,stream,temperature:.5,top_p:.9};if(tools?.length){body.tools=tools;body.tool_choice='auto';}return body;}
   async chat(messages,tools=[]){
-    if(!this.configured)throw new Error('Online brain is not configured');
-    let r;try{r=await timeoutFetch(this.baseUrl+'/chat/completions',{method:'POST',headers:this.headers(),body:JSON.stringify(this.body(messages,tools,false))},this.timeoutMs);}catch(e){if(e?.name==='AbortError')throw new Error(this.provider+' timed out');throw e;}
-    if(!r.ok){const t=(await r.text()).slice(0,900);throw new Error(this.provider+' HTTP '+r.status+': '+t);}
-    const data=await r.json(),message=data?.choices?.[0]?.message;if(!message)throw new Error(this.provider+' returned no message');
-    return {message,usage:data.usage,provider:this.provider,model:this.model};
+    if(!this.configured)throw new Error('Online brain is not configured');const controller=new AbortController();this.controllers.add(controller);
+    try{const r=await timeoutFetch(this.baseUrl+'/chat/completions',{method:'POST',headers:this.headers(),body:JSON.stringify(this.body(messages,tools,false))},this.timeoutMs,controller);if(!r.ok){const t=(await r.text()).slice(0,900);throw new Error(this.provider+' HTTP '+r.status+': '+t);}const data=await r.json(),message=data?.choices?.[0]?.message;if(!message)throw new Error(this.provider+' returned no message');return {message,usage:data.usage,provider:this.provider,model:this.model};}
+    catch(e){if(e?.name==='AbortError')throw new Error(controller.__manualCancel?'Request cancelled':this.provider+' timed out');throw e;}finally{this.controllers.delete(controller);}
   }
   async chatStream(messages,tools=[],onDelta=()=>{}){
     if(tools?.length)return this.chat(messages,tools);
-    if(!this.configured)throw new Error('Online brain is not configured');
-    let pending;try{pending=await streamFetch(this.baseUrl+'/chat/completions',{method:'POST',headers:this.headers(),body:JSON.stringify(this.body(messages,[],true))},this.timeoutMs);}catch(e){throw new Error(this.provider+' '+e.message);}
-    let parsed;try{parsed=await parseSse(pending.response,onDelta);}finally{pending.release();}if(!parsed.text)throw new Error(this.provider+' returned an empty streamed message');
+    if(!this.configured)throw new Error('Online brain is not configured');const controller=new AbortController();this.controllers.add(controller);
+    let pending;try{pending=await streamFetch(this.baseUrl+'/chat/completions',{method:'POST',headers:this.headers(),body:JSON.stringify(this.body(messages,[],true))},this.timeoutMs,controller);}catch(e){this.controllers.delete(controller);throw new Error(this.provider+' '+e.message);}
+    let parsed;try{parsed=await parseSse(pending.response,onDelta);}finally{pending.release();this.controllers.delete(controller);}if(!parsed.text)throw new Error(this.provider+' returned an empty streamed message');
     return {message:{role:'assistant',content:parsed.text},usage:parsed.usage,provider:this.provider,model:this.model};
   }
   async health(){if(!this.configured)return false;try{const r=await timeoutFetch(this.baseUrl+'/models',{headers:{authorization:'Bearer '+this.apiKey}},8000);return r.ok;}catch{return false;}}

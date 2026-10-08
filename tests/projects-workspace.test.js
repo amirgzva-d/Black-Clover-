@@ -15,7 +15,7 @@ test('Projects workspace, model picker and IPC contracts are wired',async()=>{
     fs.readFile(path.join(root,'src/agent/BrainRouter.js'),'utf8')
   ]);
   assert.match(ui,/surface==='projects'/);assert.match(ui,/project-model/);assert.match(ui,/openProjectVsCode/);assert.match(ui,/publishProjectGithub/);
-  assert.match(chat,/MODEL_ID='ollama:qwen2\.5:3b'/);assert.doesNotMatch(ui,/chat-model-select/);
+  assert.match(chat,/model:'auto'/);assert.match(chat,/id="modelSelect"/);assert.match(chat,/modelCatalog\(\)/);assert.match(chat,/conversationId:state\.currentId/);assert.doesNotMatch(chat,/MODEL_ID='ollama:qwen2\.5:3b'/);assert.doesNotMatch(ui,/chat-model-select/);
   assert.match(preload,/projects:list/);assert.match(preload,/projects:chat/);assert.match(preload,/projects:git-status/);assert.match(preload,/projects:publish-github/);
   assert.match(main,/createProjectsWindow/);assert.match(main,/projects:publish-github/);assert.match(service,/openVsCode/);assert.match(service,/publishGithub/);
   assert.match(brain,/async catalog\(\)/);assert.match(brain,/modelOverride/);

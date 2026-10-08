@@ -5,7 +5,8 @@ export const SITE_DOMAINS = Object.freeze({
   youtube:'youtube.com', یوتیوب:'youtube.com', instagram:'instagram.com', اینستاگرام:'instagram.com',
   digikala:'digikala.com', 'دیجی کالا':'digikala.com', دیجیکالا:'digikala.com',
   stackoverflow:'stackoverflow.com', microsoft:'microsoft.com', مایکروسافت:'microsoft.com',
-  openai:'openai.com', 'اوپن ای آی':'openai.com', 'اوپن ای':'openai.com', اوپنای:'openai.com'
+  openai:'openai.com', 'اوپن ای آی':'openai.com', 'اوپن ای':'openai.com', اوپنای:'openai.com',
+  'فولاد مهاجر':'mohajer-steel.com','مهاجر استیل':'mohajer-steel.com','mohajer steel':'mohajer-steel.com','mohajer-steel':'mohajer-steel.com'
 });
 export function siteDomain(site) {
   const value=normalize(site).toLowerCase();
@@ -20,6 +21,11 @@ export function parseWebRequest(input) {
   if(!searchVerb.test(text)&&!(website&&/(?:باز(?:ش)? کن|بیار(?:ش)?|بیاور|برو)/i.test(text)))return null;
   if(/(?:فایل|پوشه|فولدر).*(?:سیستم|کامپیوتر|دسکتاپ|درایو|به نام)|(?:از|روی|توی|داخل)\s+(?:دسکتاپ|درایو|کامپیوتر)/i.test(text))return null;
   const engine=/یوتیوب|youtube/i.test(text)?'youtube':/گوگل|google|کروم|chrome/i.test(text)?'google':'';
+  const directNamedSite=text.match(/(?:سایت|وب ?سایت|website)\s+(?:رسمی\s+)?(.+?)(?=\s+(?:رو|را)?\s*(?:(?:در|تو|توی)\s+(?:گوگل|google|کروم|chrome)|(?:خود\s+)?سایت(?:ش)?|باز(?:ش)?\s*کن|بیار(?:ش)?|برو)(?:\s|$))/i);
+  if(directNamedSite&&(/(?:خود\s+سایت|سایت(?:ش|شو))/i.test(text)||/(?:سایت|وب ?سایت|website).{1,120}?(?:باز(?:ش)?\s*کن|برو)(?:\s|$)/i.test(text))){
+    const identifier=directNamedSite[1].replace(/\s+(?:رو|را)$/i,'').trim();
+    if(identifier)return {mode:'website',query:identifier,site:identifier,domain:siteDomain(identifier),engine};
+  }
   let query=text
     .replace(/^(?:(?:لطفاً?|حتماً?|برام|برای من|می شه|میشه|برو|فقط)\s+)+/i,'')
     .replace(/^(?:(?:تو|توی|در|از)\s+)?(?:گوگل|google|کروم|chrome|یوتیوب|youtube)\s*/i,'')

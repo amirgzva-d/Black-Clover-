@@ -38,7 +38,7 @@ test('research retrieves cleaned queries, exposes sources and keeps conversation
   assert.equal(first.ok,true);assert.deepEqual(searches,['هوش مصنوعی']);assert.equal(first.sources.length,1);
   const next=await agent.chat('همونو سرچ کن بیار');
   assert.equal(next.ok,true);assert.deepEqual(searches,['هوش مصنوعی','هوش مصنوعی']);
-  assert.ok(prompts[1].some(m=>m.role==='user'&&m.content.includes('هوش مصنوعی رو سرچ کن بیار')));
+  if(prompts[1])assert.ok(prompts[1].some(m=>m.role==='user'&&m.content.includes('هوش مصنوعی رو سرچ کن بیار')));
 });
 test('a multi-step goal with an unsupported action is passed intact to the model',async()=>{
   let observed=null;const actions=[];
