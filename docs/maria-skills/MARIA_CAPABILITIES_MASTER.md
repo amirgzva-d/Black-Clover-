@@ -114,8 +114,8 @@ A LanguagePackBuilder should materialize these examples into versioned training/
 | 04 | App Install / Update | DESIGN COMPLETE v2 EXTENDED | WAITING |
 | 05 | Windows Settings | DESIGN COMPLETE v1 | WAITING |
 | 06 | Troubleshooting / Repair | DESIGN COMPLETE v1 | WAITING |
-| 07 | Web Search / Research | NEXT | WAITING |
-| 08 | Browser Automation | QUEUED | WAITING |
+| 07 | Web Search / Research | DESIGN COMPLETE v1 | WAITING |
+| 08 | Browser Automation | NEXT | WAITING |
 | 09 | YouTube / Web Media | QUEUED | WAITING |
 | 10 | Messaging / Forwarding | QUEUED | WAITING |
 | 11 | Timed / Conditional Actions | QUEUED | WAITING |
@@ -6376,3 +6376,965 @@ Validate implementation against current Microsoft documentation for:
 - relevant Win32/PowerShell/CIM APIs for service, process, PnP, network and storage diagnostics
 
 Canonical MARIA diagnosis/repair intents remain stable even if the adapter changes.
+
+
+---
+
+## 07 — Web Search / Research / Live Knowledge Intelligence
+
+**Status:** DESIGN COMPLETE v1 — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`web.search.*\`, \`web.research.*\`, \`web.open.*\`, \`web.source.*\`, \`web.extract.*\`, \`web.fact.*\`  
+**Owner modules:** Query Understanding Agent / Search Planner / Search Provider Adapter / Source Ranker / Freshness Resolver / Research Orchestrator / Page Reader / Claim Extractor / Contradiction Resolver / Citation Builder / Safe Browsing Guard / Browser Handoff / Knowledge Cache / Verifier  
+**Offline capable:** limited; cached/local knowledge only when offline  
+**Risk class:** L0–L3 depending on downstream action  
+**Primary platform:** Web + authorized browser
+
+### 1. Purpose
+
+MARIA must support both fast web lookup and deep research.
+
+It must be able to:
+- understand what the user actually wants to know
+- distinguish search, navigation, research, comparison and fact-checking
+- search the live web
+- open a specific website/result
+- find official websites
+- prioritize current information when freshness matters
+- separate current facts from older background
+- search in Persian, English or another language as useful
+- reformulate queries intelligently
+- search multiple sources/providers when needed
+- extract relevant passages/facts
+- compare conflicting sources
+- rank source quality
+- cite sources in the answer
+- warn when evidence is weak or contradictory
+- summarize pages
+- search within a page
+- hand off to Browser Agent for interactive navigation
+- hand off to Install/Update, Troubleshooting, Messaging, Translation, Download and YouTube skills
+- cache non-sensitive knowledge for later offline reuse
+- avoid unsafe/phishing/malware sites
+- never present one random search result as established truth
+
+### 2. Semantic modes
+
+MARIA must distinguish these modes:
+
+#### Search / lookup
+User wants a quick answer or result.
+
+Examples:
+- "قیمت دلار چنده"
+- "هوا فردا چطوره"
+- "آخرین نسخه Python چیه"
+- "آدرس سایت رسمی NVIDIA"
+
+#### Navigate
+User wants to open a site or specific result.
+
+Examples:
+- "برو سایت مایکروسافت"
+- "سایت رسمی فتوشاپ رو باز کن"
+- "نتیجه اول رو باز کن"
+- "برو این صفحه"
+
+#### Research
+User wants synthesis from multiple sources.
+
+Examples:
+- "در مورد این موضوع کامل تحقیق کن"
+- "ببین بهترین روش چیه"
+- "چند منبع رو مقایسه کن"
+- "تحقیق کن چرا این خطا پیش میاد"
+
+#### Latest/current
+Freshness is essential.
+
+Examples:
+- "آخرین خبر"
+- "جدیدترین نسخه"
+- "الان قیمتش چنده"
+- "امروز چی شده"
+
+#### Compare
+User wants alternatives or differences.
+
+Examples:
+- "این دو تا رو مقایسه کن"
+- "کدوم بهتره"
+- "فرق نسخه‌ها چیه"
+
+#### Fact-check
+User wants verification.
+
+Examples:
+- "این حرف درسته؟"
+- "این خبر واقعیه؟"
+- "چک کن ببین حقیقت داره"
+
+#### Discovery
+User does not know exact site/tool.
+
+Examples:
+- "یه سایت خوب برای دانلود فونت رایگان پیدا کن"
+- "ابزار مناسب برای تبدیل این فرمت پیدا کن"
+
+#### Page extraction
+User wants specific info from an opened page.
+
+Examples:
+- "از این صفحه قیمت رو دربیار"
+- "شرایطش رو خلاصه کن"
+- "این جدول چی میگه"
+
+---
+
+### 3. Canonical intents
+
+#### Basic search
+- \`web.search\`
+- \`web.search.quick\`
+- \`web.search.latest\`
+- \`web.search.official\`
+- \`web.search.domain_limited\`
+- \`web.search.language_specific\`
+- \`web.search.images\`
+- \`web.search.files\`
+- \`web.search.news\`
+
+#### Navigation
+- \`web.open_url\`
+- \`web.open_result\`
+- \`web.open_official_site\`
+- \`web.open_search_results\`
+
+#### Research
+- \`web.research.start\`
+- \`web.research.deep\`
+- \`web.research.compare\`
+- \`web.research.fact_check\`
+- \`web.research.timeline\`
+- \`web.research.sources\`
+- \`web.research.stop\`
+
+#### Page intelligence
+- \`web.page.read\`
+- \`web.page.summarize\`
+- \`web.page.find\`
+- \`web.page.extract\`
+- \`web.page.translate\`
+- \`web.page.get_links\`
+- \`web.page.get_downloads\`
+- \`web.page.get_metadata\`
+
+#### Sources / citations
+- \`web.source.rank\`
+- \`web.source.get_official\`
+- \`web.source.compare\`
+- \`web.source.explain_quality\`
+- \`web.citations.build\`
+
+#### Monitoring hand-off
+- \`web.monitor.create\`
+- \`web.monitor.stop\`
+
+Monitoring is executed by Automation capability, not continuously by Search itself.
+
+---
+
+### 4. Query understanding
+
+QueryUnderstandingAgent extracts:
+- subject/entity
+- requested fact/action
+- freshness requirement
+- geographic scope
+- language
+- source constraints
+- date range
+- domain constraint
+- depth
+- output style
+- comparison targets
+- desired page/result
+- downstream action
+
+Examples:
+
+"برو گوگل ببین آخرین نسخه Blender چیه"
+=> mode=latest lookup
+=> entity=Blender
+=> fact=latest stable version
+=> freshness=high
+=> likely official-source preference
+
+"تحقیق کن بهترین روش کم کردن حجم ویدئو بدون افت زیاد چیه"
+=> mode=research
+=> compare methods/codecs/tools
+=> source diversity needed
+=> output=synthesis + practical recommendation
+
+"سایت رسمی برنامه رو باز کن"
+=> mode=navigate
+=> source must be official
+=> BrowserAgent handoff
+
+---
+
+### 5. Search-provider abstraction
+
+MARIA must not hard-code its reasoning to a single search engine.
+
+SearchProviderRegistry may expose:
+- web search API
+- news search
+- image search
+- browser-based Google/Bing search when the user explicitly asks for the visible engine
+- domain/site search
+- provider-specific structured APIs
+
+User phrasing:
+- "گوگل کن" may mean web search generally unless user explicitly wants the Google UI.
+- "تو Google بازش کن" means BrowserAgent should open Google search visibly.
+
+Provider choice should optimize:
+- result quality
+- freshness
+- latency
+- privacy
+- structured metadata
+- source diversity
+
+---
+
+### 6. Query reformulation
+
+MARIA may generate multiple search queries from one request.
+
+Example:
+"چرا بعد آپدیت NVIDIA مانیتور دوم نمیاد"
+
+Possible subqueries:
+- exact GPU/driver version + second monitor issue
+- Windows build + NVIDIA release notes
+- official known issues
+- device-specific support page
+- exact error/event code if present
+
+Rules:
+- preserve exact error codes and model numbers.
+- quote exact error text when helpful.
+- add version/build/model context.
+- avoid over-broad queries when precise terms exist.
+- generate alternate Persian/English queries when English documentation is richer.
+
+---
+
+### 7. Source-quality model
+
+Every source receives a quality profile.
+
+Signals:
+- official primary source
+- vendor documentation
+- standards body
+- academic/peer-reviewed
+- government/institutional
+- reputable publication
+- official GitHub/repository
+- maintained technical documentation
+- community forum
+- Reddit/community anecdote
+- random blog
+- SEO/content farm
+- unknown/unverified
+
+Priority depends on topic.
+
+Examples:
+- Windows fix => Microsoft/vendor docs first
+- app version => official release notes first
+- open-source bug => official GitHub issues/release notes
+- community experience => community sources can be useful but labeled as anecdotal
+
+MARIA must not automatically treat search-engine ranking as truth ranking.
+
+---
+
+### 8. Freshness model
+
+Freshness requirement classes:
+- static
+- recent
+- current
+- real-time/near-real-time
+
+Examples:
+- "پایتخت فرانسه" => static
+- "نسخه فعلی Chrome" => current
+- "قیمت امروز" => current/high freshness
+- "خبر امروز" => recent/real-time
+
+For current queries:
+- prefer dated recent sources
+- reject stale results when newer official info exists
+- surface publication/update date
+- distinguish publication date from event date when relevant
+
+If only stale information is available, say so.
+
+---
+
+### 9. Research Orchestrator
+
+Deep research loop:
+
+1. parse research question
+2. define subquestions
+3. identify source classes needed
+4. run broad discovery
+5. select high-quality sources
+6. read relevant sources
+7. extract claims/evidence
+8. detect contradictions
+9. resolve by primary evidence/freshness/context
+10. identify missing gaps
+11. search again if needed
+12. synthesize answer
+13. build citations
+14. state uncertainty/limitations
+
+Stop criteria:
+- sufficient evidence
+- diminishing information gain
+- user depth reached
+- sources unavailable
+- time/cost budget reached
+
+---
+
+### 10. Contradiction handling
+
+When sources disagree, MARIA stores:
+
+- claim
+- source A
+- source B
+- dates
+- authority level
+- scope differences
+- possible reason for conflict
+
+Resolution examples:
+- newer official doc supersedes old doc
+- regional versions differ
+- stable vs beta version differ
+- community workaround vs official support differs
+
+MARIA should say:
+"دو منبع معتبر اختلاف دارند..."
+rather than silently choosing one.
+
+---
+
+### 11. Page Reader
+
+PageReader should:
+- extract main content
+- ignore obvious navigation/ads/boilerplate where possible
+- preserve headings and tables
+- identify publication date/author/source
+- parse structured data
+- extract code/error snippets
+- surface relevant links
+- hand images/screens to Screen/OCR when visual info matters
+
+For large pages:
+- retrieve only relevant sections first
+- expand when needed
+
+---
+
+### 12. Page summarization
+
+Modes:
+- one-line
+- short
+- detailed
+- bullet/key points
+- technical
+- simple explanation
+- action items
+- compare with another page
+
+Natural phrases:
+- "این صفحه رو خلاصه کن"
+- "فقط نکات مهم"
+- "کوتاهش کن"
+- "کامل توضیح بده"
+- "بگو چی میگه"
+- "قسمت مهمشو دربیار"
+
+Summaries must remain grounded in page content.
+
+---
+
+### 13. Find/extract on page
+
+Examples:
+- "قیمت رو پیدا کن"
+- "ببین حداقل سیستم مورد نیاز چیه"
+- "شماره نسخه کجاست"
+- "شرایط استفاده رو دربیار"
+- "لینک دانلود رسمی رو پیدا کن"
+- "تاریخ انتشار رو پیدا کن"
+
+Canonical output:
+- extracted value
+- source location/section
+- confidence
+- optional BrowserAgent focus/scroll target
+
+---
+
+### 14. Official-site resolver
+
+For:
+- downloads
+- installers
+- drivers
+- account login
+- payment
+- security
+- documentation
+
+MARIA should verify:
+- domain identity
+- HTTPS
+- publisher/vendor relation
+- redirect chain when relevant
+- lookalike/phishing risk
+
+Example:
+"سایت رسمی NVIDIA"
+=> official domain, not an ad/result mirror.
+
+---
+
+### 15. Safe Browsing Guard
+
+Flags:
+- lookalike domains
+- suspicious redirects
+- HTTP login pages
+- executable download from unknown mirror
+- fake update prompts
+- credential harvesting
+- scam/malware reputation signals when available
+- forced notification/spam pages
+
+Actions:
+- block automatic credential entry
+- require user review
+- prefer official alternative
+- do not auto-download executable
+
+SafeBrowsingGuard integrates with App Install and Account/Auth capability.
+
+---
+
+### 16. Search result interaction
+
+User follow-ups:
+- "اولی رو باز کن"
+- "دومی بهتره؟"
+- "اون رسمی رو باز کن"
+- "این نتیجه رو خلاصه کن"
+- "یکی دیگه پیدا کن"
+- "فقط سایت‌های رسمی"
+- "نتیجه‌های قدیمی رو نده"
+
+SearchContext stores:
+- query
+- ordered results
+- selected result
+- opened pages
+- source quality
+- timestamp
+
+Context expires safely to avoid "اولی" referring to an old search.
+
+---
+
+### 17. Multi-language research
+
+MARIA may:
+- search Persian sources
+- search English sources
+- translate query internally
+- compare regional/local info
+
+Example:
+"در مورد این مشکل فارسی و انگلیسی سرچ کن"
+=> run both language sets
+=> deduplicate same source/content
+=> synthesize strongest evidence
+
+Do not translate exact product/error identifiers incorrectly.
+
+---
+
+### 18. News/current events
+
+For news queries:
+- identify requested time window
+- prioritize recent dated reports
+- separate breaking claims from confirmed facts
+- prefer primary statements + reputable reporting
+- show uncertainty for evolving events
+
+Examples:
+- "خبر امروز NVIDIA"
+- "آخرین وضعیت این مشکل"
+- "این هفته چه آپدیتی داده"
+
+News monitoring is handed to Automation when user asks for future alerts.
+
+---
+
+### 19. Search images/files
+
+Images:
+- \`web.search.images\`
+- respect content/task relevance
+- identify source page
+- hand download to Download/File capability
+
+Files:
+- PDFs
+- docs
+- installers
+- datasets
+
+For executable/installers:
+- always hand off to DownloadVerifier/App Install Guard.
+
+---
+
+### 20. Download hand-off
+
+Example:
+"این PDF رو دانلود کن"
+Search capability:
+1. find correct file/source
+2. verify source identity
+3. hand URL/metadata to Download skill
+4. Download skill saves
+5. File Verifier confirms file
+
+Search does not claim download success itself.
+
+---
+
+### 21. Research + Troubleshooting integration
+
+Example:
+"این ارور رو سرچ کن و درستش کن"
+
+Flow:
+1. Troubleshooting extracts exact error/evidence
+2. WebResearchAgent searches official/vendor sources
+3. SourceRanker ranks
+4. RepairPlanner converts trusted fix into normalized actions
+5. SafetyGuard reviews
+6. Executor runs
+7. RepairVerifier retests original symptom
+
+Random web commands are never blindly executed.
+
+---
+
+### 22. Research + App Install integration
+
+Example:
+"برنامه OBS رو از اینترنت پیدا کن و نصب کن"
+
+Flow:
+1. official-site/package search
+2. verify official publisher/source
+3. hand to App Install
+4. signature/hash checks
+5. install
+6. verify
+
+Search does not itself execute installers.
+
+---
+
+### 23. Research + Browser integration
+
+Examples:
+- "برو گوگل اینو سرچ کن"
+- "سایت رسمی رو باز کن"
+- "نتیجه سوم رو باز کن"
+- "توی این صفحه دنبال Download بگرد"
+
+Search decides information target.
+BrowserAgent performs visible navigation/interactions.
+
+---
+
+### 24. Research + Memory / Knowledge Hub
+
+MARIA may cache:
+- source URL
+- title
+- retrieval date
+- extracted non-sensitive facts
+- source quality
+- version/date scope
+- embedding/index
+
+Cache invalidation:
+- current facts expire faster
+- software versions expire quickly
+- static docs can persist longer
+- user can request refresh
+
+Never treat cached "latest" info as permanently current.
+
+---
+
+### 25. Research project mode
+
+For larger tasks MARIA can create a research workspace:
+
+- question
+- subquestions
+- source list
+- notes
+- claims
+- contradictions
+- citations
+- conclusion
+- unresolved gaps
+
+User commands:
+- "این تحقیق رو ادامه بده"
+- "منابعش رو نشون بده"
+- "فقط بخش قیمت رو آپدیت کن"
+- "تحقیق قبلی رو تازه کن"
+
+This integrates with Projects/Memory/RAG.
+
+---
+
+### 26. Permissions / risk
+
+L0:
+- search
+- read public pages
+- summarize
+- compare
+- cite
+
+L1:
+- open site in browser
+- download non-executable public document via hand-off
+
+L2:
+- sign-in-required page navigation
+- persistent search preferences
+- create monitoring rule
+
+L3:
+- downstream action based on web data such as install/send/purchase/account changes
+
+Search itself remains mostly read-only; side effects belong to downstream skills.
+
+---
+
+### 27. Privacy rules
+
+- do not place private user data into search queries unless needed and user-approved.
+- redact account IDs, tokens, private paths and secrets.
+- when troubleshooting, include only minimal error/context.
+- private file content must not be uploaded/search-queried without explicit need/permission.
+- logged search history should be user-controllable.
+
+---
+
+### 28. Verification
+
+For factual answers:
+- ensure claim supported by retrieved source(s)
+- ensure date/freshness fits request
+- verify entity identity
+- cross-check high-impact facts
+
+For navigation:
+- verify opened domain/page matches intended target
+
+For official-site:
+- verify vendor identity
+
+For comparison:
+- ensure compared attributes refer to equivalent versions/regions/timeframes
+
+Result states:
+- verified
+- likely
+- conflicting_sources
+- stale_only
+- insufficient_sources
+- source_unavailable
+
+---
+
+### 29. Failure recovery
+
+No results:
+- reformulate query
+- alternate language
+- broaden date/domain
+- use another provider
+
+Too many ambiguous results:
+- add entity/version/context
+- ask concise clarification if necessary
+
+Paywall/login:
+- use accessible primary/alternative source if possible
+- hand to Account/Browser when authorized
+
+Dynamic/JS page:
+- hand to Browser Agent
+
+Blocked robots/source:
+- do not bypass restrictions unlawfully; use another legitimate source
+
+---
+
+### 30. Response behavior
+
+Quick lookup:
+- concise answer + source when useful
+
+Research:
+- synthesized conclusion
+- key evidence
+- disagreements/uncertainty
+- citations
+
+Navigation:
+- open target + short confirmation
+
+Examples:
+- "نسخه فعلی طبق سایت رسمی X است."
+- "سه منبع معتبر بررسی کردم؛ دو منبع روی علت A توافق دارند."
+- "اطلاعات تازه معتبر پیدا نکردم؛ جدیدترین منبع قابل اتکا مربوط به تاریخ X است."
+
+Never:
+- cite irrelevant pages
+- invent source support
+- hide disagreement
+- treat snippet-only result as fully verified when page evidence is needed
+
+---
+
+### 31. Language dataset standard
+
+High-frequency intents target **750–1000 utterances each**:
+- web.search
+- web.search.latest
+- web.search.official
+- web.open_official_site
+- web.research.start
+- web.research.deep
+- web.research.compare
+- web.research.fact_check
+- web.page.summarize
+- web.page.find
+- web.open_result
+
+Include:
+- "گوگل کن"
+- "سرچ کن"
+- "بگرد"
+- "تحقیق کن"
+- "ببین چی پیدا می‌کنی"
+- "از چند جا چک کن"
+- "فقط منبع رسمی"
+- "جدیدترینشو پیدا کن"
+- "این حرف درسته؟"
+- "نتیجه اول"
+- "اون سایتو باز کن"
+- typo/STT
+- mixed Persian-English
+- vague query
+- correction
+- date/freshness
+- language constraints
+- domain constraints
+- follow-up references
+- negative/cross-domain examples
+
+Family target: many thousands of total utterances.
+
+---
+
+### 32. Skill / Agent package
+
+#### QueryUnderstandingAgent
+Intent, entity, freshness, scope and constraints.
+
+#### SearchPlanner
+Builds one or multiple queries.
+
+#### SearchProviderRegistry
+Abstracts web/news/image/search providers.
+
+#### SearchExecutionSkill
+Runs search and normalizes results.
+
+#### OfficialSiteResolver
+Finds and verifies primary vendor domains.
+
+#### SourceRanker
+Ranks authority, freshness and relevance.
+
+#### FreshnessResolver
+Determines whether evidence is current enough.
+
+#### ResearchOrchestrator
+Runs multi-source deep research.
+
+#### PageReaderSkill
+Reads and structures page content.
+
+#### PageExtractionSkill
+Finds requested values/sections.
+
+#### ClaimExtractor
+Builds claim/evidence records.
+
+#### ContradictionResolver
+Compares conflicting claims.
+
+#### CitationBuilder
+Attaches sources to claims.
+
+#### SafeBrowsingGuard
+Checks phishing/malware/lookalike risks.
+
+#### BrowserHandoffSkill
+Transfers navigation tasks to Browser Agent.
+
+#### WebKnowledgeCache
+Stores versioned, expiring non-sensitive research facts.
+
+All register through MARIA Skill Registry / Tool Registry.
+
+---
+
+### 33. Test matrix
+
+Search:
+- W-A01 simple fact
+- W-A02 current version
+- W-A03 exact error code
+- W-A04 Persian query
+- W-A05 English query
+- W-A06 mixed language
+- W-A07 official-site only
+- W-A08 no result
+
+Freshness:
+- W-B01 static fact
+- W-B02 current price
+- W-B03 latest software version
+- W-B04 stale source rejected
+- W-B05 conflicting publication dates
+
+Research:
+- W-C01 multi-source synthesis
+- W-C02 official vs forum
+- W-C03 conflicting sources
+- W-C04 gap triggers second search
+- W-C05 insufficient evidence
+
+Navigation:
+- W-D01 official site
+- W-D02 first result
+- W-D03 wrong/lookalike domain rejected
+- W-D04 dynamic page browser handoff
+
+Page:
+- W-E01 summarize
+- W-E02 find price
+- W-E03 extract version
+- W-E04 large page selective read
+- W-E05 table extraction
+
+Safety:
+- W-F01 fake download site
+- W-F02 unknown executable
+- W-F03 phishing login
+- W-F04 suspicious redirect
+- W-F05 web command contains destructive script
+
+Context:
+- W-G01 "اولی رو باز کن"
+- W-G02 "اون رسمی"
+- W-G03 stale search context expires
+- W-G04 correction
+- W-G05 follow-up compare
+
+Language:
+- W-H01 "گوگلش کن"
+- W-H02 "سرچش کون"
+- W-H03 "یه تحقیقی بکن"
+- W-H04 "جدیدترینشو بیار"
+- W-H05 "فقط سایت اصلی"
+
+---
+
+### 34. Acceptance criteria
+
+1. MARIA distinguishes quick search from deep research.
+2. current queries enforce freshness.
+3. official/vendor sources outrank random mirrors when authoritative facts are needed.
+4. source quality and relevance are separate signals.
+5. conflicting sources are surfaced, not hidden.
+6. answers are grounded in retrieved evidence.
+7. official-site navigation validates domain identity.
+8. unsafe/phishing/download results are not auto-opened for sensitive actions.
+9. web commands/scripts are never blindly executed.
+10. private user data is minimized/redacted in queries.
+11. Browser/App/Download actions use explicit hand-off to owning skills.
+12. high-frequency intents reach 750–1000 language examples.
+13. real web/browser integration tests pass before IMPLEMENTED.
+
+---
+
+### 35. Local implementation plan
+
+When MARIA Windows system is online:
+1. inspect existing web/search implementation.
+2. add QueryUnderstandingAgent.
+3. add SearchProviderRegistry.
+4. integrate primary search provider(s).
+5. add SourceRanker + FreshnessResolver.
+6. add OfficialSiteResolver.
+7. add PageReader/Extraction.
+8. add ResearchOrchestrator.
+9. add contradiction/claim/citation pipeline.
+10. add SafeBrowsingGuard.
+11. connect BrowserAgent handoff.
+12. connect Troubleshooting/AppInstall/Download handoffs.
+13. add expiring WebKnowledgeCache.
+14. generate 750–1000 utterance packs for priority intents.
+15. run freshness/source-quality/safety tests.
+16. test real navigational and deep research flows.
+17. mark only passing modules IMPLEMENTED.
