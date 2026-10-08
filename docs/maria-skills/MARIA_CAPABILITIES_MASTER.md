@@ -111,7 +111,7 @@ A LanguagePackBuilder should materialize these examples into versioned training/
 | 01 | Audio / Media | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
 | 02 | Display / Brightness | DESIGN COMPLETE v2 EXTENDED | WAITING FOR LOCAL SYSTEM |
 | 03 | Files / Folders | DESIGN COMPLETE v2 EXTENDED | WAITING |
-| 04 | App Install / Update | DESIGN COMPLETE v1 | WAITING |
+| 04 | App Install / Update | DESIGN COMPLETE v2 EXTENDED | WAITING |
 | 05 | Windows Settings | NEXT | WAITING |
 | 06 | Troubleshooting / Repair | QUEUED | WAITING |
 | 07 | Web Search / Research | QUEUED | WAITING |
@@ -4156,7 +4156,548 @@ ChatGPT:
 13. language packs reach 500–1000 utterances per important intent.
 14. real Windows/browser/account integration tests pass before IMPLEMENTED.
 
-### 22. Local implementation plan
+
+### 22. Email / Gmail / Multi-Account / Chrome Profile Intelligence
+
+This section extends Capability 04 so MARIA treats accounts, mailboxes, browser profiles and connected services as first-class entities.
+
+#### Goals
+
+MARIA must be able to:
+- know which Gmail/email accounts are connected and available
+- know which Chrome profiles are registered/authorized
+- ask which account/profile to use only when the target is ambiguous
+- switch account/profile safely
+- remember user-approved aliases such as "ایمیل شخصی", "ایمیل کار", "اکانت دوم"
+- detect new mail while MARIA is running
+- notify the user that a new message arrived
+- read the message aloud on request
+- summarize unread/important mail
+- read an entire email thread/conversation
+- search by sender, subject, date, code/service, keyword or attachment
+- use the correct mailbox for a login flow
+- retrieve a recent verification code only when the flow is authorized
+- hand the code to the active login task ephemerally
+- never store passwords, OTPs, cookies or OAuth secrets in ordinary memory
+- compose/draft/reply/forward/send email with permission rules
+- coordinate email events with Proactive Assistant and Automation
+
+#### Canonical intents — accounts
+
+- \`account.list\`
+- \`account.get_active\`
+- \`account.select\`
+- \`account.switch\`
+- \`account.set_default_for_service\`
+- \`account.clear_default_for_service\`
+- \`account.alias.set\`
+- \`account.alias.remove\`
+- \`account.connection.status\`
+
+#### Canonical intents — Gmail / email
+
+- \`email.account.list\`
+- \`email.inbox.unread_count\`
+- \`email.search\`
+- \`email.read\`
+- \`email.thread.read\`
+- \`email.summarize\`
+- \`email.summarize_unread\`
+- \`email.read_aloud\`
+- \`email.get_attachments\`
+- \`email.download_attachment\`
+- \`email.mark_read\`
+- \`email.mark_unread\`
+- \`email.archive\`
+- \`email.trash\`
+- \`email.draft\`
+- \`email.reply_draft\`
+- \`email.send\`
+- \`email.reply_send\`
+- \`email.forward\`
+- \`email.notify_new.enable\`
+- \`email.notify_new.disable\`
+- \`email.notify_important.enable\`
+- \`email.notify_important.disable\`
+
+#### Canonical intents — Chrome profiles / browser identity
+
+- \`browser.profile.list\`
+- \`browser.profile.get_active\`
+- \`browser.profile.select\`
+- \`browser.profile.switch\`
+- \`browser.profile.open\`
+- \`browser.profile.alias.set\`
+- \`browser.session.get_site_account\`
+- \`browser.session.verify_site_account\`
+- \`browser.site.open_with_profile\`
+
+#### Natural language examples
+
+Account/profile selection:
+- "با ایمیل شخصیم وارد شو"
+- "از ایمیل کار استفاده کن"
+- "با اکانت دوم برو"
+- "کدوم ایمیلام وصله؟"
+- "الان با کدوم حسابی؟"
+- "اکانت Gmail رو عوض کن"
+- "روی ایمیل دیگم سوییچ کن"
+- "Chrome رو با پروفایل شخصی باز کن"
+- "پروفایل Amir Mohamed رو بیار"
+- "با همون پروفایلی که دفعه قبل بود"
+- "نه این حساب، اون یکی"
+- "با حسابی که Pinterest روشه"
+- typo/STT: "با جمیلم", "اکانت دومی", "کروم پروفایل شخصی", "سویچ ایمیل"
+
+New-mail awareness:
+- "ایمیل جدید اومد بهم بگو"
+- "هر وقت ایمیل اومد اعلام کن"
+- "اگه پیام جدید تو Gmail اومد خبرم کن"
+- "ایمیل مهم اومد صدام کن"
+- "اگه از فلانی ایمیل اومد بگو"
+- "اگه کد ورود اومد خبر بده"
+- "پیام‌های جدیدو بخون"
+- "آخرین ایمیلو برام بخون"
+- "این ایمیل رو بلند بخون"
+- "فقط خلاصه‌ش رو بگو"
+- "موضوع و فرستنده‌ش رو بگو"
+- "کل رشته ایمیل رو بخون"
+- "جواب‌های این چت ایمیل رو بیار"
+
+Search:
+- "ایمیل Pinterest رو پیدا کن"
+- "کد ورود جدید رو پیدا کن"
+- "ایمیل امروز فلانی"
+- "پیام‌هایی که فایل پیوست دارن"
+- "ایمیل‌هایی که هنوز نخوندم"
+- "از دیروز تا الان چی اومده"
+- "آخرین ایمیل Google"
+- "ایمیلی که توش invoice نوشته"
+- "پیام مربوط به MARIA"
+
+Read/summarize:
+- "این ایمیل چی میگه"
+- "خلاصه‌ش کن"
+- "مهم‌ترین بخششو بگو"
+- "برام بخون"
+- "فقط فرستنده و موضوع"
+- "جواب‌های قبلی این گفتگو رو هم بخون"
+- "سه ایمیل آخر رو خلاصه کن"
+
+Draft/send:
+- "برای این ایمیل جواب بنویس"
+- "جواب محترمانه آماده کن ولی نفرست"
+- "همینو بفرست"
+- "برای علی ایمیل بزن"
+- "این ایمیل رو فوروارد کن"
+- "پیوستش رو هم بفرست"
+- "قبل ارسال نشونم بده"
+
+#### Multi-account resolution policy
+
+MARIA maintains Account Registry records:
+
+- account_id
+- provider
+- user-visible alias
+- address/identifier
+- connector_id
+- browser_profile_id when relevant
+- allowed capabilities
+- OAuth/connection state
+- last_verified_at
+- per-service preference
+- notification policy
+
+No passwords or tokens appear in this registry.
+
+Resolution:
+1. explicit account in command
+2. account tied to active login flow
+3. explicit browser profile mapping
+4. service-specific preferred account
+5. current active account
+6. if more than one plausible account remains => ask
+
+Example:
+"برو Pinterest"
+If one verified Pinterest session exists, use it.
+If two account sessions exist and neither is preferred, ask:
+"با کدوم حساب Pinterest وارد شم؛ شخصی یا کاری؟"
+
+#### Gmail event / proactive notification model
+
+Event types:
+- \`email.new\`
+- \`email.unread_count_changed\`
+- \`email.important_candidate\`
+- \`email.sender_match\`
+- \`email.verification_code_candidate\`
+- \`email.attachment_received\`
+- \`email.connector_disconnected\`
+
+When MARIA is running, EmailWatcher can use:
+- Gmail API push/watch + History when configured
+- connector event stream if available
+- bounded periodic polling fallback when push is unavailable
+
+Do not poll aggressively.
+Watcher cadence/push mode is configurable.
+
+Notification behavior:
+- "برات یه ایمیل جدید از X اومده."
+- "یه کد ورود برای Pinterest اومده."
+- "سه ایمیل جدید داری؛ یکی‌شون احتمالاً مهمه."
+- if TTS is muted, show UI notification only.
+- if Focus/Do-Not-Disturb policy is active, defer non-critical notifications.
+
+Read-aloud:
+- never auto-read full sensitive email without user opt-in.
+- default proactive notice uses sender + subject or a privacy-safe summary.
+- full body read requires user request or explicit per-sender rule.
+
+#### Email importance model
+
+"Important" must be inferred from configurable signals:
+- explicit user rules
+- sender allowlist/priority list
+- meeting/security/payment/task language
+- user replies/interaction history
+- Gmail labels as one signal, not the sole truth
+
+MARIA should not simply equate Gmail's system importance label with the user's actual importance.
+
+#### Verification-code broker
+
+This is a narrow, security-sensitive sub-skill.
+
+Input:
+- expected service/domain
+- expected mailbox
+- login_flow_id
+- request timestamp
+- allowed time window
+
+Process:
+1. search only recent messages relevant to expected service/domain
+2. read candidate message
+3. extract candidate OTP/code
+4. validate recency and context
+5. keep code in ephemeral secret memory
+6. enter into exact authorized login flow
+7. verify success
+8. zeroize/redact temporary secret
+9. never persist code to logs, analytics, datasets or long-term memory
+
+Never:
+- harvest unrelated 2FA codes
+- reuse old OTP
+- copy OTP to unrelated site
+- bypass CAPTCHA/biometric/security-key requirements
+- auto-approve account recovery or security-warning prompts without user interaction where required
+
+#### Chrome profile intelligence
+
+MARIA should register browser profiles explicitly rather than guessing identity from UI text.
+
+ChromeProfileRegistry:
+- profile_id
+- display_name
+- local profile directory
+- approved account aliases
+- preferred services
+- last_verified_at
+- active/inactive
+- user-approved automation level
+
+Launch path:
+- use approved Chrome profile directory/profile selector
+- verify actual active profile/session after launch
+- do not extract Chrome password database, cookies or tokens
+- browser automation should operate on visible/authenticated sessions
+
+Examples:
+- "Chrome شخصی رو باز کن"
+- "با پروفایل کاری برو Gmail"
+- "Pinterest رو با پروفایل دوم باز کن"
+- "ChatGPT رو با همون کرومی که لاگینه باز کن"
+- "اگه وارد نیستم بگو با کدوم حساب وارد شم"
+
+#### Email + browser coordinated login example
+
+User:
+"Pinterest رو با ایمیل شخصی باز کن؛ اگه کد خواست از Gmail بردار."
+
+Plan:
+1. select account alias = personal
+2. map to authorized Chrome profile if one exists
+3. open official Pinterest domain
+4. verify current signed-in identity
+5. start login only if needed
+6. if OTP requested, start VerificationCodeBroker
+7. search the authorized Gmail account narrowly
+8. extract recent Pinterest code ephemerally
+9. enter code in active Pinterest flow
+10. verify intended account is signed in
+11. discard OTP secret
+12. report success
+
+#### Email notification + read example
+
+User rule:
+"هر وقت از شرکت X ایمیل اومد بهم بگو."
+
+Automation:
+1. register sender/domain rule
+2. EmailWatcher detects new matching mail
+3. privacy-safe notification
+4. on "بخونش" => retrieve exact message
+5. summarize or read aloud according to current voice mode
+6. context now points to this message/thread for follow-up:
+   - "جواب بده"
+   - "خلاصه‌تر"
+   - "پیوست رو دانلود کن"
+   - "فورواردش کن"
+
+#### Permission levels
+
+L0:
+- list connected accounts
+- unread count
+- search metadata
+
+L1:
+- read explicitly requested email
+- summarize
+- read aloud
+- list attachments
+
+L2:
+- download attachment
+- mark read/unread
+- archive
+- enable passive notification rules
+
+L3:
+- create draft
+- reply draft
+- forward draft
+- account/profile switching
+
+L4:
+- send/reply/forward email
+- automatic OTP retrieval/entry unless the user has explicitly enabled the exact workflow/service
+- persistent rules that act on mail
+
+L5:
+- destructive mailbox operations at scale
+- security/account-recovery operations
+- unsafe credential manipulation
+
+#### Verification
+
+- account switch => verify actual selected account/profile
+- email read => verify message/thread ID resolved
+- send => verify send result
+- attachment download => verify file exists and size/metadata
+- notification rule => verify subscription/watch state
+- OTP login => verify authenticated account identity
+
+---
+
+### 23. MARIA Plugin / Connector Framework
+
+MARIA should have its own connector platform inspired by modern assistant plugin systems.
+
+This is an architectural equivalent, not a copy of proprietary ChatGPT internals.
+
+#### Core modules
+
+- \`PluginRegistry\`
+- \`ConnectorRegistry\`
+- \`PluginInstaller\`
+- \`ConnectorAuthManager\`
+- \`PermissionManager\`
+- \`CapabilityManifestResolver\`
+- \`ConnectorEventBus\`
+- \`ConnectorHealthMonitor\`
+- \`ConnectorUpdateManager\`
+- \`ConnectorSecretVaultAdapter\`
+- \`PluginSandbox\`
+- \`PluginVerifier\`
+- \`PluginAuditLog\`
+
+#### Plugin manifest
+
+Every plugin/connector declares:
+
+- id
+- name
+- provider
+- version
+- capabilities
+- intents exposed
+- tools/actions
+- read permissions
+- write permissions
+- external side effects
+- auth type
+- OAuth scopes
+- event types
+- offline/online requirements
+- confirmation policy
+- risk level
+- rate limits
+- data retention policy
+- secret handling
+- health-check method
+- update source
+- rollback support
+
+#### Canonical connector intents
+
+- \`connector.list\`
+- \`connector.discover\`
+- \`connector.install\`
+- \`connector.uninstall\`
+- \`connector.connect\`
+- \`connector.disconnect\`
+- \`connector.status\`
+- \`connector.permissions.get\`
+- \`connector.permissions.set\`
+- \`connector.capabilities.get\`
+- \`connector.update\`
+- \`connector.health_check\`
+- \`connector.event.subscribe\`
+- \`connector.event.unsubscribe\`
+
+#### Permission model
+
+Permission scopes:
+- read
+- write
+- send/publish
+- delete
+- account/profile switch
+- background monitoring
+- file download/upload
+- external side-effect
+- security-sensitive data
+
+Modes:
+- always ask
+- ask before writes
+- review important actions
+- allow low-risk actions
+- per-workflow remembered approval
+
+Permissions are connector-specific and user-reversible.
+
+#### Secret storage
+
+OAuth refresh/access tokens and connector credentials:
+- use Windows Credential Manager / DPAPI / OS secure storage or provider SDK secure store
+- never place secrets in plain config
+- never place secrets in MARIA conversational memory
+- never include secrets in telemetry or generated training data
+- rotate/revoke on disconnect when provider supports it
+
+#### Event bus
+
+Connectors can publish typed events:
+
+- gmail.new_message
+- calendar.event_upcoming
+- drive.file_changed
+- slack.message
+- github.issue_changed
+- browser.download_finished
+- connector.disconnected
+- connector.auth_expired
+
+Proactive Assistant consumes events according to user rules.
+
+#### Initial connector families
+
+Priority 1:
+- Gmail
+- generic Email where practical
+- Chrome/browser profiles
+- Google Calendar
+- Google Drive
+- GitHub
+
+Priority 2:
+- Outlook Email
+- Outlook Calendar
+- OneDrive
+- Teams
+- Slack
+- Telegram/WhatsApp/Rubika where an authorized/maintainable integration path exists
+
+Priority 3:
+- specialized plugins/skills added later through the same registry
+
+Each integration must be implemented as a separate connector package, not hard-wired into Brain Core.
+
+#### Connector fallback hierarchy
+
+For a service:
+1. first-party/native API connector
+2. trusted official SDK/API
+3. authorized browser automation
+4. UI automation only when APIs are unavailable and the user explicitly allows it
+
+MARIA should prefer structured APIs over scraping visible pages.
+
+#### Plugin language understanding
+
+Users should not need to say "use plugin X".
+
+Examples:
+- "ایمیل‌هام رو بخون" => Gmail/Email connector
+- "جلسه فردا رو بگو" => Calendar connector
+- "فایل Drive رو پیدا کن" => Drive connector
+- "PR پروژه رو چک کن" => GitHub connector
+
+Intent Router chooses a capable connected tool automatically.
+
+If multiple connectors can satisfy the same intent:
+- prefer user default
+- prefer least-privilege / most structured connector
+- otherwise ask once and learn preference
+
+#### Connector-aware planner
+
+Example:
+"ایمیل کد Pinterest رو پیدا کن و واردش کن."
+
+Planner:
+- Email Connector read capability
+- VerificationCodeBroker
+- Browser Connector write capability
+- AuthPolicyGuard
+- Verifier
+
+No single plugin receives more data than necessary.
+
+#### Plugin/connector dataset
+
+Core connector intents also receive 500–1000 utterance packs under the Global Language Dataset Standard.
+
+High-priority language packs:
+- email.read
+- email.search
+- email.notify_new.enable
+- account.select
+- account.switch
+- browser.profile.select
+- connector.connect
+- connector.permissions.set
+- connector.status
+
+
+### 24. Local implementation plan
 
 When the MARIA Windows system is online:
 1. inspect installed-app inventory and current launcher.
