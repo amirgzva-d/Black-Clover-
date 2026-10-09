@@ -180,8 +180,8 @@ Priority controls development order only; it does NOT lower quality requirements
 | 12 | Power / Lock / Security | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 13 | Excel / Office | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 14 | Desktop Organization | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 15 | Selection / Clipboard | NEXT | WAITING |
-| 16 | Translation / OCR | QUEUED | WAITING |
+| 15 | Selection / Clipboard | DESIGN COMPLETE v1 ADVANCED | WAITING |
+| 16 | Translation / OCR | NEXT | WAITING |
 | 17 | Screen Understanding | QUEUED | WAITING |
 | 18 | Download / Convert / Archive | QUEUED | WAITING |
 | 19 | Web-App Agent | QUEUED | WAITING |
@@ -14023,4 +14023,950 @@ When MARIA Windows system is online:
 13. generate 1000–1500 language packs for critical intents.
 14. test real shortcuts/shell items/multiple monitors/windows.
 15. test layout restore after app/window recreation.
+16. mark only verified modules IMPLEMENTED.
+
+
+---
+
+## 15 — Selection / Clipboard / Focused-Object Intelligence
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`selection.*\`, \`clipboard.*\`, \`focused_object.*\`, \`copy.*\`, \`paste.*\`, \`cut.*\`, \`share_selection.*\`  
+**Owner modules:** Selection Orchestrator / Selection Context Resolver / Focused Object Resolver / Clipboard Skill / Clipboard History Skill / Explorer Selection Adapter / Browser Selection Adapter / Office Selection Adapter / Text Selection Adapter / Image Selection Adapter / Screen Region Handoff / Clipboard Safety Guard / Cross-App Handoff / Verifier / Undo Manager / Selection Language Agent  
+**Offline capable:** yes for local selection/clipboard operations  
+**Risk class:** L0–L4 depending on data sensitivity and external destination  
+**Primary platform:** Windows + supported applications
+
+### 1. Purpose
+
+MARIA must understand what the user means by references such as:
+
+- "این"
+- "اینو"
+- "همینو"
+- "این متن"
+- "این فایل"
+- "این عکس"
+- "این سلول"
+- "این چندتا"
+- "همین قسمت"
+- "اون چیزی که کپی کردم"
+- "چیزی که انتخاب کردم"
+
+and resolve the exact current object before acting.
+
+Selection/Clipboard Intelligence is a context layer that connects many other capabilities:
+- Files
+- Browser
+- Office
+- Translation
+- OCR
+- Messaging
+- Search
+- Web Research
+- Conversion
+- Screen Understanding
+- Notes
+- AI web apps
+- Desktop organization
+
+---
+
+### 2. Critical distinction — Selection vs Clipboard
+
+**Selection**
+= object(s) actively selected in the current application/UI.
+
+Examples:
+- highlighted text
+- selected Explorer file
+- selected Excel range
+- selected image/object in PowerPoint
+- selected browser text
+- selected desktop icons
+
+**Clipboard**
+= data copied/cut previously.
+
+Examples:
+- copied text
+- copied image
+- copied file list
+- HTML fragment
+- URL
+- Office rich content
+
+They may differ.
+
+Example:
+User selected new text after copying an image.
+
+"این رو ترجمه کن"
+=> current selection should usually win.
+
+"اون چیزی که کپی کردم رو ترجمه کن"
+=> Clipboard wins.
+
+Never silently conflate the two.
+
+---
+
+### 3. Selection source priority
+
+For deictic references such as "این":
+
+1. explicit current UI selection
+2. focused object
+3. user-selected screen region
+4. most recent task object
+5. clipboard, only if phrasing/context supports it
+6. ask if still ambiguous
+
+SelectionContext stores:
+- app/process
+- window
+- object type
+- object ID/reference
+- timestamp
+- selection content/metadata
+- sensitivity class
+- app-specific adapter
+- stale/valid state
+
+Selections expire when:
+- window closes
+- app context changes materially
+- document/page navigates
+- object no longer exists
+- timeout/context invalidation occurs
+
+---
+
+### 4. Canonical intents — inspect selection
+
+- \`selection.get\`
+- \`selection.get_type\`
+- \`selection.get_text\`
+- \`selection.get_files\`
+- \`selection.get_image\`
+- \`selection.get_link\`
+- \`selection.get_range\`
+- \`selection.describe\`
+- \`selection.count\`
+- \`selection.refresh\`
+- \`selection.clear\`
+
+Examples:
+- "چی انتخاب کردم؟"
+- "این چیه؟"
+- "چندتا فایل انتخابه؟"
+- "متن انتخاب شده رو بخون"
+- "اسم فایل‌های انتخابی رو بگو"
+- "لینکی که انتخاب کردم چیه"
+- "این محدوده Excel کجاست"
+
+---
+
+### 5. Clipboard canonical intents
+
+- \`clipboard.get\`
+- \`clipboard.get_type\`
+- \`clipboard.get_text\`
+- \`clipboard.get_image\`
+- \`clipboard.get_files\`
+- \`clipboard.set_text\`
+- \`clipboard.set_image\`
+- \`clipboard.set_files\`
+- \`clipboard.clear\`
+- \`clipboard.copy_selection\`
+- \`clipboard.cut_selection\`
+- \`clipboard.paste\`
+- \`clipboard.paste_plain_text\`
+- \`clipboard.paste_values\`
+- \`clipboard.paste_special\`
+
+Examples:
+- "Clipboard چی داره"
+- "چی کپی کردم"
+- "متن کپی شده رو بخون"
+- "Clipboard رو پاک کن"
+- "این رو کپی کن"
+- "اینارو Cut کن"
+- "اینجا Paste کن"
+- "فقط متن ساده Paste کن"
+- "بدون فرمت بچسبون"
+- "فقط مقدارها رو Paste کن"
+
+---
+
+### 6. Copy / cut / paste semantics
+
+These must remain distinct:
+
+- Copy = source stays
+- Cut = source is marked for move where app supports
+- Paste = insert clipboard representation
+- Paste plain text = discard formatting
+- Paste values = Office/table-specific semantic paste
+- Paste link/reference = when explicitly requested
+
+Hard negatives:
+- "کپی کن" ≠ duplicate file unless destination/operation implies it
+- "Cut کن" ≠ delete
+- "Paste کن" ≠ send
+- "این متن رو کپی کن" ≠ copy whole page
+- "این فایل رو کپی کن به Downloads" => File copy action, not only clipboard copy
+
+---
+
+### 7. Text selection
+
+Canonical:
+- \`selection.text.copy\`
+- \`selection.text.cut\`
+- \`selection.text.replace\`
+- \`selection.text.delete\`
+- \`selection.text.explain\`
+- \`selection.text.summarize\`
+- \`selection.text.translate\`
+- \`selection.text.search_web\`
+- \`selection.text.rewrite\`
+- \`selection.text.send_to\`
+
+Examples:
+- "این متن رو کپی کن"
+- "این قسمت رو پاک کن"
+- "این رو عوض کن با..."
+- "این متن یعنی چی"
+- "خلاصه‌ش کن"
+- "فارسیش کن"
+- "این رو گوگل کن"
+- "این پاراگراف رو بهتر بنویس"
+- "این رو بفرست ChatGPT"
+- "این متن رو برای علی بفرست"
+
+Text mutation must operate only on confirmed editable selection.
+
+---
+
+### 8. Explorer file/folder selection
+
+Canonical:
+- \`selection.files.get\`
+- \`selection.files.copy\`
+- \`selection.files.cut\`
+- \`selection.files.open\`
+- \`selection.files.rename\`
+- \`selection.files.move\`
+- \`selection.files.delete\`
+- \`selection.files.compress\`
+- \`selection.files.convert\`
+- \`selection.files.send\`
+- \`selection.files.get_paths\`
+
+Examples:
+- "این فایل‌ها رو کپی کن"
+- "اینارو ببر Documents"
+- "اسم این فایل رو عوض کن"
+- "این سه تا رو ZIP کن"
+- "این فایل رو PDF کن"
+- "اینارو برای علی بفرست"
+- "مسیر این فایل‌ها رو کپی کن"
+- "همه انتخاب شده‌ها رو باز کن"
+
+Actual file mutation delegates to Capability 03.
+
+---
+
+### 9. Desktop icon selection
+
+Desktop icons may represent:
+- files
+- folders
+- shortcuts
+- shell namespace objects
+
+MARIA must resolve actual object type before acting.
+
+Examples:
+- "این آیکونا رو ببر پوشه Work"
+- "این Shortcut رو پاک کن"
+- "این فایل‌ها رو مرتب کن"
+
+A shortcut deletion must not delete its target.
+
+---
+
+### 10. Browser selection
+
+Canonical:
+- \`selection.browser.get_text\`
+- \`selection.browser.copy\`
+- \`selection.browser.translate\`
+- \`selection.browser.search\`
+- \`selection.browser.open_link\`
+- \`selection.browser.copy_link\`
+- \`selection.browser.send_to_ai\`
+
+Examples:
+- "این قسمت سایت رو ترجمه کن"
+- "این متن رو سرچ کن"
+- "این لینک رو باز کن"
+- "URL این لینک رو کپی کن"
+- "این پاراگراف رو ببر Claude"
+- "این قسمت رو برای ChatGPT بفرست"
+
+BrowserSelectionAdapter must resolve:
+- selected text
+- anchor/link under selection
+- current page identity
+- frame context
+- stale DOM state
+
+---
+
+### 11. Excel / Office selection
+
+Excel:
+- selected cell
+- range
+- row
+- column
+- chart
+- shape
+
+Word:
+- text
+- paragraph
+- image
+- table cell/range
+
+PowerPoint:
+- shape
+- text box
+- image
+- slide object(s)
+
+Examples:
+- "این سلول‌ها رو جمع کن"
+- "این محدوده رو کپی کن"
+- "این ستون رو Sort کن"
+- "این پاراگراف رو Bold کن"
+- "این عکس رو حذف کن"
+- "این Shape رو ببر سمت راست"
+
+Selection is passed to Office capability as an exact object reference, not only raw text.
+
+---
+
+### 12. Image selection
+
+Possible sources:
+- Explorer image file
+- browser image element
+- Office image object
+- clipboard bitmap
+- screen region
+
+Canonical:
+- \`selection.image.copy\`
+- \`selection.image.save\`
+- \`selection.image.describe\`
+- \`selection.image.ocr\`
+- \`selection.image.search\`
+- \`selection.image.send\`
+- \`selection.image.convert\`
+
+Examples:
+- "این عکس رو ذخیره کن"
+- "از این عکس متن بخون"
+- "این عکس چی نشون میده"
+- "این رو برای علی بفرست"
+- "PNGش کن"
+- "این تصویر رو سرچ کن"
+
+OCR delegates to Capability 16.
+Image understanding delegates to Screen/Image intelligence.
+Conversion delegates to Capability 18.
+
+---
+
+### 13. Screen-region selection
+
+A user may select a rectangle/region rather than an app-native object.
+
+Canonical:
+- \`selection.region.capture\`
+- \`selection.region.describe\`
+- \`selection.region.ocr\`
+- \`selection.region.translate\`
+- \`selection.region.copy_image\`
+- \`selection.region.save\`
+
+Examples:
+- "این قسمت صفحه"
+- "همین تیکه رو بخون"
+- "این ناحیه رو ترجمه کن"
+- "از این قسمت عکس بگیر"
+- "متنش رو کپی کن"
+
+Screen-region acquisition is handled with Screen Understanding capability, while Selection Intelligence stores the resulting region object.
+
+---
+
+### 14. Focused object intelligence
+
+Sometimes nothing is selected, but focus is meaningful.
+
+Examples:
+- active text field
+- focused button
+- current file in preview
+- active browser input
+- current Excel cell
+
+Canonical:
+- \`focused_object.get\`
+- \`focused_object.describe\`
+- \`focused_object.activate\`
+- \`focused_object.get_value\`
+- \`focused_object.set_value\`
+
+Example:
+"اینجا بنویس سلام"
+=> focused editable field.
+
+"این دکمه چیه"
+=> focused/hovered object if reliable.
+
+Must never activate a destructive button from vague context.
+
+---
+
+### 15. Clipboard history
+
+If Windows Clipboard History is enabled and accessible:
+
+- \`clipboard.history.list\`
+- \`clipboard.history.get\`
+- \`clipboard.history.select\`
+- \`clipboard.history.pin\`
+- \`clipboard.history.unpin\`
+- \`clipboard.history.clear\`
+
+Examples:
+- "چیزایی که قبلاً کپی کردم رو بیار"
+- "دومی رو Paste کن"
+- "اون متن قبلی رو پیدا کن"
+- "این مورد رو Pin کن"
+- "Clipboard history رو پاک کن"
+
+Rules:
+- do not enable cloud sync silently
+- do not reveal sensitive clipboard history in public/read-aloud mode without user request
+- history availability is capability-gated
+
+---
+
+### 16. Sensitive clipboard classification
+
+ClipboardSafetyGuard classifies possible sensitive values:
+- passwords
+- OTP codes
+- recovery codes
+- tokens/API keys
+- card/bank details
+- private keys
+- session cookies
+- sensitive personal identifiers
+
+Behavior:
+- do not store sensitive clipboard data in long-term MARIA memory
+- do not include in logs/training datasets
+- do not auto-read aloud
+- do not send to external services without explicit user intent
+- clear ephemeral secret reference after task where appropriate
+
+Examples:
+"کدی که کپی کردم رو بذار تو همین Login"
+=> allowed only in the intended authorized login context.
+
+"هرچی Clipboard هست بفرست تو ChatGPT"
+=> if sensitive content detected, require explicit confirmation.
+
+---
+
+### 17. Clipboard format awareness
+
+Windows clipboard may contain multiple formats simultaneously.
+
+Possible formats:
+- Unicode text
+- HTML
+- RTF
+- bitmap/image
+- file drop list
+- URL
+- Office object formats
+
+Clipboard Skill selects the representation appropriate to target.
+
+Examples:
+- paste into Notepad => plain text
+- paste into Word => rich text if desired
+- upload field => file list
+- image editor => bitmap/image
+
+Never assume clipboard is text.
+
+---
+
+### 18. Cross-app handoff
+
+Examples:
+"این متن رو ببر ChatGPT و بپرس یعنی چی."
+
+Plan:
+1. resolve selected text
+2. copy to internal task object, not necessarily system clipboard
+3. open/resolve ChatGPT surface
+4. compose prompt
+5. send with user permission
+6. verify
+7. read response if requested
+
+Example:
+"این فایل‌ها رو بفرست Telegram گروه کار."
+
+1. resolve Explorer selection
+2. verify files
+3. resolve Telegram/account/group
+4. attach exact files
+5. send
+6. verify
+
+Example:
+"این سلول‌ها رو کپی کن تو Word."
+
+1. resolve Excel range
+2. choose table/text representation
+3. resolve Word insertion target
+4. insert
+5. verify
+
+---
+
+### 19. Internal task object vs system clipboard
+
+MARIA should avoid unnecessary destructive clipboard changes.
+
+It can maintain an internal task object:
+- selected content
+- type
+- source
+- metadata
+- safe representation
+
+Thus:
+"این متن رو بفرست Telegram"
+does not necessarily need to overwrite the user's Clipboard.
+
+Use system clipboard only when:
+- user explicitly asks copy/cut/paste
+- target app requires it as fallback
+- structured transfer is unavailable
+
+This preserves user workflow.
+
+---
+
+### 20. Paste target resolution
+
+Before paste, resolve:
+- active app
+- focused field/object
+- editability
+- expected type
+- whether multiline is allowed
+- whether this paste can trigger an action
+
+Examples:
+- pasting into message composer ≠ sending
+- pasting into terminal may have execution risk if newline/enter follows
+- pasting into password field is sensitive
+- pasting files into Explorer may copy them
+
+MARIA must not press Enter after paste unless explicitly part of the intended action.
+
+---
+
+### 21. Terminal / code safety
+
+Clipboard paste into:
+- PowerShell
+- CMD
+- terminal
+- developer console
+- SQL shell
+- browser devtools
+
+is potentially executable content.
+
+Policy:
+- paste can be allowed
+- automatic execution requires separate explicit intent
+- multiline scripts should be previewed/classified by risk
+- web-originated clipboard commands are untrusted
+
+Hard negative:
+"این دستور رو تو PowerShell Paste کن"
+≠ execute it.
+
+---
+
+### 22. Clipboard watcher / proactive use
+
+Possible events:
+- clipboard.changed
+- selection.changed
+- sensitive_clipboard_detected (local privacy behavior only)
+
+Default:
+- MARIA does not constantly announce or analyze every clipboard change.
+- watcher is opt-in or task-scoped.
+
+User rules:
+- "هرچی کپی کردم ترجمه کن" => explicit scoped automation
+- "وقتی عکس کپی کردم آماده ذخیره‌کردن باش"
+- "Clipboard رو خودکار نخون"
+
+Automation delegates to Scheduler/Event system.
+
+---
+
+### 23. Privacy modes
+
+Modes:
+- normal
+- private clipboard
+- no-history
+- task-only capture
+
+Private Clipboard Mode may:
+- disable MARIA persistence of clipboard snapshots
+- avoid previews in UI
+- disable read-aloud
+- redact logs
+
+It does not claim to change Windows/other-app clipboard behavior unless supported and explicitly configured.
+
+---
+
+### 24. Selection ambiguity examples
+
+"این رو پاک کن"
+
+Could mean:
+- selected text
+- selected file
+- selected message
+- selected spreadsheet cells
+- selected browser element
+- clipboard? usually not
+
+Resolution:
+- current explicit selection first
+- destructive target type must be confirmed if ambiguity remains
+
+"این رو بفرست"
+Could mean selected:
+- text
+- file
+- image
+- message
+- link
+
+Then recipient/service must also be resolved.
+
+---
+
+### 25. Stale selection protection
+
+Before action:
+- re-check that source window/document/page is unchanged
+- validate object still exists
+- compare selection fingerprint
+
+If stale:
+- refresh selection
+- re-resolve
+- never act on an old file/cell/DOM reference silently
+
+Examples:
+- browser navigated after selection
+- Excel workbook changed
+- Explorer folder changed
+- file renamed externally
+
+---
+
+### 26. Verification
+
+Copy:
+- clipboard contains expected type/content fingerprint
+
+Cut:
+- cut state recognized where possible; no premature source deletion
+
+Paste:
+- target receives expected content
+
+File selection action:
+- exact file IDs/paths
+
+Office:
+- exact range/object result
+
+Browser:
+- current selection/page validated
+
+Send handoff:
+- downstream capability verifies final external side effect
+
+---
+
+### 27. Undo / rollback
+
+Possible:
+- restore overwritten clipboard snapshot for short-lived operations where safe
+- undo text replacement through owning app capability
+- undo file move/copy through File Undo
+- undo Office changes through Office Undo
+
+Not always possible:
+- clearing clipboard history
+- external send
+- delete-for-everyone
+- terminal command after execution
+
+Selection Intelligence delegates undo to owning skill when mutation is external.
+
+---
+
+### 28. Permission / risk
+
+L0:
+- inspect selection type/metadata
+- get current clipboard type
+- copy current selection
+
+L1:
+- normal local paste
+- save/copy non-sensitive selection
+- search/translate/summarize locally
+
+L2:
+- cut/move operations
+- clipboard history mutation
+- selected file transformations
+
+L3:
+- external send/upload
+- destructive replacement
+- sensitive clipboard use
+
+L4:
+- sending detected secrets externally
+- bulk destructive selected-object actions
+
+---
+
+### 29. Massive language packs
+
+Critical intents target **1000–1500 examples each**:
+- selection.get
+- selection.describe
+- clipboard.copy_selection
+- clipboard.get
+- clipboard.paste
+- clipboard.paste_plain_text
+- selection.text.translate
+- selection.text.search_web
+- selection.files.send
+- selection.image.ocr
+- focused_object.set_value
+
+Secondary intents target 500–1000.
+
+Language axes:
+- "این"
+- "اینو"
+- "همینو"
+- "اون"
+- "چیزی که انتخاب کردم"
+- "چیزی که کپی کردم"
+- active vs previous selection
+- text/file/image/range/link
+- singular/plural
+- typo/STT
+- Persian-English
+- correction
+- negation
+- "کپی نکن، فقط بخون"
+- "Clipboard دست نخور"
+- stale context
+- cross-app
+- multi-step
+- sensitive content
+- hard negatives
+
+Mandatory hard negatives:
+- "این فایل رو کپی کن به Desktop" => File copy
+- "این فایل رو Copy کن" => clipboard/file-copy context resolution
+- "این متن رو بفرست" => external send, not clipboard set
+- "این رو Paste کن" => paste only, do not press Enter
+- "چیزی که کپی کردم" => Clipboard
+- "چیزی که انتخاب کردم" => Selection
+- "این قسمت عکس رو بخون" => screen/image OCR handoff
+- "این سلول رو بخون" => Excel selection, not OCR
+- "این لینک رو باز کن" => Browser navigation
+
+Family target: tens of thousands of diverse utterances.
+
+---
+
+### 30. Skill / Agent package
+
+- \`SelectionOrchestrator\`
+- \`SelectionContextResolver\`
+- \`FocusedObjectResolver\`
+- \`ClipboardSkill\`
+- \`ClipboardHistorySkill\`
+- \`ClipboardFormatResolver\`
+- \`ClipboardSafetyGuard\`
+- \`ExplorerSelectionAdapter\`
+- \`DesktopSelectionAdapter\`
+- \`BrowserSelectionAdapter\`
+- \`OfficeSelectionAdapter\`
+- \`TextSelectionAdapter\`
+- \`ImageSelectionAdapter\`
+- \`ScreenRegionSelectionAdapter\`
+- \`CrossAppHandoffSkill\`
+- \`SelectionVerifier\`
+- \`SelectionUndoCoordinator\`
+- \`SelectionPolicyGuard\`
+- \`SelectionLanguageAgent\`
+
+All register through Skill Registry / Tool Registry.
+
+---
+
+### 31. Windows implementation strategy
+
+Preferred methods:
+- Windows UI Automation for focused/selected accessible elements
+- Windows Clipboard APIs for format-aware clipboard access
+- Shell/Explorer selection APIs for files
+- Office object model for Excel/Word/PowerPoint selection
+- Browser Companion/DOM bridge for browser selection
+- Screen Understanding only when no structured selection is available
+
+Do not use OCR to discover text that is already available through a structured selection API.
+
+---
+
+### 32. Test matrix
+
+Clipboard:
+- SC-A01 text
+- SC-A02 image
+- SC-A03 files
+- SC-A04 HTML/RTF
+- SC-A05 clear
+- SC-A06 plain-text paste
+- SC-A07 sensitive token
+
+Selection:
+- SC-B01 selected text
+- SC-B02 Explorer file
+- SC-B03 multiple files
+- SC-B04 Excel range
+- SC-B05 Word paragraph
+- SC-B06 browser text
+- SC-B07 image object
+- SC-B08 nothing selected
+
+Context:
+- SC-C01 selection vs clipboard conflict
+- SC-C02 "این" uses current selection
+- SC-C03 "کپی شده" uses clipboard
+- SC-C04 stale selection
+- SC-C05 app changed
+
+Cross-app:
+- SC-D01 Excel → Word
+- SC-D02 browser text → ChatGPT
+- SC-D03 Explorer files → Telegram
+- SC-D04 image → OCR
+- SC-D05 selected link → browser open
+
+Safety:
+- SC-E01 password in clipboard
+- SC-E02 OTP
+- SC-E03 terminal multiline paste
+- SC-E04 web prompt asks to send clipboard
+- SC-E05 ambiguous destructive "پاک کن"
+
+Verification:
+- SC-F01 clipboard fingerprint
+- SC-F02 exact paste target
+- SC-F03 file identity
+- SC-F04 Office range
+- SC-F05 browser stale DOM
+
+Language:
+- SC-G01 typo
+- SC-G02 STT
+- SC-G03 deictic "این"
+- SC-G04 singular/plural
+- SC-G05 hard negative selection vs clipboard
+
+---
+
+### 33. Acceptance criteria
+
+1. Selection and Clipboard remain distinct state objects.
+2. "این" resolves current structured selection before stale clipboard when appropriate.
+3. clipboard format is type-aware, not text-only.
+4. sensitive clipboard data is not persisted or leaked.
+5. current selection is revalidated before mutation.
+6. Explorer/Office/Browser selections use structured adapters.
+7. OCR is only fallback when structured text is unavailable.
+8. paste never implies Enter/send/execute.
+9. terminal pastes never auto-execute without explicit intent.
+10. cross-app handoff does not unnecessarily overwrite user clipboard.
+11. external send/upload delegates to owning capability and is verified.
+12. critical intents reach 1000–1500 examples.
+13. real Windows/Explorer/Chrome/Office tests pass before IMPLEMENTED.
+
+---
+
+### 34. Local implementation plan
+
+When MARIA Windows system is online:
+1. inspect existing clipboard/selection handlers.
+2. implement Windows Clipboard adapter with format awareness.
+3. implement SelectionContextResolver.
+4. integrate Windows UI Automation focused/selected objects.
+5. integrate Explorer selection.
+6. integrate Office selection.
+7. integrate Browser Companion selection.
+8. implement internal task-object transfer.
+9. add ClipboardSafetyGuard.
+10. add cross-app handoff.
+11. add stale-selection validation.
+12. connect Translation/OCR/Search/Messaging/File capabilities.
+13. generate 1000–1500 utterance packs for critical intents.
+14. run sensitive-content and terminal-safety tests.
+15. run real cross-app selection workflows.
 16. mark only verified modules IMPLEMENTED.
