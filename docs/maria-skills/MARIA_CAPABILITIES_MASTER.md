@@ -174,10 +174,10 @@ Priority controls development order only; it does NOT lower quality requirements
 | 06 | Troubleshooting / Repair | DESIGN COMPLETE v1 | WAITING |
 | 07 | Web Search / Research | DESIGN COMPLETE v1 | WAITING |
 | 08 | Browser Automation | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 09 | YouTube / Web Media | NEXT | WAITING |
+| 09 | YouTube / Web Media | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 10 | Messaging / Forwarding | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 11 | Timed / Conditional Actions | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 12 | Power / Lock / Security | QUEUED | WAITING |
+| 12 | Power / Lock / Security | NEXT | WAITING |
 | 13 | Excel / Office | QUEUED | WAITING |
 | 14 | Desktop Organization | QUEUED | WAITING |
 | 15 | Selection / Clipboard | QUEUED | WAITING |
@@ -9907,4 +9907,966 @@ Verification:
 13. real suspend/reboot/network-loss tests pass before IMPLEMENTED.
 
 ---
+
+
+
+---
+
+## 09 — YouTube / Web Media / Streaming Intelligence
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`media.web.*\`, \`youtube.*\`, \`stream.*\`, \`playlist.*\`, \`caption.*\`, \`queue.*\`, \`media.page.*\`  
+**Owner modules:** Web Media Orchestrator / Media Service Resolver / YouTube Adapter / Generic Media Adapter / Media Session Resolver / Player State Skill / Search Skill / Queue Skill / Playlist Skill / Caption Skill / Playback Preference Store / Browser Handoff / Audio Handoff / Translation Handoff / Scheduler Handoff / Verifier / Policy Guard  
+**Offline capable:** partial; local player control may continue while page is loaded, discovery/content requires network  
+**Risk class:** L0–L4 depending on account-side actions  
+**Primary surfaces:** YouTube web + browser media sessions; extensible to Vimeo, Twitch, SoundCloud, Spotify Web and other media services through adapters
+
+### 1. Purpose
+
+MARIA must treat web media as a structured media environment, not as a collection of keyboard shortcuts.
+
+It must understand and operate:
+- YouTube search
+- video selection
+- channel selection
+- playlist selection
+- active video state
+- play/pause/stop/restart
+- seek
+- next/previous
+- playback speed
+- quality
+- subtitles/captions
+- subtitle language
+- auto-translate when supported
+- volume/mute at the correct scope
+- fullscreen
+- theater mode
+- mini player / picture-in-picture where supported
+- queue
+- playlists
+- Watch Later
+- likes/saves where user permits
+- comments/read-only browsing where supported
+- live streams
+- chapters
+- timestamps
+- transcript
+- open exact video/channel/playlist
+- share/copy link
+- schedule media actions
+- hand off selected text/transcript to Translation/Summary/Notes
+- verify each action
+
+This capability must compose with Browser, Audio, Messaging, Translation, Download, Account, Automation and Screen Agent.
+
+### 2. Semantic separation
+
+MARIA must keep these separate:
+
+- "ویدئو رو Pause کن" => media playback pause.
+- "ویدئو رو ساکت کن" => player/tab/media mute depending context.
+- "صدای YouTube رو کم کن" => media/player/session volume.
+- "صدای Chrome رو کم کن" => app/session volume.
+- "صدای سیستم رو کم کن" => master system volume.
+- "تب YouTube رو میوت کن" => browser tab mute.
+- "خودت ساکت" => MARIA TTS mute.
+
+Likewise:
+
+- "ویدئو رو ببند" => close current video/page/tab depending context.
+- "YouTube رو ببند" => close YouTube tab/app surface.
+- "Chrome رو ببند" => browser app close.
+
+These must be hard-negative evaluation cases.
+
+### 3. Media service abstraction
+
+Each adapter declares capabilities such as:
+- search
+- search_filters
+- open_video
+- open_channel
+- open_playlist
+- play
+- pause
+- seek
+- next_previous
+- set_speed
+- set_quality
+- captions
+- transcript
+- fullscreen
+- theater
+- mini_player
+- queue
+- playlist_edit
+- watch_later
+- like
+- comments_read
+- comments_write
+- live_stream
+- chapters
+- download_official
+- share
+- account_required_actions
+
+Initial adapters:
+- \`YouTubeAdapter\`
+- \`GenericHTML5MediaAdapter\`
+- \`VimeoAdapter\` when needed
+- \`TwitchAdapter\` when needed
+- \`SoundCloudAdapter\` when needed
+- \`SpotifyWebAdapter\` when needed
+
+No adapter may advertise an unsupported action.
+
+### 4. Canonical intents — open/search
+
+- \`youtube.open\`
+- \`youtube.search\`
+- \`youtube.search.video\`
+- \`youtube.search.channel\`
+- \`youtube.search.playlist\`
+- \`youtube.open.video\`
+- \`youtube.open.channel\`
+- \`youtube.open.playlist\`
+- \`youtube.open.live\`
+- \`youtube.open.result\`
+- \`media.web.search\`
+- \`media.web.open\`
+
+Examples:
+- "YouTube رو باز کن"
+- "تو یوتیوب سرچ کن آموزش Python"
+- "ویدئوهای Blender 4.5 رو پیدا کن"
+- "کانال رسمی NVIDIA رو پیدا کن"
+- "پلی‌لیست آموزش اکسل رو بیار"
+- "ویدئوی اول رو باز کن"
+- "نتیجه دوم"
+- "یه ویدئوی جدیدتر پیدا کن"
+- "فقط از کانال رسمی"
+- "لایو این کانال رو باز کن"
+- "یوتوبو باز کون"
+- "یوتیوب سرچ کن"
+- "یو تیوب"
+- mixed:
+  - "YouTube آموزش Photoshop search کن"
+  - "open channel رسمی"
+
+Search slots:
+- query
+- type
+- channel
+- duration
+- upload_date
+- live_only
+- sort
+- language
+- official_only
+- result_index
+
+### 5. Search filters / discovery
+
+MARIA should understand:
+- "جدیدترین"
+- "پربازدید"
+- "کوتاه"
+- "طولانی"
+- "زیر 10 دقیقه"
+- "امروز"
+- "این هفته"
+- "لایو"
+- "از کانال X"
+- "فارسی"
+- "انگلیسی"
+- "با زیرنویس"
+
+Canonical:
+- \`youtube.search.filter\`
+- \`youtube.search.sort\`
+
+Examples:
+- "فقط ویدئوهای این هفته"
+- "کمتر از ده دقیقه"
+- "جدیدترین آموزش"
+- "پربازدیدترین"
+- "فقط لایو"
+- "از کانال رسمی Adobe"
+- "ویدئو فارسی"
+
+If the service UI changes, adapter resolves capabilities dynamically.
+
+### 6. Playback control
+
+Canonical:
+- \`media.play\`
+- \`media.pause\`
+- \`media.toggle\`
+- \`media.stop\`
+- \`media.restart_current\`
+- \`media.next\`
+- \`media.previous\`
+- \`media.replay\`
+
+Examples:
+- "پخش کن"
+- "ادامه بده"
+- "Pause کن"
+- "نگهش دار"
+- "وایسش کن"
+- "از اول پخش کن"
+- "دوباره از اول"
+- "بعدی"
+- "ویدئوی بعدی"
+- "قبلی"
+- "همینو دوباره پخش کن"
+
+Player state must be re-read after action.
+
+### 7. Seek / timestamp / chapters
+
+Canonical:
+- \`media.seek.forward\`
+- \`media.seek.backward\`
+- \`media.seek.to\`
+- \`media.seek.chapter\`
+- \`media.chapter.list\`
+- \`media.chapter.next\`
+- \`media.chapter.previous\`
+
+Examples:
+- "10 ثانیه جلو"
+- "30 ثانیه عقب"
+- "دو دقیقه ببر جلو"
+- "برو دقیقه 12"
+- "برو 1:23:40"
+- "برگرد اول"
+- "برو فصل نصب"
+- "برو Chapter بعد"
+- "فصل‌های ویدئو رو بگو"
+
+Time parser must distinguish:
+- playback timestamp
+- scheduled clock time
+- video duration
+
+"برو دقیقه 10" while media context active => seek, not a scheduled action.
+
+### 8. Playback speed
+
+Canonical:
+- \`media.speed.get\`
+- \`media.speed.set\`
+- \`media.speed.increase\`
+- \`media.speed.decrease\`
+- \`media.speed.normal\`
+
+Examples:
+- "سرعت رو 1.5 کن"
+- "دو برابر"
+- "یکم سریع‌تر"
+- "کندترش کن"
+- "برگرد روی سرعت عادی"
+- "0.75x"
+- "روی 2x بذار"
+
+Rules:
+- map only to service-supported speeds.
+- if exact value unsupported, choose nearest only when policy allows and report actual value.
+- distinguish speech-rate of MARIA TTS from video playback speed.
+
+### 9. Quality / resolution
+
+Canonical:
+- \`media.quality.get\`
+- \`media.quality.set\`
+- \`media.quality.auto\`
+- \`media.quality.maximum\`
+- \`media.quality.minimum\`
+
+Examples:
+- "کیفیت رو 1080 کن"
+- "4K بذار"
+- "بیشترین کیفیت"
+- "Auto"
+- "کیفیت رو کمتر کن اینترنت ضعیفه"
+- "بذار خودش تنظیم کنه"
+- "720p"
+
+Rules:
+- current video/stream capabilities determine available quality.
+- live/DVR streams may differ.
+- MARIA must not claim 4K if the stream does not expose it.
+- auto-quality is separate from fixed resolution.
+
+### 10. Captions / subtitles
+
+Canonical:
+- \`caption.get\`
+- \`caption.enable\`
+- \`caption.disable\`
+- \`caption.list_languages\`
+- \`caption.select_language\`
+- \`caption.auto_translate\`
+- \`caption.style.open_settings\`
+
+Examples:
+- "زیرنویس روشن"
+- "CC رو روشن کن"
+- "زیرنویس رو ببند"
+- "زبان زیرنویس فارسی"
+- "English subtitle"
+- "اگه فارسی نداره ترجمه خودکار فارسی"
+- "چه زبان‌هایی داره"
+- "زیرنویس انگلیسی رو فعال کن"
+
+Rules:
+- distinguish uploaded/manual captions, auto-generated captions and auto-translation when service exposes them.
+- do not claim translation accuracy equals human subtitle quality.
+- hand custom translation requests to Translation Skill.
+
+### 11. Transcript intelligence
+
+Canonical:
+- \`media.transcript.get\`
+- \`media.transcript.search\`
+- \`media.transcript.summarize\`
+- \`media.transcript.translate\`
+- \`media.transcript.save_note\`
+- \`media.transcript.copy_segment\`
+
+Examples:
+- "متن ویدئو رو دربیار"
+- "Transcript رو باز کن"
+- "تو متن دنبال API بگرد"
+- "این ویدئو رو خلاصه کن"
+- "متن کاملش رو ترجمه کن"
+- "این بخش رو یادداشت کن"
+- "از دقیقه 2 تا 5 متنشو بگیر"
+
+Rules:
+- use service-provided transcript when available.
+- otherwise use speech-to-text only if media access/user permissions allow.
+- transcript timestamps should map back to seek positions.
+
+### 12. Volume / mute scope
+
+Canonical:
+- \`media.player.volume.get\`
+- \`media.player.volume.set\`
+- \`media.player.volume.increase\`
+- \`media.player.volume.decrease\`
+- \`media.player.mute\`
+- \`media.player.unmute\`
+
+Examples:
+- "صدای همین ویدئو رو 30 کن"
+- "ویدئو رو بی‌صدا کن"
+- "فقط YouTube کم شه"
+- "صدای این Player رو ببر بالا"
+- "صداش رو برگردون"
+
+Resolution priority:
+1. explicit player/video target
+2. current YouTube media element
+3. browser tab mute when wording says tab/page/site
+4. browser app/session when wording says Chrome
+5. system audio when wording says system
+
+No silent scope escalation.
+
+### 13. Fullscreen / theater / mini-player / PiP
+
+Canonical:
+- \`media.fullscreen.enter\`
+- \`media.fullscreen.exit\`
+- \`media.theater.enable\`
+- \`media.theater.disable\`
+- \`media.miniplayer.enable\`
+- \`media.miniplayer.disable\`
+- \`media.pip.enable\`
+- \`media.pip.disable\`
+
+Examples:
+- "تمام صفحه"
+- "Fullscreen کن"
+- "از تمام صفحه بیا بیرون"
+- "حالت تئاتر"
+- "Mini player"
+- "Picture in Picture"
+- "ببر گوشه صفحه"
+
+Verifier checks actual layout/player mode when observable.
+
+### 14. Queue / autoplay
+
+Canonical:
+- \`media.queue.list\`
+- \`media.queue.add\`
+- \`media.queue.remove\`
+- \`media.queue.move\`
+- \`media.queue.clear\`
+- \`media.autoplay.enable\`
+- \`media.autoplay.disable\`
+
+Examples:
+- "این رو بزار بعدی"
+- "این ویدئو رو به صف اضافه کن"
+- "صف رو نشون بده"
+- "این یکی رو از Queue بردار"
+- "این رو بیار اول صف"
+- "Autoplay رو خاموش کن"
+- "بعدی خودش پخش نشه"
+
+### 15. Playlists / Watch Later
+
+Canonical:
+- \`playlist.list\`
+- \`playlist.open\`
+- \`playlist.create\`
+- \`playlist.add_item\`
+- \`playlist.remove_item\`
+- \`playlist.reorder\`
+- \`youtube.watch_later.add\`
+- \`youtube.watch_later.remove\`
+
+Examples:
+- "این ویدئو رو بزار Watch Later"
+- "به پلی‌لیست آموزش اضافه کن"
+- "یه پلی‌لیست جدید به اسم Work بساز"
+- "این ویدئو رو از Playlist بردار"
+- "ویدئو سوم رو بیار اول"
+
+Account-side modifications require account verification and appropriate permission.
+
+### 16. Like / save / subscribe
+
+Canonical:
+- \`youtube.like\`
+- \`youtube.unlike\`
+- \`youtube.subscribe\`
+- \`youtube.unsubscribe\`
+- \`youtube.notification_level.set\`
+
+Examples:
+- "لایک کن"
+- "از لایک درش بیار"
+- "سابسکرایب کن"
+- "عضویت رو لغو کن"
+- "اعلان این کانال رو روشن کن"
+
+These are external account side effects.
+They require high-confidence channel/video identity and suitable user permission policy.
+
+### 17. Comments
+
+Canonical:
+- \`youtube.comment.list\`
+- \`youtube.comment.read\`
+- \`youtube.comment.compose\`
+- \`youtube.comment.submit\`
+- \`youtube.comment.reply\`
+- \`youtube.comment.edit\`
+- \`youtube.comment.delete\`
+
+Important:
+- compose != submit.
+- posting/editing/deleting comments are external actions.
+- comment target/account must be verified.
+- no automated spam/comment flooding.
+
+### 18. Share / copy link / timestamped link
+
+Canonical:
+- \`media.link.copy\`
+- \`media.link.copy_timestamped\`
+- \`media.share\`
+- \`media.share_to_service\`
+
+Examples:
+- "لینک ویدئو رو کپی کن"
+- "لینک همین دقیقه رو بده"
+- "از این تایم لینک بساز"
+- "برای علی تو Telegram بفرست"
+- "این ویدئو رو WhatsApp کن"
+
+Cross-service share hands off to Communication Engine.
+
+### 19. Live streams
+
+Canonical:
+- \`live.get_state\`
+- \`live.open\`
+- \`live.go_to_live_edge\`
+- \`live.seek_back\`
+- \`live.chat.open\`
+- \`live.chat.read\`
+
+If live chat posting is supported:
+- compose and submit are separate, external actions.
+
+Examples:
+- "برو لایو"
+- "برگرد لحظه زنده"
+- "30 ثانیه عقب لایو"
+- "چت لایو رو باز کن"
+- "پیام‌های چت رو بخون"
+
+### 20. Media history / resume
+
+Canonical:
+- \`media.history.open_recent\`
+- \`media.resume_last\`
+- \`media.resume_by_title\`
+- \`media.continue_watching\`
+
+Examples:
+- "اون ویدئویی که دیشب می‌دیدم"
+- "ادامه همون قبلی"
+- "آخرین ویدئوی YouTube رو باز کن"
+- "از همون جایی که مونده بود ادامه بده"
+
+Uses Browser/YouTube history and site account history according to permissions.
+
+### 21. Multi-video comparison / research
+
+Examples:
+- "سه ویدئو درباره این موضوع پیدا کن و خلاصه‌شون کن"
+- "نظر این دو کانال رو مقایسه کن"
+- "از چند ویدئو نکات مشترک رو دربیار"
+
+Flow:
+1. Search Skill
+2. Source/channel quality
+3. transcript extraction
+4. Research/Claim comparison
+5. summarized result with video references
+
+This hands off to Web Research where needed.
+
+### 22. Learning / education mode
+
+Canonical:
+- \`media.study_mode.start\`
+- \`media.study_mode.pause\`
+- \`media.study_mode.note\`
+- \`media.study_mode.quiz\`
+- \`media.study_mode.summary\`
+
+Possible workflow:
+- enable captions
+- set comfortable speed
+- pause at chapters
+- capture notes
+- summarize segment
+- generate quiz from transcript
+- resume
+
+Examples:
+- "این ویدئو رو حالت مطالعه ببینیم"
+- "هر فصل تموم شد خلاصه کن"
+- "از این بخش نکته بردار"
+- "بعدش ازم سؤال بپرس"
+
+This composes with Display Study Profile, Notes and Planner.
+
+### 23. Scheduling / conditional media
+
+Examples:
+- "ساعت 8 این ویدئو رو پخش کن"
+- "20 دقیقه دیگه Pause کن"
+- "بعد این ویدئو تموم شد بعدی رو باز نکن"
+- "وقتی رسید دقیقه 30 بهم بگو"
+- "هر روز 7 پلی‌لیست ورزش رو باز کن"
+
+Handled by Scheduled Action Engine:
+- exact media target snapshot
+- service/profile verification
+- playback action
+- idempotency
+- missed-run policy
+
+### 24. Media completion/event triggers
+
+Events:
+- \`media.started\`
+- \`media.paused\`
+- \`media.ended\`
+- \`media.progress_threshold\`
+- \`media.chapter_changed\`
+- \`media.live_started\`
+- \`media.error\`
+
+Examples:
+- "وقتی تموم شد صفحه رو Lock کن"
+- "وقتی رسید نیمه ویدئو بگو"
+- "وقتی لایو شروع شد خبرم کن"
+
+Uses Event Bus + Scheduler/Automation.
+
+### 25. Download / offline policy
+
+MARIA may:
+- use platform-provided official download/offline features when available and authorized
+- download user-owned/licensed/public media through legitimate supported paths
+- save permitted public documents/thumbnails when allowed
+
+MARIA must NOT:
+- bypass DRM
+- defeat paywalls/access controls
+- circumvent platform restrictions
+- use unauthorized ripping as the default implementation
+- claim a restricted stream was downloaded when it was not
+
+Requests requiring media conversion after lawful download hand off to File Conversion.
+
+### 26. Account / profile state
+
+Actions like:
+- like
+- subscribe
+- comment
+- playlist modification
+- Watch Later
+
+require:
+- correct browser profile
+- correct YouTube account
+- account session verification
+
+If multiple accounts exist:
+- use explicit/default account
+- otherwise ask once
+- never modify account state on an uncertain identity
+
+### 27. Browser / native media integration
+
+Preferred hierarchy:
+1. site-specific structured adapter
+2. Browser Companion DOM/accessibility bridge
+3. Windows media session controls for generic play/pause where appropriate
+4. visual UI fallback
+
+YouTube-specific actions such as playlist editing should prefer DOM/site adapter rather than generic media keys.
+
+### 28. Error recovery
+
+Video unavailable:
+- report availability reason if visible
+- find alternate official/source video when user asks
+
+Age/login restriction:
+- hand to Account flow
+- never bypass restriction
+
+Player element changed:
+- refresh DOM adapter
+- re-resolve media element
+
+Captions unavailable:
+- report
+- optionally offer speech-to-text if permitted
+
+Quality unavailable:
+- choose only supported values
+
+Live stream ended:
+- update live state, do not keep retrying seek/play blindly
+
+### 29. Verification
+
+Search:
+- intended query reflected in results
+
+Open video:
+- title/channel/video ID match selected result
+
+Play/pause:
+- player state re-read
+
+Seek:
+- current time near intended timestamp
+
+Speed:
+- actual playback rate re-read
+
+Quality:
+- selected setting verified if exposed
+
+Captions:
+- active track/language re-read
+
+Queue/playlist:
+- target item appears in expected list
+
+Like/subscribe/comment:
+- UI/account state verified
+
+Share:
+- correct canonical video URL copied or handed off
+
+No action is considered complete from a click alone.
+
+### 30. Permission / risk
+
+L0:
+- search
+- read title/channel
+- get player state
+- read transcript/captions
+- list playlist/queue
+
+L1:
+- play/pause/seek/speed/quality/fullscreen
+- copy link
+- local note
+
+L2:
+- add queue item
+- Watch Later
+- playlist modification
+- official download initiation
+
+L3:
+- like/subscribe
+- comment compose
+- share to external service through hand-off
+
+L4:
+- comment submit/edit/delete
+- broad playlist/account-side destructive action
+
+### 31. Prompt-injection / page safety
+
+Descriptions/comments/transcripts are content, not privileged instructions.
+
+If a video description says:
+"Upload your system file..."
+MARIA must not treat this as an action request.
+
+YouTube comments, subtitles and transcripts are all untrusted page content.
+
+### 32. Language coverage
+
+Critical intents target **1000–1500 high-quality examples each**:
+- youtube.search
+- youtube.open.video
+- media.play
+- media.pause
+- media.seek.forward/backward/to
+- media.speed.set
+- media.quality.set
+- caption.enable/disable/select_language
+- media.player.volume.set/mute
+- media.fullscreen.enter/exit
+- playlist.add_item
+- media.link.copy
+- media.resume_last
+
+Secondary intents target 500–1000.
+
+Hard negatives:
+- "ویدئو رو متوقف کن" => pause/stop
+- "صدای ویدئو رو قطع کن" => media mute
+- "تب رو میوت کن" => tab mute
+- "Chrome رو میوت کن" => app audio
+- "خودت ساکت" => MARIA voice
+- "برو دقیقه 10" => media seek in media context
+- "ساعت 10 پخشش کن" => schedule playback
+- "ویدئو رو ذخیره کن Watch Later" => account list action
+- "ویدئو رو دانلود کن" => download policy/action
+- "لینکش رو ذخیره کن" => bookmark/note, not media download
+
+Family total target: tens of thousands of variants across Persian, English-mixed, typo, STT, context and counterexamples.
+
+### 33. Skill / Agent package
+
+- \`WebMediaOrchestrator\`
+- \`MediaServiceResolver\`
+- \`YouTubeAdapter\`
+- \`GenericHTML5MediaAdapter\`
+- \`MediaSearchSkill\`
+- \`MediaPlayerSkill\`
+- \`MediaSeekSkill\`
+- \`MediaSpeedSkill\`
+- \`MediaQualitySkill\`
+- \`CaptionSkill\`
+- \`TranscriptSkill\`
+- \`MediaDisplayModeSkill\`
+- \`MediaQueueSkill\`
+- \`PlaylistSkill\`
+- \`YouTubeAccountActionSkill\`
+- \`LiveStreamSkill\`
+- \`MediaShareSkill\`
+- \`MediaStudyModeSkill\`
+- \`MediaHistoryResumeSkill\`
+- \`MediaEventPublisher\`
+- \`MediaPolicyGuard\`
+- \`MediaVerifier\`
+- \`MediaLanguageAgent\`
+
+Handoffs:
+- BrowserAgent
+- AudioSkill
+- TranslationSkill
+- ResearchSkill
+- CommunicationSkill
+- Scheduler
+- Download/File Conversion
+- Notes/Memory
+
+### 34. Example multi-step workflows
+
+#### A. Search + watch
+"یوتیوب جدیدترین آموزش Blender از کانال رسمی رو پیدا کن، اولین ویدئو رو باز کن و زیرنویس انگلیسی روشن کن."
+
+1. open/select YouTube surface
+2. search query
+3. official-channel filter
+4. freshness sort
+5. open first verified result
+6. enable English caption
+7. verify
+
+#### B. Study
+"این ویدئو رو روی 1.25 بذار، زیرنویس فارسی اگر بود روشن کن، هر فصل نکات مهم رو یادداشت کن."
+
+1. set speed
+2. caption language resolution
+3. chapter monitor
+4. transcript segment
+5. note extraction
+6. continue playback
+
+#### C. Share
+"لینک همین دقیقه رو برای علی تو Telegram بفرست."
+
+1. read current timestamp/video ID
+2. build timestamped canonical link
+3. resolve Telegram/Ali
+4. send
+5. verify
+
+#### D. Scheduled
+"فردا ساعت 8 پلی‌لیست ورزش رو باز کن و از اول پخش کن."
+
+1. resolve playlist/account
+2. schedule normalized action
+3. runtime profile/account check
+4. open playlist
+5. start first item
+6. verify
+
+### 35. Test matrix
+
+Search:
+- YM-A01 query
+- YM-A02 channel
+- YM-A03 playlist
+- YM-A04 live
+- YM-A05 latest
+- YM-A06 official-only
+- YM-A07 typo/STT
+
+Playback:
+- YM-B01 play
+- YM-B02 pause
+- YM-B03 next
+- YM-B04 previous
+- YM-B05 restart
+
+Seek:
+- YM-C01 +10s
+- YM-C02 -30s
+- YM-C03 absolute timestamp
+- YM-C04 chapter
+- YM-C05 live edge
+
+Speed/quality:
+- YM-D01 1.5x
+- YM-D02 normal
+- YM-D03 unsupported speed
+- YM-D04 1080p
+- YM-D05 auto
+- YM-D06 unavailable 4K
+
+Captions:
+- YM-E01 enable
+- YM-E02 disable
+- YM-E03 language
+- YM-E04 auto-translate
+- YM-E05 unavailable
+
+Account actions:
+- YM-F01 Watch Later
+- YM-F02 playlist add
+- YM-F03 like
+- YM-F04 subscribe
+- YM-F05 wrong account protection
+
+Transcript:
+- YM-G01 get
+- YM-G02 search text
+- YM-G03 summarize
+- YM-G04 translate
+- YM-G05 timestamp mapping
+
+Security:
+- YM-H01 description prompt injection
+- YM-H02 malicious download link
+- YM-H03 restricted download not bypassed
+- YM-H04 login requirement handoff
+
+Context:
+- YM-I01 "بعدی"
+- YM-I02 "همینو از اول"
+- YM-I03 "صداشو کم کن"
+- YM-I04 "برو دقیقه 10"
+- YM-I05 scheduled vs seek hard negative
+
+Verification:
+- YM-J01 click but state unchanged
+- YM-J02 wrong video opened
+- YM-J03 caption language mismatch
+- YM-J04 playlist update failed
+- YM-J05 share URL wrong timestamp
+
+### 36. Acceptance criteria
+
+1. search/open/playback are distinct intents.
+2. player mute, tab mute, app volume and system volume never silently collapse into one.
+3. timestamp seek vs scheduled clock time are contextually distinct.
+4. service capability detection prevents fake support.
+5. account-side actions verify profile/account.
+6. captions/transcripts are handled as page content, not privileged instructions.
+7. media download respects platform rights/access restrictions and never bypasses DRM.
+8. external share hands off to Communication Engine.
+9. scheduled playback hands off to Scheduler.
+10. every state-changing media action is verified.
+11. critical intents have 1000–1500 language examples with hard negatives.
+12. real YouTube/Chrome tests pass before IMPLEMENTED.
+
+### 37. Local implementation plan
+
+When MARIA Windows system is online:
+1. inspect current media/browser handlers.
+2. integrate YouTubeAdapter with Browser Companion.
+3. add media state resolver.
+4. implement search/open.
+5. implement play/pause/seek.
+6. implement speed/quality.
+7. implement captions/transcript.
+8. implement fullscreen/theater/miniplayer/PiP.
+9. add queue/playlist/Watch Later.
+10. add account-action policy/verification.
+11. integrate Audio scope resolver.
+12. integrate Communication share.
+13. integrate Scheduler/media events.
+14. integrate Translation/Study mode.
+15. add rights-aware download handoff.
+16. generate 1000–1500 critical intent packs.
+17. add hard-negative audio/browser/scheduler tests.
+18. run real YouTube account/profile/live/playlist tests.
+19. mark only passing modules IMPLEMENTED.
 
