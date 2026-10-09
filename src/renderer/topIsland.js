@@ -56,7 +56,9 @@ async function renderReports(){
   $('[data-report-add]',host)?.addEventListener('click',async()=>{
     const p=prompt('مسیر کامل فایل Excel:','');if(!p)return;
     const name=prompt('اسم نمایشی؟',p.split(/[\\\\/]/).pop()||'Excel');
-    await window.blackClover.createAccountingMonitor({name:name||'',path:p,type:'invoice',pinned:true,profile:{startRow:2,anchorColumns:['C'],evidence:[]}});
+    const rawType=(prompt('نوع فایل؟ invoice برای فاکتور / transport برای باربری','invoice')||'invoice').trim().toLowerCase();
+    const type=rawType==='transport'?'transport':'invoice';
+    await window.blackClover.createAccountingMonitor({name:name||'',path:p,type,pinned:true,profile:{startRow:2,anchorColumns:['C'],evidence:[]}});
     await window.blackClover.rebuildAccountingWatchers(); renderReports();
   });
 }
