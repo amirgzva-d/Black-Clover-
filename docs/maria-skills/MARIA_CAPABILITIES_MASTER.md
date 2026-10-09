@@ -186,8 +186,8 @@ Priority controls development order only; it does NOT lower quality requirements
 | 18 | Download / Convert / Archive | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 19 | Web-App Agent | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 20 | Face Presence | DESIGN COMPLETE v1 FUTURE-ADVANCED | WAITING |
-| 21 | Gesture Control | NEXT FUTURE-DESIGN | WAITING |
-| 22 | Planner / Routines | QUEUED | WAITING |
+| 21 | Gesture Control | DESIGN COMPLETE v1 FUTURE-ADVANCED | WAITING |
+| 22 | Planner / Routines | NEXT | WAITING |
 
 ---
 
@@ -19778,3 +19778,856 @@ When MARIA Windows system is online:
 13. test false absence/return/sensor disconnect/privacy denial.
 14. test real supported hardware if available.
 15. mark only verified modules IMPLEMENTED.
+
+---
+
+## 21 — Gesture Control / Touchless Interaction Intelligence
+
+**Status:** DESIGN COMPLETE v1 FUTURE-ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** gesture.*, hand_gesture.*, touchless.*, gesture_rule.*, pointerless_control.*  
+**Owner modules:** Gesture Orchestrator / Camera-Sensor Resolver / Hand Tracking Adapter / Gesture Recognizer / Gesture State Machine / Intent Mapper / Activation Gate / Confidence Filter / Cooldown Manager / Context Resolver / Safety Guard / Rule Engine / Calibration Manager / Verifier / Privacy Guard / Gesture Language Agent  
+**Offline capable:** yes when local camera/sensor + local hand-tracking backend exist  
+**Risk class:** L0–L4 depending on mapped action  
+**Primary platform:** Windows, webcam/sensor capability-gated
+
+### 1. Purpose
+
+MARIA should support optional touchless control through intentional hand gestures.
+
+Primary goals:
+- media control
+- volume control
+- slide/presentation control
+- window navigation
+- scrolling
+- page navigation
+- simple accept/cancel UI actions where safe
+- workspace shortcuts
+- custom user-defined gestures
+- accessibility use cases
+- hands-free operation while cooking/presenting/working away from keyboard
+
+Gesture Control must be opt-in and must never interpret every normal body movement as a command.
+
+### 2. Critical distinction — movement vs gesture
+
+A visible hand movement is not automatically a command.
+
+Recognition requires combinations of:
+- valid hand pose
+- temporal pattern
+- confidence threshold
+- minimum hold time
+- motion direction
+- context
+- activation state
+- cooldown
+- optional confirmation
+
+Examples:
+- briefly raising a hand while talking ≠ automatically pause
+- deliberate open-palm hold for 700 ms in gesture mode => possible configured command
+- hand passing through frame ≠ swipe
+- pointing at screen ≠ click unless pointing mode is explicitly active
+
+### 3. Gesture modes
+
+Supported operating modes:
+
+- disabled
+- standby
+- active_session
+- presentation_mode
+- media_mode
+- pointer_mode
+- custom_profile
+
+Default:
+gesture system is disabled or standby until user enables it.
+
+Examples:
+- "Gesture Control رو روشن کن"
+- "فقط برای ارائه فعال باشه"
+- "حالت کنترل موزیک"
+- "ژست‌ها رو خاموش کن"
+- "تا یک ساعت فعالش کن"
+
+### 4. Canonical intents — control
+
+- gesture.enable
+- gesture.disable
+- gesture.pause
+- gesture.resume
+- gesture.status
+- gesture.mode.set
+- gesture.profile.set
+- gesture.session.start
+- gesture.session.stop
+- gesture.get_capabilities
+
+### 5. Built-in gesture vocabulary
+
+Initial default gestures can include capability-gated mappings such as:
+
+- open palm hold
+- closed fist hold
+- swipe left
+- swipe right
+- swipe up
+- swipe down
+- pinch
+- pinch-and-move
+- thumbs up
+- thumbs down
+- two-finger gesture
+- point + dwell
+- circular motion
+- raise hand hold
+
+Exact set depends on tracking quality and camera field of view.
+
+Gesture names are semantic labels, not hard-wired actions.
+
+### 6. Gesture-to-action mapping
+
+Examples of safe default profiles:
+
+#### Media profile
+- open palm hold => play/pause
+- swipe right => next
+- swipe left => previous
+- swipe up => volume increase
+- swipe down => volume decrease
+- closed fist hold => mute/unmute
+
+#### Presentation profile
+- swipe right => next slide
+- swipe left => previous slide
+- open palm => pause/resume presentation control
+- point/dwell => optional safe highlight pointer
+
+#### Browser reading profile
+- swipe up/down => scroll
+- swipe left/right => browser back/forward only if explicitly configured
+
+Mappings are user-editable.
+
+### 7. Canonical gesture-rule intents
+
+- gesture.rule.create
+- gesture.rule.update
+- gesture.rule.delete
+- gesture.rule.enable
+- gesture.rule.disable
+- gesture.rule.list
+- gesture.rule.preview
+- gesture.rule.test
+
+Examples:
+- "وقتی دستمو این‌طوری بالا بردم موزیک Pause شه"
+- "Swipe راست یعنی اسلاید بعدی"
+- "Thumbs up یعنی صدا 10 تا زیاد شه"
+- "این ژست رو فقط تو PowerPoint فعال کن"
+- "این Rule رو حذف کن"
+
+### 8. Custom gesture learning
+
+Canonical:
+- gesture.custom.record
+- gesture.custom.train
+- gesture.custom.test
+- gesture.custom.rename
+- gesture.custom.delete
+
+Workflow:
+1. user explicitly enters custom-gesture setup mode
+2. MARIA records short local samples
+3. extracts hand-motion features
+4. user repeats gesture several times
+5. builds local gesture template/model
+6. evaluates false positives
+7. user assigns action
+8. test mode
+9. enable only after approval
+
+No background learning from ordinary movements.
+
+### 9. Custom gesture safety
+
+A custom gesture should store:
+- gesture_id
+- feature representation
+- duration range
+- confidence threshold
+- cooldown
+- allowed contexts
+- mapped canonical action
+- risk ceiling
+- activation requirement
+
+Never store full raw video unless user explicitly asks to save training clips.
+
+Preferred:
+store compact local features/templates.
+
+### 10. Activation Gate
+
+To prevent accidental commands, profiles can require one of:
+
+- explicit voice activation: "ژست فعال"
+- activation gesture
+- visible on-screen toggle
+- presence + app context
+- timer-scoped session
+- hold-to-activate pose
+
+Example:
+User says:
+"برای ارائه ژست‌ها رو فعال کن تا وقتی PowerPoint بسته بشه."
+
+Then gestures work only within that scoped session.
+
+### 11. Confidence filter
+
+Every recognition result includes:
+- gesture candidate
+- confidence
+- duration
+- hand identity within session
+- direction
+- motion magnitude
+- context
+
+Policy example:
+- >= 0.90 => low-risk action may execute
+- 0.75–0.90 => require longer hold / repeated confirmation
+- < 0.75 => ignore
+
+Thresholds are configurable and gesture-specific.
+
+### 12. Temporal state machine
+
+Gesture recognition must understand sequences.
+
+Example swipe:
+1. hand detected
+2. tracking stable
+3. horizontal movement starts
+4. displacement threshold reached
+5. direction consistency checked
+6. gesture completed
+7. cooldown begins
+
+This prevents one-frame classification from triggering actions.
+
+### 13. Cooldown / deduplication
+
+After a recognized action:
+- duplicate events within cooldown are ignored
+- sustained pose does not repeatedly fire unless action explicitly supports repeat
+
+Example:
+Holding thumbs-up for 4 seconds should not increase volume 40 times.
+
+Repeatable gestures can support controlled repeat:
+- initial delay
+- repeat rate
+- upper/lower limits
+
+### 14. Context-aware mapping
+
+Same gesture can have different meanings by active context.
+
+Example swipe-right:
+- PowerPoint => next slide
+- media player => next track
+- browser reading profile => forward/navigation
+- no active profile => no action
+
+Context priority:
+1. explicit gesture profile
+2. active app
+3. current task
+4. recent user command
+5. no-action if ambiguous
+
+### 15. Media integration
+
+Mapped actions:
+- media.play
+- media.pause
+- media.next
+- media.previous
+- audio.volume.increase
+- audio.volume.decrease
+- audio.mute
+- audio.unmute
+
+Verification uses Audio/Media capability.
+
+Gesture module never directly manipulates Windows audio itself.
+
+### 16. Presentation integration
+
+PowerPoint/Office handoff can support:
+- next slide
+- previous slide
+- start presentation
+- end presentation
+- laser-pointer/highlight mode
+- black screen if explicitly configured
+
+High-impact document edits are not gesture-default actions.
+
+### 17. Browser/page integration
+
+Potential low-risk actions:
+- scroll
+- back
+- forward
+- page up/down
+- media play/pause
+
+Browser form submit/delete/send actions are not permitted by default from a simple gesture.
+
+If user explicitly creates a rule:
+gesture -> submit
+it must still obey WebApp Transaction Guard.
+
+### 18. Window/Desktop integration
+
+Potential safe mappings:
+- switch app
+- minimize active window
+- maximize
+- snap left/right
+- switch workspace
+- show desktop
+
+Examples:
+- "این ژست یعنی پنجره بعدی"
+- "مشت بسته یعنی Show Desktop"
+
+Window actions route through Desktop/Window skills.
+
+### 19. Pointer mode
+
+Optional pointerless cursor control:
+- hand position maps to cursor target
+- pinch can represent click
+- pinch-hold drag
+- two-finger gesture right click
+
+Safety:
+- pointer mode must be explicitly enabled
+- visible cursor/highlight feedback
+- smoothing
+- dead zone
+- dwell
+- confidence threshold
+- no invisible background clicks
+- secure/password surfaces may block or restrict
+
+Pointer mode is accessibility/interaction support, not the preferred method for semantic automation.
+
+### 20. Point-and-dwell
+
+Alternative to pinch:
+- user points
+- target is highlighted
+- dwell timer completes
+- click fires
+
+Benefits:
+- clearer confirmation
+- lower accidental click rate
+
+For destructive controls:
+- dwell alone is not sufficient unless user has specifically approved that action class.
+
+### 21. Multi-hand support
+
+Possible distinctions:
+- left hand
+- right hand
+- two-hand gesture
+
+Do not infer identity from hand characteristics.
+
+User can configure:
+- right hand for navigation
+- left hand for media
+- two hands to enter/exit gesture mode
+
+### 22. Hand identity within session
+
+Tracker may assign ephemeral:
+- hand_1
+- hand_2
+
+This is only for frame-to-frame continuity.
+
+It is not biometric identity and is not persisted as a person identifier.
+
+### 23. Presence integration
+
+Gesture mode may require:
+- confirmed user presence
+- camera/sensor available
+- active gesture session
+
+Presence does NOT authenticate the user.
+
+If person leaves:
+- gesture session pauses
+- no stale gesture commands continue
+
+### 24. Privacy-first camera behavior
+
+Rules:
+- explicit opt-in
+- visible active indicator
+- local processing preferred
+- no raw video persistence by default
+- no cloud upload by default
+- configurable camera source
+- instant disable
+- camera closes when gesture session stops unless shared with another approved feature
+
+### 25. Shared camera coordination
+
+Presence and Gesture may both need camera access.
+
+CameraResourceCoordinator handles:
+- one capture stream
+- multiple local consumers
+- privacy status
+- performance
+- exclusive-app conflicts
+
+Avoid opening duplicate camera streams unnecessarily.
+
+### 26. Camera failure states
+
+Possible:
+- camera_missing
+- permission_denied
+- camera_in_use
+- low_light
+- hand_not_visible
+- tracking_unstable
+- frame_rate_too_low
+- privacy_blocked
+
+MARIA reports exact state rather than saying "gesture broken."
+
+### 27. Calibration
+
+Canonical:
+- gesture.calibrate
+- gesture.calibrate.position
+- gesture.calibrate.distance
+- gesture.calibrate.lighting
+- gesture.calibrate.reset
+
+Calibration may estimate:
+- camera framing
+- expected hand region
+- minimum gesture size
+- usable lighting
+- tracking quality
+
+No face/identity calibration is required.
+
+### 28. False-positive correction
+
+User:
+"این ژست رو اشتباه گرفتی."
+
+MARIA can:
+- log false-positive label
+- adjust threshold
+- extend hold time
+- add negative sample
+- restrict context
+
+It must not broadly retrain unrelated gestures without testing.
+
+### 29. Negative examples
+
+Custom recognition datasets require:
+- gesture positives
+- near-miss gestures
+- ordinary hand movement
+- hand entering/leaving frame
+- scratching face
+- drinking
+- typing
+- holding phone
+- talking with hands
+
+This is essential to avoid accidental commands.
+
+### 30. High-risk action policy
+
+Gestures alone must not normally authorize:
+- delete file/message
+- send message/email
+- payment/purchase
+- account changes
+- security settings
+- shutdown/restart
+- password/OTP submission
+- permanent publish
+
+Allowed only if:
+- user explicitly configured a narrowly scoped gesture rule
+- risk policy allows it
+- additional confirmation may still be required
+
+Preferred defaults keep gesture actions reversible and low-risk.
+
+### 31. Emergency stop gesture
+
+Optional user-defined:
+- distinctive two-hand pose
+- long hold
+
+Can map to:
+- stop current MARIA automation
+- cancel pointer mode
+- disable gesture input
+
+This action should be local, fast and low-risk.
+
+### 32. Accessibility profile
+
+Gesture Control can help when keyboard/mouse use is difficult.
+
+Possible mappings:
+- scroll
+- click
+- back
+- next
+- media
+- dictation activation
+- open voice command mode
+
+Accessibility profile should be separately configurable for sensitivity and dwell timing.
+
+### 33. Gesture + voice composition
+
+Examples:
+- voice: "Gesture mode presentation"
+- gesture: swipe right
+- voice: "این ژست رو عوض کن به قبلی"
+- gesture: demonstrated pose
+
+Voice can resolve ambiguity and create rules more safely than pure camera inference.
+
+### 34. Gesture + scheduler
+
+Examples:
+- "Gesture mode هر روز موقع ارائه فعال شه"
+- "بعد یک ساعت خودکار خاموش شه"
+
+Scheduler handles time-scoped enable/disable.
+
+### 35. Gesture + routines
+
+Gesture can trigger an approved routine.
+
+Example:
+Custom two-hand pose => routine "Focus Mode"
+
+Routine may:
+- mute notifications
+- open workspace
+- set lighting/display
+- launch presentation
+
+The routine's own risk policy remains active.
+
+### 36. Gesture profiles
+
+Profiles:
+- media
+- presentation
+- browser_reading
+- accessibility
+- workspace
+- custom
+
+Each stores:
+- enabled gestures
+- mappings
+- thresholds
+- cooldowns
+- activation rule
+- app scope
+- risk ceiling
+
+### 37. Visual feedback
+
+When gesture mode is active, UI may show:
+- camera/gesture status
+- detected hand skeleton/outline optionally
+- candidate gesture
+- confidence
+- mapped action
+- cooldown
+- "gesture recognized" indicator
+
+Privacy mode can hide camera preview while keeping a small status icon.
+
+### 38. Verification
+
+For each gesture action:
+1. recognize gesture
+2. resolve context
+3. map canonical action
+4. run owning skill
+5. verify resulting state
+
+Examples:
+- swipe right in presentation -> verify slide index changed
+- volume up -> verify audio level changed
+- play/pause -> verify media state
+- window snap -> verify window bounds
+
+Gesture recognition success != task success.
+
+### 39. Audit
+
+Store:
+- gesture_id
+- recognized confidence
+- active profile
+- mapped canonical intent
+- result
+- false-positive correction
+
+Do not store raw frames by default.
+
+### 40. Permissions / risk
+
+L0:
+- status
+- calibration
+- recognition preview
+
+L1:
+- media
+- scrolling
+- window navigation
+- slide navigation
+
+L2:
+- workspace/routine trigger
+- pointer click
+
+L3:
+- external-action rule
+- broad window/app changes
+
+L4:
+- any configured sensitive/destructive action requiring additional confirmation
+
+### 41. Massive language packs
+
+Critical intents target **1000–1500 examples each**:
+- gesture.enable
+- gesture.disable
+- gesture.mode.set
+- gesture.rule.create
+- gesture.rule.update
+- gesture.custom.record
+- gesture.custom.test
+- gesture.calibrate
+- gesture.profile.set
+- gesture.status
+
+Variation axes:
+- "ژست"
+- "حرکت دست"
+- "با دست"
+- "بدون موس"
+- app context
+- presentation
+- media
+- pointer
+- temporary enable
+- rule creation
+- custom gesture
+- correction
+- false positive
+- typo/STT
+- Persian-English
+- negation
+- privacy
+- camera conflict
+- low confidence
+- hard negatives
+
+Hard negatives:
+- "دستم رو ببین" => inspect/gesture setup, not identity
+- "با دست صدا رو زیاد کنم" => gesture rule
+- "الان صدا رو زیاد کن" => Audio immediate action
+- "دوربین رو روشن کن" => Camera control, not gesture mode by default
+- "وقتی رفتم قفل کن" => Presence, not Gesture
+- "این حرکت رو یاد بگیر" => explicit custom gesture training
+- random motion in frame => no command
+- pointing at dangerous button => no click unless pointer mode + policy allows
+
+Family target: many thousands of examples.
+
+### 42. Skill / Agent package
+
+- GestureOrchestrator
+- CameraResourceCoordinator
+- GestureSensorResolver
+- HandTrackingAdapter
+- GestureRecognizer
+- GestureTemporalStateMachine
+- GestureIntentMapper
+- GestureActivationGate
+- GestureConfidenceFilter
+- GestureCooldownManager
+- GestureContextResolver
+- GestureProfileManager
+- CustomGestureTrainer
+- GestureCalibrationManager
+- PointerGestureController
+- GestureRuleEngine
+- GestureSafetyGuard
+- GesturePrivacyGuard
+- GestureVerifier
+- GestureAuditLog
+- GestureLanguageAgent
+
+Handoffs:
+- GestureToMedia
+- GestureToAudio
+- GestureToPresentation
+- GestureToBrowser
+- GestureToWindow
+- GestureToWorkspace
+- GestureToRoutine
+- GestureToEmergencyStop
+
+All register through Skill Registry / Tool Registry.
+
+### 43. Implementation direction
+
+Potential local pipeline:
+- Windows camera capture
+- local hand-landmark/tracking backend
+- gesture temporal classifier
+- rules/context engine
+- owning-skill execution
+
+Requirements:
+- backend abstraction
+- local-first
+- real-time enough for usability
+- CPU/GPU capability detection
+- fallback quality settings
+- no dependency on a single model/vendor
+
+### 44. Test matrix
+
+Activation:
+- GC-A01 disabled by default
+- GC-A02 explicit enable
+- GC-A03 timer-scoped enable
+- GC-A04 app-scoped enable
+- GC-A05 auto-disable on session end
+
+Recognition:
+- GC-B01 swipe left/right
+- GC-B02 open palm
+- GC-B03 fist
+- GC-B04 low light
+- GC-B05 partial hand
+- GC-B06 ordinary movement negative
+
+Temporal:
+- GC-C01 hold threshold
+- GC-C02 cooldown
+- GC-C03 no repeated fire
+- GC-C04 deliberate repeat mode
+
+Context:
+- GC-D01 swipe in PowerPoint
+- GC-D02 swipe in media
+- GC-D03 no active profile
+- GC-D04 ambiguous app context
+
+Custom:
+- GC-E01 record
+- GC-E02 train
+- GC-E03 negative samples
+- GC-E04 false positive correction
+- GC-E05 delete custom gesture
+
+Pointer:
+- GC-F01 point/dwell
+- GC-F02 pinch click
+- GC-F03 drag
+- GC-F04 dangerous target blocked
+
+Privacy:
+- GC-G01 no raw frames saved
+- GC-G02 camera indicator
+- GC-G03 permission denied
+- GC-G04 shared camera with Presence
+- GC-G05 disable instantly
+
+Safety:
+- GC-H01 gesture cannot silently send message
+- GC-H02 gesture cannot silently delete
+- GC-H03 gesture cannot silently shutdown
+- GC-H04 emergency stop gesture
+
+Verification:
+- GC-I01 slide actually changed
+- GC-I02 volume actually changed
+- GC-I03 media actually paused
+- GC-I04 window actually moved
+
+### 45. Acceptance criteria
+
+1. Gesture Control is opt-in and scoped.
+2. ordinary motion never directly maps to commands.
+3. temporal recognition + confidence + cooldown are mandatory.
+4. gestures route to canonical Skills instead of directly manipulating apps.
+5. context determines mappings only when unambiguous.
+6. high-risk actions are not gesture-default actions.
+7. camera processing is local-first and raw frames are not retained by default.
+8. custom gestures require explicit training mode and negative examples.
+9. false-positive corrections can tune thresholds safely.
+10. pointer mode is separately activated and visibly indicated.
+11. gesture result is verified through the owning capability.
+12. critical intents reach 1000–1500 language examples.
+13. real webcam/lighting/context tests pass before IMPLEMENTED.
+
+### 46. Local implementation plan
+
+When MARIA Windows system is online:
+1. detect available webcams/sensors.
+2. inspect camera privacy permissions.
+3. implement CameraResourceCoordinator shared with Presence.
+4. add local HandTrackingAdapter.
+5. implement temporal gesture state machine.
+6. add confidence/cooldown filters.
+7. implement Media and Presentation profiles first.
+8. add Browser/Window handoffs.
+9. implement custom gesture training.
+10. add pointer mode only after core gestures are stable.
+11. add privacy/status UI.
+12. integrate Scheduler/Workspace/Routines.
+13. generate 1000–1500 utterance packs for critical intents.
+14. collect negative motion test cases.
+15. run false-positive tests under real lighting/background conditions.
+16. test camera sharing with Presence.
+17. mark only verified modules IMPLEMENTED.
