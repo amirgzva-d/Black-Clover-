@@ -30,7 +30,7 @@ function localTarget(workbookPath,target,basePath=''){
   if(/^file:/i.test(raw)){
     try{return fileURLToPath(raw);}catch{}
   }
-  raw=raw.replace(///g,path.sep);
+  raw=raw.split('/').join(path.sep);
   if(process.platform==='win32'&&(raw.startsWith('\\\\')||path.win32.isAbsolute(raw)))return path.win32.normalize(raw);
   if(path.isAbsolute(raw))return path.normalize(raw);
   const base=String(basePath||'').trim()||path.dirname(workbookPath);
