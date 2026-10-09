@@ -92,3 +92,21 @@ No spec is considered implemented until it is tested on the user's actual MARIA 
 - UNC/share outage behavior: **retain last verified result and mark stale**
 - Coucou-inspired interaction parity: **REVIEWED / MARIA-NATIVE DESIGN INTEGRATED**
 - Local Windows/Excel COM/UNC/UI performance verification: **WAITING FOR LOCAL SYSTEM**
+
+
+## Top Island / Command Hub v3
+- Product/UI spec: **DESIGN COMPLETE v3**
+- GitHub code staging: **IN PROGRESS / BASE IMPLEMENTATION COMMITTED**
+- Local Windows verification: **WAITING FOR LOCAL SYSTEM**
+- Canonical surface: **Top Island**, not legacy bottom-character Pin/Reminder UI
+- Modules: Home / Agent Monitor, Quick Launch, Accounting Watch, Pins, Tasks & Automations, Reserved Slot
+- Header controls: Home, Chat, contextual Add, panel Pin, panel-only Sound, Settings, Collapse
+- Idle behavior: **60s default → peek**, hover restores compact, panel Pin disables auto-hide
+- Accounting Watch: **event-driven + 3-minute fallback**, **20 active workbook default**
+- Accounting verification: visible numeric ID + hyperlink + existing target + ID/file match
+- Receipt / Plate: separate configurable rules, including 1-image and 2-image requirements
+- Barبری: multi-sheet monitored configuration + verified photo count = تخلیه‌شده
+- Attachment numeric ID: atomic reservation / no duplicate allocation
+- Legacy Pin/Reminder stores: **PRESERVED**
+- Legacy open routes: **MIGRATED TO TOP ISLAND**
+- Final local tasks: real Excel COM selection/hyperlink integration, exact workbook columns/sheets, DPI/rendering, regression and bug fixing
