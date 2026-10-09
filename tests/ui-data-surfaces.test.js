@@ -6,7 +6,7 @@ import path from 'node:path';
 import { PinnedNoteStore } from '../src/agent/PinnedNoteStore.js';
 import { ReminderStore } from '../src/agent/ReminderStore.js';
 
-test('pins store supports create update list and remove for dedicated window',async()=>{
+test('universal pin store remains backward compatible while serving the top hub',async()=>{
   const dir=await fs.mkdtemp(path.join(os.tmpdir(),'maria-pins-'));
   const store=new PinnedNoteStore({directory:dir});
   const a=await store.create({title:'تست',text:'متن پین'});
@@ -28,17 +28,23 @@ test('reminder store supports manual reminders and scheduled actions',async()=>{
   assert.equal(await store.cancel(items[0].id),true);
 });
 
-test('desktop UI has independent chat pins reminders and nonblocking queue',async()=>{
-  const [main,preload,ui,renderer,chat]=await Promise.all([
+test('desktop UI keeps legacy pin/reminder migration APIs but moves their visible controls into top island',async()=>{
+  const [main,preload,ui,renderer,chat,island]=await Promise.all([
     fs.readFile(new URL('../src/main/main.js',import.meta.url),'utf8'),
     fs.readFile(new URL('../src/main/preload.cjs',import.meta.url),'utf8'),
     fs.readFile(new URL('../src/renderer/luxuryUI.js',import.meta.url),'utf8'),
     fs.readFile(new URL('../src/renderer/main.js',import.meta.url),'utf8'),
-    fs.readFile(new URL('../src/renderer/chatSurfaceV2.js',import.meta.url),'utf8')
+    fs.readFile(new URL('../src/renderer/chatSurfaceV2.js',import.meta.url),'utf8'),
+    fs.readFile(new URL('../src/renderer/topIsland.js',import.meta.url),'utf8')
   ]);
   for(const token of ["surface==='pins'","surface==='reminders'","pins:list","reminders:list"])assert.ok(main.includes(token),token);
   for(const token of ['showPins','showReminders','listPins','listReminders'])assert.ok(preload.includes(token),token);
-  assert.match(ui,/mountDataSurface/);
+  assert.match(ui,/mountDataSurface/); // migration-only legacy surface remains until local data is verified
+  assert.doesNotMatch(ui,/data-action="pins"/);
+  assert.doesNotMatch(ui,/data-action="reminders"/);
+  assert.match(island,/pins-automation/);
+  assert.match(island,/گزارش ثبت/);
+  assert.match(island,/میان‌برها/);
   assert.match(renderer,/chatSurfaceV2/);
   assert.match(chat,/const queue=\[\]/);
   assert.doesNotMatch(chat,/input\.disabled\s*=\s*true/);
@@ -49,7 +55,7 @@ test('desktop UI has independent chat pins reminders and nonblocking queue',asyn
 });
 
 
-test('motions wardrobe projects chat pins and reminders have independent surfaces',async()=>{
+test('motions wardrobe and projects remain in the avatar surfaces while pins/reminders are migration-only',async()=>{
   const [main,preload,ui,assets]=await Promise.all([
     fs.readFile(new URL('../src/main/main.js',import.meta.url),'utf8'),
     fs.readFile(new URL('../src/main/preload.cjs',import.meta.url),'utf8'),
@@ -60,6 +66,8 @@ test('motions wardrobe projects chat pins and reminders have independent surface
   for(const token of ['showMotions','showWardrobe','showProjects','showPins','showReminders','listLocalAssets'])assert.ok(preload.includes(token),token);
   assert.match(ui,/showMotions/);
   assert.match(ui,/showWardrobe/);
+  assert.doesNotMatch(ui,/data-action="pins"/);
+  assert.doesNotMatch(ui,/data-action="reminders"/);
   assert.match(assets,/Pose \/ Animation/);
   assert.match(assets,/Expression/);
   assert.match(assets,/XWear/);
