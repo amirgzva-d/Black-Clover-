@@ -26650,3 +26650,402 @@ Effective immediately:
 - The user-provided reference screenshots define the visual direction: top-edge rectangular island, centered temporary character, icon groups at both sides, dark navy/black glass, violet/blue edge light, subtle star field, slim hidden state, expandable rectangle, rich compact cards, progress/status lighting, cohesive custom icons and motion.
 - Every new module/page must use the same v3 design language; no plain placeholder-style production page is acceptable.
 - "100% match" cannot be marked verified from source code alone. Final visual acceptance requires local render at the user's real Windows DPI/resolution and screenshot-by-screenshot comparison/fix pass.
+
+
+---
+
+# TOP ISLAND V4 — STRICT VISUAL REBUILD / REFERENCE LOCK
+
+**Status:** DESIGN COMPLETE + CODE SCAFFOLD ACTIVE — WAITING FOR REAL WINDOWS PIXEL/UX VERIFICATION  
+**Active renderer:** \`src/renderer/topIslandV4.js\`  
+**Active visual system:** \`src/renderer/topIslandV4.css\`  
+**Legacy:** V3 and older Top Island / bottom-character Pin/Reminder UIs are NOT allowed as visual fallback.
+
+## 1. Non-negotiable visual rule
+
+The active Top Island must use the user-provided reference images as the visual direction.
+
+Forbidden:
+- reusing old Pin card UI
+- reusing old Reminder card UI
+- reusing old Top Island CSS/theme
+- falling back to legacy bottom-character Pin/Reminder controls
+- generic white cards
+- generic dashboard styling
+- emoji-as-primary-icons
+- flat unstyled lists
+- mismatched page designs
+
+Allowed to reuse:
+- data stores
+- scheduler data
+- Pin data
+- Reminder/Automation data
+- Accounting Watch backend
+- Planner
+- IPC/backend contracts
+- verification logic
+
+The distinction is:
+**business logic may migrate; legacy visual UI/UX may not.**
+
+## 2. Reference visual identity
+
+Primary visual language:
+- near-black / charcoal background
+- almost-black glass surface
+- restrained violet/indigo rim glow
+- subtle electric-blue accents
+- off-white typography
+- green reserved for success / verified / Allow
+- amber/orange reserved for waiting / user attention
+- red/coral reserved for deny / failure / destructive state
+- very subtle star/noise field
+- thin borders
+- soft blur
+- deep shadow
+- large rounded rectangle
+- compact technical cards
+- minimal visual clutter
+
+Reference-derived palette target:
+- base black: approximately #07080D to #111217
+- deep navy/violet: approximately #171727 to #282553
+- violet accent: approximately #7E6EFF to #9184FF
+- blue accent: approximately #6597FF
+- success green: approximately #30CF59 to #38D778
+- waiting orange: approximately #F0A45F to #F8A165
+- text: approximately #ECECF1 to #F4F4F7
+
+Final colors are calibrated on the user's real monitor.
+
+## 3. Standard geometry baseline
+
+For a standard 1920×1080 monitor:
+
+### Peek / hidden notch
+- target: approximately 420 × 56
+- top centered
+- only character + status dots visible
+- no full menu
+
+### Compact
+- target: approximately 920 × 96
+- top centered
+- character + Home/Chat/+ + Pin/Settings/Sound + live status
+
+### Expanded
+- target: approximately 1120 × 640
+- top centered
+- full modular workspace
+
+Responsive rule:
+- shrink safely on smaller work areas
+- preserve proportions
+- never render outside work area
+- validate DPI scaling on Windows
+
+## 4. Hidden state behavior
+
+When idle and panel is not pinned:
+- after 60 seconds, collapse to Peek
+- mouse enters Peek -> Compact
+- click character -> restore selected page
+- active approval / critical wait state may keep panel visible
+- active modal suspends auto-hide
+- Panel Pin disables auto-hide
+- user may configure 30s / 60s / 120s / never
+
+## 5. Top controls
+
+Reference-aligned controls:
+- Home
+- Chat
+- Contextual +
+- character
+- live activity pills
+- Panel Pin
+- Settings
+- Panel Sound
+
+Rules:
+- Sound controls Top Island sounds only
+- Panel Pin controls Island visibility persistence
+- + changes meaning according to active page
+- icons are original MARIA line icons with one consistent visual family
+- icon size/stroke/radius/hover glow must match across all modules
+
+## 6. Character placeholder
+
+Until the final MARIA character is selected:
+- use a simple white rounded/squircle face
+- two black eyes
+- subtle movement only
+- no old character UI dependency
+
+States:
+- idle
+- listening
+- thinking
+- executing
+- waiting
+- success
+- warning
+- error
+- offline
+- privacy
+
+The character component must be replaceable without changing Top Island layout.
+
+## 7. Approval card — mandatory
+
+A reference-style permission card is mandatory.
+
+Visual anatomy:
+- app/agent icon on one side
+- action/application title
+- "waiting for your OK" / Persian equivalent
+- optional elapsed timer
+- large red Deny button
+- large green Allow button
+- distinct visual priority from ordinary activity
+
+Behavior:
+- exact pending action shown
+- Allow calls MARIA confirmation API
+- Deny calls MARIA rejection API
+- panel remains visible until resolved/dismissed
+- no ambiguous approval request
+- risky action description must be specific
+
+## 8. Home / Agent Monitor
+
+Must visually resemble the reference activity-monitor language:
+- compact agent/task rows
+- icon tile
+- colored status light
+- colored progress line
+- secondary progress/info line
+- right-side status/action
+- live agent sessions
+- approvals
+- failures
+- completed tasks
+
+No plain generic text-only dashboard.
+
+## 9. Quick Launch page
+
+Reference-consistent shortcut tiles:
+- icon block
+- title
+- target/type
+- health indicator
+- optional hotkey
+- custom icon support
+- horizontal favorites strip
+- mouse-wheel horizontal scroll
+- "دیدن همه" when overflowed
+- full search
+- open/edit actions
+
+Supported targets:
+- file
+- folder
+- app
+- URL
+- movie
+- music
+- project
+- workspace
+- contact/chat
+- routine
+- MARIA action
+
+## 10. Accounting Watch page
+
+Must use the same visual family as the reference's activity rows.
+
+Each file row:
+- pin
+- file/customer name
+- invoice number
+- completion line
+- registered / total
+- missing count
+- issue count
+- status
+- last scan
+- quick details
+- quick open
+
+Color semantics:
+- violet/blue = active progress
+- green = complete/verified
+- amber = missing/stale/waiting
+- red = broken/duplicate/error
+
+Completed files sort downward unless pinned.
+
+### Performance policy
+For up to 20 monitored files:
+- event-driven watcher after file/save changes
+- debounce ~1.8s
+- fallback health refresh every 180s
+- max 2 concurrent scans by default
+- no full scan every second
+
+## 11. Pins page — new UI only
+
+Pin visual types have different preview treatment:
+- text
+- prompt
+- URL
+- file/folder
+- image/media
+- Excel
+- message/conversation
+- routine
+- project/workspace
+
+Every Pin card remains in the same dark/glow visual system but may show a type-specific icon/accent.
+
+Old Pin UI is forbidden.
+
+## 12. Tasks / Reminder / Automation page — new UI only
+
+Task cards distinguish:
+- Reminder
+- Scheduled Action
+- Conditional Automation
+
+Each card should show:
+- type icon
+- title/instruction summary
+- next run
+- recurrence/condition
+- paused/running/waiting state
+- last result
+- verification status
+- quick Pause/Resume
+- details/history
+
+Examples:
+- remind user
+- scheduled Telegram forward
+- Saved Messages -> recipient/group folder workflow
+- research -> report -> read aloud
+- download -> later install/update
+- sleep/lock
+- routine execution
+- condition on network/presence/download completion
+
+Old Reminder UI is forbidden.
+
+## 13. Settings page
+
+Top Island Settings is rendered inside the same black-glass rectangle.
+
+Sections:
+- auto-hide
+- panel pin
+- panel sound
+- visual intensity
+- reduced motion
+- module ordering
+- notifications
+- monitor/display selection later
+
+It must not visually fall back to legacy settings cards.
+
+## 14. Reserved module
+
+The user requested a deliberately empty future page.
+
+It remains visually finished but functionally reserved:
+- same theme
+- no fake functionality
+- can later be assigned without redesigning Top Island
+
+## 15. Navigation UX
+
+When selecting a module:
+- old module content leaves
+- new module enters
+- no stacked content
+- contextual + updates instantly
+- selected icon state updates
+- page state/scroll can be remembered
+- transition uses opacity + small vertical movement
+- no expensive full-layout animation
+
+## 16. Motion specification
+
+Recommended:
+- hover: 120–160ms
+- page switch: 140–200ms
+- expand/collapse: 220–320ms spring/ease
+- approval appearance: 180–240ms
+- success: one small bounce
+- waiting: subtle amber pulse
+- error: one red edge pulse
+- character blink: non-periodic natural interval
+- reduced motion supported
+
+No excessive glowing or continuous high-cost animation.
+
+## 17. Reference-specific visual QA
+
+Before marking IMPLEMENTED on Windows:
+1. run Top Island on real monitor
+2. capture Peek screenshot
+3. capture Compact screenshot
+4. capture Expanded Home
+5. capture Approval card
+6. capture Quick Launch
+7. capture Accounting Watch
+8. capture Pins
+9. capture Tasks
+10. compare spacing, darkness, glow, radius, typography and icon density to references
+11. fix DPI/blur/font/rendering differences
+12. only then accept final UI
+
+No claim of "100% exact" before this real pixel/UX pass.
+
+## 18. Active code rule
+
+Renderer bootstrap must load:
+\`topIslandV4.js\`
+
+It must NOT load:
+- \`topIslandV3.js\`
+- \`topIsland.js\`
+
+V3/older files may remain temporarily only for rollback/history until V4 passes local regression.
+
+## 19. Test lock
+
+Automated repository tests must verify:
+- V4 active import
+- V3 not active
+- legacy Pin/Reminder bottom buttons absent
+- V4 Home / Quick Launch / Accounting / Pins / Tasks exist
+- 60-second default auto-hide
+- panel Pin exists
+- panel Sound exists
+- contextual + exists
+- Approval Allow/Deny exists
+- V4 CSS uses black-glass theme tokens
+- standard island dimensions are configured
+
+## 20. Final V4 status
+
+**TOP ISLAND V4 VISUAL DESIGN: FROZEN**
+
+**CODE SCAFFOLD: ACTIVE IN GITHUB**
+
+**REAL WINDOWS/DPI/EXCEL/PIXEL VERIFICATION: PENDING**
+
+When the system comes online, the task is:
+integrate -> inspect -> configure real workbook rules -> pixel-check -> test -> fix bugs -> verify -> sync GitHub.
+
