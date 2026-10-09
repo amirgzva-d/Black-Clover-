@@ -125,6 +125,16 @@ function openModal({title,kicker='',body='',submit='ذخیره',onSubmit=null,wi
 }
 const field=(label,control,help='')=>`<label class="v4-field"><span>${esc(label)}</span>${control}${help?`<small>${esc(help)}</small>`:''}</label>`;
 
+function approvalCard(e){
+  const p=e?.payload||e||{};
+  const id=String(p.id||p.confirmationId||p.requestId||e?.id||'');
+  return `<article class="v4-approval" data-approval-id="${esc(id)}">
+    <div class="agent-avatar"><div class="mini-face"><i></i><i></i></div><b></b></div>
+    <div class="approval-copy"><small>${esc(p.app||p.tool||p.source||'MARIA')}</small><b>${esc(e?.text||p.title||p.message||'در انتظار تأیید شما')}</b><span>${esc(p.detail||p.action||'این مرحله برای ادامه به اجازه شما نیاز دارد.')}</span></div>
+    <div class="approval-actions"><button class="deny" data-approval-deny>${I.close}<span>Deny</span></button><button class="allow" data-approval-allow>${I.check}<span>Allow</span></button></div>
+  </article>`;
+}
+
 async function renderHome(){
   const host=$('[data-page-body]');if(!host)return;
   const [status,tasks,reports]=await Promise.all([
@@ -136,12 +146,14 @@ async function renderHome(){
   const next=active[0];
   const missing=(reports||[]).reduce((n,x)=>n+Number(x.result?.missing||0),0);
   const issues=(reports||[]).reduce((n,x)=>n+Number(x.result?.brokenLinks||0)+Number(x.result?.duplicateIdCount||0)+Number(x.result?.idMismatches||0),0);
+  const pending=events.find(e=>['approval','confirmation','permission','confirm'].includes(String(e.type||'').toLowerCase())||e.payload?.requiresConfirmation===true);
   host.innerHTML=`
     <section class="v4-home-hero">
       <div class="v4-hero-character"><div class="mini-face"><i></i><i></i><b></b></div><span class="halo"></span></div>
       <div class="v4-hero-copy"><small>MARIA • LIVE AGENT MONITOR</small><h1>${esc(status?.detail||'Online • آماده')}</h1><p>مرکز زنده کارها، وضعیت‌ها، هشدارها و اجرای سریع.</p></div>
       <button class="v4-primary" data-open-chat>${I.chat}<span>چت با MARIA</span></button>
     </section>
+    ${pending?approvalCard(pending):''}
     <section class="v4-stat-grid">
       <article><span class="violet">${I.clock}</span><div><small>وظیفه بعدی</small><b>${next?fmt(next.dueAt):'—'}</b></div></article>
       <article><span class="blue">${I.report}</span><div><small>ثبت‌نشده</small><b>${missing}</b></div></article>
@@ -437,6 +449,12 @@ function bindPageActions(){
     if(pin){const id=pin.dataset.pinId,item=(await window.blackClover.listPins()).find(x=>x.id===id);if(e.target.closest('[data-pin-copy]')&&item){await navigator.clipboard.writeText(item.body||item.text||'');return;}if(e.target.closest('[data-pin-edit]')&&item){editPin(item);return;}}
     const task=e.target.closest('[data-reminder-id]');
     if(task){const id=task.dataset.reminderId;if(e.target.closest('[data-reminder-pause]')){await window.blackClover.pauseReminder(id);await renderTasks();return;}if(e.target.closest('[data-reminder-resume]')){await window.blackClover.resumeReminder(id);await renderTasks();return;}if(e.target.closest('[data-reminder-cancel]')){await window.blackClover.cancelReminder(id);await renderTasks();return;}}
+    const approval=e.target.closest('[data-approval-id]');
+    if(approval){
+      const id=approval.dataset.approvalId;
+      if(e.target.closest('[data-approval-allow]')){await window.blackClover.confirm?.(id,true);playTone('ok');approval.remove();return;}
+      if(e.target.closest('[data-approval-deny]')){await window.blackClover.confirm?.(id,false);playTone('warn');approval.remove();return;}
+    }
     if(e.target.closest('[data-home-refresh]'))renderHome();
     if(e.target.closest('[data-open-chat]'))window.blackClover.showChat();
   });
@@ -515,6 +533,7 @@ export async function mountTopIslandV4(){
     else if(e?.type==='accounting-report-updated'){pushEvent({type:'accounting',text:'گزارش حسابداری بروزرسانی شد'});if(page==='reports')renderReports();}
     else if(e?.type==='accounting-watch-unavailable'){pushEvent({type:'warning',text:'مسیر حسابداری در دسترس نیست'});}
     else if(e?.type==='data-changed'){if(e.store==='shortcuts'&&page==='shortcuts')renderShortcuts();if(e.store==='pins'&&page==='pins')renderPins();if(e.store==='reminders'&&page==='tasks')renderTasks();if(e.store==='accounting'&&page==='reports')renderReports();}
+    else {pushEvent(e);if(page==='home'&&(['approval','confirmation','permission','confirm'].includes(String(e?.type||'').toLowerCase())||e?.requiresConfirmation===true))renderHome();}
   });
   window.blackClover.onIslandModule?.(payload=>selectPage(String(payload?.module||payload||'home')));
   syncChrome();renderTopPills();await renderPage();setMode('compact');
