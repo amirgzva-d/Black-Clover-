@@ -26,8 +26,8 @@ From this point forward, every new capability specification is appended to the s
 | 18 | Downloads / format conversion / archive | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 19 | Web-app automation incl. ChatGPT | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 20 | Face presence (future) | DESIGN COMPLETE v1 FUTURE-ADVANCED | WAITING |
-| 21 | Gesture control (future) | NEXT FUTURE-DESIGN | WAITING |
-| 22 | Multi-step planner / routines | QUEUED | WAITING |
+| 21 | Gesture control (future) | DESIGN COMPLETE v1 FUTURE-ADVANCED | WAITING |
+| 22 | Multi-step planner / routines | NEXT | WAITING |
 
 ## Global understanding requirements
 Every capability must support semantic understanding instead of exact-string matching, including colloquial phrasing, misspellings, incomplete commands, Persian/English mixing, speech-recognition errors, relative values, pronouns/references, learned aliases and context-aware targets.
