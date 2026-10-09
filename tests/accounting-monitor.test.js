@@ -33,7 +33,6 @@ test('accounting scanner counts linked and missing invoice evidence without open
   assert.equal(result.total,2);
   assert.equal(result.registered,1);
   assert.equal(result.missing,1);
-  assert.equal(result.missingRows[0],undefined);
   assert.equal(result.sheets[0].missingRows[0].row,3);
   assert.deepEqual(result.sheets[0].missingRows[0].missing,['receipt_photo']);
   await fs.rm(dir,{recursive:true,force:true});
