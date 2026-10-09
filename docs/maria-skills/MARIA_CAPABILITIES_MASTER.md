@@ -23915,3 +23915,1393 @@ What is NOT yet legitimately claimable:
 - local Electron package success on the user's machine
 
 Those require the MARIA Windows system to be online and testable.
+
+---
+
+# POST-FREEZE UI/OPS PACK v1 — MARIA TOP COMPANION HUB
+
+**Status:** DESIGN COMPLETE — IMPLEMENTATION-STAGED — WAITING FOR LOCAL WINDOWS INTEGRATION  
+**Priority:** CRITICAL USER WORKFLOW / HIGH-IMPORTANCE UI  
+**User intent:** Replace the old Pin/Reminder surfaces under the character with a new top-of-screen rectangular companion hub inspired by the interaction quality of Coucou, while keeping MARIA-native architecture, styling, privacy, Skills, and workflows.
+
+## H0 — Non-negotiable implementation rule
+
+This UI is NOT considered implemented until it is connected to the user's actual MARIA Windows runtime and verified there.
+
+What is completed now:
+- final product/UX architecture
+- module behavior
+- data contracts
+- storage/migration plan
+- Excel/accounting monitoring model
+- scheduler/pin redesign
+- Coucou-inspired feature parity map
+- exact future code touch-points in the current repository
+- staged reference code components
+
+What remains for the online Windows machine:
+- wire staged components into the actual Electron windows/IPC
+- bind real Excel COM/event adapter
+- obtain final workbook/sheet/cell definitions from the user
+- run real UNC-share tests
+- migrate existing Pin/Reminder data
+- remove old surfaces after migration verification
+- visual QA / performance QA / bug fixing
+
+No redesign should be required when the machine comes online; only binding, exact cell configuration, testing, tuning, and fixes.
+
+---
+
+## H1 — Product identity: MARIA Top Companion Hub
+
+Internal name:
+**TopCompanionHub**
+
+User-facing concept:
+a dark-glass rectangular "MARIA island" anchored at the top-center of the selected display.
+
+This is a separate persistent companion surface from the large avatar window.
+
+### Core states
+
+- `hidden_edge` — nearly hidden at the top edge
+- `peek` — small status strip
+- `compact` — normal always-available rectangle
+- `expanded` — full module panel
+- `attention` — asks for confirmation / warning
+- `running` — live task progress
+- `drop_target` — file/context drop active
+- `privacy` — hides sensitive previews
+- `offline` — local-only / disconnected indicators
+
+### Behavior
+
+- always-on-top by default, user-configurable
+- top-center anchor
+- open on hover with configurable dwell
+- click expands
+- Esc collapses
+- auto-collapse after inactivity
+- does not steal focus merely because it appears
+- can follow active monitor or stay on chosen monitor
+- compact state shows important live status only
+- expanded state contains the module menu and cards
+- supports keyboard/global-hotkey opening
+- supports mouse wheel/trackpad navigation
+- supports reduced-motion accessibility mode
+
+---
+
+## H2 — Visual language / UI system
+
+### Theme
+
+Primary:
+- smoked black glass
+- neutral white/soft-gray text/icons
+- minimal accent color only for state
+- subtle violet/blue may be used as MARIA identity accent, never as a noisy full-panel gradient
+
+Recommended tokens:
+
+- surface: rgba(7, 9, 13, 0.78)
+- surfaceStrong: rgba(8, 10, 15, 0.93)
+- border: rgba(255,255,255,0.10)
+- borderStrong: rgba(255,255,255,0.16)
+- textPrimary: #F5F6F8
+- textSecondary: #A4AAB5
+- textMuted: #707783
+- success: restrained green
+- warning: restrained amber
+- danger: restrained red
+- active: restrained cool-blue/violet
+- blur: 28–36 px when GPU/performance allows
+
+### Shape
+
+- premium rectangular form, not an oversized pill
+- rounded corners 16–20 px
+- compact island visually clean and narrow
+- expanded shell uses nested cards with smaller 12–14 px radii
+
+### Motion
+
+- spring-like expansion/collapse
+- 180–260 ms for common transitions
+- transform/opacity preferred for smoothness
+- no excessive bouncing
+- subtle character state animation
+- low-power/reduced-motion fallback
+- animations should communicate state, not merely decorate
+
+---
+
+## H3 — Coucou-inspired capability parity, MARIA-native
+
+The design adopts useful general interaction patterns from Coucou but does not copy Coucou/Mochi branding, proprietary assets, sounds, or identity.
+
+Current parity targets adapted to MARIA:
+
+- top-edge companion that peeks/expands
+- hidden/quiet when idle
+- character state animations
+- hover/click interactions
+- file drop into companion
+- ask AI about dropped file
+- live agent/task session pills
+- task step/status display
+- permission request cards with Allow/Deny through MARIA Permission Layer
+- jump/open related project/terminal/app
+- built-in quick AI chat
+- multi-provider AI surface
+- integration/service pills
+- GitHub status/PR/CI surface when connected
+- local-model status
+- plan/usage/provider status where APIs expose it
+- custom colors/sounds
+- global shortcuts
+- wardrobe/personality linkage
+- media-reactive character behavior, optional
+- private/local-first secrets through secure OS storage
+- no telemetry requirement for the local MARIA hub
+- plugin-driven future integrations
+
+Coucou-specific implementation details are not cloned; MARIA uses its own Electron runtime, Skill Registry, Event Bus, Planner, Permission Layer and avatar system.
+
+---
+
+## H4 — Hub shell layout
+
+Expanded panel uses an RTL-friendly module rail/menu.
+
+Initial menu order:
+
+1. **میان‌برها** — Quick Launch
+2. **گزارش ثبت** — Accounting / Attachment Monitor
+3. **پین و زمان‌بندی** — Pins + Reminders + Automated Actions
+4. **ماژول جدید** — reserved configurable future slot, hidden or empty until assigned
+5. optional system/service modules added later through registry
+
+The module order is configurable.
+
+The user may later move Pins/Automation to another menu slot without changing backend logic.
+
+---
+
+# H5 — MENU 1: QUICK LAUNCH / میان‌برها
+
+## Goal
+
+Fast access to anything the user chooses:
+
+- application
+- file
+- folder
+- website
+- URL
+- song
+- video
+- local media
+- Excel workbook
+- project
+- chat/conversation
+- contact
+- routine
+- MARIA command
+- workspace
+- system action
+- pinned item
+
+## Data model
+
+`QuickLaunchItem`:
+
+- id
+- label
+- targetType
+- target
+- resolvedTarget
+- iconSource
+- customIcon
+- accent
+- hotkey
+- openMode
+- arguments
+- workingDirectory
+- account/profile when applicable
+- runAs policy
+- order
+- group
+- pinned
+- lastUsedAt
+- useCount
+- health
+- createdAt
+- updatedAt
+
+## Target types
+
+- app
+- file
+- folder
+- url
+- media
+- webapp
+- contact
+- conversation
+- project
+- routine
+- workspace
+- command
+- system_action
+- pin_reference
+
+## UI
+
+Compact:
+- first 5–8 most important icons
+- custom icon support
+- tooltip label
+- status dot when target is unavailable
+
+When count exceeds compact capacity:
+- **دیدن همه**
+- mouse-wheel horizontal scroll in compact strip
+- expanded searchable grid
+- categories/groups
+- drag reorder
+- keyboard navigation
+- virtualization for large lists
+
+## Advanced features
+
+- drag file/app/url into Shortcuts to create
+- "Add current file/window/page"
+- "Add selected object"
+- custom icon
+- custom title
+- custom color accent
+- assign global hotkey
+- convert Pin -> Shortcut
+- convert Routine -> Shortcut
+- broken-target health check
+- one-click repair/rebind
+- recent/frequent recommendations shown separately, never automatically pinned
+
+## Safety
+
+Shortcuts launch canonical MARIA actions, not arbitrary hidden scripts by default.
+
+A shortcut pointing to a dangerous action still inherits its normal permission/risk policy.
+
+---
+
+# H6 — MENU 2: ACCOUNTING / ATTACHMENT REGISTRATION MONITOR
+
+**User-visible name recommendation:** `گزارش ثبت`  
+Alternative: `کنترل فاکتورها`
+
+This is a critical operational dashboard.
+
+## H6.1 Primary accounting use case
+
+The user has multiple accounting Excel workbooks, often named like:
+
+`اسماعیل زاده 112`
+
+A workbook contains financial/plate-related records.
+
+Images/files are linked into designated cells such as H/I through Excel hyperlinks.
+
+The visible cell text is a numeric attachment ID.
+
+Example:
+- image file is named `21.jpg` or equivalent numeric base name
+- Excel cell visibly contains `21`
+- the cell hyperlink points to the matching file
+
+Approved attachment root currently provided by the user:
+
+`\\Alimohajeristee\حسابداری\share 1405\pic\New folder (2)`
+
+This exact root is a default candidate only; it is verified on the real machine before enabling.
+
+## H6.2 Why the visible numeric ID is preserved
+
+The numeric ID must remain visible in Excel because:
+- it is quick to identify
+- it allows manual recovery if a hyperlink breaks
+- the corresponding image/file can be found directly in the attachment folder
+- it gives the user a simple human-readable attachment registry
+
+MARIA therefore does NOT replace the visible ID with a generic "Link" label.
+
+## H6.3 Attachment ID allocator
+
+New module:
+`AttachmentIdAllocator`
+
+Goal:
+never reuse an existing numeric attachment ID unintentionally.
+
+Algorithm:
+1. inspect existing numeric filenames in the approved attachment directory
+2. inspect temporary reservations
+3. determine highest valid ID
+4. reserve next available integer atomically
+5. download/copy file to a temporary name
+6. verify file
+7. rename to reserved numeric ID + correct extension
+8. create/update Excel hyperlink
+9. verify cell display ID and hyperlink target
+10. release reservation
+
+Example:
+existing highest valid ID = 20  
+new item => reserve 21
+
+The allocator does not rely on the user or MARIA "remembering" the last number.
+
+## H6.4 Duplicate prevention
+
+Detection:
+- duplicate visible Excel ID
+- duplicate numeric filename
+- same ID pointing to different files
+- duplicate hyperlink target
+- conflicting reservations
+
+Result states:
+- valid
+- duplicate_id
+- id_target_mismatch
+- broken_link
+- target_missing
+- hyperlink_missing
+- visible_id_missing
+- partial_attachment
+- complete
+
+## H6.5 Workbook configuration is schema-driven
+
+Exact columns/sheets can differ by workbook.
+
+The architecture must not hard-code C/H/I globally.
+
+`AccountingWorkbookProfile`:
+
+- profileId
+- workbookPath
+- displayName
+- workbookKind: invoice | freight
+- enabled
+- pinned
+- invoiceNameParser
+- watchedSheets
+- headerRow
+- dataStartRow
+- endRowPolicy
+- rowPresenceRule
+- rowTypeClassifier
+- attachmentRules
+- attachmentRoot
+- archivePolicy
+- scanPolicy
+- sortPolicy
+- createdAt
+- updatedAt
+
+## H6.6 Cell-definition wizard
+
+When the system is online, the user can define a workbook without redesigning code.
+
+Ways to configure:
+1. enter column/cell manually
+2. use current Excel selection
+3. select an entire column/range and click:
+   - "این ستون = رکورد"
+   - "این ستون = عکس ۱"
+   - "این ستون = عکس ۲"
+   - "این محدوده = بررسی شود"
+4. choose worksheet(s)
+5. preview detected rows
+6. save profile
+
+This means later the user only needs to tell MARIA the exact cell/column definitions.
+
+## H6.7 Preliminary user rule captured now
+
+The user's current description indicates:
+- data/record significance may involve column C downward
+- attachment/link cells involve H and I downward
+- some records may require one image
+- some plate-related records may require two images
+
+This is saved as **preliminary**, not hard-coded final truth.
+
+At local integration the exact row classifier and exact required attachment count will be confirmed.
+
+## H6.8 Row classifier
+
+A row can be classified as:
+- payment_receipt
+- plate_record
+- generic_record
+- ignored
+- unknown
+
+Required attachments are rule-based.
+
+Example:
+- payment_receipt => attachment slot 1 required
+- plate_record => attachment slot 1 + slot 2 required
+
+The exact rule that distinguishes receipt vs plate is configured from the real workbook.
+
+## H6.9 What counts as "registered"
+
+A record is not considered fully registered merely because a number is visible.
+
+For each required attachment:
+1. cell has expected visible numeric ID
+2. cell has hyperlink
+3. target path resolves
+4. target file exists
+5. numeric cell ID matches target numeric basename
+6. target file is within allowed attachment root or approved archive root
+
+Only then does the slot become `verified_attachment`.
+
+## H6.10 Dashboard row design
+
+Each workbook appears as one horizontal premium row/card.
+
+Fields:
+
+- Pin icon
+- Workbook/customer name
+- Invoice number
+- type badge
+- `ثبت‌شده / کل`
+- missing count
+- broken-link count
+- progress bar/ring
+- last observed Excel open time
+- last modified time
+- last scan time
+- freshness state
+- Open button
+- Details button
+- Manual refresh button
+
+Example:
+
+`اسماعیل زاده • 112 | 178 / 200 ثبت | 22 ناقص | 1 لینک خراب | آخرین بررسی 14:32 | [بازکردن]`
+
+## H6.11 Sort policy
+
+Default dashboard sorting:
+
+1. user-pinned workbooks
+2. error/broken-link
+3. incomplete/missing
+4. recently active partial
+5. complete
+6. archived/offline
+
+Completed workbooks automatically sink to the bottom as requested.
+
+A completed group may collapse into:
+`تکمیل‌شده‌ها (8)`
+
+## H6.12 Details view
+
+Opening Details shows:
+- missing rows
+- partial rows
+- broken links
+- duplicate IDs
+- ID mismatch
+- target missing
+- sheet name
+- row number
+- record type
+- short source-record summary
+- attachment slot 1/2 state
+- visible ID
+- resolved file path
+- "Open Excel at row"
+- "Open attachment folder"
+- "Repair link" where safe
+- "Assign next attachment ID" workflow when requested
+
+## H6.13 Open shortcut
+
+Every workbook row has a direct Open button.
+
+If Excel is already open:
+- focus exact workbook
+- optionally focus exact sheet/row from Details
+
+If closed:
+- open workbook through Office Skill
+- track `lastObservedOpenAt`
+
+## H6.14 Last-opened time
+
+Do NOT trust filesystem access time as the main source.
+
+Preferred:
+- Excel COM WorkbookOpen event
+- MARIA Office adapter open event
+- fallback only when unavailable
+
+Track separately:
+- lastObservedOpenAt
+- lastModifiedAt
+- lastScannedAt
+
+## H6.15 Near-real-time monitoring without 1-second polling
+
+Default strategy:
+
+### Open Excel workbooks
+- Excel COM/application events
+- WorkbookOpen
+- SheetChange
+- WorkbookBeforeClose
+- hyperlink/cell changes when observable
+- debounce 1–3 seconds
+
+### Closed/saved files
+- FileSystemWatcher on workbook directories
+- FileSystemWatcher on attachment directory
+- debounce bursts
+
+### Integrity fallback
+- full scan every **3 minutes**
+- manual refresh always available
+
+### UI
+- update only changed cards
+- cache unchanged workbook results
+
+This gives near-live behavior without scanning 20 workbooks every second.
+
+## H6.16 Unsaved workbook changes
+
+If workbook is currently open with unsaved edits:
+- COM live adapter should inspect in-memory workbook state
+- do not rely on the last saved disk copy
+- UI may show `Unsaved • live`
+
+If COM is unavailable:
+- show `disk snapshot` freshness state honestly
+
+## H6.17 Scale target
+
+Target:
+- up to at least 20 active monitored workbooks
+- up to several hundred relevant rows per workbook
+- typical invoice cycle around <=200 records, but architecture must not hard-limit to 200
+
+Performance:
+- incremental diff
+- cached per-workbook result
+- changed-file rescans
+- full integrity sweep every 3 min
+
+## H6.18 Backup / invoice-cycle behavior
+
+Accounting staff may archive older invoice workbooks to removable/flash backup and begin a new cycle.
+
+Monitor must distinguish:
+- active
+- complete
+- archived
+- missing
+- moved
+- offline_share
+
+A workbook identity should use:
+- path
+- file fingerprint/metadata
+- configured profile ID
+
+not filename alone.
+
+When moved to backup:
+- historical summary can remain
+- active monitoring can be disabled or rebound
+- old missing path is not automatically treated as data loss if user marked it archived
+
+## H6.19 Network/UNC share failure
+
+If:
+`\\Alimohajeristee\...`
+is temporarily unavailable:
+
+Do not report all attachments as missing.
+
+Instead show:
+`Share unavailable • last verified result retained`
+
+Result freshness becomes stale until the share returns.
+
+---
+
+# H7 — FREIGHT / "باربری" WORKBOOK SPECIAL PROFILE
+
+The user has one exceptional workbook such as `باربری`.
+
+It contains multiple worksheets/tabs.
+
+Examples mentioned by user:
+- باربری همتی
+- اظهار
+- other sheets to be specified later
+
+## H7.1 Goal
+
+For configured sheets, count records with valid linked unloading photos.
+
+User-facing meaning:
+`تخلیه‌شده`
+
+## H7.2 Freight profile
+
+`workbookKind = freight`
+
+Per selected sheet:
+- sheetName
+- row start/end rule
+- record presence rule
+- photo-link column(s)
+- optional truck/reference ID column
+- status label = تخلیه‌شده
+
+## H7.3 Dashboard
+
+One main workbook card with sheet breakdown.
+
+Example:
+
+`باربری | همتی: 38 تخلیه‌شده | اظهار: 21 تخلیه‌شده | آخرین بررسی 14:31`
+
+Details:
+- per-sheet count
+- last changed row
+- broken links
+- direct Open Sheet button
+
+If the user only wants "how many photo links exist", no artificial missing-total is invented.
+
+If a total-truck source column is later configured, MARIA can show:
+`38 / 44 تخلیه‌شده`
+
+---
+
+# H8 — MENU 3: UNIVERSAL PINS + AUTOMATIONS
+
+The old Pin and Reminder UI under the avatar is replaced.
+
+The backend is redesigned, not merely restyled.
+
+## H8.1 Universal Pins
+
+A Pin can hold:
+- plain text
+- prompt
+- link/URL
+- selected text
+- file reference
+- folder
+- image
+- audio
+- video
+- Excel workbook
+- Excel row/range reference
+- web page
+- message reference
+- conversation reference
+- command
+- routine
+- project
+- workspace
+- note/checklist
+
+`UniversalPin`:
+
+- id
+- type
+- title
+- body
+- targetRef
+- sourceContext
+- preview
+- tags
+- group
+- color/accent
+- icon
+- order
+- favorite
+- locked
+- sensitivity
+- createdAt
+- updatedAt
+- lastUsedAt
+- health
+
+Actions:
+- open
+- copy
+- send
+- edit
+- rename
+- tag
+- move group
+- convert to shortcut
+- run if it is a routine/command
+- check target health
+- repair/rebind
+- delete
+
+## H8.2 Pins UI
+
+- compact pinned favorites
+- search
+- filters by type
+- drag reorder
+- groups
+- preview
+- context menu
+- "Pin current selection"
+- "Pin current page"
+- "Pin current file"
+- "Pin last MARIA answer"
+- "Pin message"
+
+---
+
+## H8.3 Reminder becomes Automation / Scheduler UI
+
+Two primary modes:
+
+### Notify
+"یادم بنداز"
+
+### Execute
+"خودش انجام بده"
+
+The UI must never blur those two meanings.
+
+## H8.4 Supported scheduling
+
+- exact date/time
+- relative delay
+- recurrence
+- weekdays
+- monthly rules
+- event trigger
+- conditional trigger
+- after completion of another task
+- network online
+- download complete
+- file appears/changes
+- message/email received
+- user returns
+- app starts/closes
+- battery condition
+- time window
+- deadline
+
+## H8.5 User examples captured
+
+- "سر این تایم پیام آخر Saved Messages رو ببر تو گروه شرکت و بعد برای گروه‌های پوشه X فوروارد کن."
+- "ساعت فلان دسکتاپ/نمایشگر رو خاموش کن."
+- "سیستم رو Sleep کن."
+- "یادم بنداز فلان کار رو بکنم."
+- "سر این تایم خودش این کار رو انجام بده."
+- "سر این تایم تحقیق کن و گزارشش رو برام بخون."
+- "این فایل رو دانلود کن."
+- "بعد دانلود یادآوری کن نصبش کنم."
+- "بعد دانلود خودش نصب کن." — subject to install/security permission policy
+- "برنامه رو آپدیت کن."
+- "وقتی اینترنت وصل شد ادامه بده."
+
+## H8.6 Automation card
+
+Fields:
+- title
+- Notify / Execute badge
+- next run
+- trigger
+- recurrence
+- action summary
+- target
+- permission/risk
+- last run
+- last result
+- retry state
+- enabled/paused
+- Edit
+- Run now
+- Pause
+- Cancel
+- Details
+
+## H8.7 Missed run
+
+Per automation:
+- skip
+- run on next start
+- ask
+- grace window
+- reschedule
+
+## H8.8 Safety
+
+Scheduled execution still uses:
+Planner → Permission/Risk → Skill → Verify
+
+Scheduling does not grant permanent unrestricted authority.
+
+---
+
+# H9 — RESERVED MENU SLOT
+
+Menu slot 4 is intentionally modular.
+
+It may remain hidden/empty until the user chooses the next capability.
+
+The menu system must support:
+- add module
+- remove module
+- reorder module
+- hide module
+- set icon/title
+- preserve layout version
+
+No hard-coded assumption that only three pages will ever exist.
+
+---
+
+# H10 — LIVE TASK / AGENT PILLS
+
+Top compact bar may show small live pills such as:
+
+- MARIA task running
+- Download
+- Excel monitor warning
+- GitHub/CI
+- Browser automation
+- Claude/ChatGPT task
+- Scheduled action awaiting confirmation
+- Security warning
+- Media state
+
+Each pill:
+- icon
+- short state
+- progress when real progress exists
+- click -> Details
+- close/dismiss only when safe
+- status colors limited and meaningful
+
+No fake percentages.
+
+---
+
+# H11 — PERMISSION CARDS
+
+When Planner/Skill requires confirmation:
+Hub enters `attention`.
+
+Shows:
+- requested action
+- exact target
+- why permission is needed
+- reversible or not
+- Allow
+- Deny
+- optional "Allow this exact rule in future" only where Permission Layer permits
+
+No webpage/AI output can create a trusted permission card by itself.
+
+---
+
+# H12 — FILE DROP / CONTEXT DROP
+
+Drag a file onto Top Hub:
+
+State:
+`drop_target`
+
+Actions menu:
+- Ask MARIA
+- Pin
+- Open
+- Send
+- Translate
+- OCR
+- Convert
+- Add shortcut
+- Attach to current AI chat
+
+Large/sensitive files follow normal privacy/risk rules.
+
+---
+
+# H13 — CHARACTER / ANIMATION CONNECTION
+
+Top Hub is connected to MARIA character state.
+
+Character states:
+- idle
+- peek
+- listening
+- thinking
+- executing
+- success
+- warning
+- waiting
+- permission_needed
+- offline
+- privacy
+- media_reactive
+
+Possible interactions:
+- eye/cursor tracking if enabled
+- subtle hover response
+- click reaction
+- greeting
+- task-finished reaction
+- media animation/dance optional
+- custom sounds
+- silent mode
+
+Existing full avatar/wardrobe/motion system remains the owner of character assets.
+
+Top Hub consumes character state; it does not duplicate avatar asset storage.
+
+---
+
+# H14 — PERFORMANCE BUDGET
+
+Hub should remain lightweight.
+
+Targets:
+- collapsed/compact idle CPU near-zero
+- no 60fps animation while visually static
+- pause expensive animation when hidden
+- event-driven updates
+- debounce filesystem/Excel event bursts
+- no 1-second full workbook polling
+- cache workbook analysis
+- lazy-load expanded module content
+- virtualize long lists
+- reduce blur/animation on low-end GPU
+
+---
+
+# H15 — DATA / STORAGE ARCHITECTURE
+
+New stores:
+
+- TopHubConfigStore
+- QuickLaunchStore
+- UniversalPinStoreV2
+- AutomationUiStore / Scheduler adapter
+- AccountingMonitorConfigStore
+- AccountingMonitorCache
+- AttachmentIdReservationStore
+
+Storage stays in user data directory.
+
+Sensitive secrets are NOT stored in these JSON stores.
+
+---
+
+# H16 — OLD PIN / REMINDER MIGRATION AND REMOVAL
+
+Current code identified in the repository:
+
+- `src/renderer/luxuryUI.js`
+  - bottom dock currently contains `data-action="pins"`
+  - bottom dock currently contains `data-action="reminders"`
+  - `mountDataSurface(surface)` renders old Pins/Reminder screens
+
+- `src/renderer/luxuryUI.css`
+  - old utility surface styling
+
+- `src/main/main.js`
+  - `pinsWin`
+  - `remindersWin`
+  - `showUtility('pins')`
+  - `showUtility('reminders')`
+  - related IPC
+
+- `src/main/preload.cjs`
+  - showPins/hidePins
+  - showReminders/hideReminders
+  - pin/reminder CRUD IPC
+
+- `src/agent/PinnedNoteStore.js`
+- `src/agent/ReminderStore.js`
+
+## Migration rule
+
+Do NOT immediately delete user data.
+
+First run of new Hub:
+1. detect old `pinned-notes.json`
+2. migrate every valid item to UniversalPin V2
+3. verify count/content
+4. detect old `reminders.json`
+5. normalize valid reminder/action entries into Scheduler/Automation model
+6. verify next-run semantics
+7. mark migration complete
+8. retain old files as backup for one migration cycle
+9. remove old UI surfaces
+10. only later retire legacy store code after verified release
+
+## Bottom avatar dock after migration
+
+Remove only:
+- Pins button
+- Reminders button
+
+Keep existing unrelated buttons unless separately redesigned:
+- Chat
+- Projects
+- Wardrobe
+- Motions
+- Character
+- Voice
+- Settings
+
+This matches the user's request: Pin/Reminder leave the bottom character menu and move to the new top Hub.
+
+---
+
+# H17 — ELECTRON WINDOW ARCHITECTURE
+
+New separate surface:
+`topHubWin`
+
+Recommended BrowserWindow behavior:
+- frameless
+- transparent
+- alwaysOnTop configurable
+- skipTaskbar
+- resizable by state internally, not normal window chrome
+- top-center bounds
+- showInactive for passive reveal
+- focus only on deliberate interaction
+- dynamic bounds between hidden/peek/compact/expanded
+- selected-display anchoring
+- restore after monitor topology change
+
+Renderer:
+- `src/renderer/topCompanionHub.js`
+- `src/renderer/topCompanionHub.css`
+
+Main:
+- TopHubWindowController
+- TopHubStateService
+
+Preload:
+- narrow IPC API only
+
+---
+
+# H18 — IPC CONTRACT
+
+Examples:
+
+- hub:get-state
+- hub:set-state
+- hub:get-config
+- hub:update-config
+- hub:module:list
+- hub:module:reorder
+
+Shortcuts:
+- hub:shortcuts:list
+- hub:shortcuts:create
+- hub:shortcuts:update
+- hub:shortcuts:remove
+- hub:shortcuts:run
+- hub:shortcuts:health
+
+Accounting:
+- hub:accounting:list-profiles
+- hub:accounting:create-profile
+- hub:accounting:update-profile
+- hub:accounting:remove-profile
+- hub:accounting:scan
+- hub:accounting:scan-all
+- hub:accounting:get-details
+- hub:accounting:open-workbook
+- hub:accounting:open-row
+- hub:accounting:reserve-attachment-id
+- hub:accounting:repair-link
+
+Pins:
+- hub:pins:list
+- hub:pins:create
+- hub:pins:update
+- hub:pins:remove
+- hub:pins:run-action
+
+Automation:
+- hub:automation:list
+- hub:automation:create
+- hub:automation:update
+- hub:automation:pause
+- hub:automation:resume
+- hub:automation:cancel
+- hub:automation:run-now
+
+All IPC payloads require validation.
+
+---
+
+# H19 — ACCOUNTING SCANNER ADAPTER CONTRACT
+
+The monitor logic is adapter-independent.
+
+`ExcelAccountingAdapter` methods:
+
+- listOpenWorkbooks()
+- readWorkbookSnapshot(profile)
+- subscribeWorkbookEvents(profile, handler)
+- openWorkbook(path)
+- focusWorkbook(path)
+- focusCell(path, sheet, cell)
+- getSelectedRange()
+- createHyperlink(target)
+- readHyperlink(cell)
+- saveIfAuthorized()
+
+`AttachmentFileAdapter`:
+
+- listNumericAttachments(root)
+- resolveNumericId(root, id)
+- exists(path)
+- reserveNextId(root)
+- releaseReservation()
+- watch(root, handler)
+
+Real Windows implementation can use Excel COM/object model and Node/PowerShell filesystem APIs.
+
+---
+
+# H20 — WORKBOOK ANALYSIS OUTPUT
+
+`WorkbookScanResult`:
+
+- profileId
+- workbookPath
+- workbookIdentity
+- displayName
+- invoiceNumber
+- state
+- totalRecords
+- completeRecords
+- incompleteRecords
+- missingAttachments
+- brokenLinks
+- duplicateIds
+- idMismatches
+- perSheet
+- lastObservedOpenAt
+- lastModifiedAt
+- scannedAt
+- sourceFreshness
+- warnings
+- rowIssues
+
+`RowIssue`:
+
+- sheet
+- row
+- recordType
+- sourceSummary
+- slot
+- visibleId
+- hyperlink
+- resolvedTarget
+- issueType
+- severity
+- suggestedAction
+
+---
+
+# H21 — PROFESSIONAL UX DETAILS FOR ACCOUNTING
+
+### Status language
+
+Use exact wording:
+- `کامل`
+- `ناقص`
+- `عکس ندارد`
+- `لینک ندارد`
+- `لینک خراب`
+- `فایل پیدا نشد`
+- `شماره تکراری`
+- `شماره با فایل نمی‌خواند`
+- `Share در دسترس نیست`
+- `نیاز به تعریف سلول`
+
+### Quick filters
+
+- فقط ناقص‌ها
+- فقط لینک خراب
+- فقط کامل‌ها
+- پین‌شده‌ها
+- امروز تغییر کرده
+- Share unavailable
+
+### Notifications
+
+Only useful deltas:
+- "۳ مورد جدید بدون عکس پیدا شد."
+- "لینک فاکتور 112 ردیف 38 خراب است."
+- "همه موارد فاکتور 112 کامل شد."
+
+Avoid repeating unchanged counts every three minutes.
+
+---
+
+# H22 — TEST PLAN
+
+## UI
+- hidden → peek → compact → expanded
+- hover without focus stealing
+- multi-monitor
+- DPI 100/125/150/200
+- dark desktop / light desktop
+- reduced motion
+- GPU acceleration off
+- keyboard-only navigation
+- screen-reader labels
+
+## Shortcuts
+- app/file/folder/url/routine
+- broken target
+- custom icon
+- >50 shortcuts
+- wheel scroll
+- view-all
+- drag reorder
+- global hotkey conflict
+
+## Pins
+- text/link/file/message/routine
+- migration from existing pinned-notes.json
+- broken file target
+- sensitive pin
+- search/tags
+
+## Automation
+- reminder only
+- automatic local action
+- external send
+- recurrence
+- offline wait
+- missed run
+- retry
+- high-risk confirmation
+- migration from reminders.json
+
+## Accounting
+- 1 workbook
+- 20 workbooks
+- H/I one-link record
+- two-link plate record
+- empty row ignored
+- missing cell ID
+- ID but no hyperlink
+- hyperlink but missing file
+- duplicate ID
+- ID/path mismatch
+- UNC share unavailable
+- share reconnect
+- workbook open + unsaved change
+- workbook closed + saved change
+- archived workbook
+- invoice number parsing
+- direct open workbook
+- direct focus row
+- full scan every 3 minutes
+- event burst debounce
+- completed workbook sorting to bottom
+
+## Freight
+- multiple configured sheets
+- valid photo count
+- missing sheet
+- renamed sheet
+- broken link
+- direct open sheet
+
+---
+
+# H23 — EXACT LOCAL INTEGRATION CHECKLIST
+
+When the user's Windows MARIA machine becomes available:
+
+1. compare local commit with GitHub
+2. create safe checkpoint/branch
+3. inspect current bottom dock visually
+4. verify existing Pin/Reminder data files
+5. stage migration backups
+6. add TopHub BrowserWindow
+7. add renderer + styles
+8. wire preload IPC
+9. wire hub stores
+10. remove Pin/Reminder buttons from bottom dock
+11. migrate old Pin data
+12. migrate old Reminder data
+13. disable old Pin/Reminder surfaces
+14. verify no data loss
+15. bind Shortcut launcher to Resource Resolver
+16. bind Universal Pins to Selection/Browser/File/Messaging
+17. bind Automation page to Scheduler/Planner
+18. connect Excel COM adapter
+19. verify exact UNC attachment root
+20. ask user for exact workbook/sheet/cell rules
+21. configure invoice profiles
+22. configure freight workbook/sheets
+23. test next numeric attachment ID allocator
+24. test hyperlink creation and recovery
+25. enable event-driven Excel/file watchers
+26. enable 3-minute integrity scan
+27. performance-test 20 workbooks
+28. tune top Hub size/animation on actual monitor
+29. test hover/focus/always-on-top
+30. test character state integration
+31. run end-to-end safety tests
+32. fix all discovered bugs
+33. sync code to GitHub
+34. only then mark **IMPLEMENTED**
+
+---
+
+# H24 — DESIGN DECISION
+
+The new top companion surface is now the intended long-term home for:
+- Quick Shortcuts
+- Accounting Registration Monitor
+- Pins
+- Reminders
+- Automated/Scheduled Actions
+- live task pills
+- permission cards
+- file/context drop
+- future compact modules
+
+The old Pin/Reminder UI under the character is **DEPRECATED FOR FUTURE LOCAL MIGRATION**.
+
+**TOP COMPANION HUB DESIGN: COMPLETE — IMPLEMENTATION-STAGED — WAITING FOR LOCAL SYSTEM**
