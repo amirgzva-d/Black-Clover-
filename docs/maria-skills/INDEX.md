@@ -39,7 +39,7 @@ No spec is considered implemented until it is tested on the user's actual MARIA 
 ## Final design review status
 - Primary 22-capability roadmap: **DESIGN COMPLETE**
 - Final cross-capability review: **COMPLETE**
-- Design state: **FREEZE CANDIDATE — READY FOR LOCAL IMPLEMENTATION**
+- Design state: **FREEZE v2 — READY FOR LOCAL IMPLEMENTATION**
 - Scope: deferred Email/Notification experience, Coucou-inspired interaction patterns, cross-skill consistency, missing capabilities, language-pack coverage, permission/risk alignment, verifier/undo coverage, and local implementation readiness.
 
 
@@ -49,3 +49,15 @@ No spec is considered implemented until it is tested on the user's actual MARIA 
 - Cross-skill ambiguity/risk/verification/undo review: **COMPLETE**
 - Language-pack governance: **FROZEN FOR IMPLEMENTATION**
 - Local implementation readiness plan: **DEFINED**
+
+
+## Post-freeze gap closure extensions
+- Owner Face Identity / local face recognition: **DESIGN COMPLETE v1 FUTURE-ADVANCED**
+- Windows sign-in Password/PIN/Hello management: **DESIGN COMPLETE v1 SECURITY-SENSITIVE**
+- Remote Wake / Wake-on-LAN / power-on capability detection: **DESIGN COMPLETE v1 HARDWARE-GATED**
+- Live Screen Sharing: **DESIGN COMPLETE v1 ADVANCED**
+- Telegram Chat Folder + multi-recipient/bulk forwarding: **DESIGN COMPLETE v1 ADVANCED**
+- File Explorer view/presentation control: **DESIGN COMPLETE v1 ADVANCED**
+- Explicit Google Images → safe download workflow: **DESIGN COMPLETE v1**
+- Generic multi-recipient messaging: **DESIGN COMPLETE v1 ADVANCED**
+- Overall design state after gap closure: **FREEZE v2 — READY FOR LOCAL IMPLEMENTATION**
