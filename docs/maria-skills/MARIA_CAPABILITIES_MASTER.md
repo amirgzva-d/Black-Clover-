@@ -181,8 +181,8 @@ Priority controls development order only; it does NOT lower quality requirements
 | 13 | Excel / Office | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 14 | Desktop Organization | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 15 | Selection / Clipboard | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 16 | Translation / OCR | NEXT | WAITING |
-| 17 | Screen Understanding | QUEUED | WAITING |
+| 16 | Translation / OCR | DESIGN COMPLETE v1 ADVANCED | WAITING |
+| 17 | Screen Understanding | NEXT | WAITING |
 | 18 | Download / Convert / Archive | QUEUED | WAITING |
 | 19 | Web-App Agent | QUEUED | WAITING |
 | 20 | Face Presence | FUTURE | WAITING |
@@ -14970,3 +14970,1137 @@ When MARIA Windows system is online:
 14. run sensitive-content and terminal-safety tests.
 15. run real cross-app selection workflows.
 16. mark only verified modules IMPLEMENTED.
+
+
+---
+
+## 16 — Translation / OCR / Screen Translation Intelligence
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`translate.*\`, \`ocr.*\`, \`transcribe_visual_text.*\`, \`screen_translate.*\`, \`language.detect.*\`, \`transliterate.*\`  
+**Owner modules:** Translation Orchestrator / Language Detector / Translation Engine Router / OCR Engine Router / Layout Analyzer / Text Region Resolver / Screen Translation Controller / Terminology Manager / Named-Entity Preserver / Formatting Preserver / Translation Verifier / OCR Verifier / Privacy Guard / Selection Handoff / Browser/Office/File Adapters / Voice Handoff / Translation Language Agent  
+**Offline capable:** yes when local language/OCR engines are installed; online engines are optional adapters  
+**Risk class:** L0–L3 depending on external service use and sensitive source content  
+**Primary platform:** Windows + Browser + Office + local files + screen regions
+
+### 1. Purpose
+
+MARIA must support translation and text extraction across all major user contexts:
+
+- typed text
+- selected text
+- clipboard text
+- focused text field
+- browser selection
+- current webpage
+- image file
+- screenshot
+- selected screen region
+- scanned PDF
+- photo of a document
+- Office document/range
+- subtitle/caption text
+- error dialog
+- application UI text
+- table/image text
+- copied image/bitmap
+
+It must be able to:
+- detect language
+- extract text when needed
+- translate to a requested language
+- preserve names, numbers, units and code where appropriate
+- preserve layout/paragraphs/tables where feasible
+- distinguish literal vs natural translation
+- explain difficult phrases
+- transliterate when asked
+- replace selected text with translation when explicitly requested
+- copy translation
+- read translation aloud
+- send translated text through Messaging
+- translate a screen region without permanently modifying the source app
+- support persistent terminology/glossaries
+- verify OCR/translation quality before claiming success
+
+---
+
+### 2. Critical semantic distinctions
+
+These commands are different:
+
+- "این متن رو بخون"
+  => read/transcribe existing text, no translation unless asked
+
+- "این متن رو ترجمه کن"
+  => translate
+
+- "متن داخل عکس رو دربیار"
+  => OCR/transcription
+
+- "متن داخل عکس رو فارسی کن"
+  => OCR + translation
+
+- "فقط تلفظش رو بگو"
+  => pronunciation/voice handoff
+
+- "فارسی‌نویسیش کن"
+  => transliteration may be intended, not semantic translation
+
+- "این رو انگلیسی بنویس"
+  => may mean translate or rewrite in English; resolve from content/context
+
+- "این رو عیناً تایپ کن"
+  => faithful transcription, not paraphrase
+
+- "معنیش رو توضیح بده"
+  => explanation, not necessarily direct translation
+
+These are mandatory hard negatives.
+
+---
+
+### 3. Source-resolution model
+
+TranslationSourceResolver chooses the source in this order:
+
+1. explicit user-provided text
+2. active structured Selection
+3. focused editable/readable object
+4. Clipboard when explicitly referenced
+5. current browser/Office object
+6. selected screen region
+7. screenshot/image/PDF
+8. ask if source remains ambiguous
+
+Examples:
+
+"این رو ترجمه کن"
+=> current valid Selection first.
+
+"اون چیزی که کپی کردم رو ترجمه کن"
+=> Clipboard.
+
+"این عکس رو فارسی کن"
+=> image OCR + translation.
+
+"این صفحه رو ترجمه کن"
+=> structured browser page translation first; OCR only if page text is unavailable/canvas/image-based.
+
+---
+
+### 4. Canonical intents — language detection
+
+- \`language.detect\`
+- \`language.detect_selection\`
+- \`language.detect_image_text\`
+- \`language.detect_page\`
+
+Examples:
+- "این چه زبانیه؟"
+- "زبان این متن چیه"
+- "این نوشته ژاپنیه یا کره‌ای؟"
+- "تشخیص بده به چه زبانی نوشته"
+
+Output:
+- probable language
+- confidence
+- mixed-language indicators
+- script detection
+- ambiguous alternatives when needed
+
+MARIA should distinguish language from script when relevant.
+
+---
+
+### 5. Canonical intents — translation
+
+- \`translate.text\`
+- \`translate.selection\`
+- \`translate.clipboard\`
+- \`translate.page\`
+- \`translate.document\`
+- \`translate.image_text\`
+- \`translate.screen_region\`
+- \`translate.replace_selection\`
+- \`translate.copy_result\`
+- \`translate.read_aloud\`
+- \`translate.explain\`
+- \`translate.compare_variants\`
+
+Examples:
+- "این رو فارسی کن"
+- "به انگلیسی ترجمه کن"
+- "این متن رو ژاپنی کن"
+- "فارسی به انگلیسی"
+- "ترجمه رسمی بده"
+- "روان ترجمه کن"
+- "لفظ به لفظ"
+- "معنی دقیقش"
+- "ترجمه طبیعی‌تر"
+- "این صفحه رو فارسی کن"
+- "متن عکس رو انگلیسی کن"
+- "همین انتخاب رو ترجمه کن و جاش بذار"
+
+---
+
+### 6. Translation styles
+
+Supported semantic modes:
+
+- literal
+- natural
+- formal
+- informal
+- business
+- technical
+- academic
+- concise
+- explanatory
+- subtitle-friendly
+- UI/localization
+- preserve-tone
+- child/simple-language
+- legal/medical high-caution mode
+- marketing adaptation when explicitly requested
+
+Examples:
+- "روان ترجمه کن"
+- "رسمی باشه"
+- "لفظ به لفظ"
+- "برای ایمیل کاری ترجمه کن"
+- "ترجمه فنی بده"
+- "مثل زیرنویس کوتاه باشه"
+- "لحن خودم حفظ شه"
+
+MARIA must not alter factual content merely to improve style.
+
+---
+
+### 7. Language pairs
+
+Architecture must be language-agnostic.
+
+Priority language support can include:
+- Persian
+- English
+- Arabic
+- Turkish
+- French
+- German
+- Spanish
+- Italian
+- Russian
+- Japanese
+- Korean
+- Chinese
+- Hindi
+- other supported engine languages
+
+Do not hard-code only Persian ↔ English.
+
+Language engines publish capabilities dynamically.
+
+---
+
+### 8. Mixed-language text
+
+MARIA must support texts such as:
+"این API توی Windows درست کار نمی‌کنه."
+
+Rules:
+- preserve product names and technical terms
+- translate surrounding text according to user request
+- avoid mistranslating code identifiers
+- preserve URLs/emails/paths unless requested
+
+Terminology policy can store user-approved mappings:
+- Skill => Skill
+- Intent => Intent
+- Windows => Windows
+- MARIA => MARIA
+
+---
+
+### 9. Named-entity preservation
+
+NamedEntityPreserver protects:
+- personal names
+- brands
+- product names
+- filenames
+- paths
+- URLs
+- emails
+- package names
+- model numbers
+- code symbols
+- command-line flags
+
+Example:
+"SetDisplayConfig"
+must not be translated into a natural-language equivalent inside code/technical text.
+
+User can override:
+"اسم‌ها هم فارسی‌نویسی بشن."
+
+---
+
+### 10. Numbers / units / dates
+
+Translation must distinguish:
+- semantic translation
+- numeric conversion
+- unit conversion
+- locale formatting
+
+Example:
+"5 GB"
+should not become a different numeric quantity.
+
+Date formatting:
+- preserve source date unless user asks to localize
+
+Persian digits:
+- user preference controls whether output uses Persian or Latin digits
+
+Currency conversion is NOT automatic translation and belongs to a dedicated utility/data path.
+
+---
+
+### 11. Transliteration
+
+Canonical:
+- \`transliterate.text\`
+- \`transliterate.name\`
+- \`transliterate.to_latin\`
+- \`transliterate.to_persian_script\`
+
+Examples:
+- "Amir رو فارسی بنویس"
+- "این اسم رو لاتین کن"
+- "تلفظ ژاپنی رو با حروف انگلیسی بنویس"
+- "فینگلیشش کن"
+
+Transliteration ≠ translation.
+
+---
+
+### 12. OCR core intents
+
+- \`ocr.image\`
+- \`ocr.screenshot\`
+- \`ocr.screen_region\`
+- \`ocr.document_scan\`
+- \`ocr.pdf_page\`
+- \`ocr.table\`
+- \`ocr.copy_text\`
+- \`ocr.save_text\`
+- \`ocr.detect_language\`
+
+Examples:
+- "متن این عکس رو دربیار"
+- "از این اسکرین‌شات متن بگیر"
+- "این قسمت صفحه رو بخون"
+- "این PDF اسکن‌شده رو OCR کن"
+- "این جدول عکس رو تبدیل به متن کن"
+- "متنش رو کپی کن"
+- "عین نوشته رو بده"
+
+---
+
+### 13. OCR source preference
+
+Preferred hierarchy:
+
+1. structured app text/API
+2. accessibility tree
+3. PDF embedded text layer
+4. browser DOM
+5. Office object model
+6. OCR only when text is image/scanned/unavailable structurally
+
+Reason:
+structured text is usually more accurate and preserves semantics better than OCR.
+
+MARIA must not OCR a browser paragraph that it can directly read from DOM.
+
+---
+
+### 14. OCR engine abstraction
+
+\`OCREngineRouter\` selects among installed/supported engines.
+
+Possible backend classes:
+- Windows OCR APIs where available
+- local OCR libraries/models
+- specialized handwriting engine
+- cloud OCR connector when explicitly permitted
+- document-layout OCR engine
+
+Each adapter declares:
+- supported languages
+- handwriting support
+- orientation support
+- table support
+- confidence output
+- offline/online
+- privacy characteristics
+
+---
+
+### 15. OCR preprocessing
+
+When useful:
+- orientation correction
+- crop to region
+- contrast normalization
+- perspective correction
+- deskew
+- resolution enhancement
+- line segmentation
+- noise reduction
+
+Do not permanently modify the original image unless user asks.
+
+The OCR pipeline stores a derivative task image.
+
+---
+
+### 16. OCR confidence model
+
+Each recognized block/line/token may carry:
+- text
+- confidence
+- bounding box
+- language/script
+- page/region
+- alternatives
+
+Low-confidence behavior:
+- show uncertain segments
+- compare alternate OCR engine if available
+- ask user for ambiguous critical text
+
+Example:
+OCR sees:
+"0" vs "O"
+in a serial number.
+
+MARIA must not silently guess when the distinction matters.
+
+---
+
+### 17. OCR exactness modes
+
+#### Faithful transcription
+Preserve:
+- line breaks
+- spelling
+- punctuation
+- visible mistakes
+- capitalization
+
+User:
+"عیناً تایپ کن"
+
+#### Clean transcription
+May normalize:
+- accidental line breaks
+- obvious OCR spacing
+- repeated whitespace
+
+User:
+"تمیزش کن"
+
+#### Semantic extraction
+Extract:
+- names
+- dates
+- amounts
+- IDs
+- table cells
+
+User:
+"فقط شماره سفارش رو دربیار"
+
+---
+
+### 18. Table OCR
+
+Canonical:
+- \`ocr.table.detect\`
+- \`ocr.table.extract\`
+- \`ocr.table.to_csv\`
+- \`ocr.table.to_excel\`
+
+Examples:
+- "جدول این عکس رو دربیار"
+- "به Excel تبدیلش کن"
+- "ردیف‌ها و ستون‌ها حفظ بشن"
+- "CSV بده"
+
+Pipeline:
+1. detect table structure
+2. recognize cells
+3. infer rows/columns
+4. preserve merged cells where possible
+5. verify numeric columns
+6. hand off to Excel/File capabilities
+
+Do not flatten a table into prose unless user wants that.
+
+---
+
+### 19. Document OCR
+
+For scanned PDFs/images:
+- page-by-page OCR
+- reading order
+- headings
+- paragraphs
+- tables
+- footnotes
+- page numbers
+- multi-column layout
+
+Canonical:
+- \`ocr.document.full\`
+- \`ocr.document.page\`
+- \`ocr.document.range\`
+- \`ocr.document.export_text\`
+- \`ocr.document.export_docx\`
+- \`ocr.document.export_searchable_pdf\`
+
+Export support is capability-gated.
+
+---
+
+### 20. Screen translation
+
+Canonical:
+- \`screen_translate.region\`
+- \`screen_translate.window\`
+- \`screen_translate.full_screen\`
+- \`screen_translate.overlay_enable\`
+- \`screen_translate.overlay_disable\`
+- \`screen_translate.refresh\`
+- \`screen_translate.freeze\`
+
+Examples:
+- "این قسمت صفحه رو ترجمه کن"
+- "متن این پنجره رو فارسی کن"
+- "روی صفحه ترجمه‌ش رو نشون بده"
+- "این بازی/برنامه رو ترجمه کن"
+- "ترجمه زنده روشن"
+- "ترجمه رو فریز کن"
+- "خاموشش کن"
+
+Modes:
+- one-shot capture
+- region-refresh
+- window-follow
+- overlay
+- side-panel
+
+Continuous "live" translation is resource- and app-dependent and must be capability-gated.
+
+---
+
+### 21. Overlay translation
+
+Overlay should:
+- avoid changing source application
+- map translated blocks to source regions
+- preserve click-through when possible
+- allow opacity/text size
+- hide/show quickly
+- refresh only when content changes if detectable
+
+Potential user commands:
+- "ترجمه رو روی متن بنداز"
+- "کادر ترجمه کوچیک‌تر"
+- "شفافیتش رو کم کن"
+- "فقط زیرنویس‌ها رو ترجمه کن"
+
+Overlay must never intercept secure password fields or sensitive prompts without explicit need.
+
+---
+
+### 22. Screen translation privacy
+
+Continuous screen translation can expose:
+- messages
+- emails
+- account names
+- private documents
+- passwords
+- OTPs
+
+Rules:
+- process locally by default when a local engine is available
+- external/cloud translation requires clear permission for sensitive captures
+- mask password fields where detectable
+- exclude configured apps/windows
+- allow "private apps" denylist
+- do not persist screen captures by default
+- temporary frames deleted after processing unless user saves them
+
+---
+
+### 23. Screenshot translation workflow
+
+User:
+"از این صفحه عکس بگیر و نوشته‌هاشو فارسی کن."
+
+Plan:
+1. capture requested region/window
+2. detect whether structured text is accessible
+3. if not, OCR
+4. detect source languages
+5. translate
+6. present text or overlay
+7. optionally copy/save
+
+---
+
+### 24. Browser page translation
+
+Preferred:
+1. browser structured page text
+2. browser-native translation when user explicitly wants it and available
+3. MARIA translation pipeline
+4. OCR only for image/canvas text
+
+Examples:
+- "این سایت رو فارسی کن"
+- "فقط این پاراگراف"
+- "این صفحه رو انگلیسی کن"
+- "متن عکس‌های داخل سایت هم ترجمه کن"
+
+For image text:
+page text + image OCR can be composed.
+
+---
+
+### 25. Office translation
+
+Excel:
+- selected cells
+- column
+- sheet
+- preserve formulas/numbers
+- translate text cells only
+
+Word:
+- selected paragraph/document
+- preserve styles/headings where possible
+
+PowerPoint:
+- selected text boxes/slides
+- preserve object positions
+- handle text overflow after translation
+
+Examples:
+- "فقط ستون توضیحات رو انگلیسی کن"
+- "فرمول‌ها دست نخوره"
+- "این Word رو ترجمه کن و فرمتش بمونه"
+- "اسلایدها رو فارسی کن"
+
+Large document translation gets preview/checkpoint and may process in chunks.
+
+---
+
+### 26. Replace-with-translation
+
+Canonical:
+- \`translate.replace_selection\`
+- \`translate.replace_document_segment\`
+
+Examples:
+- "ترجمه‌ش کن و جاش بذار"
+- "این متن رو انگلیسی کن و جایگزین کن"
+- "فقط همین سلول‌ها جایگزین بشن"
+
+Rules:
+- explicit mutation intent required
+- source snapshot stored
+- formatting preserved where feasible
+- verify result
+- undo supported via owning app
+
+---
+
+### 27. Translation to messaging
+
+Examples:
+- "این پیام رو انگلیسی کن و برای علی بفرست"
+- "قبل ارسال فارسیش رو هم نشون بده"
+- "این متن ژاپنی رو ترجمه کن و جواب مناسب بنویس"
+
+Planner:
+1. source resolve
+2. translate
+3. preview according to send policy
+4. recipient/service resolve
+5. send
+6. verify
+
+Translation itself must not trigger external sending.
+
+---
+
+### 28. Translation to AI services
+
+Examples:
+- "این متن رو انگلیسی کن و بده Claude"
+- "این خطا رو ترجمه کن بعد از ChatGPT بپرس"
+
+Pipeline:
+translate → AI service handoff → optional response translation.
+
+No hidden credential/session sharing.
+
+---
+
+### 29. Voice / read-aloud
+
+Canonical:
+- \`translation.read_source\`
+- \`translation.read_result\`
+- \`translation.pronounce\`
+
+Examples:
+- "ترجمه رو بخون"
+- "اصلش رو بخون"
+- "تلفظ انگلیسیش رو بگو"
+- "ژاپنیش رو آهسته بخون"
+
+Delegates to Assistant Voice/TTS with language-appropriate voice if available.
+
+---
+
+### 30. Glossary / terminology
+
+Canonical:
+- \`translation.glossary.add\`
+- \`translation.glossary.remove\`
+- \`translation.glossary.list\`
+- \`translation.glossary.apply\`
+
+Examples:
+- "هر جا Skill بود ترجمه نکن"
+- "Intent رو همون Intent بنویس"
+- "برای پروژه MARIA این اصطلاح رو این‌طوری ترجمه کن"
+
+Glossary record:
+- source term
+- target term
+- language pair
+- domain/project
+- case sensitivity
+- exact/fuzzy policy
+- approved by user
+
+No hidden automatic terminology drift.
+
+---
+
+### 31. Code / technical text protection
+
+When translating code-bearing text:
+- preserve code blocks
+- preserve identifiers
+- preserve paths
+- preserve CLI commands
+- preserve JSON/XML keys unless localization requested
+- preserve URLs
+
+Example:
+"این README رو فارسی کن ولی کدها دست نخورند."
+
+Translation parser segments:
+- prose
+- inline code
+- fenced code
+- commands
+- filenames
+- variables
+
+---
+
+### 32. Subtitles
+
+Canonical:
+- \`subtitle.translate\`
+- \`subtitle.translate_current\`
+- \`subtitle.export\`
+- \`subtitle.bilingual\`
+
+Examples:
+- "زیرنویس رو فارسی کن"
+- "دو زبانه نمایش بده"
+- "SRT رو ترجمه کن"
+- "تایم‌کدها دست نخوره"
+
+Rules:
+- preserve timing
+- avoid line overflow where possible
+- do not shift timestamps unless explicitly editing synchronization
+
+---
+
+### 33. Error/dialog translation
+
+Examples:
+- "این ارور رو ترجمه کن"
+- "این پنجره چی میگه"
+- "متن خطا رو بخون و توضیح بده"
+
+Flow:
+structured UI text → OCR fallback → translate → Troubleshooting handoff if requested.
+
+"ترجمه کن" alone does not automatically repair the error.
+
+---
+
+### 34. Handwriting OCR
+
+If supported by installed engine:
+- handwriting recognition
+- printed vs handwritten classification
+
+Examples:
+- "این دست‌نوشته رو بخون"
+- "نوشته روی کاغذ رو تایپ کن"
+
+Capability must be advertised dynamically; no false claim if handwriting quality is unsupported.
+
+---
+
+### 35. Orientation / vertical text / RTL
+
+OCR/Layout engine should support where available:
+- rotated text
+- vertical Japanese
+- RTL Persian/Arabic
+- mixed RTL/LTR
+- multi-column pages
+
+Output should preserve readable order.
+
+---
+
+### 36. Translation verification
+
+TranslationVerifier checks:
+- source/target language correctness
+- names/entities preserved
+- numbers preserved
+- code/URLs preserved
+- no dropped paragraphs
+- glossary constraints
+- suspicious length mismatch
+- untranslated segments
+- repeated/hallucinated segments
+
+High-risk technical/legal/medical text:
+- report uncertainty
+- avoid pretending certified translation
+- preserve source alongside translation when useful
+
+---
+
+### 37. OCR verification
+
+OCRVerifier checks:
+- confidence thresholds
+- suspicious characters
+- digit/letter confusion
+- layout order
+- missing blocks
+- table structure
+- page count
+
+Critical fields:
+- serial numbers
+- account numbers
+- dates
+- monetary amounts
+- OTP/security codes
+
+Require high confidence or user confirmation before downstream irreversible action.
+
+---
+
+### 38. Engine Router
+
+TranslationEngineRouter chooses:
+1. local preferred engine
+2. domain-specific local model
+3. authorized cloud/connector engine
+4. fallback model
+
+Selection factors:
+- language pair
+- privacy requirement
+- latency
+- document size
+- offline status
+- terminology/glossary support
+- formatting support
+
+The canonical MARIA intents stay stable even if engine changes.
+
+---
+
+### 39. Offline behavior
+
+Offline:
+- use installed OCR/translation models
+- use cached terminology
+- report unsupported language pair if local model absent
+
+Online fallback:
+- only when connector/provider available
+- sensitive text policy checked before upload
+
+MARIA must not silently send private screenshots/documents to a cloud translator.
+
+---
+
+### 40. Permissions / risk
+
+L0:
+- detect language
+- read structured text
+- OCR local image
+- translate locally
+- explain locally
+
+L1:
+- copy/save translation
+- local document output
+
+L2:
+- cloud translation of ordinary user content
+- replace selected text
+- persistent glossary
+
+L3:
+- sending sensitive/private source to external translation provider
+- automatic translation + external message send
+
+External side effects are governed by owning skills.
+
+---
+
+### 41. Massive language packs
+
+Critical intents target **1000–1500 examples each**:
+- translate.text
+- translate.selection
+- translate.clipboard
+- translate.image_text
+- translate.screen_region
+- translate.page
+- ocr.image
+- ocr.screen_region
+- ocr.document_scan
+- screen_translate.region
+- translate.replace_selection
+- language.detect
+
+Secondary intents target 500–1000.
+
+Mandatory variation axes:
+- source explicit/implicit
+- target language explicit/learned
+- colloquial Persian
+- formal Persian
+- one-word
+- incomplete
+- typo
+- STT
+- mixed Persian-English
+- selected text
+- clipboard
+- screenshot
+- image
+- browser
+- Office
+- document
+- literal/natural
+- formal/informal
+- preserve names
+- preserve code
+- replace vs copy
+- read aloud
+- transliteration
+- OCR vs translation
+- correction
+- negation
+- hard negatives
+
+Hard negatives:
+- "متنش رو بخون" => transcription/read, not translate
+- "متنش رو دربیار" => OCR, not translate
+- "فارسیش کن" => translation
+- "فینگلیش کن" => transliteration
+- "تلفظش رو بگو" => pronunciation
+- "این صفحه رو ترجمه کن" => page translation, not screenshot by default
+- "این عکس رو توضیح بده" => image understanding, not OCR-only
+- "این عکس رو بخون" => OCR/visual text
+- "این ارور رو حل کن" => Troubleshooting, possibly after text extraction
+- "این ارور رو ترجمه کن" => translation only
+
+Family target: tens of thousands of examples.
+
+---
+
+### 42. Skill / Agent package
+
+- \`TranslationOrchestrator\`
+- \`TranslationSourceResolver\`
+- \`LanguageDetector\`
+- \`TranslationEngineRouter\`
+- \`OCREngineRouter\`
+- \`LayoutAnalyzer\`
+- \`TextRegionResolver\`
+- \`TranslationStyleResolver\`
+- \`TerminologyManager\`
+- \`NamedEntityPreserver\`
+- \`CodeSegmentPreserver\`
+- \`FormattingPreserver\`
+- \`ImageOCRSkill\`
+- \`DocumentOCRSkill\`
+- \`TableOCRSkill\`
+- \`ScreenTranslationController\`
+- \`TranslationOverlaySkill\`
+- \`SubtitleTranslationSkill\`
+- \`TransliterationSkill\`
+- \`TranslationVerifier\`
+- \`OCRVerifier\`
+- \`TranslationPrivacyGuard\`
+- \`TranslationUndoCoordinator\`
+- \`TranslationLanguageAgent\`
+
+Adapters:
+- \`BrowserTranslationAdapter\`
+- \`OfficeTranslationAdapter\`
+- \`FileTranslationAdapter\`
+- \`SelectionTranslationAdapter\`
+- \`ScreenRegionTranslationAdapter\`
+
+All register through Skill Registry / Tool Registry.
+
+---
+
+### 43. Test matrix
+
+Text:
+- TR-A01 Persian → English
+- TR-A02 English → Persian
+- TR-A03 mixed-language
+- TR-A04 formal
+- TR-A05 literal
+- TR-A06 glossary
+- TR-A07 code preservation
+
+Selection/clipboard:
+- TR-B01 selected text
+- TR-B02 clipboard text
+- TR-B03 conflict selection vs clipboard
+- TR-B04 replace selection
+- TR-B05 sensitive clipboard
+
+OCR:
+- TR-C01 clear printed image
+- TR-C02 rotated
+- TR-C03 low-resolution
+- TR-C04 table
+- TR-C05 scanned PDF
+- TR-C06 handwriting unsupported/supported
+- TR-C07 mixed RTL/LTR
+- TR-C08 serial number ambiguity
+
+Screen:
+- TR-D01 one-shot region
+- TR-D02 window translation
+- TR-D03 overlay
+- TR-D04 private app excluded
+- TR-D05 password field masked
+- TR-D06 content changed refresh
+
+Browser:
+- TR-E01 structured DOM text
+- TR-E02 image text
+- TR-E03 full page
+- TR-E04 code block preserved
+
+Office:
+- TR-F01 Word formatting
+- TR-F02 Excel formulas untouched
+- TR-F03 selected cells only
+- TR-F04 PowerPoint overflow detection
+
+Subtitles:
+- TR-G01 SRT
+- TR-G02 bilingual
+- TR-G03 timing preserved
+
+Verification:
+- TR-H01 dropped number detected
+- TR-H02 entity mutation detected
+- TR-H03 untranslated segment flagged
+- TR-H04 low OCR confidence
+
+Language:
+- TR-I01 typo
+- TR-I02 STT
+- TR-I03 OCR vs translate
+- TR-I04 transliteration vs translation
+- TR-I05 read vs translate
+
+---
+
+### 44. Acceptance criteria
+
+1. Selection/Clipboard/Screen/Image/Page sources resolve correctly.
+2. structured text is preferred over OCR whenever available.
+3. OCR confidence is retained and low-confidence critical text is not silently trusted.
+4. translation preserves names, numbers, URLs, code and technical identifiers where required.
+5. translation style is explicit and does not alter facts.
+6. OCR and translation remain separate composable operations.
+7. transliteration and translation remain distinct.
+8. replace-with-translation requires explicit mutation intent and supports undo.
+9. screen translation protects private/sensitive apps and does not persist captures by default.
+10. cloud translation never receives sensitive content silently.
+11. document/table layout is preserved where the selected engine supports it.
+12. critical intents reach 1000–1500 examples.
+13. real Browser/Office/Image/Screen OCR tests pass before IMPLEMENTED.
+
+---
+
+### 45. Local implementation plan
+
+When MARIA Windows system is online:
+1. inspect existing translation/OCR handlers.
+2. detect installed local OCR/translation capabilities.
+3. implement LanguageDetector.
+4. implement TranslationSourceResolver.
+5. integrate Selection/Clipboard sources.
+6. integrate Browser structured text.
+7. integrate Office object model text.
+8. implement ImageOCRSkill.
+9. implement ScreenRegion OCR.
+10. implement Document/Table OCR.
+11. add TranslationEngineRouter.
+12. add terminology/entity/code preservation.
+13. add TranslationVerifier/OCRVerifier.
+14. implement optional screen translation overlay.
+15. add privacy/exclusion policies.
+16. integrate Voice/Messaging/Search/Troubleshooting.
+17. generate 1000–1500 utterance packs for critical intents.
+18. test Persian/English/RTL/mixed-language edge cases.
+19. test real screenshots/scans/browser/Office workflows.
+20. mark only verified modules IMPLEMENTED.
