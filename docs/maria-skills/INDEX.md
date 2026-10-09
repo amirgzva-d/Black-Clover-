@@ -38,5 +38,14 @@ No spec is considered implemented until it is tested on the user's actual MARIA 
 
 ## Final design review status
 - Primary 22-capability roadmap: **DESIGN COMPLETE**
-- Next: **FINAL CROSS-CAPABILITY REVIEW**
+- Final cross-capability review: **COMPLETE**
+- Design state: **FREEZE CANDIDATE — READY FOR LOCAL IMPLEMENTATION**
 - Scope: deferred Email/Notification experience, Coucou-inspired interaction patterns, cross-skill consistency, missing capabilities, language-pack coverage, permission/risk alignment, verifier/undo coverage, and local implementation readiness.
+
+
+## Deferred enhancements integrated
+- Email / Notification experience: **INTEGRATED INTO FINAL ARCHITECTURE**
+- Coucou-inspired desktop companion patterns: **INTEGRATED INTO FINAL ARCHITECTURE**
+- Cross-skill ambiguity/risk/verification/undo review: **COMPLETE**
+- Language-pack governance: **FROZEN FOR IMPLEMENTATION**
+- Local implementation readiness plan: **DEFINED**
