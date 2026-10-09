@@ -187,7 +187,7 @@ Priority controls development order only; it does NOT lower quality requirements
 | 19 | Web-App Agent | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 20 | Face Presence | DESIGN COMPLETE v1 FUTURE-ADVANCED | WAITING |
 | 21 | Gesture Control | DESIGN COMPLETE v1 FUTURE-ADVANCED | WAITING |
-| 22 | Planner / Routines | NEXT | WAITING |
+| 22 | Planner / Routines | DESIGN COMPLETE v1 ADVANCED | WAITING |
 
 ---
 
@@ -20631,3 +20631,1276 @@ When MARIA Windows system is online:
 15. run false-positive tests under real lighting/background conditions.
 16. test camera sharing with Presence.
 17. mark only verified modules IMPLEMENTED.
+
+---
+
+## 22 — Planner / Routines / Multi-Step Agent Intelligence
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** planner.*, plan.*, routine.*, workflow.*, goal.*, taskgraph.*, execution.*, recovery.*, verification.*  
+**Owner modules:** Goal Interpreter / Task Decomposer / Dependency Graph Builder / Skill Resolver / Tool Resolver / Plan Compiler / Execution Orchestrator / Permission Planner / Risk Engine / State Tracker / Checkpoint Manager / Verifier Coordinator / Recovery Planner / Retry Manager / Idempotency Guard / Routine Manager / Routine Learner / Scheduler Handoff / Memory Context Adapter / Audit Log / Planner Language Agent  
+**Offline capable:** yes for local planning/execution; individual actions may require network  
+**Risk class:** inherited from composed actions, maximum-risk aware  
+**Primary role:** cross-capability orchestration layer for all MARIA Skills
+
+### 1. Purpose
+
+Planner is the orchestration brain that turns natural user goals into safe, inspectable and verifiable multi-step execution plans.
+
+It must support:
+- one-shot multi-step tasks
+- branching plans
+- conditional plans
+- parallel-safe substeps
+- scheduled steps
+- waiting for external events
+- retry and fallback
+- checkpointing
+- pause/resume/cancel
+- rollback where possible
+- user-defined routines
+- learned aliases/routines
+- recurring workflows
+- partial-success reporting
+- explainable execution state
+- continuation after MARIA restart where appropriate
+
+The Planner does not replace Skills. It composes them.
+
+### 2. Core planning pipeline
+
+Canonical pipeline:
+
+Goal Interpretation  
+→ Constraint Extraction  
+→ Context Resolution  
+→ Capability Discovery  
+→ Task Decomposition  
+→ Dependency Graph  
+→ Risk/Permission Analysis  
+→ Plan Preview when needed  
+→ Execute  
+→ Verify each node  
+→ Recover/Retry/Rollback  
+→ Verify final goal  
+→ Store result/history  
+→ Learn only approved reusable preferences/routines
+
+### 3. Goal representation
+
+A normalized goal record contains:
+
+- goal_id
+- user_goal
+- normalized_intent
+- desired_outcome
+- explicit constraints
+- implicit context
+- deadline
+- schedule
+- target entities
+- source entities
+- required capabilities
+- risk ceiling
+- confirmation policy
+- privacy policy
+- acceptable partial outcomes
+- final verifier
+- cancellation policy
+
+Example:
+
+User:
+"فایل فروش این ماه رو پیدا کن، خلاصه کن، PDF بساز و فردا 9 برای علی تو Telegram بفرست."
+
+Normalized goal:
+- locate current-month sales file
+- summarize selected content
+- generate PDF
+- schedule Telegram send
+- recipient = Ali
+- send time = tomorrow 09:00
+- verify file identity, PDF creation and scheduled job
+- actual external send handled later by Scheduler + Messaging
+
+### 4. Task graph model
+
+Plan is represented as a DAG where possible.
+
+Node fields:
+- node_id
+- capability/skill
+- canonical action
+- inputs
+- outputs
+- dependencies
+- preconditions
+- risk
+- permissions
+- idempotency key
+- timeout
+- retry policy
+- verifier
+- rollback handler
+- state
+- result
+
+States:
+- pending
+- ready
+- waiting_for_dependency
+- waiting_for_user
+- waiting_for_permission
+- waiting_for_network
+- waiting_for_event
+- running
+- verifying
+- succeeded_verified
+- succeeded_unverified
+- partial
+- retryable_failed
+- terminal_failed
+- rolled_back
+- skipped
+- canceled
+
+### 5. Canonical planner intents
+
+- planner.plan
+- planner.preview
+- planner.execute
+- planner.pause
+- planner.resume
+- planner.cancel
+- planner.retry
+- planner.retry_failed
+- planner.rollback
+- planner.explain
+- planner.status
+- planner.get_next_step
+- planner.get_dependencies
+- planner.get_failures
+- planner.continue_from_checkpoint
+
+Examples:
+- "این کار رو مرحله‌به‌مرحله انجام بده"
+- "اول برنامه‌ش رو بگو"
+- "خودت ترتیب درست رو پیدا کن"
+- "فعلاً اجرا نکن فقط Plan بده"
+- "ادامه بده"
+- "متوقفش کن"
+- "از مرحله خراب دوباره امتحان کن"
+- "برگرد تغییرات رو"
+- "الان کجای کاری؟"
+- "چرا گیر کرده؟"
+
+### 6. Task decomposition
+
+Planner converts broad requests into canonical Skill calls.
+
+Example:
+"سیستم رو برای کار آماده کن."
+
+Possible decomposition from a user-approved Work routine:
+1. open VS Code
+2. open MARIA project
+3. open Chrome work profile
+4. open GitHub
+5. set display profile
+6. set audio profile
+7. enable focus mode
+8. arrange windows
+9. check important email
+10. verify workspace
+
+Planner must not invent a routine definition that has never been approved.
+
+### 7. Dependency resolution
+
+Examples:
+- cannot send file before file exists
+- cannot upload before account/session verified
+- cannot install before download verified
+- cannot summarize scanned PDF before OCR
+- cannot schedule a message until recipient/account/content are resolved
+- cannot convert output until source conversion completed
+- cannot verify a browser action against stale tab state
+
+Dependency Graph Builder ensures correct order.
+
+### 8. Safe parallelism
+
+Independent low-risk nodes may run in parallel.
+
+Example:
+- check email
+- open project folder
+- set brightness
+
+can potentially execute concurrently if adapters support safe concurrency.
+
+Do NOT parallelize when:
+- actions share mutable state
+- same app/window context is required
+- order matters
+- one action may invalidate another
+- external side effects could duplicate
+
+Concurrency policy is explicit, not opportunistic guessing.
+
+### 9. Conditional branches
+
+Canonical:
+- planner.branch.if
+- planner.branch.else
+- planner.branch.switch
+- planner.wait_condition
+
+Examples:
+- "اگه Chrome نصبه بازش کن، نیست نصبش کن"
+- "اگه اینترنت نبود بعداً بفرست"
+- "اگه فایل PDF بود خلاصه کن، اگه عکس بود OCR کن"
+- "اگر جواب علی رسید ادامه بده"
+
+Compiled plan contains condition predicates and branch targets.
+
+### 10. Loops
+
+Supported only when bounded.
+
+Examples:
+- process every selected file
+- retry up to 3 times
+- poll until deadline with controlled interval
+
+Rules:
+- max iteration count
+- timeout
+- cancellation
+- no infinite autonomous loop
+- external side effects use idempotency protection
+
+### 11. Wait states
+
+Planner may wait for:
+- download completion
+- install completion
+- AI response
+- user authentication
+- CAPTCHA
+- file arrival
+- network restore
+- scheduled time
+- message/email event
+- long-running conversion/export
+
+Waiting state must be durable when appropriate.
+
+User can ask:
+- "منتظر چی هستی؟"
+- "اگه تا ده دقیقه نشد کنسل کن"
+
+### 12. Permission planning
+
+Planner computes effective risk as:
+- node risk
+- data sensitivity
+- target scope
+- external side effect
+- irreversibility
+- repetition/bulk size
+
+It can group compatible confirmations.
+
+Example:
+A plan with 20 local read-only steps and one external message send should not ask 21 confirmations.
+
+It should request permission at meaningful transaction boundaries.
+
+### 13. Maximum-risk inheritance
+
+A plan inherits the highest relevant risk of its nodes.
+
+Example:
+search → summarize → send email
+has external-send risk even though search and summarize are low risk.
+
+Planner cannot downgrade risk by hiding a high-risk node inside a routine.
+
+### 14. Transaction boundaries
+
+For critical plans, define prepare/commit phases.
+
+Example:
+"فایل رو تبدیل کن و برای علی بفرست"
+
+Prepare:
+- resolve file
+- convert
+- verify output
+- resolve recipient
+- compose message
+- attach
+- preview
+
+Commit:
+- send
+
+This allows safe pause before irreversible side effect.
+
+### 15. Verification-first execution
+
+Every node that changes state requires a verifier.
+
+Examples:
+- open app => process/window verified
+- move file => destination exists and source state verified
+- send message => outgoing item verified
+- install => installed version verified
+- change volume => state reread
+- schedule job => durable job exists
+- create PDF => valid PDF opens and page count checked
+
+Command exit code alone is insufficient where higher-level state can be checked.
+
+### 16. Final-goal verification
+
+The Planner verifies not only steps but the original goal.
+
+Example:
+User:
+"این مشکل اینترنت رو درست کن."
+
+A successful DNS flush is not final success.
+
+Final verifier:
+- original connectivity symptom resolved
+
+Example:
+"PDF بساز و بفرست"
+
+Final verifier:
+- correct PDF exists
+- correct recipient got/scheduled exact file according to requested timing
+
+### 17. Failure classification
+
+Failure types:
+- transient
+- permanent
+- permission
+- unsupported
+- ambiguous
+- stale_context
+- dependency_failed
+- external_service
+- network
+- auth_required
+- validation
+- insufficient_disk
+- user_canceled
+- safety_blocked
+
+Recovery differs by class.
+
+### 18. Retry policy
+
+Planner uses capability-specific retry.
+
+Fields:
+- max_attempts
+- delay
+- backoff
+- retryable_errors
+- deadline
+- idempotency verification
+- fallback route
+
+External send/publish/payment retry is conservative.
+
+Never blindly retry an uncertain external side effect.
+
+### 19. Recovery planner
+
+Recovery strategies:
+- refresh context
+- re-resolve target
+- retry same adapter
+- fallback adapter
+- alternate surface
+- wait for condition
+- ask user
+- rollback
+- skip optional node
+- abort dependent branch
+
+Example:
+Chrome web adapter fails:
+→ try semantic recovery
+→ authorized desktop app if compatible and user permits
+→ connector/API if available
+→ stop if behavior would materially differ
+
+### 20. Rollback planning
+
+Before reversible mutations, Planner records rollback path.
+
+Examples:
+- move files => move back
+- change settings => restore previous
+- change window layout => restore snapshot
+- edit Office file => restore checkpoint
+- temporary firewall rule => remove/revert
+- workspace change => restore prior workspace
+
+Some actions cannot be undone:
+- sent message
+- payment
+- permanent deletion
+- sign-out/shutdown after completion
+
+Plan preview exposes non-rollbackable steps.
+
+### 21. Checkpoints
+
+Checkpoint fields:
+- plan_id
+- node completion set
+- important outputs
+- stable object IDs
+- permission state
+- next ready nodes
+- rollback metadata
+- timestamps
+- environment fingerprint
+
+Used for:
+- pause/resume
+- MARIA restart recovery
+- long-running workflows
+- scheduled continuation
+
+Secrets are not serialized into checkpoints.
+
+### 22. Resume after restart
+
+Durable plans may resume after:
+- MARIA UI restart
+- background-service restart
+- Windows reboot, where appropriate
+
+On resume:
+1. reload checkpoint
+2. revalidate environment
+3. revalidate targets
+4. confirm any expired permissions
+5. recompute ready nodes
+6. never repeat already verified external side effects
+
+### 23. Idempotency
+
+Each side-effect node receives an idempotency strategy.
+
+Examples:
+- scheduled send has unique job ID
+- file creation checks existing verified output
+- message send verifies if already delivered
+- install checks installed version
+- record update verifies current value
+
+Retries must not produce duplicates.
+
+### 24. Plan adaptation
+
+Planner may adapt implementation while preserving user goal.
+
+Allowed:
+- use a different safe adapter
+- reorder independent nodes
+- retry
+- use connector instead of browser when equivalent
+- choose supported conversion backend
+
+Not allowed without user approval:
+- change recipient
+- change file/content
+- broaden data access
+- weaken security
+- purchase a different item
+- substitute a materially different irreversible action
+
+### 25. User constraints
+
+Constraints are first-class.
+
+Examples:
+- "Chrome دست نخوره"
+- "فایل اصلی پاک نشه"
+- "چیزی نفرست تا خودم بگم"
+- "فقط از منابع رسمی"
+- "هیچ برنامه‌ای بسته نشه"
+- "تا قبل ساعت 10 تمومش کن"
+- "فقط آفلاین انجام بده"
+
+Planner propagates constraints to all child nodes.
+
+### 26. Negative constraints
+
+Planner must explicitly model:
+- do_not_send
+- do_not_delete
+- do_not_overwrite
+- do_not_close_apps
+- do_not_use_cloud
+- do_not_change_security
+- do_not_restart
+- preserve_original
+- preview_before_commit
+
+A downstream Skill cannot silently violate a parent constraint.
+
+### 27. Routine canonical intents
+
+- routine.create
+- routine.create_from_current
+- routine.create_from_plan
+- routine.run
+- routine.preview
+- routine.update
+- routine.rename
+- routine.duplicate
+- routine.delete
+- routine.enable
+- routine.disable
+- routine.schedule
+- routine.add_step
+- routine.remove_step
+- routine.reorder_step
+- routine.set_parameter
+- routine.list
+- routine.export
+- routine.import
+
+### 28. What is a Routine?
+
+A Routine is a user-approved reusable Plan Template.
+
+It may contain:
+- steps
+- parameters
+- conditions
+- branches
+- schedule
+- event triggers
+- permission scope
+- defaults
+- variables
+- verification rules
+
+Routine is NOT a raw macro recording.
+
+It is semantic and Skill-based.
+
+### 29. Routine example — Work Mode
+
+User:
+"وقتی گفتم شروع کار، این کارها انجام بشه..."
+
+Routine:
+- open VS Code
+- open MARIA repo
+- open Chrome work profile
+- open Gmail
+- set brightness 70
+- volume 25
+- focus mode on
+- arrange windows
+- show important email summary
+
+Invocation:
+"شروع کار"
+
+Each step remains canonical, inspectable and editable.
+
+### 30. Routine example — Send Daily Report
+
+Routine:
+1. open approved report source
+2. export today's report
+3. verify date
+4. convert to PDF
+5. resolve work recipient/group
+6. attach
+7. send
+8. verify
+9. report success/failure
+
+Can be scheduled:
+"هر روز کاری ساعت 5"
+
+### 31. Routine parameters
+
+Example:
+Routine "send_file_to_contact(file, contact, service)"
+
+Invocation:
+- "این فایل رو با روال ارسال برای علی بفرست"
+
+Parameters can be:
+- file
+- contact
+- date
+- service
+- project
+- amount
+- output folder
+- language
+
+Parameter validation occurs before execution.
+
+### 32. Routine variables
+
+Variable sources:
+- explicit user value
+- current selection
+- current date/time
+- active project
+- latest file matching rule
+- event payload
+- connector result
+
+Dynamic values are resolved at run time.
+
+### 33. Routine learning
+
+User:
+"هر وقت گفتم حالت مطالعه، نور 40، Night Light روشن و اعلان‌ها ساکت."
+
+MARIA can create a routine after confirming normalized actions.
+
+It stores semantic actions, not only the exact phrase.
+
+Aliases:
+- "حالت مطالعه"
+- "Study mode"
+
+may point to same routine.
+
+### 34. No uncontrolled self-modifying code
+
+Learning may update:
+- aliases
+- preferences
+- routine definitions
+- ranking
+- context rules
+- language examples
+
+Learning must NOT autonomously rewrite executable source code or security policies.
+
+Code updates require:
+- explicit development/update workflow
+- versioning
+- tests
+- review/rollback
+
+### 35. Routine versioning
+
+Each routine includes:
+- routine_id
+- version
+- created_at
+- updated_at
+- changelog
+- previous versions
+- owner
+- enabled state
+
+User:
+- "برگرد نسخه قبلی روال"
+- "چی عوض شد؟"
+
+### 36. Routine conflicts
+
+Detect:
+- two steps setting contradictory volume
+- open and close same app
+- Wi-Fi off before online send
+- shutdown before scheduled job
+- file delete before upload
+- two branches writing same file
+
+Planner resolves obvious ordering conflicts or asks if semantic conflict remains.
+
+### 37. Resource locking
+
+Prevent collisions around:
+- same file
+- same browser tab/form
+- same Office document
+- same device setting
+- same camera
+- same audio endpoint
+- same external message draft
+
+Task locks are short-lived and scoped.
+
+### 38. Cross-skill composition
+
+Planner can compose all existing capabilities:
+
+- Audio
+- Display
+- Files
+- Apps
+- Settings
+- Troubleshooting
+- Web Research
+- Browser
+- YouTube/Web Media
+- Messaging
+- Scheduler
+- Power/Security
+- Office
+- Desktop
+- Selection/Clipboard
+- Translation/OCR
+- Screen Understanding
+- Download/Convert/Archive
+- Web-App Agent
+- Presence
+- Gesture
+
+This section is the glue layer, not a duplicate implementation.
+
+### 39. Planner + Troubleshooting
+
+User:
+"هر چی لازمه انجام بده تا Chrome درست شه."
+
+Planner does NOT interpret this as unlimited permission.
+
+It creates bounded diagnostic plan:
+- inspect symptoms
+- collect evidence
+- least-invasive repair
+- verify
+- escalate only within permission/risk policy
+- ask before disruptive/high-risk changes
+
+### 40. Planner + Web Research
+
+Research nodes may:
+- gather current info
+- compare sources
+- resolve exact error
+- find official documentation
+
+Research output is evidence, not executable authority.
+
+Planner never runs arbitrary web commands/scripts solely because a webpage recommends them.
+
+### 41. Planner + Messaging
+
+Example:
+"جواب ایمیل رو آماده کن، فایل رو ضمیمه کن، ولی تا خودم نگفتم نفرست."
+
+Plan stops at draft verification.
+
+Parent constraint do_not_send blocks downstream send intent.
+
+### 42. Planner + Scheduler
+
+Planner can emit durable future jobs.
+
+Example:
+"گزارش رو بساز و فردا ساعت 9 بفرست."
+
+Immediate plan:
+- build report
+- verify output
+- create scheduled send job
+- verify job
+
+Future send handled by Scheduler with its own runtime verification.
+
+### 43. Planner + Presence/Gesture
+
+Presence/Gesture may trigger a Routine only if rule exists.
+
+Example:
+- return-to-PC => run "Welcome Back"
+- custom gesture => run "Presentation Mode"
+
+Trigger does not bypass Routine risk/permissions.
+
+### 44. Interactive planning
+
+Modes:
+- auto for clear low-risk goals
+- preview for complex workflows
+- step-by-step for learning/high-risk
+- dry-run
+
+Canonical:
+- planner.mode.auto
+- planner.mode.preview
+- planner.mode.step_by_step
+- planner.mode.dry_run
+
+Examples:
+- "اول نقشه رو نشون بده"
+- "مرحله‌مرحله با اجازه من"
+- "فقط شبیه‌سازی کن"
+- "خودت انجام بده ولی قبل ارسال ازم بپرس"
+
+### 45. Dry-run
+
+Dry-run checks:
+- target resolution
+- capability availability
+- permissions
+- expected files
+- account/session
+- estimated side effects
+- non-rollbackable steps
+
+No state mutation.
+
+Useful before:
+- bulk file operations
+- large Office transformations
+- web-app workflows
+- system changes
+
+### 46. Planner explanations
+
+User can ask:
+- "چرا این مرحله لازمه؟"
+- "چرا اول دانلود می‌کنی؟"
+- "چرا اجازه می‌خوای؟"
+- "اگر این مرحله شکست بخوره چی میشه؟"
+
+Planner returns concise action rationale without exposing hidden chain-of-thought.
+
+It can expose:
+- goal
+- chosen action
+- dependency
+- risk
+- verifier
+- fallback
+
+### 47. Progress reporting
+
+For long plans:
+- current step
+- completed count
+- waiting reason
+- failures
+- ETA only when meaningful
+- next important action
+
+Examples:
+- "مرحله 4 از 7: تبدیل فایل"
+- "منتظر تأیید ورود هستم"
+- "دو فایل موفق، یک فایل ناموفق"
+
+No fake percentage when unknown.
+
+### 48. Cancellation
+
+Cancel policy:
+- stop launching new nodes
+- cancel safe running nodes
+- preserve verified outputs
+- rollback optional reversible temporary changes
+- do not undo user-desired completed outputs unless requested
+
+User:
+"همه‌چی رو متوقف کن"
+=> Planner emergency cancel scope is current MARIA workflow, not arbitrary system shutdown.
+
+### 49. Emergency stop
+
+High-priority intent:
+- planner.emergency_stop
+
+Sources:
+- voice
+- UI control
+- optional approved gesture
+
+Behavior:
+- stop autonomous continuation
+- cancel queued side-effect nodes
+- interrupt cancellable operations
+- preserve audit state
+- report what already happened
+
+### 50. Dead-letter / failed-task queue
+
+Terminal failures can be retained as:
+- plan ID
+- failed node
+- sanitized inputs
+- reason
+- recovery options
+
+User:
+"کارهای ناموفق رو دوباره امتحان کن"
+
+Only retry when target/context is still valid.
+
+### 51. Memory boundaries
+
+Planner may use Memory for:
+- stable preferences
+- aliases
+- approved routines
+- frequent targets
+- non-secret defaults
+
+Must not store:
+- passwords
+- OTPs
+- tokens
+- private keys
+- raw session cookies
+- temporary confidential payloads by default
+
+Task state and long-term Memory are separate.
+
+### 52. Auditability
+
+Every plan records:
+- normalized user goal
+- plan version
+- nodes
+- actual Skills/tools used
+- permissions
+- side effects
+- verification results
+- retries
+- rollback
+- final outcome
+
+User can inspect:
+- "چه کارهایی کردی؟"
+- "کدوم فایل رو تغییر دادی؟"
+- "چی فرستادی؟"
+- "کدوم مرحله شکست خورد؟"
+
+Sensitive data is redacted.
+
+### 53. Planner result states
+
+Final plan result:
+- completed_verified
+- completed_with_warnings
+- partial
+- waiting_for_user
+- waiting_for_condition
+- scheduled_continuation
+- failed_recoverable
+- failed_terminal
+- canceled
+- rolled_back
+- mixed_outcome
+
+"Done" is used only when the requested outcome is actually verified.
+
+### 54. Capability discovery
+
+Before planning, SkillResolver queries registries.
+
+Each Skill declares:
+- intents
+- typed inputs
+- outputs
+- preconditions
+- risk
+- permissions
+- verifier
+- rollback
+- offline/online
+- concurrency rules
+- capability availability
+
+Planner never hardcodes thousands of cross-skill combinations.
+
+### 55. Model Router integration
+
+Planner may use different models for:
+- intent interpretation
+- decomposition
+- summarization
+- code reasoning
+- vision
+- translation
+
+But all model outputs compile to the same internal Plan schema.
+
+A model never gets direct unchecked authority to execute arbitrary tools.
+
+### 56. Plan validation
+
+Before execution:
+- schema validation
+- target resolution
+- dependency acyclicity where expected
+- risk policy
+- permission compatibility
+- constraints
+- tool availability
+- potential destructive conflicts
+- duplicate side effects
+- final verifier existence
+
+Invalid plans do not execute.
+
+### 57. Plan self-check / verifier
+
+Before execution the PlannerVerifier asks structured questions:
+- Does every state-changing node have a verifier?
+- Is any irreversible node missing confirmation?
+- Can any retry duplicate an external action?
+- Are all dependencies satisfied?
+- Are parent negative constraints propagated?
+- Is any target ambiguous?
+- Are secrets being persisted?
+- Is rollback available where promised?
+
+This is a machine-checkable checklist, not free-form confidence.
+
+### 58. Routine portability
+
+Routine export/import should use a safe declarative format.
+
+Export includes:
+- canonical actions
+- variables
+- conditions
+- metadata
+
+Excludes:
+- secrets
+- session tokens
+- machine-specific credentials
+
+Imported routine is disabled until:
+- Skills mapped
+- paths/accounts validated
+- risk review completed
+
+### 59. Routine marketplace / sharing — future-safe design
+
+If routines are ever shared:
+- declarative manifest only
+- permissions shown before enable
+- signed source where possible
+- no arbitrary executable code by default
+- untrusted imported routine starts disabled
+- inspect every external action
+
+This protects MARIA from "skill/routine supply chain" abuse.
+
+### 60. Language robustness
+
+Critical planner/routine intents target **1200–1500 high-quality examples each**:
+- planner.plan
+- planner.execute
+- planner.preview
+- planner.pause
+- planner.resume
+- planner.cancel
+- planner.rollback
+- planner.status
+- routine.create
+- routine.run
+- routine.update
+- routine.schedule
+- routine.create_from_current
+
+Secondary intents target 500–1000.
+
+Mandatory axes:
+- one-step vs multi-step
+- implicit ordering
+- explicit ordering
+- "اول/بعد/آخر"
+- parallel requests
+- conditions
+- recurring
+- exceptions
+- negative constraints
+- "ولی نفرست"
+- "چیزی پاک نکن"
+- "فقط اگر..."
+- corrections
+- interruptions
+- continuation
+- retry
+- failure
+- rollback
+- timing
+- external side effect
+- selected object
+- current app
+- aliases
+- typo/STT
+- Persian-English
+- incomplete speech
+- hard negatives
+
+### 61. Mandatory hard negatives
+
+- "اول برنامه‌ش رو بگو" => plan preview, no execution
+- "انجامش بده" => execute current approved plan
+- "ادامه بده" => resume current paused plan, not invent new task
+- "لغوش کن" => cancel current task
+- "برگرد" may mean rollback, browser back, previous app, or navigation; resolve context
+- "هر روز انجام بده" => create recurring Scheduler job
+- "یک بار انجام بده" => immediate/one-shot
+- "یادم بنداز انجام بدم" => reminder, not automatic execution
+- "خودت انجام بده" => execution authorization only within existing risk rules
+- "هر کاری لازمه" => bounded goal-directed actions, not unlimited authority
+- "همه چی رو درست کن" => ambiguous broad goal; scope before risky actions
+
+### 62. Skill / Agent package
+
+- GoalInterpreter
+- ConstraintExtractor
+- TaskDecomposer
+- DependencyGraphBuilder
+- SkillResolver
+- ToolResolver
+- PlanCompiler
+- PlanValidator
+- PlannerVerifier
+- ExecutionOrchestrator
+- ExecutionStateTracker
+- PermissionPlanner
+- RiskAggregator
+- TransactionBoundaryManager
+- SafeParallelismManager
+- ConditionBranchEngine
+- BoundedLoopManager
+- WaitStateManager
+- RetryManager
+- RecoveryPlanner
+- IdempotencyGuard
+- CheckpointManager
+- RollbackCoordinator
+- FinalGoalVerifier
+- RoutineManager
+- RoutineCompiler
+- RoutineVersionManager
+- RoutineParameterResolver
+- RoutineConflictDetector
+- RoutineImportExportGuard
+- PlannerAuditLog
+- PlannerLanguageAgent
+
+All register through Maria Core / Skill Registry / Tool Registry.
+
+### 63. Test matrix
+
+Planning:
+- PR-A01 one-step
+- PR-A02 multi-step
+- PR-A03 explicit ordering
+- PR-A04 implicit dependencies
+- PR-A05 safe parallelism
+- PR-A06 condition branch
+- PR-A07 bounded loop
+
+Constraints:
+- PR-B01 do-not-send
+- PR-B02 preserve original
+- PR-B03 no cloud
+- PR-B04 no restart
+- PR-B05 only official source
+
+Permissions:
+- PR-C01 grouped confirmation
+- PR-C02 high-risk hidden in routine blocked
+- PR-C03 expired permission
+- PR-C04 external commit boundary
+
+Verification:
+- PR-D01 node success but final goal failure
+- PR-D02 external side effect verification
+- PR-D03 stale target
+- PR-D04 verifier unavailable
+
+Recovery:
+- PR-E01 transient retry
+- PR-E02 fallback adapter
+- PR-E03 auth required
+- PR-E04 rollback
+- PR-E05 partial success
+
+Durability:
+- PR-F01 pause/resume
+- PR-F02 MARIA restart
+- PR-F03 Windows reboot
+- PR-F04 already-sent idempotency
+
+Routines:
+- PR-G01 create
+- PR-G02 parameterized
+- PR-G03 schedule
+- PR-G04 update/version
+- PR-G05 conflict detection
+- PR-G06 import with secrets stripped
+
+Language:
+- PR-H01 typo/STT
+- PR-H02 "ولی نفرست"
+- PR-H03 "هر کاری لازمه" bounded
+- PR-H04 "برگرد" ambiguity
+- PR-H05 plan-only vs execute
+
+### 64. Acceptance criteria
+
+1. complex requests compile into typed canonical Skill calls.
+2. dependencies are explicit and verified.
+3. state-changing nodes have verifiers.
+4. final user goal is verified separately from intermediate command success.
+5. parent constraints propagate to every child node.
+6. high-risk steps cannot be hidden inside routines.
+7. external retries are idempotency-safe.
+8. plans can pause/resume/cancel and survive restart where appropriate.
+9. rollback is declared honestly and only promised when possible.
+10. routines are semantic templates, not brittle raw macros.
+11. learning cannot autonomously rewrite executable code.
+12. imported/shared routines cannot silently gain permissions.
+13. Planner explains status/risk/dependencies without exposing hidden chain-of-thought.
+14. critical planner/routine intents reach 1200–1500 examples.
+15. real cross-capability end-to-end workflows pass before IMPLEMENTED.
+
+### 65. Local implementation plan
+
+When MARIA Windows system is online:
+1. inspect current Maria Core and execution pipeline.
+2. formalize typed Skill/Tool capability manifests.
+3. implement normalized Plan schema.
+4. implement GoalInterpreter + ConstraintExtractor.
+5. implement TaskDecomposer + DependencyGraphBuilder.
+6. implement PlanValidator + PlannerVerifier.
+7. implement PermissionPlanner + RiskAggregator.
+8. implement ExecutionOrchestrator.
+9. add per-node verifier contract.
+10. implement SafeParallelism and resource locks.
+11. add retry/recovery/idempotency.
+12. implement CheckpointManager and restart-safe state.
+13. implement RollbackCoordinator.
+14. implement RoutineManager + versioning + parameters.
+15. integrate Scheduler events and durable continuation.
+16. connect all existing capability families.
+17. add plan/routine audit UI.
+18. generate 1200–1500 language examples for critical intents.
+19. run destructive/external-action safety tests.
+20. run real end-to-end workflows across Browser, Files, Office, Messaging, Scheduler and System controls.
+21. mark Planner/Routines IMPLEMENTED only after all core flows verify.
