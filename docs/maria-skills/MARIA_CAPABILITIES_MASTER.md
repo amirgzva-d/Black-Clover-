@@ -22695,9 +22695,510 @@ If a new domain emerges during real implementation, it can be added without chan
 
 The 22-family capability architecture plus deferred final enhancements is now considered:
 
-**DESIGN COMPLETE — FREEZE CANDIDATE — READY FOR LOCAL IMPLEMENTATION**
+**DESIGN COMPLETE — FREEZE v2 — READY FOR LOCAL IMPLEMENTATION**
 
 Design may still evolve when real Windows testing exposes machine-specific requirements, but no major planning gap currently blocks implementation.
 
 The next major milestone is **LOCAL IMPLEMENTATION & INTEGRATION**, not another speculative capability-design round.
 
+
+---
+
+# POST-FREEZE GAP CLOSURE — EXTENSION PACK v1
+
+**Status:** DESIGN COMPLETE — INTEGRATED INTO FREEZE v2 — WAITING FOR LOCAL IMPLEMENTATION  
+**Purpose:** Close specific gaps identified by line-by-line comparison against the user's original MARIA requirements without duplicating the 22 top-level capability families.
+
+## X1 — Owner Face Identity / Local Face Recognition Extension
+
+**Extends:** Capability 20 Presence + Capability 12 Security + Permission Layer  
+**Status:** DESIGN COMPLETE v1 FUTURE-ADVANCED
+
+### Goal
+Support the user's explicit requirement:
+- recognize the enrolled owner locally
+- distinguish "owner present" from "someone present"
+- optionally show/activate MARIA only when the enrolled owner is recognized
+- hide/suspend MARIA when owner is absent
+- require explicit enablement
+- never treat generic presence as identity
+
+### Canonical intents
+- face_identity.enroll_owner
+- face_identity.remove_owner
+- face_identity.enable
+- face_identity.disable
+- face_identity.status
+- face_identity.verify_owner
+- face_identity.reenroll
+- face_identity.set_owner_only_mode
+- face_identity.set_presence_behavior
+- face_identity.test
+- face_identity.clear_templates
+
+### State model
+- disabled
+- no_enrollment
+- owner_detected
+- non_owner_present
+- no_face
+- ambiguous
+- low_confidence
+- liveness_failed
+- camera_unavailable
+- privacy_blocked
+
+### Architecture
+- OwnerIdentityOrchestrator
+- LocalFaceEnrollmentSkill
+- LocalFaceMatcher
+- LivenessGuard
+- OwnerIdentityPolicyGuard
+- EncryptedFaceTemplateStore
+- CameraResourceCoordinator
+- OwnerPresenceBridge
+- WindowsHelloHandoff
+- FaceIdentityVerifier
+- FaceIdentityAuditLog
+- FaceIdentityLanguageAgent
+
+### Privacy / security requirements
+- explicit opt-in only
+- local processing by default
+- no cloud face recognition by default
+- do not retain raw camera video
+- enrollment images are deleted after feature extraction unless user explicitly saves them
+- biometric templates encrypted at rest using OS-protected storage
+- templates are never written into chat memory, logs or language datasets
+- no demographic inference
+- no stranger identification
+- no face-search database
+- owner recognition is NOT a replacement for Windows authentication for high-risk actions
+- payments, password changes, account deletion and security-sensitive actions still require OS/user authorization
+
+### Owner-only MARIA behavior
+User may configure:
+- owner recognized -> show MARIA character
+- owner absent -> hide/minimize character
+- non-owner present -> privacy mode
+- owner returns -> restore MARIA/Workspace
+- recognition uncertain -> do not expose private content
+
+Example:
+"فقط وقتی خودم جلوی سیستمم ماریا ظاهر شه."
+
+Compiled rule:
+face_identity.owner_detected -> companion.show
+face_identity.owner_not_verified -> companion.private_or_hidden
+
+### Liveness
+Where a local backend supports it, use anti-spoof/liveness signals to reduce photo/video replay false acceptance.
+
+Liveness must be capability-gated and never falsely advertised as strong biometric authentication unless the actual platform supports that assurance.
+
+### Acceptance
+- owner vs generic presence remain separate
+- no raw biometric media persisted by default
+- false-match threshold configurable/tested
+- non-owner cannot unlock high-risk MARIA permissions
+- real-camera owner/non-owner/printed-photo tests pass before IMPLEMENTED
+
+---
+
+## X2 — Windows Sign-In Password / PIN / Hello Management Extension
+
+**Extends:** Capability 12 Power/Security + Capability 05 Windows Settings  
+**Status:** DESIGN COMPLETE v1 SECURITY-SENSITIVE
+
+### Goal
+Support:
+- open/manage Windows sign-in options
+- create/change/remove PIN where Windows policy permits
+- change password through OS-supported account flow
+- configure Windows Hello options where supported
+- inspect sign-in configuration status
+- never store user credentials in MARIA memory
+
+### Canonical intents
+- windows.signin.options.open
+- windows.signin.status
+- windows.pin.setup_handoff
+- windows.pin.change_handoff
+- windows.pin.remove_handoff
+- windows.password.change_handoff
+- windows.hello.face.setup_handoff
+- windows.hello.fingerprint.setup_handoff
+- windows.signin.requirement.configure
+
+### Safety model
+Credential creation/change is **OS-secure-flow handoff**, not MARIA reading or memorizing the password/PIN.
+
+MARIA may:
+1. verify correct Windows account
+2. open the official Sign-in options/settings flow
+3. explain what is required
+4. navigate safe non-secret UI around the flow
+5. wait while the user enters existing/new secret into secure OS UI
+6. verify resulting sign-in configuration status when observable
+
+MARIA must not:
+- log password/PIN
+- store password/PIN
+- retrieve saved Windows credentials
+- bypass old-password verification
+- automate around secure desktop restrictions
+- weaken sign-in policy without explicit high-risk confirmation
+
+### Example
+"برای سیستم PIN بذار."
+
+Plan:
+- resolve current Windows account
+- open official Windows Sign-in options
+- initiate PIN setup if supported
+- pause for secure user entry/authentication
+- verify PIN/Hello configured
+- never capture the secret
+
+### Risk
+L4/L5 depending on operation and policy.
+
+---
+
+## X3 — Remote Wake / Power-On Capability Extension
+
+**Extends:** Capability 12 Power + Capability 11 Scheduler  
+**Status:** DESIGN COMPLETE v1 HARDWARE-GATED
+
+### Goal
+Support powering/waking the MARIA machine when hardware/network architecture allows it.
+
+### Canonical intents
+- power.remote_wake.status
+- power.remote_wake.configure
+- power.remote_wake.send
+- power.wake_on_lan.enable_handoff
+- power.wake_on_lan.test
+- power.rtc_wake.configure_handoff
+- power.wake_capabilities.inspect
+
+### Supported strategies
+Preference order:
+1. wake from sleep/modern standby using supported OS/device mechanisms
+2. Wake-on-LAN if NIC/firmware/router path supports it
+3. scheduled RTC wake if firmware/platform exposes supported configuration
+4. external trusted device/controller only if separately configured by user
+
+### Important limit
+A completely powered-off PC cannot be universally turned on by software running on that same powered-off PC.
+
+MARIA must report:
+- supported
+- unsupported
+- firmware_disabled
+- network_path_unavailable
+- target_offline
+- wake_packet_sent_unverified
+- woke_and_verified
+
+### Wake-on-LAN data
+Store only required non-secret machine/network identifiers, protected appropriately:
+- target MAC
+- approved network scope
+- optional relay identifier
+
+Do not expose remote wake broadly to untrusted networks.
+
+### Verification
+Wake request success is not "packet sent."
+Final success requires machine heartbeat/MARIA reconnect/session signal.
+
+---
+
+## X4 — Live Screen Sharing Extension
+
+**Extends:** Capability 17 Screen Understanding + Capability 19 Web-App Agent + Capability 10 Messaging  
+**Status:** DESIGN COMPLETE v1 ADVANCED
+
+### Goal
+Support user-requested live screen sharing inside supported communication/meeting apps.
+
+This is distinct from:
+- screenshot capture
+- screenshot send
+- short screen recording
+
+### Canonical intents
+- screen_share.start
+- screen_share.stop
+- screen_share.pause
+- screen_share.resume
+- screen_share.status
+- screen_share.select_monitor
+- screen_share.select_window
+- screen_share.select_tab
+- screen_share.switch_source
+- screen_share.include_audio
+- screen_share.exclude_audio
+
+### Source types
+- full monitor
+- application window
+- browser tab
+- supported app surface
+
+### Service adapter model
+Potential adapters where authorized/supported:
+- Teams
+- Google Meet
+- Zoom web/desktop
+- Discord
+- Telegram/other call surfaces if they expose supported screen-share controls
+- future service adapters through WebAppCapabilityManifest
+
+### Safety
+Before start:
+- verify service/call
+- verify account
+- verify exact share source
+- preview source identity
+- identify obvious sensitive windows when possible
+- require explicit start intent
+
+Never automatically share:
+- password manager
+- credential prompts
+- private key material
+- unrelated private window
+
+### Verification
+Must verify visible app/service state indicates sharing is active.
+Stopping must verify share ended.
+
+### Privacy UX
+MARIA companion must show an unambiguous persistent state:
+**SCREEN SHARING ACTIVE**
+
+---
+
+## X5 — Telegram Chat Folder / Multi-Recipient / Bulk Forward Extension
+
+**Extends:** Capability 10 Messaging + Capability 11 Scheduler + Capability 22 Planner  
+**Status:** DESIGN COMPLETE v1 ADVANCED
+
+### Goal
+Support:
+- resolve Telegram chat folders
+- list chats in a selected folder where the chosen adapter exposes them
+- select subsets
+- forward/send to multiple recipients/groups/channels
+- scheduled/conditional bulk send
+- item-level verification
+
+### Canonical intents
+- telegram.folder.list
+- telegram.folder.open
+- telegram.folder.resolve
+- telegram.folder.list_chats
+- messaging.recipient_set.create
+- messaging.recipient_set.preview
+- messaging.multi_send
+- messaging.multi_forward
+- messaging.multi_send.schedule
+- messaging.multi_forward.schedule
+- messaging.bulk.cancel_remaining
+- messaging.bulk.retry_failed
+
+### Examples
+- "این پیام رو برای گروه‌های داخل پوشه کاری فوروارد کن."
+- "فقط سه گروه اول."
+- "همه به‌جز گروه X."
+- "قبل ارسال لیست مقصدها رو نشون بده."
+- "این متن رو فردا برای این پنج مخاطب بفرست."
+
+### BulkRecipientPlanner
+Before external commit:
+- resolve exact folder/account
+- enumerate exact recipients
+- deduplicate chats
+- apply include/exclude filters
+- show count
+- detect ambiguous names
+- check adapter/service constraints
+- enforce rate/cooldown policy
+- preview external side effect
+
+### Safety / anti-spam
+- no blind large-scale unsolicited messaging
+- explicit user-selected recipient set
+- no fuzzy bulk recipient matching
+- bulk external action = elevated risk
+- very large recipient sets require explicit confirmation
+- respect platform rate limits and service policies
+- per-recipient result states
+
+### Item-level results
+- sent_verified
+- forwarded_verified
+- skipped
+- blocked
+- permission_error
+- recipient_missing
+- rate_limited
+- failed_retryable
+
+One failed target must not falsely mark the whole batch successful.
+
+---
+
+## X6 — File Explorer View / Presentation Control Extension
+
+**Extends:** Capability 03 Files + Capability 14 Desktop Organization  
+**Status:** DESIGN COMPLETE v1 ADVANCED
+
+### Goal
+Support changing how folders/files are displayed in File Explorer without confusing view changes with actual filesystem mutation.
+
+### Canonical intents
+- explorer.view.get
+- explorer.view.set
+- explorer.view.icons_extra_large
+- explorer.view.icons_large
+- explorer.view.icons_medium
+- explorer.view.icons_small
+- explorer.view.list
+- explorer.view.details
+- explorer.view.tiles
+- explorer.view.content
+- explorer.sort.set
+- explorer.group.set
+- explorer.sort.clear
+- explorer.group.clear
+- explorer.pane.preview.show
+- explorer.pane.preview.hide
+- explorer.pane.details.show
+- explorer.pane.details.hide
+- explorer.navigation_pane.show
+- explorer.navigation_pane.hide
+- explorer.extensions.show
+- explorer.extensions.hide
+- explorer.hidden_items.show
+- explorer.hidden_items.hide
+- explorer.refresh
+- explorer.columns.configure
+- explorer.view.apply_to_folder_type
+
+### Examples
+- "فایل‌ها رو Details نشون بده."
+- "آیکون‌ها بزرگ."
+- "بر اساس تاریخ مرتب کن."
+- "بر اساس Type گروه‌بندی کن."
+- "پسوند فایل‌ها رو نشون بده."
+- "Hidden fileها رو نمایش بده."
+- "Preview pane رو باز کن."
+
+### Semantic boundaries
+- "فایل‌ها رو مرتب کن" may mean filesystem organization OR Explorer sort; resolve context
+- "براساس تاریخ بچین" inside active Explorer view usually sort/group, not move files
+- "عکس‌ها رو ببر پوشه Images" is filesystem mutation
+- "عکس‌ها رو کنار هم نشون بده" is view/layout
+
+### Safety
+Showing hidden/system files does not authorize editing/deleting them.
+Protected-item policy from Files remains active.
+
+### Verification
+Read current Explorer view/state after change where accessible.
+
+---
+
+## X7 — Explicit Google Images → Safe Download Workflow
+
+**Extends:** Capability 07 Web Research + 08 Browser + 18 Download  
+**Status:** DESIGN COMPLETE v1
+
+### Canonical intents
+- image_search.search
+- image_search.open_result
+- image_search.open_source
+- image_search.download
+- image_search.download_to
+
+### Workflow
+1. search image results
+2. identify selected result
+3. open/resolve source page or direct downloadable asset
+4. validate downloadable resource
+5. preserve useful filename/type
+6. choose user destination
+7. DownloadManager owns transfer
+8. verify final image
+
+Do not silently save low-resolution thumbnails when the user asked for the actual image and a legitimate source asset is available.
+
+Copyright/access restrictions remain respected.
+
+---
+
+## X8 — Generic Multi-Recipient Messaging Extension
+
+**Extends:** Capability 10 Messaging  
+**Status:** DESIGN COMPLETE v1 ADVANCED
+
+### Canonical intents
+- recipient_set.create
+- recipient_set.add
+- recipient_set.remove
+- recipient_set.preview
+- message.send_multi
+- message.forward_multi
+- message.send_multi.schedule
+
+Supports:
+- multiple named contacts
+- numbers
+- groups/channels
+- mixed destination sets when service permits
+- include/exclude filters
+
+Same safety/preview/idempotency principles as Telegram folder bulk actions.
+
+---
+
+## X9 — Cross-extension language robustness
+
+All new high-frequency intents inherit Global Robustness Rule v2.
+
+Targets:
+- critical intents: 1000–1500 high-quality utterances
+- secondary: 500–1000
+- rare: 250–500
+
+Mandatory hard negatives include:
+
+- "من جلوی سیستمم" ≠ biometric owner verification
+- "صورتم رو بشناس" => owner identity enrollment/verification
+- "وقتی کسی هست ماریا باز شه" => generic presence
+- "وقتی خودم هستم ماریا باز شه" => owner identity
+- "رمز بذار" => resolve Windows sign-in vs archive password vs file password vs website password
+- "سیستم رو روشن کن" => remote wake capability check
+- "صفحه رو بفرست" => screenshot send vs live screen sharing
+- "صفحه رو Share کن" => live screen share if call/service context
+- "فولدر کاری تلگرام" => chat-folder entity, not filesystem folder
+- "این پوشه رو ZIP کن" => filesystem archive
+- "فایل‌ها رو Details کن" => Explorer view
+- "فایل‌ها رو دسته‌بندی کن" => filesystem organization unless Explorer-view context proves otherwise
+
+---
+
+## X10 — Freeze v2 decision
+
+After closing these gaps:
+
+**MARIA DESIGN FREEZE v2 — COMPLETE — READY FOR LOCAL IMPLEMENTATION**
+
+The original 22 top-level capability architecture remains unchanged.  
+These extension packs close explicit requirements without introducing duplicate core systems.
+
+Implementation status remains:
+**WAITING FOR LOCAL WINDOWS SYSTEM / REAL INTEGRATION TESTS**
