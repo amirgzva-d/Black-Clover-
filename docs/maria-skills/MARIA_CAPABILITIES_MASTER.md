@@ -185,8 +185,8 @@ Priority controls development order only; it does NOT lower quality requirements
 | 17 | Screen Understanding | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 18 | Download / Convert / Archive | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 19 | Web-App Agent | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 20 | Face Presence | NEXT FUTURE-DESIGN | WAITING |
-| 21 | Gesture Control | FUTURE | WAITING |
+| 20 | Face Presence | DESIGN COMPLETE v1 FUTURE-ADVANCED | WAITING |
+| 21 | Gesture Control | NEXT FUTURE-DESIGN | WAITING |
 | 22 | Planner / Routines | QUEUED | WAITING |
 
 ---
@@ -19131,3 +19131,650 @@ When MARIA Windows system is online:
 19. generate 1000–1500 utterance packs for critical intents.
 20. run multi-account/multi-workspace/security tests.
 21. mark each adapter IMPLEMENTED only after real passing workflows.
+
+---
+
+## 20 — Face Presence / Human Presence Awareness
+
+**Status:** DESIGN COMPLETE v1 FUTURE-ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** presence.*, human_presence.*, attention.*, return_to_pc.*, privacy_presence.*  
+**Owner modules:** Presence Orchestrator / Presence Sensor Resolver / Windows Human Presence Adapter / Optional Local Camera Presence Adapter / Attention Resolver / Presence State Machine / Presence Rule Engine / Privacy Guard / Windows Hello Handoff / Onlooker Guard / Scheduler/Event Handoff / Verifier / Audit Log / Presence Language Agent  
+**Offline capable:** yes when local compatible sensor/camera pipeline exists  
+**Risk class:** L0–L4 depending on sensor/camera/privacy behavior  
+**Primary platform:** Windows 11, capability-gated by hardware and privacy settings
+
+### 1. Purpose
+
+MARIA should understand whether the user is physically present around the PC and use that signal only for user-approved convenience, privacy and automation.
+
+Core goals:
+- detect present / absent / approaching / leaving when supported
+- detect return-to-PC event
+- detect sustained absence
+- detect attention/engagement only when supported
+- lock on leave when user enables it
+- wake/prepare workspace on approach when supported
+- dim/quiet/hide sensitive previews based on presence rules
+- pause or defer non-critical voice output when user is away
+- resume appropriate workspace/notifications when user returns
+- trigger scheduled/conditional routines
+- optionally warn about an additional nearby person when supported
+- never silently build a biometric identity database
+- never treat generic face detection as proof of identity
+
+Presence Awareness is NOT the same thing as facial recognition.
+
+### 2. Official Windows-first strategy
+
+Preferred implementation hierarchy:
+
+1. Windows Presence Sensing / HumanPresenceSensor when supported by the device and OS
+2. OEM/driver-supported presence sensor integration
+3. Windows Settings Presence features
+4. optional local camera-based presence detector only with explicit user opt-in
+5. generic idle/input heuristics as a low-confidence fallback, clearly labeled non-presence
+
+Windows 11 supports presence-sensing scenarios such as lock-on-leave and wake-on-approach on compatible hardware, and Microsoft exposes HumanPresenceSensor APIs on supported builds/hardware. Presence hardware support is not universal and must be capability-detected. citeturn175328search0turn175328search1
+
+### 3. Critical semantic distinction — presence vs identity
+
+These are separate:
+
+- "کسی جلوی سیستم هست؟"
+  => presence
+
+- "من برگشتم"
+  => user-reported presence event
+
+- "وقتی از سیستم دور شدم قفل کن"
+  => presence automation
+
+- "وقتی برگشتم Workspace کار رو بیار"
+  => return event
+
+- "منو با چهره تشخیص بده"
+  => identity/biometric request, NOT generic presence
+
+- "Windows Hello منو وارد کن"
+  => OS-managed authentication handoff, not MARIA reading biometric templates
+
+MARIA must never claim:
+"این شخص حتماً تو هستی"
+from presence-only sensing.
+
+### 4. Presence states
+
+Canonical state model:
+
+- unknown
+- present
+- absent
+- approaching
+- leaving
+- engaged
+- not_engaged
+- multiple_people_possible
+- sensor_unavailable
+- privacy_blocked
+- low_confidence
+
+State transitions are debounced to avoid rapid false switching.
+
+### 5. Canonical intents — presence status
+
+- presence.get
+- presence.get_state
+- presence.get_capabilities
+- presence.get_sensor
+- presence.get_confidence
+- presence.get_last_change
+- presence.is_user_present
+
+Examples:
+- "الان کسی جلوی سیستم هست؟"
+- "منو حاضر حساب می‌کنی؟"
+- "سنسور حضور کار می‌کنه؟"
+- "آخرین بار کی از سیستم دور شدم"
+- "الان وضعیت حضور چیه"
+
+### 6. Canonical intents — rules
+
+- presence.rule.create
+- presence.rule.update
+- presence.rule.enable
+- presence.rule.disable
+- presence.rule.delete
+- presence.rule.list
+- presence.rule.preview
+
+Examples:
+- "وقتی بلند شدم سیستم رو قفل کن"
+- "وقتی برگشتم Workspace کار رو باز کن"
+- "اگر ده دقیقه نبودم صداهای غیرضروری رو قطع کن"
+- "وقتی کسی کنارم بود متن ایمیل رو بلند نخون"
+- "Presence ruleها رو نشون بده"
+
+All actions compile into Scheduler/Event rules.
+
+### 7. Lock on leave
+
+Canonical:
+- presence.lock_on_leave.enable
+- presence.lock_on_leave.disable
+- presence.lock_on_leave.get
+
+Examples:
+- "وقتی از جلوی سیستم رفتم Lock کن"
+- "Lock on leave روشن"
+- "وقتی دور شدم قفلش نکن"
+- "بعد 20 ثانیه نبودن قفل کن"
+
+Recommended policy:
+- debounce absence
+- configurable grace period
+- never interpret one dropped sensor frame as absence
+- verify Lock action through Power/Session capability
+
+### 8. Wake / prepare on approach
+
+Canonical:
+- presence.wake_on_approach.enable
+- presence.wake_on_approach.disable
+- presence.return_action.set
+
+Examples:
+- "وقتی برگشتم صفحه آماده باشه"
+- "با نزدیک شدنم Workspace کار آماده شه"
+- "Wake on approach روشن"
+
+Actual wake behavior depends on Windows/hardware support. MARIA should not claim it can wake from every sleep/off state.
+
+### 9. Return-to-PC event
+
+Event:
+- presence.user_returned
+
+Potential user-approved actions:
+- show missed important notifications
+- resume workspace
+- restore display profile
+- read summary of new email/messages
+- unpause routine
+- resume media only if user configured it
+- greet using MARIA voice
+
+Examples:
+- "وقتی برگشتم ایمیل‌های مهم رو بگو"
+- "وقتی برگشتم بگو چی از دست دادم"
+- "بعد برگشتم موزیکو ادامه بده"
+
+Never auto-read sensitive content aloud merely because presence returned.
+
+### 10. Away event
+
+Event:
+- presence.user_left
+
+Potential actions:
+- lock
+- mute MARIA voice
+- hide notification preview
+- pause media
+- set Focus/Privacy mode
+- reduce display brightness
+- pause screen-sensitive workflow
+- defer non-critical notifications
+
+Examples:
+- "وقتی رفتم Voice ساکت شه"
+- "وقتی نیستم اعلان‌ها فقط اسم برنامه رو نشون بدن"
+- "اگر رفتم و فایل آپلود می‌شد، آپلود قطع نشه"
+
+Presence does not imply canceling active work unless user defines it.
+
+### 11. Attention / engagement
+
+Canonical:
+- attention.get
+- attention.is_engaged
+- attention.rule.create
+
+If supported by the actual sensor, MARIA may use coarse engagement states such as user looking/engaged vs not engaged. Microsoft presence-sensing guidance describes attention/engagement as a possible capability on suitable hardware; support varies. citeturn175328search1
+
+Examples:
+- "اگه حواسم به صفحه نیست ویدئو رو Pause نکن مگر خودم تنظیم کرده باشم"
+- "وقتی برگشتم و به صفحه نگاه کردم اعلان‌ها رو نشون بده"
+
+Rules:
+- attention is not emotion detection
+- no personality/psychological inference
+- no claim about what the user is thinking
+
+### 12. Onlooker / multiple-person awareness
+
+When compatible hardware exposes it, MARIA may support:
+- possible additional person nearby
+- privacy notification
+- optional dim/hide sensitive previews
+
+Microsoft documents onlooker-related presence scenarios such as dimming or alerting when an additional presence is detected on supported hardware. citeturn175328search3
+
+Canonical:
+- presence.onlooker.get
+- presence.onlooker_alert.enable
+- presence.onlooker_privacy_mode.enable
+
+Examples:
+- "اگه کسی کنارم بود پیام خصوصی رو بلند نخون"
+- "اگر نفر دیگه‌ای نزدیک بود بهم بگو"
+
+No identity, age, gender, ethnicity or other demographic inference.
+
+### 13. Optional local camera presence fallback
+
+Only if:
+- user explicitly enables it
+- no appropriate hardware presence sensor is available or user prefers camera mode
+- camera access permission is granted
+
+Design:
+- local-only processing by default
+- simple presence/face-count signal
+- no identity recognition by default
+- no raw video storage
+- no screenshot archive
+- no background cloud upload
+- visible status indicator while camera presence is active
+- configurable pause/disable shortcut
+
+Canonical:
+- presence.camera_mode.enable
+- presence.camera_mode.disable
+- presence.camera_mode.status
+
+### 14. No silent biometric database
+
+MARIA must not by default:
+- enroll faces
+- create face embeddings for identity
+- persist face templates
+- compare unknown people to identity profiles
+- infer demographic attributes
+
+If future user-approved identity recognition is ever designed, it must be a separate capability with stronger consent, storage and security architecture.
+
+### 15. Windows Hello handoff
+
+Windows Hello remains OS-managed.
+
+MARIA may:
+- detect that secure authentication is required
+- invoke/hand off to the normal Windows sign-in or credential UI where supported
+- wait until authentication succeeds
+
+MARIA must not:
+- read Windows Hello biometric templates
+- extract face/fingerprint credentials
+- bypass secure desktop
+- pretend presence alone authenticated the user
+
+### 16. Sensor capability registry
+
+PresenceSensorRegistry stores:
+- sensor_id
+- source
+- hardware/driver
+- supported detection types
+- present/absent support
+- approach/leave support
+- distance support
+- attention support
+- multi-person/onlooker support
+- latency class
+- privacy state
+- last health check
+
+Windows presence hardware can expose differing detection capabilities; actual available functions must be detected rather than assumed. citeturn175328search1turn175328search2
+
+### 17. Debounce / hysteresis
+
+Presence signals can fluctuate.
+
+Parameters:
+- absence_confirm_ms
+- presence_confirm_ms
+- return_cooldown
+- lock_grace_period
+- sensor_confidence_threshold
+- event_deduplication_window
+
+Example:
+One frame says absent for 300 ms.
+=> do NOT lock immediately.
+
+### 18. Idle heuristics fallback
+
+If no sensor exists, MARIA may optionally use:
+- keyboard/mouse idle
+- session lock state
+- screen state
+- active user input
+
+But this is named:
+"activity heuristic"
+not "human presence sensor".
+
+Example:
+"No input for 15 minutes"
+does not prove user is physically absent.
+
+### 19. Presence + notifications
+
+Examples:
+- "وقتی نیستم پیام‌ها رو بلند نخون"
+- "وقتی برگشتم فقط ایمیل مهم رو بگو"
+- "اگر نفر دیگه‌ای نزدیک بود پیش‌نمایش پیام خصوصی رو مخفی کن"
+
+Handoffs:
+- EmailWatcher
+- CommunicationNotificationSkill
+- AssistantVoiceSkill
+- NotificationFocusSkill
+
+### 20. Presence + workspace
+
+Examples:
+- "وقتی برگشتم Workspace برنامه‌نویسی رو برگردون"
+- "وقتی رفتم محیط کار رو همون‌جوری نگه دار"
+- "اگه بیشتر از نیم ساعت نبودم Workspace رو ببند، فایل‌ها رو نبند"
+
+Workspace actions use Capability 14 and must preserve unsaved work.
+
+### 21. Presence + scheduled/conditional actions
+
+Examples:
+- "اگر ساعت 9 شد ولی هنوز پشت سیستم نبودم پیام رو نفرست"
+- "وقتی برگشتم بعد از ساعت 8 گزارش رو باز کن"
+- "اگر رفتم و دانلود تموم شد فقط خبر رو نگه دار تا برگردم"
+
+Condition tree can combine:
+- time
+- presence
+- network
+- email/message events
+- app state
+
+### 22. Presence + media
+
+Possible user rules:
+- pause media after confirmed absence
+- reduce volume after absence
+- resume only if user explicitly enabled auto-resume
+
+Hard negative:
+- default absence does NOT automatically pause media.
+
+### 23. Presence + power/display
+
+Potential composition:
+- lock on leave
+- display off after absence
+- wake on approach
+- adaptive dimming when supported
+
+Microsoft's Windows presence-sensing design includes lock-on-leave and wake-on-approach on compatible systems. citeturn175328search1
+
+Display and power actions are delegated to Capabilities 02 and 12.
+
+### 24. Presence + privacy
+
+Privacy policies:
+- camera mode off by default
+- sensor access explicit
+- raw frames not persisted
+- no cloud processing by default
+- clear status UI
+- one-click disable
+- denylist apps/windows for presence-triggered previews
+- security-sensitive actions require separate auth
+
+Windows exposes privacy controls for apps accessing human presence, and managed devices can restrict that access. MARIA must respect OS/user/organization policy. citeturn175328search5turn175328search6
+
+### 25. Enterprise / managed policy
+
+If OS policy denies presence access:
+- report managed/blocked
+- do not bypass
+- open relevant Settings only if user requests
+
+Result:
+- available
+- permission_denied
+- managed_disabled
+- sensor_missing
+- privacy_blocked
+- unsupported_build
+
+### 26. Presence audit
+
+Log only abstract events:
+- present → absent
+- absent → present
+- rule triggered
+- action executed/blocked
+- sensor health issue
+
+Do NOT log:
+- raw camera frames by default
+- face crops
+- biometric templates
+- unnecessary visual metadata
+
+### 27. Confidence policy
+
+Structured presence sensor:
+- high confidence if valid device state
+
+Camera local presence:
+- medium/high depending model confidence
+
+Idle heuristic:
+- low confidence
+
+Sensitive action policy:
+- Presence alone never authorizes:
+  - payment
+  - password use
+  - account deletion
+  - security changes
+  - protected data release
+
+Presence is a context signal, not authentication.
+
+### 28. Failure recovery
+
+Sensor unavailable:
+- downgrade to unknown
+- optionally use activity heuristic if enabled
+- do not trigger absence lock from sensor failure alone
+
+Camera blocked:
+- report privacy/camera unavailable
+- do not repeatedly prompt
+
+False positive correction:
+User:
+"من اینجام، چرا گفتی نبودم؟"
+
+MARIA:
+- mark event as incorrect
+- optionally tune debounce/confidence
+- do not silently retrain identity model
+
+### 29. Massive language packs
+
+Critical intents target **1000–1500 examples each**:
+- presence.get
+- presence.rule.create
+- presence.lock_on_leave.enable
+- presence.lock_on_leave.disable
+- presence.return_action.set
+- presence.camera_mode.enable/disable
+- attention.get
+- presence.onlooker_alert.enable
+
+Variation axes:
+- formal
+- colloquial
+- short
+- typo
+- STT
+- Persian-English
+- "وقتی رفتم"
+- "وقتی برگشتم"
+- "وقتی پشت سیستم نیستم"
+- duration
+- time + presence
+- rule enable/disable
+- privacy
+- camera vs sensor
+- correction
+- negation
+- false detection
+- low confidence
+- multi-person
+- hard negatives
+
+Hard negatives:
+- "منو تشخیص بده" => identity ambiguity, not generic presence
+- "من اینجام" => user-declared presence, not face enrollment
+- "وقتی رفتم قفل کن" => presence rule
+- "الان قفل کن" => Power/Lock immediate action
+- "دوربین رو روشن کن" => camera control, not automatically presence mode
+- "Face ID" => authentication/identity domain, not presence
+- "صفحه رو وقتی رفتم خاموش کن" => presence trigger + Display action
+- "وقتی برگشتم پیام‌ها رو بخون" => presence trigger + Messaging/Email
+
+Family target: many thousands of examples.
+
+### 30. Skill / Agent package
+
+- PresenceOrchestrator
+- PresenceSensorResolver
+- PresenceSensorRegistry
+- WindowsHumanPresenceAdapter
+- OptionalLocalCameraPresenceAdapter
+- ActivityHeuristicAdapter
+- PresenceStateMachine
+- PresenceDebounceFilter
+- AttentionResolver
+- OnlookerAwarenessSkill
+- PresenceRuleEngine
+- PresencePrivacyGuard
+- WindowsHelloHandoff
+- PresenceEventPublisher
+- PresenceVerifier
+- PresenceAuditLog
+- PresenceLanguageAgent
+
+Handoffs:
+- PresenceToScheduler
+- PresenceToLock
+- PresenceToDisplay
+- PresenceToWorkspace
+- PresenceToNotification
+- PresenceToVoice
+- PresenceToMedia
+
+All register through Skill Registry / Tool Registry.
+
+### 31. Windows implementation direction
+
+When available, prefer Windows presence APIs and OEM-supported sensors.
+
+Potential implementation pieces:
+- Windows.Devices.Sensors.HumanPresenceSensor where supported
+- Windows presence Settings entry point
+- device/sensor capability enumeration
+- OS privacy permission checks
+- event-driven presence state updates
+
+Fallback camera pipeline is separate and opt-in.
+
+### 32. Test matrix
+
+Capabilities:
+- FP-A01 supported hardware sensor
+- FP-A02 no sensor
+- FP-A03 privacy denied
+- FP-A04 managed policy denied
+- FP-A05 camera fallback opt-in
+
+State:
+- FP-B01 present
+- FP-B02 leave
+- FP-B03 return
+- FP-B04 brief false absence
+- FP-B05 sensor disconnect
+- FP-B06 low confidence
+
+Rules:
+- FP-C01 lock on leave
+- FP-C02 return workspace
+- FP-C03 defer voice when away
+- FP-C04 time + presence condition
+- FP-C05 disabled rule
+
+Privacy:
+- FP-D01 no raw frame persistence
+- FP-D02 camera indicator
+- FP-D03 no cloud upload
+- FP-D04 user disables instantly
+- FP-D05 OS policy respected
+
+Security:
+- FP-E01 presence does not authenticate
+- FP-E02 Windows Hello handoff
+- FP-E03 sensitive action blocked from presence-only
+- FP-E04 onlooker alert no identity inference
+
+Language:
+- FP-F01 typo
+- FP-F02 STT
+- FP-F03 "رفتم/برگشتم"
+- FP-F04 presence vs identity
+- FP-F05 lock-now vs lock-on-leave
+
+### 33. Acceptance criteria
+
+1. presence and identity are never conflated.
+2. Windows-supported presence sensor is preferred over camera heuristics.
+3. camera mode is explicit opt-in and local-first.
+4. no biometric template or face identity database is created by default.
+5. sensor failure cannot falsely trigger absence-sensitive actions.
+6. lock-on-leave uses debounce/grace period.
+7. return actions route through existing Skills and are individually verified.
+8. presence never substitutes for authentication.
+9. OS privacy and enterprise policy are respected.
+10. raw frames are not retained by default.
+11. critical intents reach 1000–1500 examples.
+12. real compatible-hardware tests must pass before IMPLEMENTED.
+
+### 34. Local implementation plan
+
+When MARIA Windows system is online:
+1. detect Windows version/build.
+2. enumerate Human Presence capabilities.
+3. inspect Presence Settings/privacy policy.
+4. implement PresenceSensorRegistry.
+5. implement WindowsHumanPresenceAdapter.
+6. implement PresenceStateMachine + debounce.
+7. connect Lock/Display/Scheduler/Workspace/Voice/Notifications.
+8. implement Windows Hello handoff only through OS-managed flow.
+9. optionally implement local camera presence fallback after explicit user enable.
+10. implement privacy/status indicator.
+11. add onlooker/attention only if hardware capability exists.
+12. generate 1000–1500 utterance packs for critical intents.
+13. test false absence/return/sensor disconnect/privacy denial.
+14. test real supported hardware if available.
+15. mark only verified modules IMPLEMENTED.
