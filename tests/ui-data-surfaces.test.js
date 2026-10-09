@@ -35,7 +35,7 @@ test('desktop UI keeps legacy pin/reminder migration APIs but moves their visibl
     fs.readFile(new URL('../src/renderer/luxuryUI.js',import.meta.url),'utf8'),
     fs.readFile(new URL('../src/renderer/main.js',import.meta.url),'utf8'),
     fs.readFile(new URL('../src/renderer/chatSurfaceV2.js',import.meta.url),'utf8'),
-    fs.readFile(new URL('../src/renderer/topIsland.js',import.meta.url),'utf8')
+    fs.readFile(new URL('../src/renderer/topIslandV3.js',import.meta.url),'utf8')
   ]);
   for(const token of ["surface==='pins'","surface==='reminders'","pins:list","reminders:list","assistant:show-island-module","showIslandModule('pins')","showIslandModule('tasks')"])assert.ok(main.includes(token),token);
   for(const token of ['showPins','showReminders','showIslandModule','onIslandModule','listPins','listReminders'])assert.ok(preload.includes(token),token);
@@ -51,6 +51,8 @@ test('desktop UI keeps legacy pin/reminder migration APIs but moves their visibl
   assert.match(island,/data-panel-pin/);
   assert.match(island,/data-panel-sound/);
   assert.match(island,/data-context-add/);
+  assert.match(renderer,/topIslandV3\.js/);
+  assert.doesNotMatch(renderer,/import\('\.\/topIsland\.js'\)/);
   assert.match(renderer,/chatSurfaceV2/);
   assert.match(chat,/const queue=\[\]/);
   assert.doesNotMatch(chat,/input\.disabled\s*=\s*true/);
