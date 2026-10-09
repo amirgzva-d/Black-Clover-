@@ -563,6 +563,7 @@ export async function mountTopIsland(){
   document.body.innerHTML=`<main class="top-island" data-mode="compact">
     <header class="island-bar">
       <button class="island-character" data-state="online" data-home-toggle aria-label="MARIA Home"><span class="face"><i class="eye e1"></i><i class="eye e2"></i><i class="mouth"></i></span></button>
+      <div class="peek-dots" aria-hidden="true"><i></i><i></i><i></i></div>
       <div class="island-status"><small>MARIA</small><b data-status>Online • آماده</b></div>
       <div class="live-pills" data-live-pills></div>
       <nav class="island-actions" aria-label="Top Island controls">
