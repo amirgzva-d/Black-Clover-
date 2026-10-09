@@ -128,3 +128,11 @@ button{user-select:none}
 }
 @media(max-width:620px){.island-body{grid-template-columns:84px 1fr}.module-nav>button div small,.module-nav .nav-title{display:none}.module-nav>button b{font-size:7px}.shortcut-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.field-grid,.mode-choice{grid-template-columns:1fr}.report-summary{grid-template-columns:repeat(2,1fr)}}
 @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;transition-duration:.001ms!important}}
+
+.drop-overlay{position:absolute;inset:0;z-index:45;border:1px dashed rgba(195,191,255,.32);border-radius:0 0 19px 19px;background:rgba(7,9,13,.965);backdrop-filter:blur(18px);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:5px;opacity:0;pointer-events:none;transition:.14s}
+.drop-overlay b{font-size:14px}.drop-overlay span{font-size:7px;color:var(--sub)}
+.top-island.drop-active .drop-overlay{opacity:1}
+.automation-card.paused{opacity:.58}
+.auto-actions{display:flex!important;flex-direction:column;gap:2px!important;flex:none!important}
+.auto-actions button{border:0;background:transparent;color:var(--muted);font-size:6.5px;cursor:pointer;padding:2px 3px}.auto-actions button:hover{color:#fff}
+.drop-choice{min-height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;text-align:center}.drop-choice b{font-size:10px}.drop-choice span{font-size:7px;color:var(--sub);max-width:380px;line-height:1.7}
