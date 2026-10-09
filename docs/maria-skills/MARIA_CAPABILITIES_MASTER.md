@@ -184,8 +184,8 @@ Priority controls development order only; it does NOT lower quality requirements
 | 16 | Translation / OCR | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 17 | Screen Understanding | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 18 | Download / Convert / Archive | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 19 | Web-App Agent | NEXT | WAITING |
-| 20 | Face Presence | FUTURE | WAITING |
+| 19 | Web-App Agent | DESIGN COMPLETE v1 ADVANCED | WAITING |
+| 20 | Face Presence | NEXT FUTURE-DESIGN | WAITING |
 | 21 | Gesture Control | FUTURE | WAITING |
 | 22 | Planner / Routines | QUEUED | WAITING |
 
@@ -18238,3 +18238,896 @@ When MARIA Windows system is online:
 18. run corruption/interruption/archive-attack tests.
 19. test real media/Office conversions.
 20. mark only verified modules IMPLEMENTED.
+
+---
+
+## 19 — Generalized Web-App Agent / Workflow Intelligence
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** webapp.*, workflow.web.*, site_action.*, web_crud.*, web_task.*, web_session.*  
+**Owner modules:** WebApp Orchestrator / App Surface Resolver / App Capability Manifest / App Semantic Mapper / Workflow State Machine / DOM-Accessibility Adapter / Site Adapter Registry / Generic Form Agent / CRUD Agent / Account Session Resolver / Upload-Download Handoff / Navigation Recovery / Change Detector / Transaction Guard / Prompt-Injection Guard / Action Verifier / Workflow Audit / WebApp Language Agent  
+**Offline capable:** no for remote web apps; partial for cached/local PWA state  
+**Risk class:** L0–L5 depending on read/write/delete/purchase/account/security side effects  
+**Primary surface:** Browser/PWA first, with connector/API and installed-app handoff where superior
+
+### 1. Purpose
+
+MARIA must understand web applications at the task level, not only at the browser-control level.
+
+Browser Automation knows how to open tabs, click, type and navigate.  
+Web-App Agent must understand what those actions mean inside the service and what success actually looks like.
+
+Examples:
+- "برو ChatGPT چت MARIA رو باز کن و جواب آخر رو کپی کن"
+- "تو Claude یه پروژه جدید بساز"
+- "تو Pinterest این عکس رو تو برد طراحی ذخیره کن"
+- "تو WhatsApp Web پیوی علی رو باز کن و فایل رو بفرست"
+- "تو Gmail ایمیل فلانی رو پیدا کن و جواب Draft بساز"
+- "تو این داشبورد سفارش 123 رو باز کن و وضعیتش رو تغییر بده"
+- "این فرم رو پر کن ولی Submit نکن"
+- "گزارش امروز رو از پنل دانلود کن"
+
+The agent models:
+- application/service
+- account/session
+- browser profile
+- workspace/team/tenant
+- app-specific objects
+- workflow state
+- capability availability
+- side effects
+- success predicates
+- rollback/failure paths
+
+### 2. Relationship to Browser Automation
+
+Browser Automation owns:
+- tab/window/profile
+- DOM targeting
+- scroll/click/type
+- browser-level navigation
+
+Web-App Agent owns:
+- application semantics
+- entity resolution
+- workflow state
+- create/read/update/delete meaning
+- app-level validation
+- multi-step transactional flows
+
+Example "تو Gmail جواب بده":
+- Browser layer can click/type.
+- Web-App Agent must resolve exact account, thread, reply vs reply-all, attachment state, draft vs send, and verify send result.
+
+### 3. Web-App Capability Manifest
+
+Every adapter declares:
+- app_id
+- service_name
+- official_domains
+- supported_surfaces
+- account requirements
+- workspaces/teams support
+- read capabilities
+- create/update/delete capabilities
+- upload/download support
+- search support
+- event support
+- pagination/infinite-scroll model
+- authentication requirements
+- CAPTCHA/biometric/security-key requirements
+- risky/irreversible actions
+- rate limits
+- unsupported flows
+- last_verified_version/date
+- verification methods
+- fallback strategy
+
+MARIA never assumes support merely because a visible button exists.
+
+### 4. Generic object model
+
+Objects can include:
+- app
+- workspace/project
+- account
+- conversation/thread
+- message
+- contact
+- group/channel
+- board/collection
+- pin/post/item
+- file/attachment
+- record
+- order
+- ticket
+- task
+- form
+- comment
+- notification
+- report
+- table row
+- setting
+- subscription
+- long-running job
+
+Site-specific adapters extend this model.
+
+### 5. Canonical app/session intents
+
+- webapp.open
+- webapp.open_in_browser
+- webapp.open_installed
+- webapp.get_active
+- webapp.account.list
+- webapp.account.select
+- webapp.account.verify
+- webapp.session.get
+- webapp.session.refresh
+- webapp.session.sign_in_handoff
+
+Examples:
+- "ChatGPT رو باز کن"
+- "تو نسخه وب"
+- "با حساب شخصی"
+- "با همون اکانت قبلی"
+- "الان با کدوم حسابیم"
+- "اگر لاگین نیستم وارد شو"
+
+Authentication delegates to Account/Auth. No password/cookie/token extraction.
+
+### 6. Generic search/list/open intents
+
+- webapp.search
+- webapp.list
+- webapp.open_item
+- webapp.open_recent
+- webapp.open_by_name
+- webapp.open_by_id
+- webapp.filter
+- webapp.sort
+- webapp.paginate_next
+- webapp.paginate_previous
+
+Examples:
+- "داخل همین برنامه سرچ کن"
+- "چت MARIA رو پیدا کن"
+- "آخرین پروژه رو باز کن"
+- "سفارش 123 رو بیار"
+- "فقط موارد باز رو نشون بده"
+- "جدیدترین‌ها اول"
+- "صفحه بعد"
+
+### 7. Generic CRUD model
+
+Create:
+- webapp.item.create
+
+Read:
+- webapp.item.read
+- webapp.item.get_details
+
+Update:
+- webapp.item.edit
+- webapp.item.update_field
+- webapp.item.rename
+
+Delete/archive:
+- webapp.item.delete
+- webapp.item.archive
+
+Examples:
+- "یه برد جدید بساز"
+- "اسم پروژه رو عوض کن"
+- "این مورد رو Archive کن"
+- "این رکورد رو حذف کن"
+- "وضعیتش رو Completed کن"
+
+Delete must never be inferred from a vague "جمعش کن" when semantics are unclear.
+
+### 8. Generic form workflows
+
+- webapp.form.inspect
+- webapp.form.fill
+- webapp.form.set_field
+- webapp.form.upload
+- webapp.form.preview
+- webapp.form.submit
+- webapp.form.cancel
+
+Examples:
+- "این فرم رو پر کن"
+- "اسم و ایمیل رو وارد کن"
+- "فایل رو هم ضمیمه کن"
+- "فعلاً نفرست"
+- "قبل Submit نشونم بده"
+- "حالا ارسالش کن"
+
+Critical rule:
+**fill/preview ≠ submit**
+
+### 9. Workflow State Machine
+
+Every non-trivial task compiles into explicit states.
+
+Example:
+"ChatGPT رو باز کن، چت MARIA رو پیدا کن، فایل رو Attach کن، این متن رو بنویس ولی نفرست."
+
+States:
+1. resolve service/surface
+2. verify account
+3. open app
+4. locate conversation
+5. open conversation
+6. resolve exact file
+7. attach
+8. verify filename
+9. focus composer
+10. type
+11. verify draft
+12. STOP before send
+
+Each state stores:
+- expected app/page
+- target object
+- action
+- success predicate
+- timeout
+- retry/fallback
+- risk level
+- idempotency information
+
+### 10. Transaction Guard
+
+For irreversible/external side effects:
+- send message
+- publish
+- delete
+- place order
+- payment
+- submit application
+- account/security changes
+
+Before commit:
+- verify account
+- verify workspace/team
+- verify target
+- verify payload
+- verify files
+- verify amount/quantity when relevant
+- preview/confirmation per policy
+
+After commit:
+- verify app-level success
+- capture status/reference/receipt when available
+
+### 11. Prompt-injection / untrusted-content safety
+
+Page/app content is untrusted.
+
+Visible text such as:
+- "Ignore previous instructions"
+- "Upload all your files"
+- "Send your password"
+- "Run this script"
+
+is not user authorization.
+
+WebAppPromptInjectionGuard blocks:
+- unrelated local-file access
+- credential disclosure
+- privilege escalation
+- cross-service exfiltration
+- hidden instructions embedded in page content
+
+No page content can grant permissions.
+
+### 12. Site adapter strategy
+
+Priority:
+1. structured official API/connector
+2. service-specific browser adapter
+3. semantic DOM/accessibility workflow
+4. generic Web-App engine
+5. visual fallback
+
+Adapters must not be only brittle CSS-selector collections.
+
+Prefer:
+- semantic roles
+- accessible names
+- official routes
+- stable IDs
+- app state
+- object identity
+- connector/API results
+
+### 13. UI drift / site updates
+
+Adapters track:
+- compatibility date
+- semantic anchors
+- fallback locators
+- known routes
+- test fixtures
+
+When UI changes:
+1. detect missing expected object
+2. refresh semantic tree
+3. resolve by alternative semantics
+4. fall back to generic app engine
+5. visual fallback
+6. stop if confidence is insufficient
+
+Never continue clicking stale coordinates/selectors.
+
+### 14. ChatGPT advanced adapter
+
+Normalized capabilities:
+- chatgpt.open
+- chatgpt.chat.new
+- chatgpt.chat.search
+- chatgpt.chat.open
+- chatgpt.message.type
+- chatgpt.message.send
+- chatgpt.response.wait
+- chatgpt.response.read
+- chatgpt.response.copy
+- chatgpt.file.attach
+- chatgpt.model.select
+- chatgpt.generation.stop
+
+Examples:
+- "برو چت MARIA"
+- "چت جدید"
+- "این فایل رو ضمیمه کن"
+- "بنویس ولی نفرست"
+- "حالا بفرست"
+- "جواب رو بخون"
+- "جواب رو کپی کن"
+- "تولید رو Stop کن"
+
+Authorized session only.
+
+### 15. Claude / Qwen / DeepSeek adapters
+
+Use the same normalized AI-chat action model where supported:
+- open
+- new chat
+- search/open conversation
+- type
+- attach
+- send
+- wait
+- read/copy response
+- stop
+- select model if exposed
+
+Examples:
+- "همین سوال رو از Claude هم بپرس"
+- "Qwen رو باز کن و فایل رو تحلیل کن"
+- "جواب DeepSeek رو بخون"
+
+Service differences come from capability manifests, not hard-coded assumptions.
+
+### 16. Pinterest advanced adapter
+
+Objects:
+- pin
+- board
+- profile
+- search result
+
+Actions:
+- search
+- open pin
+- save/unsave
+- choose board
+- create board
+- share
+- open profile
+- safe download/share handoff where allowed
+
+Examples:
+- "این Pin رو تو برد طراحی ذخیره کن"
+- "یه برد جدید به اسم ایده‌ها بساز"
+- "این عکس رو برای علی بفرست"
+
+### 17. Telegram / WhatsApp / Rubika web adapters
+
+Normalized actions:
+- resolve conversation
+- read/search
+- type
+- attach
+- send
+- reply
+- forward
+- edit
+- delete
+- download attachment
+- verify account
+
+Examples:
+- "پیوی علی رو باز کن"
+- "این فایل رو بفرست"
+- "روی پیام آخر Reply کن"
+- "این پیام رو فوروارد کن"
+- "پیام اشتباه رو برای همه پاک کن"
+
+If desktop app/API is safer or more reliable, Surface Resolver may choose it unless user explicitly requests web.
+
+### 18. Gmail web adapter
+
+Structured Gmail connector is preferred.
+
+Web fallback supports visible workflows:
+- open inbox
+- search
+- open thread
+- compose/draft
+- attach
+- reply
+- archive
+- label
+- send
+
+Do not scrape Gmail UI when connector can reliably perform the same structured task, unless user explicitly asks for browser-visible interaction.
+
+### 19. Generic dashboard/admin web apps
+
+For an authorized unknown dashboard:
+
+1. identify app/domain
+2. inspect navigation
+3. find target entity
+4. open record
+5. read current values
+6. modify only requested field
+7. preview side effect
+8. save/submit
+9. verify resulting value/status
+
+Examples:
+- "سفارش 123 رو Shipped کن"
+- "Ticket رو Assigned کن به Sara"
+- "گزارش امروز رو دانلود کن"
+
+Unknown apps use stricter confirmation and verification.
+
+### 20. Pagination / infinite scroll / virtualized lists
+
+Agent understands:
+- classic pagination
+- infinite scroll
+- lazy loading
+- filters
+- virtualized rows
+
+It must know that "not visible" does not mean "does not exist."
+
+### 21. Upload workflow
+
+- webapp.upload.file
+- webapp.upload.files
+- webapp.upload.verify
+
+Rules:
+- exact local file
+- type/size constraints
+- filename verification
+- upload ≠ submit/send
+- sensitive file policy enforced
+
+Examples:
+- "این PDF رو Attach کن ولی نفرست"
+- "این سه عکس رو آپلود کن"
+- "فقط فایل نهایی"
+
+### 22. Download workflow
+
+- webapp.download.start
+- webapp.download.verify
+- webapp.report.download
+
+Web-App Agent owns the app action. Capability 18 owns file transfer and final verification.
+
+Example:
+"گزارش PDF امروز رو از داشبورد دانلود کن"
+
+### 23. Long-running jobs
+
+Examples:
+- AI generation
+- export
+- report generation
+- upload processing
+- video render/import
+
+Canonical:
+- webapp.job.wait
+- webapp.job.status
+- webapp.job.cancel
+
+Use event-driven monitoring or bounded backoff; no aggressive polling.
+
+### 24. Notifications / events
+
+Possible events:
+- new message
+- export ready
+- approval required
+- job complete
+- unread notification
+
+Prefer connector/event stream when available; browser polling is fallback.
+
+### 25. Multi-account identity
+
+Every write action binds:
+- service
+- browser profile
+- web account
+- workspace/team/tenant when applicable
+
+Chrome profile is not the same thing as website account.
+
+Examples:
+- "با حساب کاری"
+- "نه این ChatGPT، اکانت شخصی"
+- "Pinterest شخصی"
+
+### 26. Workspace/team/tenant awareness
+
+Canonical:
+- webapp.workspace.list
+- webapp.workspace.select
+- webapp.workspace.verify
+
+Examples:
+- "تو Workspace شرکت"
+- "پروژه MARIA"
+- "Team دوم"
+
+Correct account + wrong workspace is still wrong.
+
+### 27. Data extraction
+
+- webapp.extract.text
+- webapp.extract.table
+- webapp.extract.record
+- webapp.extract.report
+
+Examples:
+- "این جدول رو دربیار"
+- "اسم و شماره سفارش‌ها رو بگیر"
+- "این گزارش رو Excel کن"
+
+Prefer structured data over OCR.
+
+### 28. Validation-error recovery
+
+Handle:
+- missing required field
+- invalid format
+- duplicate value
+- expired session
+- permission denied
+- rate limit
+- file too large
+- unsupported type
+
+Recovery:
+1. read exact error
+2. classify
+3. fix only within user intent
+4. re-submit only if safe/idempotent
+5. pause for CAPTCHA/security challenges
+
+### 29. CAPTCHA / biometric / security key
+
+MARIA does not bypass them.
+
+It:
+- detects challenge
+- pauses
+- asks user to complete required secure step
+- resumes
+- verifies authenticated state
+
+### 30. Irreversible / high-impact actions
+
+Examples:
+- delete
+- publish
+- send
+- payment/purchase
+- account/security settings
+- account deletion
+
+Require:
+- exact target
+- exact account/workspace
+- clear intent
+- appropriate confirmation
+- post-action verification
+
+### 31. Auditability
+
+Each workflow records:
+- user goal
+- service/account/workspace
+- target objects
+- steps
+- side effects
+- confirmations
+- verification
+- failure/retry state
+
+Sensitive fields are redacted.
+
+User can ask:
+- "چی کار کردی؟"
+- "کجا گیر کرد؟"
+- "کدوم حساب بود؟"
+- "آخرین مرحله موفق چی بود؟"
+
+### 32. Undo / rollback
+
+Possible:
+- restore previous field value
+- delete newly-created reversible item
+- restore draft
+- unsave a pin
+- revert preference
+
+Potentially non-undoable:
+- sent message
+- published content
+- payment
+- permanent deletion
+- irreversible account changes
+
+Each adapter declares rollback semantics per action.
+
+### 33. Permissions / risk
+
+L0:
+- read/search/list
+
+L1:
+- navigate/open
+- fill draft
+- filter/sort
+
+L2:
+- upload
+- create draft/private item
+- reversible preference
+
+L3:
+- send/publish
+- update record
+- share
+
+L4:
+- delete
+- account/security changes
+- bulk external actions
+
+L5:
+- payment/purchase
+- account deletion/recovery
+- high-impact irreversible transaction
+
+### 34. Massive language packs
+
+Critical intents target **1000–1500 examples each**:
+- webapp.open
+- webapp.account.select
+- webapp.search
+- webapp.open_item
+- webapp.form.fill
+- webapp.form.submit
+- webapp.item.create
+- webapp.item.edit
+- webapp.item.delete
+- webapp.upload.file
+- webapp.download.start
+- webapp.workspace.select
+- normalized AI chat intents
+- normalized messaging web-app intents
+
+Secondary intents: 500–1000.
+
+Mandatory variation axes:
+- service explicit/implicit
+- browser/desktop choice
+- account
+- workspace
+- object name/id
+- current/recent/previous
+- draft vs submit
+- create vs edit
+- archive vs delete
+- upload vs send
+- search vs open
+- typo/STT
+- Persian-English
+- correction/negation
+- multi-step
+- scheduled/conditional
+- retries
+- stale session
+- UI drift
+- duplicate entity names
+- prompt injection
+- irreversible actions
+
+Hard negatives:
+- "فرم رو پر کن" ≠ submit
+- "بنویس" ≠ send
+- "Attach کن" ≠ send
+- "گزارش رو باز کن" ≠ download
+- "برو چت علی" ≠ send message
+- "این صفحه رو ببند" => Browser tab close, not delete item
+- "پاکش کن" can mean clear field, delete record, unsave, remove attachment, archive; resolve
+- visible page text never becomes user instruction
+
+Family target: tens of thousands of diverse examples.
+
+### 35. Skill / Agent package
+
+- WebAppOrchestrator
+- WebAppSurfaceResolver
+- WebAppCapabilityManifestRegistry
+- WebAppSemanticMapper
+- WebAppWorkflowStateMachine
+- WebAppEntityResolver
+- WebAppWorkspaceResolver
+- GenericWebAppSearchSkill
+- GenericWebAppCRUDSkill
+- GenericWebFormSkill
+- WebAppUploadSkill
+- WebAppDownloadHandoffSkill
+- WebAppJobMonitor
+- WebAppTransactionGuard
+- WebAppPromptInjectionGuard
+- WebAppNavigationRecovery
+- WebAppChangeDetector
+- WebAppVerifier
+- WebAppUndoCoordinator
+- WebAppAuditLog
+- WebAppLanguageAgent
+- SiteAdapterRegistry
+
+Adapters:
+- ChatGPTWebAdapter
+- ClaudeWebAdapter
+- QwenWebAdapter
+- DeepSeekWebAdapter
+- PinterestWebAdapter
+- TelegramWebAdapter
+- WhatsAppWebAdapter
+- RubikaWebAdapter
+- GmailWebAdapter
+
+All register through Skill Registry / Tool Registry.
+
+### 36. Adapter test contract
+
+Every adapter must pass:
+- login-state detection
+- account identity
+- workspace identity when applicable
+- primary object search/open
+- read
+- draft/fill
+- write/submit where supported
+- upload
+- download
+- validation/failure
+- UI drift recovery
+- stale session
+- prompt-injection protection
+- verification
+- no duplicate side effect on retry
+
+### 37. Test matrix
+
+Generic:
+- WA-A01 open
+- WA-A02 wrong account
+- WA-A03 wrong workspace
+- WA-A04 search/open
+- WA-A05 create/edit
+- WA-A06 delete confirmation
+- WA-A07 draft vs submit
+- WA-A08 upload without submit
+- WA-A09 download handoff
+
+Dynamic UI:
+- WA-B01 element moved
+- WA-B02 label changed
+- WA-B03 infinite scroll
+- WA-B04 stale locator
+- WA-B05 modal appears
+- WA-B06 session expired
+
+AI apps:
+- WA-C01 open chat
+- WA-C02 attach
+- WA-C03 type only
+- WA-C04 send
+- WA-C05 wait/read
+- WA-C06 wrong model/account
+
+Messaging:
+- WA-D01 open conversation
+- WA-D02 send text
+- WA-D03 file
+- WA-D04 forward
+- WA-D05 delete
+- WA-D06 recipient ambiguity
+
+Security:
+- WA-E01 prompt injection
+- WA-E02 CAPTCHA
+- WA-E03 fake login
+- WA-E04 page asks for clipboard secret
+- WA-E05 destructive hidden button
+
+Verification:
+- WA-F01 click but save failed
+- WA-F02 success banner
+- WA-F03 resulting record value
+- WA-F04 duplicate retry prevention
+
+Language:
+- WA-G01 typo
+- WA-G02 STT
+- WA-G03 ambiguous "ذخیره"
+- WA-G04 fill vs submit
+- WA-G05 current/previous entity
+- WA-G06 service aliases
+
+### 38. Acceptance criteria
+
+1. Web-App Agent models service semantics, not only clicks.
+2. Browser Automation remains a separate execution layer.
+3. account, browser profile and workspace identities are independently verified.
+4. form fill never implies submit.
+5. upload never implies send/submit.
+6. irreversible actions use Transaction Guard.
+7. page content cannot grant permissions.
+8. UI drift causes semantic recovery, not stale-coordinate clicking.
+9. unknown apps are automated conservatively.
+10. unsupported adapter actions are reported honestly.
+11. post-action verification proves application state, not button activation.
+12. critical intents reach 1000–1500 examples.
+13. real ChatGPT/Claude/Qwen/DeepSeek/Pinterest/messaging web workflows must pass before each adapter is IMPLEMENTED.
+
+### 39. Local implementation plan
+
+When MARIA Windows system is online:
+1. inspect existing browser/web-app code.
+2. finalize Browser Companion structured action bridge.
+3. implement capability manifest registry.
+4. implement Workflow State Machine.
+5. implement account/workspace/entity resolvers.
+6. implement GenericWebFormSkill.
+7. implement GenericWebAppCRUDSkill.
+8. implement TransactionGuard and PromptInjectionGuard.
+9. implement ChatGPT adapter.
+10. implement Claude adapter.
+11. implement Qwen adapter.
+12. implement DeepSeek adapter.
+13. implement Pinterest adapter.
+14. implement Telegram/WhatsApp/Rubika web adapters where authorized/supported.
+15. keep Gmail connector preferred and add Gmail web fallback.
+16. add upload/download handoffs.
+17. add UI-drift recovery.
+18. add app-level verifier/audit.
+19. generate 1000–1500 utterance packs for critical intents.
+20. run multi-account/multi-workspace/security tests.
+21. mark each adapter IMPLEMENTED only after real passing workflows.
