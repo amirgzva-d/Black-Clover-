@@ -19,8 +19,8 @@ From this point forward, every new capability specification is appended to the s
 | 11 | Timed / conditional actions | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 12 | Power / lock / security | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 13 | Excel / Office automation | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 14 | Desktop organization | NEXT | WAITING |
-| 15 | Selection / clipboard intelligence | QUEUED | WAITING |
+| 14 | Desktop organization | DESIGN COMPLETE v1 ADVANCED | WAITING |
+| 15 | Selection / clipboard intelligence | NEXT | WAITING |
 | 16 | Translation / OCR / screen translation | QUEUED | WAITING |
 | 17 | Screenshot / screen understanding | QUEUED | WAITING |
 | 18 | Downloads / format conversion / archive | QUEUED | WAITING |
