@@ -103,7 +103,7 @@ function shortcutCard(x,grid){
   </article>`;
 }
 function shortcutEditor(item=null){
-  return openOverlay({
+  const overlay=openOverlay({
     title:item?'ویرایش میان‌بر':'میان‌بر جدید',
     subtitle:'QUICK LAUNCH',
     body:`
@@ -129,6 +129,13 @@ function shortcutEditor(item=null){
       await renderShortcuts();
     }
   });
+  if(item)$('[data-delete-shortcut]',overlay)?.addEventListener('click',async()=>{
+    if(!confirm(`میان‌بر «${item.label}» حذف شود؟`))return;
+    await window.blackClover.removeShortcut(item.id);
+    overlay.remove();
+    await renderShortcuts();
+  });
+  return overlay;
 }
 
 function statusText(r){
@@ -324,9 +331,9 @@ async function renderPinsAutomation(){
     </div>`;
 }
 function pinCard(x){return `<article class="pin-card" data-pin-id="${esc(x.id)}"><span class="pin-type">${esc(x.icon||'◆')}</span><div><b>${esc(x.title||'پین')}</b><small>${esc(x.type||'text')} • ${fmt(x.updatedAt)}</small><p>${esc(x.body||x.text||'')}</p></div><div><button data-pin-copy>کپی</button><button data-pin-edit>•••</button></div></article>`;}
-function automationCard(x){return `<article class="automation-card" data-reminder-id="${esc(x.id)}"><span class="auto-kind ${x.kind==='action'?'execute':'notify'}">${x.kind==='action'?'▶':'◷'}</span><div><b>${esc(x.title||x.label||x.message||x.instruction)}</b><small>${x.kind==='action'?'خودش انجام بده':'فقط یادآوری'} • ${fmt(x.dueAt)}${x.intervalMinutes?` • هر ${x.intervalMinutes} دقیقه`:''}</small>${x.lastResult?`<p class="${x.lastResult.ok?'ok':'bad'}">${esc(x.lastResult.text||'')}</p>`:''}</div><button data-reminder-cancel>لغو</button></article>`;}
+function automationCard(x){return `<article class="automation-card ${x.paused?'paused':''}" data-reminder-id="${esc(x.id)}"><span class="auto-kind ${x.kind==='action'?'execute':'notify'}">${x.kind==='action'?'▶':'◷'}</span><div><b>${esc(x.title||x.label||x.message||x.instruction)}</b><small>${x.kind==='action'?'خودش انجام بده':'فقط یادآوری'} • ${x.paused?'متوقف':fmt(x.dueAt)}${x.intervalMinutes?` • هر ${x.intervalMinutes} دقیقه`:''}</small>${x.lastResult?`<p class="${x.lastResult.ok?'ok':'bad'}">${esc(x.lastResult.text||'')}</p>`:''}</div><div class="auto-actions"><button ${x.paused?'data-reminder-resume':'data-reminder-pause'}>${x.paused?'ادامه':'Pause'}</button><button data-reminder-cancel>لغو</button></div></article>`;}
 function pinEditor(item=null){
-  openOverlay({
+  const overlay=openOverlay({
     title:item?'ویرایش پین':'پین جدید',
     subtitle:'UNIVERSAL PIN',
     body:`
@@ -341,6 +348,13 @@ function pinEditor(item=null){
       await renderPinsAutomation();
     }
   });
+  if(item)$('[data-delete-pin]',overlay)?.addEventListener('click',async()=>{
+    if(!confirm(`پین «${item.title||'این مورد'}» حذف شود؟`))return;
+    await window.blackClover.removePin(item.id);
+    overlay.remove();
+    await renderPinsAutomation();
+  });
+  return overlay;
 }
 function automationEditor(){
   const due=new Date(Date.now()+10*60*1000);due.setMinutes(due.getMinutes()-due.getTimezoneOffset());
@@ -420,7 +434,12 @@ function bindDelegation(){
       if(e.target.closest('[data-pin-edit]')&&item){pinEditor(item);return;}
     }
     const rem=e.target.closest('[data-reminder-id]');
-    if(rem&&e.target.closest('[data-reminder-cancel]')){await window.blackClover.cancelReminder(rem.dataset.reminderId);await renderPinsAutomation();}
+    if(rem){
+      const id=rem.dataset.reminderId;
+      if(e.target.closest('[data-reminder-pause]')){await window.blackClover.pauseReminder(id);await renderPinsAutomation();return;}
+      if(e.target.closest('[data-reminder-resume]')){await window.blackClover.resumeReminder(id);await renderPinsAutomation();return;}
+      if(e.target.closest('[data-reminder-cancel]')){await window.blackClover.cancelReminder(id);await renderPinsAutomation();return;}
+    }
   });
 }
 
@@ -434,6 +453,7 @@ export async function mountTopIsland(){
       <button class="chat-quick" data-open-chat title="چت">✦</button>
       <button class="collapse" data-toggle-mode>⌄</button>
     </header>
+    <div class="drop-overlay" data-drop-overlay><b>فایل را رها کن</b><span>Pin • Ask MARIA • Translate • Send • Convert</span></div>
     <section class="island-body">
       <aside class="module-nav">
         <div class="nav-title"><small>MODULES</small><b data-current-module>میان‌برها</b></div>
@@ -449,6 +469,26 @@ export async function mountTopIsland(){
   $$('[data-module]').forEach(b=>b.onclick=()=>selectModule(b.dataset.module));
   $$('[data-open-chat]').forEach(b=>b.onclick=()=>window.blackClover.showChat());
   bindDelegation();
+
+  const root=$('.top-island'),dropOverlay=$('[data-drop-overlay]');
+  for(const eventName of ['dragenter','dragover']){
+    root.addEventListener(eventName,e=>{e.preventDefault();root.classList.add('drop-active');});
+  }
+  root.addEventListener('dragleave',e=>{if(!root.contains(e.relatedTarget))root.classList.remove('drop-active');});
+  root.addEventListener('drop',e=>{
+    e.preventDefault();root.classList.remove('drop-active');
+    const files=[...(e.dataTransfer?.files||[])];
+    const names=files.map(x=>x.name).filter(Boolean);
+    if(names.length){
+      pushEvent({type:'drop',text:`فایل دریافت شد: ${names.join('، ')}`});
+      openOverlay({
+        title:'فایل دریافت شد',
+        subtitle:'CONTEXT DROP',
+        body:`<div class="drop-choice"><b>${esc(names.join('، '))}</b><span>در اتصال محلی، مسیر امن فایل گرفته می‌شود و می‌توانی Ask MARIA، Pin، Translate، Send یا Convert را انتخاب کنی.</span></div>`,
+        onSubmit:null
+      });
+    }
+  });
 
   document.addEventListener('pointermove',e=>{
     wake();
