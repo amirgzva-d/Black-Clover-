@@ -17,9 +17,14 @@ test('MARIA shell uses one shared design system and runtime state bus',async()=>
   assert.match(design,/mariaSurfaceOut/);
 });
 
-test('primary dock exposes chat character projects reminders pins voice and settings',async()=>{
-  const ui=await read('src/renderer/luxuryUI.js');
-  for(const action of ['chat','avatar','projects','reminders','pins','voice','settings'])assert.ok(ui.includes(`data-action=\\"${action}\\"`)||ui.includes(`data-action="${action}"`),action);
+test('primary avatar dock keeps character tools while pins and reminders move to top island',async()=>{
+  const [ui,island]=await Promise.all([read('src/renderer/luxuryUI.js'),read('src/renderer/topIsland.js')]);
+  for(const action of ['chat','avatar','projects','voice','settings'])assert.ok(ui.includes(`data-action=\\"${action}\\"`)||ui.includes(`data-action="${action}"`),action);
+  assert.doesNotMatch(ui,/data-action="pins"/);
+  assert.doesNotMatch(ui,/data-action="reminders"/);
+  assert.match(island,/pins-automation/);
+  assert.match(island,/میان‌برها/);
+  assert.match(island,/گزارش ثبت/);
   assert.match(ui,/a==='wardrobe'\|\|a==='avatar'/);
   assert.match(ui,/openSettings\?\.\('voice'\)/);
   assert.match(ui,/openSettings\?\.\('general'\)/);
