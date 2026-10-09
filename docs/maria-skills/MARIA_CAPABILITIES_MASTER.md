@@ -10870,3 +10870,711 @@ When MARIA Windows system is online:
 18. run real YouTube account/profile/live/playlist tests.
 19. mark only passing modules IMPLEMENTED.
 
+
+
+---
+
+## 09 — YouTube / Web Media Intelligence
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`youtube.*\`, \`webmedia.*\`, \`video.*\`, \`caption.*\`, \`playlist.*\`, \`mediaqueue.*\`  
+**Owner modules:** Web Media Orchestrator / Media Service Resolver / YouTube Adapter / Web Media Adapter Registry / Media Context Resolver / Playback Skill / Queue Skill / Playlist Skill / Caption/Transcript Skill / Media Search Skill / Media Verifier / Safe Download Handoff / Browser Media Bridge  
+**Offline capable:** limited; local cached/downloaded media only  
+**Risk class:** L0–L3 depending on action  
+**Primary surface:** Chrome/web app first, extensible to installed apps and other media services
+
+### 1. Purpose
+
+MARIA must be able to control and reason about YouTube and similar web-media services as structured media environments.
+
+Core abilities:
+- search videos/channels/playlists
+- open exact result
+- distinguish video/channel/playlist/short
+- play/pause/stop
+- seek forward/backward/to timestamp
+- next/previous
+- restart video
+- change playback speed
+- set video quality when supported
+- set captions/subtitles
+- switch subtitle language when available
+- toggle theater/fullscreen/miniplayer
+- control page/player volume separately from system volume
+- mute/unmute player
+- inspect current video metadata
+- retrieve transcript/captions when available
+- summarize/translate/explain transcript
+- extract chapters/timestamps
+- add to queue/watch later/playlist where authorized
+- create/open playlist where supported
+- like/unlike only with explicit user intent
+- subscribe/unsubscribe only with explicit user intent
+- hand off downloads only through legal/supported service or user-authorized source
+- hand off media conversion to Capability 18
+- schedule playback through Scheduler
+- verify every state change
+
+### 2. Canonical media object model
+
+Objects:
+- service
+- account
+- channel
+- video
+- short
+- playlist
+- queue
+- chapter
+- timestamp
+- caption track
+- transcript
+- current player
+- browser tab
+- playback state
+- playback rate
+- quality
+- volume
+- mute state
+
+### 3. Canonical intents — search/open
+
+- \`youtube.search\`
+- \`youtube.search.videos\`
+- \`youtube.search.channels\`
+- \`youtube.search.playlists\`
+- \`youtube.open_video\`
+- \`youtube.open_channel\`
+- \`youtube.open_playlist\`
+- \`youtube.open_result\`
+- \`youtube.open_latest_from_channel\`
+- \`youtube.search_with_filter\`
+
+Examples:
+- "تو YouTube سرچ کن آموزش Python"
+- "یوتیوب باز کن"
+- "ویدئوهای فلانی رو پیدا کن"
+- "کانال رسمی NVIDIA رو بیار"
+- "آخرین ویدئوی این کانال"
+- "فقط ویدئوهای بلند"
+- "فقط Shorts"
+- "پلی‌لیست آموزش Excel"
+- "نتیجه سوم رو باز کن"
+- "اون ویدئویی که 20 دقیقه بود"
+- noisy/STT:
+  - "یوتوب"
+  - "یوتیپ"
+  - "ویدیو آموزشی پایتون"
+  - "چنل انویدیا"
+
+Search result disambiguation uses:
+- title
+- channel
+- duration
+- upload date
+- thumbnail context
+- result index
+- current search context
+
+### 4. Playback intents
+
+- \`webmedia.play\`
+- \`webmedia.pause\`
+- \`webmedia.toggle_playback\`
+- \`webmedia.stop\`
+- \`webmedia.restart\`
+- \`webmedia.next\`
+- \`webmedia.previous\`
+- \`webmedia.seek_forward\`
+- \`webmedia.seek_backward\`
+- \`webmedia.seek_to\`
+- \`webmedia.seek_chapter\`
+
+Examples:
+- "پخش کن"
+- "Pause"
+- "ویدئو رو نگه دار"
+- "ادامه بده"
+- "از اول"
+- "برو ویدئوی بعدی"
+- "قبلی"
+- "10 ثانیه برو جلو"
+- "30 ثانیه برگرد"
+- "برو دقیقه 12"
+- "برو بخش جمع‌بندی"
+- "برو فصل بعد"
+
+Semantic boundaries:
+- "قطع کن" may mean pause/stop based on media context.
+- "صدا رو قطع کن" => mute, not pause.
+- "از اول پخش کن" => restart current video.
+- "بعدی" in playlist context => next media, not next browser tab.
+
+### 5. Player volume / mute
+
+- \`webmedia.volume.get\`
+- \`webmedia.volume.set\`
+- \`webmedia.volume.increase\`
+- \`webmedia.volume.decrease\`
+- \`webmedia.mute\`
+- \`webmedia.unmute\`
+
+Examples:
+- "صدای همین ویدئو رو 30 کن"
+- "فقط YouTube کم شه"
+- "پلیر رو mute کن"
+- "صدای سیستم دست نخور"
+- "این ویدئو بلندتر"
+- "فقط صداش رو ببند"
+
+Boundaries:
+- web player volume != Windows master volume
+- tab mute != player mute
+- browser app/session volume != player volume
+- MARIA voice != media volume
+
+Context resolver must distinguish these targets.
+
+### 6. Playback speed
+
+- \`webmedia.speed.get\`
+- \`webmedia.speed.set\`
+- \`webmedia.speed.increase\`
+- \`webmedia.speed.decrease\`
+- \`webmedia.speed.normal\`
+
+Examples:
+- "سرعت رو 1.5 کن"
+- "دو برابر"
+- "آهسته‌تر"
+- "یکم سریع‌تر"
+- "برگرد معمولی"
+- "سرعت پخش رو نصف کن"
+
+Hard negative:
+- "10 ثانیه برو جلو" => seek, not speed.
+- "ویدئو رو سریع‌تر جلو ببر" context may be ambiguous; resolve by phrasing/context.
+
+### 7. Quality
+
+- \`webmedia.quality.get\`
+- \`webmedia.quality.set\`
+- \`webmedia.quality.auto\`
+- \`webmedia.quality.maximum\`
+- \`webmedia.quality.minimum\`
+
+Examples:
+- "کیفیت رو 1080 بذار"
+- "4K اگر هست"
+- "بذار Auto"
+- "بالاترین کیفیت"
+- "نت ضعیفه کیفیتو کم کن"
+
+Rules:
+- choose only actually available quality
+- if service dynamically controls quality, report actual state
+- do not claim unsupported resolution
+
+### 8. Captions / subtitles
+
+- \`caption.enable\`
+- \`caption.disable\`
+- \`caption.toggle\`
+- \`caption.list_languages\`
+- \`caption.select_language\`
+- \`caption.auto_translate\`
+
+Examples:
+- "زیرنویس روشن"
+- "CC رو فعال کن"
+- "زیرنویس فارسی"
+- "انگلیسیش کن"
+- "ترجمه خودکار فارسی بذار"
+- "زیرنویس رو بردار"
+
+Rules:
+- distinguish creator captions from auto-generated captions
+- only select available tracks
+- auto-translation only if platform supports it
+- subtitle state verified after action
+
+### 9. Transcript intelligence
+
+- \`transcript.get\`
+- \`transcript.get_segment\`
+- \`transcript.search\`
+- \`transcript.summarize\`
+- \`transcript.translate\`
+- \`transcript.extract_chapters\`
+- \`transcript.extract_key_points\`
+- \`transcript.extract_actions\`
+
+Examples:
+- "متن این ویدئو رو بده"
+- "ترنسکریپتش رو بیار"
+- "خلاصه این ویدئو رو بگو"
+- "فقط نکات مهم"
+- "این ویدئو رو فارسی خلاصه کن"
+- "ببین درباره GPU کجا حرف می‌زنه"
+- "اون قسمتی که درباره قیمت گفت رو پیدا کن"
+- "تایم‌استمپ‌های مهم رو بده"
+- "کارهایی که پیشنهاد داد رو دربیار"
+
+Grounding rule:
+- summary must come from transcript/captions/page text or actual accessible media content
+- title/description alone is insufficient for full-content summary
+- if transcript unavailable, say so and offer alternative page/visual analysis
+
+### 10. Chapters / timestamps
+
+- \`webmedia.chapter.list\`
+- \`webmedia.chapter.open\`
+- \`webmedia.timestamp.copy\`
+- \`webmedia.timestamp.open\`
+- \`webmedia.timestamp.share\`
+
+Examples:
+- "فصل‌ها رو نشون بده"
+- "برو بخش نصب"
+- "لینک همین دقیقه رو کپی کن"
+- "از دقیقه 12 لینک بده"
+- "این تایم‌استمپ رو بفرست"
+
+### 11. Queue
+
+- \`mediaqueue.add\`
+- \`mediaqueue.remove\`
+- \`mediaqueue.list\`
+- \`mediaqueue.clear\`
+- \`mediaqueue.move\`
+- \`mediaqueue.play_next\`
+
+Examples:
+- "این رو بعدی بذار"
+- "به صف اضافه کن"
+- "بعد از این پخش شه"
+- "صف پخش رو نشون بده"
+- "این یکی رو از صف بردار"
+- "اول این پخش شه"
+- "صف رو خالی کن"
+
+Queue semantics are session-scoped unless platform exposes persistent queue.
+
+### 12. Playlists / Watch Later
+
+- \`playlist.list\`
+- \`playlist.open\`
+- \`playlist.create\`
+- \`playlist.add_video\`
+- \`playlist.remove_video\`
+- \`playlist.rename\`
+- \`youtube.watch_later.add\`
+- \`youtube.watch_later.remove\`
+
+Examples:
+- "بذار Watch Later"
+- "به پلی‌لیست Python اضافه کن"
+- "یه پلی‌لیست آموزش بساز"
+- "از این پلی‌لیست بردار"
+- "اسم پلی‌لیست رو عوض کن"
+
+These are external account mutations and require account verification.
+
+### 13. Like / subscribe
+
+- \`youtube.like\`
+- \`youtube.unlike\`
+- \`youtube.subscribe\`
+- \`youtube.unsubscribe\`
+
+Examples:
+- "لایک کن"
+- "لایک رو بردار"
+- "سابسکرایب کن"
+- "از سابسکرایب دربیار"
+
+Rules:
+- explicit user intent required
+- verify account
+- no automated engagement farming
+- no bulk like/subscribe automation
+
+### 14. Fullscreen / theater / miniplayer
+
+- \`webmedia.fullscreen.enable\`
+- \`webmedia.fullscreen.disable\`
+- \`webmedia.theater.enable\`
+- \`webmedia.theater.disable\`
+- \`webmedia.miniplayer.enable\`
+- \`webmedia.miniplayer.disable\`
+
+Examples:
+- "تمام صفحه"
+- "Fullscreen"
+- "از فول‌اسکرین دربیار"
+- "حالت سینما"
+- "Miniplayer"
+
+### 15. Media search + open workflows
+
+Example:
+"تو YouTube آموزش نصب ComfyUI فارسی پیدا کن و بهترین نتیجه مرتبط رو باز کن."
+
+Plan:
+1. search
+2. rank relevance
+3. consider language
+4. consider official/quality/channel reputation
+5. open selected result
+6. verify title/channel/page
+
+If multiple equally plausible results:
+- show concise candidates
+- do not pretend one is objectively "best" without criteria
+
+### 16. AI-assisted video research
+
+Example:
+"سه ویدئو درباره نصب Stable Diffusion پیدا کن، ترنسکریپت‌ها رو بخون و بهترین روش مشترک رو خلاصه کن."
+
+Flow:
+1. search relevant videos
+2. select 3 based on criteria
+3. fetch transcripts
+4. extract claims/steps
+5. compare
+6. synthesize
+7. cite video/title/timestamps where possible
+
+This composes with Web Research capability.
+
+### 17. Translation workflow
+
+Example:
+"این ویدئو انگلیسیه، نکاتش رو فارسی بگو."
+
+Flow:
+1. transcript
+2. summarize
+3. translate
+4. retain technical terms
+5. optionally read aloud
+
+### 18. Media downloads / saving
+
+MARIA must distinguish:
+- platform-supported save/offline
+- download of user-owned/publicly downloadable media
+- unsupported/copyright-restricted extraction
+
+Canonical:
+- \`webmedia.save_offline_supported\`
+- \`webmedia.download_handoff\`
+
+Rules:
+- use official/platform-supported download/save when available
+- for direct downloadable files, hand off to Download/File skill
+- do not claim arbitrary ripping support
+- do not bypass DRM/access controls
+- downloaded files go through verification
+- conversion is delegated to File Conversion capability
+
+### 19. Scheduling media actions
+
+Examples:
+- "ساعت 8 این پلی‌لیست رو پخش کن"
+- "20 دقیقه دیگه Pause کن"
+- "شب‌ها ساعت 10 صدای YouTube رو 20 کن"
+
+Scheduling delegated to Capability 11.
+
+Stored action uses canonical media target, not raw phrase.
+
+### 20. Browser vs desktop/media app
+
+MediaServiceResolver chooses:
+1. explicit user surface
+2. active service/player
+3. preferred installed app
+4. browser web player
+5. ask if needed
+
+Examples:
+- "YouTube رو تو Chrome باز کن"
+- "تو برنامه Music بازش کن"
+- "همون پلیر فعلی"
+
+### 21. Multi-service web media
+
+WebMediaAdapterRegistry can later support:
+- YouTube
+- Vimeo
+- Twitch
+- browser audio/video sites
+- local media player adapter
+- podcast/web audio services where authorized
+
+Core intents stay stable.
+
+### 22. Media context resolution
+
+Resolves phrases:
+- "این ویدئو"
+- "همین"
+- "بعدی"
+- "قبلی"
+- "از اول"
+- "صداش"
+- "سرعتش"
+- "زیرنویسش"
+- "اون بخش"
+- "این دقیقه"
+- "همون کانال"
+
+Context sources:
+- active media session
+- active browser tab
+- current player
+- last explicit video
+- current playlist/queue
+- recent search result
+
+### 23. Failure recovery
+
+Video unavailable:
+- report unavailable/private/region/age/login state if exposed
+
+Captions unavailable:
+- do not invent transcript
+- offer description/page summary or visual analysis if appropriate
+
+Quality missing:
+- select nearest supported only if user allows
+- otherwise report unsupported
+
+Autoplay disabled:
+- respect browser/site policy
+- user gesture may be required
+
+Account required:
+- hand to Account Session Resolver
+
+Dynamic UI changed:
+- refresh DOM/accessibility tree
+- site-specific adapter fallback
+- visual fallback if needed
+
+### 24. Verification
+
+Search/open:
+- correct video/channel/playlist identity
+
+Playback:
+- read player state
+
+Seek:
+- current timestamp within tolerance
+
+Speed:
+- actual rate re-read
+
+Quality:
+- current quality or service-reported state
+
+Caption:
+- track active
+
+Playlist:
+- video appears in intended playlist
+
+Like/subscribe:
+- UI/account state verified
+
+Transcript:
+- source and coverage known
+
+### 25. Risk / permissions
+
+L0:
+- search
+- read metadata
+- transcript
+- summarize
+
+L1:
+- play/pause/seek
+- speed/quality/captions
+- open result
+
+L2:
+- playlist/watch-later mutations
+- queue persistence where account-bound
+
+L3:
+- like/subscribe
+- external share
+- authenticated state changes
+
+Downloads follow Download/File policy.
+
+### 26. Massive language packs
+
+Critical intents target **1000–1500 examples each**:
+- youtube.search
+- youtube.open_video
+- webmedia.play/pause
+- webmedia.seek_forward/backward/to
+- webmedia.volume.*
+- webmedia.speed.*
+- caption.enable/select_language
+- transcript.summarize
+- playlist.add_video
+- youtube.watch_later.add
+
+Examples axes:
+- direct
+- colloquial
+- very short
+- typo
+- STT
+- mixed Persian-English
+- explicit video
+- implicit active video
+- timestamp
+- chapter
+- relative time
+- correction
+- negation
+- undo/reverse
+- current/next/previous
+- account
+- playlist/queue ambiguity
+- hard negatives across Browser/Audio/Display/Scheduler
+
+Hard negatives:
+- "تب بعدی" => Browser Tab, not next video
+- "ویدئو بعدی" => media.next
+- "صداش رو قطع کن" => media/player mute
+- "پخش رو قطع کن" => pause/stop
+- "سرعتش رو دو برابر کن" => playback speed
+- "20 ثانیه جلو" => seek
+- "این صفحه رو رفرش کن" => browser reload
+- "این ویدئو رو از اول" => media restart
+
+### 27. Skill / Agent package
+
+- \`WebMediaOrchestrator\`
+- \`MediaServiceResolver\`
+- \`YouTubeAdapter\`
+- \`WebMediaAdapterRegistry\`
+- \`MediaContextResolver\`
+- \`MediaSearchSkill\`
+- \`PlaybackSkill\`
+- \`MediaVolumeSkill\`
+- \`PlaybackSpeedSkill\`
+- \`MediaQualitySkill\`
+- \`CaptionSkill\`
+- \`TranscriptSkill\`
+- \`ChapterTimestampSkill\`
+- \`MediaQueueSkill\`
+- \`PlaylistSkill\`
+- \`YouTubeAccountActionSkill\`
+- \`MediaDownloadHandoffSkill\`
+- \`WebMediaVerifier\`
+- \`WebMediaLanguageAgent\`
+
+All register through Skill Registry / Tool Registry.
+
+### 28. Test matrix
+
+Search:
+- YM-A01 Persian
+- YM-A02 English
+- YM-A03 exact channel
+- YM-A04 playlist
+- YM-A05 result disambiguation
+
+Playback:
+- YM-B01 play/pause
+- YM-B02 restart
+- YM-B03 next/previous
+- YM-B04 seek relative
+- YM-B05 seek exact timestamp
+- YM-B06 chapter seek
+
+Volume:
+- YM-C01 player mute
+- YM-C02 system volume hard negative
+- YM-C03 tab mute hard negative
+
+Speed:
+- YM-D01 1.5x
+- YM-D02 2x
+- YM-D03 normal
+- YM-D04 seek-vs-speed ambiguity
+
+Captions:
+- YM-E01 enable
+- YM-E02 language
+- YM-E03 unavailable
+- YM-E04 auto-translate
+
+Transcript:
+- YM-F01 full transcript
+- YM-F02 summarize
+- YM-F03 search phrase
+- YM-F04 unavailable transcript
+- YM-F05 grounded timestamps
+
+Playlist/account:
+- YM-G01 watch later
+- YM-G02 add playlist
+- YM-G03 wrong account
+- YM-G04 like/subscribe explicit only
+
+Security/download:
+- YM-H01 unsupported download
+- YM-H02 official offline save
+- YM-H03 direct downloadable handoff
+- YM-H04 no DRM bypass
+
+Context:
+- YM-I01 active video
+- YM-I02 multiple media tabs
+- YM-I03 "بعدی" ambiguity
+- YM-I04 stale media context
+
+### 29. Acceptance criteria
+
+1. MARIA distinguishes browser tab navigation from media navigation.
+2. pause/stop and mute remain distinct.
+3. seek and playback speed remain distinct.
+4. player volume and Windows/browser volume remain distinct.
+5. video summaries are grounded in transcript/content, not title guesses.
+6. quality/caption actions use only supported options.
+7. account mutations are verified.
+8. unsupported download paths are not falsely advertised.
+9. DRM/access controls are not bypassed.
+10. scheduling composes through Scheduler.
+11. critical intents have 1000–1500 examples.
+12. real YouTube/browser tests pass before IMPLEMENTED.
+
+### 30. Local implementation plan
+
+When MARIA Windows system is online:
+1. inspect browser media handling.
+2. extend Browser Companion with media-player state bridge.
+3. implement YouTubeAdapter.
+4. implement search/open.
+5. implement PlaybackSkill.
+6. implement media volume.
+7. implement speed/quality/captions.
+8. implement transcript/chapter extraction.
+9. implement queue/playlist.
+10. integrate account-aware actions.
+11. integrate Web Research for multi-video synthesis.
+12. integrate Scheduler.
+13. add safe download hand-off.
+14. generate 1000–1500 utterance packs.
+15. run multi-tab/multi-player tests.
+16. mark only verified modules IMPLEMENTED.
