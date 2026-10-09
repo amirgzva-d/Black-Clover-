@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('blackClover',{
   showAvatar:()=>ipcRenderer.invoke('assistant:show-avatar'),
   hideAvatar:()=>ipcRenderer.invoke('assistant:hide-avatar'),
   showIsland:(mode='compact')=>ipcRenderer.invoke('assistant:show-island',mode),
+  showIslandModule:(module='home')=>ipcRenderer.invoke('assistant:show-island-module',module),
   hideIsland:()=>ipcRenderer.invoke('assistant:hide-island'),
   setIslandMode:(mode='compact')=>ipcRenderer.invoke('assistant:set-island-mode',mode),
   showProjects:()=>ipcRenderer.invoke('assistant:show-projects'),
@@ -98,6 +99,7 @@ contextBridge.exposeInMainWorld('blackClover',{
   onLocalMotion:fn=>{const h=(_e,v)=>fn(v);ipcRenderer.on('assistant:local-motion',h);return()=>ipcRenderer.removeListener('assistant:local-motion',h);},
   onPlayMotion:fn=>{const h=(_e,v)=>fn(v);ipcRenderer.on('assistant:play-motion',h);return()=>ipcRenderer.removeListener('assistant:play-motion',h);},
   onOpenSettings:fn=>{const h=(_e,v)=>fn(v||{});ipcRenderer.on('assistant:open-settings',h);return()=>ipcRenderer.removeListener('assistant:open-settings',h);},
+  onIslandModule:fn=>{const h=(_e,v)=>fn(v||{});ipcRenderer.on('assistant:island-module',h);return()=>ipcRenderer.removeListener('assistant:island-module',h);},
   onPrefillPrompt:fn=>{const h=(_e,v)=>fn(v);ipcRenderer.on('assistant:prefill-prompt',h);return()=>ipcRenderer.removeListener('assistant:prefill-prompt',h);},
   onSurfaceOpening:fn=>{const h=()=>fn();ipcRenderer.on('assistant:surface-opening',h);return()=>ipcRenderer.removeListener('assistant:surface-opening',h);},
   onSurfaceClosing:fn=>{const h=()=>fn();ipcRenderer.on('assistant:surface-closing',h);return()=>ipcRenderer.removeListener('assistant:surface-closing',h);}
