@@ -110,3 +110,17 @@ No spec is considered implemented until it is tested on the user's actual MARIA 
 - Legacy Pin/Reminder stores: **PRESERVED**
 - Legacy open routes: **MIGRATED TO TOP ISLAND**
 - Final local tasks: real Excel COM selection/hyperlink integration, exact workbook columns/sheets, DPI/rendering, regression and bug fixing
+
+
+## Top Island V4 visual freeze
+- Active UI: **Top Island V4**
+- Renderer: `src/renderer/topIslandV4.js`
+- Visual system: `src/renderer/topIslandV4.css`
+- V3/older Top Island UI: **LEGACY — NOT ACTIVE**
+- Old bottom-character Pin/Reminder UI: **FORBIDDEN AS CANONICAL UI**
+- Pin data store: **PRESERVED / MIGRATED TO V4**
+- Reminder/Automation data store: **PRESERVED / MIGRATED TO V4**
+- Default auto-hide: **60 seconds**
+- Standard sizes: **Peek 420×56 / Compact 920×96 / Expanded 1120×640** before real DPI calibration
+- Reference direction: **black glass + violet/blue glow + agent activity cards + Allow/Deny approval card**
+- Local Windows pixel/DPI/Excel verification: **PENDING**
