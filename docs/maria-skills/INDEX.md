@@ -61,3 +61,16 @@ No spec is considered implemented until it is tested on the user's actual MARIA 
 - Explicit Google Images → safe download workflow: **DESIGN COMPLETE v1**
 - Generic multi-recipient messaging: **DESIGN COMPLETE v1 ADVANCED**
 - Overall design state after gap closure: **FREEZE v2 — READY FOR LOCAL IMPLEMENTATION**
+
+
+## MARIA Top Island Command Center
+- Top-screen rectangular Island UI: **CODE SCAFFOLD + DESIGN COMPLETE**
+- MARIA Live / companion activity: **SCAFFOLDED**
+- Pin integration: **WIRED TO EXISTING STORE**
+- Reminder / timed Agent action: **WIRED; FULL CONDITIONAL SCHEDULER STILL LOCAL-INTEGRATION**
+- Quick Shortcuts: **STORE + UI + OPEN IPC SCAFFOLDED**
+- Accounting Reports: **READ-ONLY XLSX/XLSM SCANNER + CACHE/WATCH + UI SCAFFOLDED**
+- Transport/Barبری profile: **SUPPORTED BY CONFIG; EXACT SHEETS/COLUMNS WAITING FOR USER DATA**
+- Future utility slot 03: **RESERVED**
+- Private accounting network paths: **LOCAL CONFIG ONLY — NOT HARD-CODED IN GITHUB**
+- Real Windows visual/performance verification: **WAITING FOR LOCAL SYSTEM**
