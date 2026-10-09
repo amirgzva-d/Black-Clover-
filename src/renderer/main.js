@@ -9,9 +9,9 @@ const afterSurface=()=>((surface==='chat'||surface==='avatar')?import('./voiceSe
   .catch(error=>console.error('UI extension bootstrap failed',error));
 
 if(surface==='island'){
-  import('./topIslandV3.js')
-    .then(({mountTopIslandV3})=>mountTopIslandV3())
-    .catch(error=>console.error('Top Island V3 bootstrap failed',error));
+  import('./topIslandV4.js')
+    .then(({mountTopIslandV4})=>mountTopIslandV4())
+    .catch(error=>console.error('Top Island V4 bootstrap failed',error));
 }else if(surface==='chat'){
   import('./chatSurfaceV2.js')
     .then(({mountChatSurface})=>mountChatSurface())
