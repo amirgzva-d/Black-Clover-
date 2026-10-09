@@ -98,7 +98,7 @@ export async function mountTopIsland(){
   $$('[data-tab]').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
   $$('[data-toggle-mode]').forEach(b=>b.onclick=()=>setMode(mode==='expanded'?'compact':'expanded'));
   $$('[data-utility-page]').forEach(b=>b.onclick=()=>{utility=b.dataset.utilityPage;renderUtility()});
-  $(''[data-open-chat]').onclick=()=>window.blackClover.showChat();
+  $('[data-open-chat]').onclick=()=>window.blackClover.showChat();
   $('[data-clear-events]').onclick=()=>{events=[];renderLive()};
   $('[data-pin-form]').onsubmit=async e=>{e.preventDefault();const fd=new FormData(e.currentTarget),text=String(fd.get('text')||'').trim();if(!text)return;await window.blackClover.createPin({title:String(fd.get('title')||'').trim(),text,pinned:true});e.currentTarget.reset();refreshPins()};
   $('[data-pins-list]').onclick=async e=>{const card=e.target.closest('[data-pin]');if(!card)return;if(e.target.closest('[data-pin-delete]')){await window.blackClover.removePin(card.dataset.pin);refreshPins()}if(e.target.closest('[data-pin-copy]')){const item=(await window.blackClover.listPins()).find(x=>x.id===card.dataset.pin);if(item)navigator.clipboard?.writeText(item.text).catch(()=>{})}};
