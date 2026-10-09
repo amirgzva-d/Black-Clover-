@@ -22,8 +22,8 @@ From this point forward, every new capability specification is appended to the s
 | 14 | Desktop organization | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 15 | Selection / clipboard intelligence | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 16 | Translation / OCR / screen translation | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 17 | Screenshot / screen understanding | NEXT | WAITING |
-| 18 | Downloads / format conversion / archive | QUEUED | WAITING |
+| 17 | Screenshot / screen understanding | DESIGN COMPLETE v1 ADVANCED | WAITING |
+| 18 | Downloads / format conversion / archive | NEXT | WAITING |
 | 19 | Web-app automation incl. ChatGPT | QUEUED | WAITING |
 | 20 | Face presence (future) | FUTURE | WAITING |
 | 21 | Gesture control (future) | FUTURE | WAITING |
