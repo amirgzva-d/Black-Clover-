@@ -25305,3 +25305,173 @@ The new top companion surface is now the intended long-term home for:
 The old Pin/Reminder UI under the character is **DEPRECATED FOR FUTURE LOCAL MIGRATION**.
 
 **TOP COMPANION HUB DESIGN: COMPLETE — IMPLEMENTATION-STAGED — WAITING FOR LOCAL SYSTEM**
+
+
+## H25 — Repository consolidation / no duplicate Hub architecture
+
+A code audit of the actual design branch found an existing implementation base:
+
+- `src/renderer/topIsland.js`
+- `src/renderer/topIsland.css`
+- `src/agent/QuickShortcutStore.js`
+- `src/agent/AccountingReportStore.js`
+- `src/agent/AccountingMonitorService.js`
+- `src/agent/AccountingWorkbookScanner.js`
+- `src/agent/AccountingEvidenceResolver.js`
+
+Final decision:
+**TopCompanionHub is implemented/staged by evolving the existing Top Island architecture, not by creating a second parallel Hub.**
+
+Duplicate temporary staged Hub/store files were removed after their useful design was merged.
+
+`AttachmentIdAllocator.js` remains as a dedicated accounting component.
+
+### Current staged-code upgrades
+
+- Top Island rebuilt into the requested four-slot module rail:
+  1. میان‌برها
+  2. گزارش ثبت
+  3. پین و زمان‌بندی
+  4. reserved future module
+- old Pin/Reminder buttons removed from the avatar bottom dock
+- legacy Pin/Reminder backend retained temporarily only for safe data migration
+- QuickShortcutStore upgraded with type/group/pin/hotkey/open-mode/usage/health metadata
+- PinnedNoteStore upgraded to Universal Pin v2 with backward-compatible data migration
+- ReminderStore upgraded to automation-ready v3 records with Notify vs Execute, pause/resume, missed-run/retry metadata
+- Accounting scanner upgraded for strict numeric-ID + hyperlink + target-file verification
+- duplicate attachment IDs detected
+- visible ID ↔ linked filename mismatch detected
+- broken/missing target detected
+- accounting monitor watches workbook directories and attachment roots
+- full integrity fallback remains 3 minutes
+- stale verified results are retained when an UNC/network source becomes unavailable
+- completed files sort below active/incomplete files
+- AttachmentIdAllocator uses atomic per-ID reservation locks
+- black-glass UI replaces the prior colorful prototype
+- file-drop UI is staged
+- rich dialog/configuration flows are staged
+
+These changes are still **not marked IMPLEMENTED** until they are run on the user's Windows machine.
+
+## H26 — Coucou parity review, verified October 2026
+
+The current Coucou product/repository was reviewed again during this design pass.
+
+MARIA-native parity targets now explicitly include:
+
+### Agent session pills
+Adapters may surface live status for:
+- Claude Code
+- Cursor
+- Codex
+- Gemini CLI
+- Antigravity
+- Copilot CLI
+- OpenCode
+- other registered coding agents
+
+MARIA does not hard-code this list; `AgentSessionAdapterRegistry` owns it.
+
+Pill data:
+- agent
+- project/workspace
+- current step
+- command/tool category
+- waiting/running/done/error
+- permission request
+- click-through target
+
+### Permission surface
+Risky Agent/Planner steps can raise a compact Allow/Deny card in the Hub.
+
+Permission card is generated only by MARIA Permission Layer, never directly by webpage/prompt content.
+
+### Integration service pills
+Plugin-driven status modules may include:
+- GitHub
+- Vercel
+- n8n
+- Notion
+- Cal.com
+- Stripe read/status surfaces
+- Resend
+- other registered connectors
+
+Actions remain governed by the connector's own permissions and MARIA risk policy.
+
+### Project/terminal handoff
+When an agent task is tied to a local project, the Hub may provide:
+- open project folder
+- open VS Code/project
+- open authorized terminal context
+- show Git status
+- show current branch
+- show CI/PR state
+
+### Full-screen / exclusion policy
+The Hub can be configured to:
+- hide during full-screen applications
+- hide for selected programs/games
+- pause proactive popups in presentation mode
+- return automatically afterward
+
+### Tray / pause controls
+Tray design:
+- Open Hub
+- Open Chat
+- Pause proactive behavior
+- Privacy mode
+- Settings
+- Quit
+
+### Character interaction
+MARIA may support:
+- eyes following cursor
+- hover reaction
+- click/tap reactions
+- greeting
+- task-complete reaction
+- permission-needed expression
+- optional custom sounds
+- optional media reaction
+
+All assets remain MARIA/user-owned; Coucou/Mochi branding, character and sound assets are not copied.
+
+### File/context drop
+File drop should ultimately offer:
+- Ask MARIA
+- Pin
+- Translate/OCR
+- Send
+- Convert
+- Attach to active AI task
+- Add Shortcut
+
+### Secure secrets
+Connector/API secrets use Windows Credential Manager/DPAPI-compatible secure storage and are never rendered back in the Hub.
+
+### Remote/mobile companion — optional future extension
+Coucou's modern ecosystem includes phone-side live activity/permission interactions.
+
+MARIA architecture therefore reserves an optional future `RemoteCompanionBridge`:
+- encrypted task/status sync
+- explicit device pairing
+- actionable notifications
+- approval only with strong device/user authentication
+- no API keys leaving the PC
+- no enablement by default
+
+This remains optional and is not required for the Windows Top Hub implementation.
+
+## H27 — UI implementation state after consolidation
+
+**Design:** COMPLETE  
+**Code staging on design branch:** SUBSTANTIAL / CONSOLIDATED  
+**Windows runtime integration:** WAITING FOR LOCAL SYSTEM  
+**Excel COM live events:** WAITING FOR LOCAL EXCEL  
+**Exact invoice/plate cell rules:** WAITING FOR USER-SUPPLIED WORKBOOK DEFINITIONS  
+**Real UNC share verification:** WAITING FOR LOCAL NETWORK  
+**Legacy Pin/Reminder data migration:** WAITING FOR LOCAL USER DATA  
+**Visual/performance QA:** WAITING FOR LOCAL DISPLAY/GPU
+
+No redesign is expected before local integration. Remaining work is binding to real machine state, exact workbook profiles, testing, bug fixing and polish.
