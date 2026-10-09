@@ -27,10 +27,16 @@ From this point forward, every new capability specification is appended to the s
 | 19 | Web-app automation incl. ChatGPT | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 20 | Face presence (future) | DESIGN COMPLETE v1 FUTURE-ADVANCED | WAITING |
 | 21 | Gesture control (future) | DESIGN COMPLETE v1 FUTURE-ADVANCED | WAITING |
-| 22 | Multi-step planner / routines | NEXT | WAITING |
+| 22 | Multi-step planner / routines | DESIGN COMPLETE v1 ADVANCED | WAITING |
 
 ## Global understanding requirements
 Every capability must support semantic understanding instead of exact-string matching, including colloquial phrasing, misspellings, incomplete commands, Persian/English mixing, speech-recognition errors, relative values, pronouns/references, learned aliases and context-aware targets.
 
 ## Implementation gate
 No spec is considered implemented until it is tested on the user's actual MARIA Windows environment and its result is verified.
+
+
+## Final design review status
+- Primary 22-capability roadmap: **DESIGN COMPLETE**
+- Next: **FINAL CROSS-CAPABILITY REVIEW**
+- Scope: deferred Email/Notification experience, Coucou-inspired interaction patterns, cross-skill consistency, missing capabilities, language-pack coverage, permission/risk alignment, verifier/undo coverage, and local implementation readiness.
