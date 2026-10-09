@@ -74,3 +74,21 @@ No spec is considered implemented until it is tested on the user's actual MARIA 
 - Future utility slot 03: **RESERVED**
 - Private accounting network paths: **LOCAL CONFIG ONLY — NOT HARD-CODED IN GITHUB**
 - Real Windows visual/performance verification: **WAITING FOR LOCAL SYSTEM**
+
+
+## Top Companion Hub / Accounting Operations
+- Top-screen black-glass MARIA companion island: **DESIGN COMPLETE / CODE STAGED**
+- Module 1 — Quick Launch / custom shortcuts: **CODE STAGED**
+- Module 2 — Accounting registration monitor: **CODE STAGED / EXACT WORKBOOK RULES WAITING FOR LOCAL EXCEL**
+- Module 2 — Freight workbook unloaded-photo counter: **CODE STAGED / SHEET-CELL CONFIG WAITING**
+- Module 3 — Universal Pins: **CODE STAGED / LEGACY DATA MIGRATION WAITING**
+- Module 3 — Reminder + Automated Actions: **CODE STAGED / SCHEDULER-PLANNER HARDENING WAITING**
+- Module 4 — reserved future module: **READY**
+- Avatar bottom-dock Pin/Reminder buttons: **REMOVED ON DESIGN BRANCH**
+- Existing Pin/Reminder data: **PRESERVED FOR VERIFIED LOCAL MIGRATION**
+- Attachment numeric-ID allocator: **CODE STAGED + REGRESSION TEST ADDED**
+- Strict Excel numeric-ID + hyperlink + target-file verification: **CODE STAGED + REGRESSION TEST ADDED**
+- Monitoring policy: **event-driven + debounced + 3-minute integrity fallback**
+- UNC/share outage behavior: **retain last verified result and mark stale**
+- Coucou-inspired interaction parity: **REVIEWED / MARIA-NATIVE DESIGN INTEGRATED**
+- Local Windows/Excel COM/UNC/UI performance verification: **WAITING FOR LOCAL SYSTEM**
