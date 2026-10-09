@@ -178,8 +178,8 @@ Priority controls development order only; it does NOT lower quality requirements
 | 10 | Messaging / Forwarding | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 11 | Timed / Conditional Actions | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 12 | Power / Lock / Security | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 13 | Excel / Office | NEXT | WAITING |
-| 14 | Desktop Organization | QUEUED | WAITING |
+| 13 | Excel / Office | DESIGN COMPLETE v1 ADVANCED | WAITING |
+| 14 | Desktop Organization | NEXT | WAITING |
 | 15 | Selection / Clipboard | QUEUED | WAITING |
 | 16 | Translation / OCR | QUEUED | WAITING |
 | 17 | Screen Understanding | QUEUED | WAITING |
@@ -12220,3 +12220,938 @@ When system is online:
 14. run destructive-action safety tests.
 15. run real Windows power/security tests.
 16. mark only verified features IMPLEMENTED.
+
+
+---
+
+## 13 — Excel / Office Automation Intelligence
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`excel.*\`, \`office.*\`, \`word.*\`, \`powerpoint.*\`, \`document.*\`, \`sheet.*\`, \`table.*\`, \`chart.*\`, \`pivot.*\`  
+**Owner modules:** Office Orchestrator / Office App Resolver / Workbook Resolver / Sheet Resolver / Range Resolver / Table Resolver / Formula Engine / Data Transformation Skill / Formatting Skill / Chart Skill / Pivot Skill / Word Skill / PowerPoint Skill / Office Selection Context / Verification Layer / Undo Journal / Office Language Agent  
+**Offline capable:** yes for local Office files/apps  
+**Risk class:** L0–L4 depending on file mutation/send/export  
+**Primary target:** Microsoft Excel/Word/PowerPoint desktop first, extensible to LibreOffice/web Office through adapters
+
+### 1. Purpose
+
+MARIA must operate Office documents semantically instead of relying on brittle keyboard macros.
+
+It must understand:
+- current Office app
+- current workbook/document/presentation
+- active sheet/page/slide
+- selected cell/range/text/object
+- table names
+- columns/rows by header or position
+- formulas
+- formatting
+- filters/sorts
+- charts
+- pivots
+- imports/exports
+- save/save-as
+- PDF/export
+- document structure
+- slide structure
+- user references such as "این سلول", "ستون قیمت", "ردیف آخر", "صفحه دوم", "اسلاید قبلی"
+
+Keyboard shortcuts may be used as fallback or interpreted semantically, but MARIA should prefer structured Office APIs/automation.
+
+---
+
+### 2. Office object model
+
+Objects:
+- application
+- workbook
+- worksheet
+- cell
+- range
+- table
+- row
+- column
+- formula
+- named range
+- chart
+- pivot table
+- filter
+- sort
+- document
+- paragraph
+- heading
+- page
+- slide
+- shape
+- image
+- text box
+- selection
+- comment/note
+- hyperlink
+- file
+
+Every active task maintains stable short-lived object references.
+
+---
+
+### 3. Canonical intents — Excel workbook / sheet
+
+- \`excel.open\`
+- \`excel.new_workbook\`
+- \`excel.open_workbook\`
+- \`excel.save\`
+- \`excel.save_as\`
+- \`excel.close\`
+- \`excel.sheet.list\`
+- \`excel.sheet.get_active\`
+- \`excel.sheet.create\`
+- \`excel.sheet.rename\`
+- \`excel.sheet.delete\`
+- \`excel.sheet.duplicate\`
+- \`excel.sheet.move\`
+- \`excel.sheet.select\`
+
+Examples:
+- "اکسل رو باز کن"
+- "این فایل Excel رو باز کن"
+- "یه Workbook جدید"
+- "Sheet جدید بساز"
+- "اسم Sheet1 رو بکن فروش"
+- "این شیت رو کپی کن"
+- "شیت گزارش رو ببر اول"
+- "این فایل رو Save کن"
+- "با اسم گزارش نهایی ذخیره کن"
+
+---
+
+### 4. Cell / range selection
+
+Canonical:
+- \`excel.cell.select\`
+- \`excel.range.select\`
+- \`excel.range.get_selected\`
+- \`excel.range.expand_current_region\`
+- \`excel.range.select_row\`
+- \`excel.range.select_column\`
+- \`excel.range.select_used\`
+
+Natural references:
+- "A1"
+- "از A1 تا D20"
+- "ستون قیمت"
+- "ردیف آخر"
+- "این سلول"
+- "این چندتا سلول"
+- "کل جدول"
+- "همه داده‌ها"
+- "ستون سمت راست"
+- "ردیف بالایی"
+- "آخرین ردیفی که داده داره"
+- "سلول زیرش"
+- "دو ستون بعدی"
+
+RangeResolver uses:
+1. explicit A1/R1C1 reference
+2. selected range
+3. table/header match
+4. neighboring position
+5. current data region
+6. last used row/column
+7. context history
+
+Never mutate a large range from an ambiguous "همه" without scope resolution.
+
+---
+
+### 5. Enter/edit/clear data
+
+Canonical:
+- \`excel.cell.set_value\`
+- \`excel.range.set_values\`
+- \`excel.cell.edit\`
+- \`excel.range.clear_contents\`
+- \`excel.range.delete\`
+- \`excel.row.insert\`
+- \`excel.row.delete\`
+- \`excel.column.insert\`
+- \`excel.column.delete\`
+
+Examples:
+- "تو A1 بنویس فروش"
+- "این سلول رو 250 کن"
+- "ردیف جدید اضافه کن"
+- "ستون بعد قیمت اضافه کن"
+- "محتوای این سلول‌ها رو پاک کن"
+- "خود سلول‌ها رو حذف کن و بالا بیاد"
+- "این ردیف رو پاک کن"
+- "نه فرمت نره، فقط محتوا پاک شه"
+
+Semantic distinction:
+- clear contents ≠ delete cells
+- delete row ≠ clear row
+- overwrite value ≠ append text
+
+---
+
+### 6. Fill / copy / paste
+
+- \`excel.range.copy\`
+- \`excel.range.cut\`
+- \`excel.range.paste\`
+- \`excel.range.paste_values\`
+- \`excel.range.paste_formulas\`
+- \`excel.range.fill_down\`
+- \`excel.range.fill_right\`
+- \`excel.range.autofill\`
+- \`excel.range.transpose\`
+
+Examples:
+- "این فرمول رو تا پایین بکش"
+- "مثل سلول بالایی پرش کن"
+- "فقط مقدارها رو Paste کن"
+- "فرمول‌ها رو کپی کن"
+- "ردیف رو تبدیل به ستون کن"
+- "این الگو رو تا آخر ادامه بده"
+
+---
+
+### 7. Formulas
+
+Canonical:
+- \`excel.formula.set\`
+- \`excel.formula.copy\`
+- \`excel.formula.explain\`
+- \`excel.formula.fix\`
+- \`excel.formula.convert_values\`
+- \`excel.formula.recalculate\`
+
+Common semantic functions:
+- SUM
+- AVERAGE
+- MIN/MAX
+- COUNT/COUNTA/COUNTIF/COUNTIFS
+- SUMIF/SUMIFS
+- IF/IFS
+- AND/OR
+- XLOOKUP
+- VLOOKUP/HLOOKUP
+- INDEX/MATCH
+- FILTER
+- SORT
+- UNIQUE
+- TEXT
+- DATE/TIME
+- LEFT/RIGHT/MID
+- CONCAT/TEXTJOIN
+- ROUND
+- IFERROR
+
+Examples:
+- "جمع این ستون رو پایینش بزن"
+- "میانگین فروش رو حساب کن"
+- "اگر موجودی صفر بود بنویس ناموجود"
+- "قیمت رو از جدول دوم پیدا کن"
+- "این فرمول چرا خطا میده"
+- "فرمول این ستون رو درست کن"
+- "نتیجه‌ها رو به مقدار ثابت تبدیل کن"
+
+FormulaEngine must:
+- resolve locale/list separator
+- preserve relative/absolute references
+- verify formula result
+- detect circular reference risk
+- explain #N/A/#VALUE/#REF/#DIV0 errors
+
+---
+
+### 8. Tables
+
+- \`excel.table.create\`
+- \`excel.table.resize\`
+- \`excel.table.rename\`
+- \`excel.table.add_row\`
+- \`excel.table.add_column\`
+- \`excel.table.total_row.enable\`
+- \`excel.table.convert_to_range\`
+
+Examples:
+- "این داده‌ها رو Table کن"
+- "اسم جدول رو Sales2026 بذار"
+- "یه ستون سود اضافه کن"
+- "Total Row روشن کن"
+- "جدول رو بزرگ کن شامل ردیف‌های جدید هم بشه"
+
+---
+
+### 9. Sort / filter
+
+- \`excel.sort.apply\`
+- \`excel.sort.clear\`
+- \`excel.filter.apply\`
+- \`excel.filter.clear\`
+- \`excel.filter.by_value\`
+- \`excel.filter.by_text\`
+- \`excel.filter.by_date\`
+- \`excel.filter.by_number\`
+- \`excel.filter.top_n\`
+
+Examples:
+- "بر اساس قیمت از زیاد به کم مرتب کن"
+- "اسم‌ها رو الفبایی کن"
+- "فقط تهران‌ها رو نشون بده"
+- "فقط فروش بالای 10 میلیون"
+- "فقط این ماه"
+- "فیلترها رو پاک کن"
+- "ده تای اول رو نگه دار"
+
+Verifier checks visible rows/result count.
+
+---
+
+### 10. Formatting
+
+Canonical:
+- \`excel.format.number\`
+- \`excel.format.currency\`
+- \`excel.format.percent\`
+- \`excel.format.date\`
+- \`excel.format.font\`
+- \`excel.format.bold\`
+- \`excel.format.italic\`
+- \`excel.format.alignment\`
+- \`excel.format.wrap\`
+- \`excel.format.border\`
+- \`excel.format.fill\`
+- \`excel.format.autofit\`
+- \`excel.format.merge\`
+- \`excel.format.unmerge\`
+- \`excel.conditional_format.add\`
+- \`excel.conditional_format.clear\`
+
+Examples:
+- "این ستون رو درصد کن"
+- "قیمت‌ها پولی نمایش داده بشن"
+- "عنوان‌ها Bold"
+- "عرض ستون‌ها AutoFit"
+- "متن‌ها وسط"
+- "ردیف‌های منفی قرمز بشن"
+- "بیشتر از 100 سبز بشه"
+- "این سه سلول Merge"
+
+Hard negatives:
+- format value ≠ modify underlying value
+- percentage display ≠ divide by 100 unless user asks
+
+---
+
+### 11. Data cleanup / transformation
+
+- \`excel.data.remove_duplicates\`
+- \`excel.data.trim_text\`
+- \`excel.data.split_column\`
+- \`excel.data.combine_columns\`
+- \`excel.data.fill_missing\`
+- \`excel.data.replace\`
+- \`excel.data.find_replace\`
+- \`excel.data.text_to_columns\`
+- \`excel.data.convert_type\`
+
+Examples:
+- "تکراری‌ها رو حذف کن"
+- "فاصله اضافه‌ها رو پاک کن"
+- "نام و نام خانوادگی رو جدا کن"
+- "این دو ستون رو یکی کن"
+- "خالی‌ها رو با صفر پر کن"
+- "همه USD رو تبدیل کن به دلار"
+- "این ستون رو واقعاً Number کن نه متن"
+
+Bulk transformations require preview when destructive or lossy.
+
+---
+
+### 12. Import / export
+
+- \`excel.import.csv\`
+- \`excel.import.text\`
+- \`excel.import.workbook\`
+- \`excel.export.csv\`
+- \`excel.export.pdf\`
+- \`excel.export.sheet\`
+- \`excel.export.range\`
+
+Examples:
+- "این CSV رو وارد کن"
+- "فقط Sheet فروش رو PDF کن"
+- "این جدول رو CSV ذخیره کن"
+- "فقط محدوده انتخابی رو خروجی بگیر"
+
+Encoding, delimiter and locale must be detected/validated.
+
+---
+
+### 13. Charts
+
+- \`excel.chart.create\`
+- \`excel.chart.change_type\`
+- \`excel.chart.set_title\`
+- \`excel.chart.set_series\`
+- \`excel.chart.set_axis\`
+- \`excel.chart.move\`
+- \`excel.chart.resize\`
+- \`excel.chart.delete\`
+
+Supported semantic types:
+- column
+- bar
+- line
+- area
+- pie
+- scatter
+- combo
+
+Examples:
+- "از فروش ماهانه نمودار بساز"
+- "ستونی باشه"
+- "تبدیلش کن به Line"
+- "عنوان نمودار رو بکن فروش 2026"
+- "سری سود هم اضافه کن"
+
+MARIA should infer chart type only when obvious; otherwise ask or use a safe default and say what was chosen.
+
+---
+
+### 14. Pivot tables
+
+- \`excel.pivot.create\`
+- \`excel.pivot.add_row_field\`
+- \`excel.pivot.add_column_field\`
+- \`excel.pivot.add_value_field\`
+- \`excel.pivot.add_filter\`
+- \`excel.pivot.refresh\`
+- \`excel.pivot.change_aggregation\`
+
+Examples:
+- "از این داده‌ها Pivot بساز"
+- "استان ردیف باشه"
+- "ماه ستون باشه"
+- "فروش جمع بشه"
+- "به جای Sum میانگین کن"
+- "Pivot رو Refresh کن"
+
+---
+
+### 15. Workbook analysis
+
+- \`excel.analyze.summary\`
+- \`excel.analyze.anomalies\`
+- \`excel.analyze.missing\`
+- \`excel.analyze.duplicates\`
+- \`excel.analyze.formula_errors\`
+- \`excel.analyze.statistics\`
+
+Examples:
+- "این فایل رو بررسی کن"
+- "مشکل داده‌ها رو پیدا کن"
+- "ردیف مشکوک هست؟"
+- "فرمول خطادار پیدا کن"
+- "خالی‌ها رو بگو"
+- "آمار کلی بده"
+
+Analyze-only mode causes zero mutation.
+
+---
+
+### 16. Word automation
+
+Canonical:
+- \`word.open\`
+- \`word.new\`
+- \`word.save\`
+- \`word.insert_text\`
+- \`word.replace_text\`
+- \`word.format_text\`
+- \`word.heading.apply\`
+- \`word.table.create\`
+- \`word.image.insert\`
+- \`word.hyperlink.insert\`
+- \`word.comment.add\`
+- \`word.export_pdf\`
+- \`word.find\`
+
+Examples:
+- "این متن رو تو Word بذار"
+- "تیترها Heading 1 بشن"
+- "این کلمه‌ها رو عوض کن"
+- "جدول اضافه کن"
+- "عکس رو زیر تیتر بذار"
+- "PDF خروجی بگیر"
+
+---
+
+### 17. PowerPoint automation
+
+Canonical:
+- \`powerpoint.open\`
+- \`powerpoint.new\`
+- \`powerpoint.slide.create\`
+- \`powerpoint.slide.duplicate\`
+- \`powerpoint.slide.delete\`
+- \`powerpoint.slide.reorder\`
+- \`powerpoint.text.set\`
+- \`powerpoint.image.insert\`
+- \`powerpoint.shape.insert\`
+- \`powerpoint.layout.apply\`
+- \`powerpoint.notes.set\`
+- \`powerpoint.present\`
+- \`powerpoint.export_pdf\`
+
+Examples:
+- "یه اسلاید جدید"
+- "این اسلاید رو کپی کن"
+- "اسلاید سوم رو ببر اول"
+- "این عکس رو بذار سمت راست"
+- "عنوان رو عوض کن"
+- "Presentation رو شروع کن"
+- "PDF خروجی بگیر"
+
+PowerPoint-specific design/artifact generation can be delegated to the dedicated presentation pipeline, while local MARIA controls the installed app/document.
+
+---
+
+### 18. Office selection context
+
+ContextResolver tracks:
+- active Office app
+- active file
+- active sheet/page/slide
+- current selection
+- selected object
+- current table
+- recent operation
+- clipboard content
+
+Examples:
+- "این رو Bold کن"
+- "همین ستون رو مرتب کن"
+- "اون یکی Sheet"
+- "اسلاید قبلی"
+- "این پاراگراف رو پاک کن"
+- "فرمول همونو تا پایین بکش"
+
+Stale selection must be invalidated when document changes.
+
+---
+
+### 19. Keyboard shortcut semantics
+
+User may speak shortcuts:
+- "Ctrl+K بزن"
+- "Ctrl+F"
+- "Ctrl+H"
+- "Ctrl+S"
+- "Alt+Enter"
+
+MARIA should map shortcut meaning by active application/context, not blindly press keys when a structured action exists.
+
+Examples:
+- Excel Ctrl+K may mean insert hyperlink.
+- Word Ctrl+K also hyperlink.
+- Browser Ctrl+K may focus search/address behavior depending browser.
+
+Canonical intent wins over raw key emission.
+
+---
+
+### 20. Find / replace
+
+- \`office.find\`
+- \`office.replace\`
+- \`office.replace_all\`
+
+Examples:
+- "همه Tehran رو تهران کن"
+- "این کلمه رو پیدا کن"
+- "فقط تو همین Sheet"
+- "تو کل Workbook عوض کن"
+
+Replace-all requires scope verification and preview for large changes.
+
+---
+
+### 21. Comments / notes / hyperlinks
+
+- \`excel.comment.add\`
+- \`excel.note.add\`
+- \`office.comment.delete\`
+- \`office.hyperlink.add\`
+- \`office.hyperlink.remove\`
+
+Examples:
+- "روی این سلول یادداشت بذار"
+- "لینک سایت رو روی این متن بذار"
+- "Hyperlink رو بردار"
+
+---
+
+### 22. Protection / locked content
+
+- \`excel.sheet.protection.get\`
+- \`excel.sheet.protect\`
+- \`excel.sheet.unprotect\`
+- \`excel.workbook.protection.get\`
+
+Rules:
+- never bypass unknown passwords/protection
+- user-entered passwords stay secret
+- protected/managed docs report limitation honestly
+
+---
+
+### 23. Save / overwrite / version safety
+
+Before risky batch operation:
+- snapshot affected ranges/objects
+- save checkpoint if appropriate
+- maintain operation journal
+- detect external file changes
+
+Save semantics:
+- Save = same file
+- Save As = new path
+- Export = derived file
+
+Never overwrite original on conversion/export unless explicit.
+
+---
+
+### 24. Undo / rollback
+
+Undo candidates:
+- cell value changes
+- range edits
+- formatting
+- sort/filter
+- sheet rename/move
+- chart/pivot changes
+- insert/delete where snapshot sufficient
+
+Undo journal stores:
+- workbook identity
+- sheet/object
+- before state
+- after state
+- formula/value type
+- operation ID
+
+For very large destructive changes, create checkpoint/backup instead of huge in-memory snapshot.
+
+---
+
+### 25. Verification
+
+Every mutation verifies actual Office state:
+- value re-read
+- formula re-read/result recalculated
+- sheet exists/name
+- filter result
+- sort order sample/full validation
+- format property
+- chart object/config
+- pivot field/aggregation
+- saved file timestamp/path
+- export file existence
+- Word/PowerPoint object state
+
+No false "done" from UI click alone.
+
+---
+
+### 26. Data type awareness
+
+MARIA distinguishes:
+- number
+- text
+- date
+- time
+- percentage
+- currency
+- boolean
+- formula
+- blank/error
+
+Do not silently coerce IDs/phone numbers with leading zeros into numbers.
+
+Examples:
+- phone column should remain text when appropriate
+- "00123" must not become 123 without intent
+
+---
+
+### 27. Locale / Persian data
+
+Support:
+- Persian digits
+- English digits
+- Persian date strings
+- localized decimal/thousands separators
+- RTL text
+- Persian headers
+- mixed Persian-English formulas/labels
+
+Office adapter normalizes values without changing user-visible semantics unexpectedly.
+
+---
+
+### 28. Multi-step workflows
+
+Example:
+"فایل فروش رو باز کن، تکراری‌ها رو حذف کن، فروش هر استان رو جمع کن و نمودار بساز."
+
+Plan:
+1. resolve workbook
+2. open
+3. inspect headers/data
+4. preview duplicate removal
+5. remove duplicates
+6. verify row count
+7. create aggregation/pivot
+8. create chart
+9. verify
+10. save/checkpoint
+
+Example:
+"ستون قیمت رو 10 درصد زیاد کن ولی فرمول‌ها دست نخوره."
+
+1. resolve exact column
+2. classify formula vs literal cells
+3. preview affected literal cells
+4. update only allowed values
+5. verify formulas unchanged
+6. journal undo
+
+---
+
+### 29. Safety / risk
+
+L0:
+- read/analyze/search
+- inspect formulas/properties
+
+L1:
+- select/navigate
+- create new blank workbook/sheet
+
+L2:
+- normal cell edits
+- formatting
+- filters/sorts
+- formulas
+
+L3:
+- large batch replace
+- delete rows/columns/sheets
+- overwrite files
+- bulk data transformations
+
+L4:
+- destructive irreversible changes without backup
+- protected/shared document changes with external impact
+
+External send/share belongs to Messaging/Email capabilities.
+
+---
+
+### 30. Language packs
+
+Critical Excel intents target **1000–1500 examples each**:
+- excel.open_workbook
+- excel.range.select
+- excel.cell.set_value
+- excel.formula.set
+- excel.formula.fix
+- excel.sort.apply
+- excel.filter.apply
+- excel.data.remove_duplicates
+- excel.chart.create
+- excel.pivot.create
+- excel.save/save_as
+
+Secondary Office intents target 500–1000.
+
+Language axes:
+- A1 references
+- Persian headers
+- relative rows/columns
+- selected range
+- table names
+- spoken numbers
+- Persian/English mixed
+- typo/STT
+- short commands
+- formula names in English
+- "همین/اون/قبلی"
+- correction
+- negation
+- preserve formula/format constraints
+- large-range ambiguity
+- hard negatives
+
+Hard negatives:
+- "محتوا رو پاک کن" ≠ delete cells
+- "ستون رو پاک کن" may mean clear vs delete; resolve
+- "درصدش کن" ≠ add 10 percent
+- "10 درصد زیادش کن" ≠ percentage number format
+- "کپی کن" ≠ move
+- "فیلتر کن" ≠ delete other rows
+- "مرتب کن" ≠ permanently reorganize unrelated sheets
+
+Family target: tens of thousands of total examples across Excel/Word/PowerPoint.
+
+---
+
+### 31. Skill / Agent package
+
+- \`OfficeOrchestrator\`
+- \`OfficeAppResolver\`
+- \`WorkbookResolver\`
+- \`SheetResolver\`
+- \`RangeResolver\`
+- \`TableResolver\`
+- \`ExcelDataSkill\`
+- \`ExcelFormulaSkill\`
+- \`ExcelSortFilterSkill\`
+- \`ExcelFormattingSkill\`
+- \`ExcelDataCleaningSkill\`
+- \`ExcelChartSkill\`
+- \`ExcelPivotSkill\`
+- \`ExcelImportExportSkill\`
+- \`WordDocumentSkill\`
+- \`PowerPointPresentationSkill\`
+- \`OfficeSelectionContext\`
+- \`OfficeShortcutResolver\`
+- \`OfficeVerifier\`
+- \`OfficeUndoManager\`
+- \`OfficePolicyGuard\`
+- \`OfficeLanguageAgent\`
+
+All register through Skill Registry / Tool Registry.
+
+---
+
+### 32. Implementation strategy
+
+Preferred Excel local integration:
+1. native Office/Excel object model/COM automation when desktop Excel is installed
+2. supported Office APIs/automation adapters
+3. keyboard/UI automation only as fallback
+
+Structured object operations are preferred because they provide:
+- exact range identity
+- typed values/formulas
+- reliable verification
+- less sensitivity to window layout
+
+Never depend only on screen coordinates for spreadsheet mutation.
+
+---
+
+### 33. Test matrix
+
+Workbook/sheet:
+- OF-A01 open/save
+- OF-A02 save-as
+- OF-A03 sheet create/rename/delete
+- OF-A04 multiple workbooks
+
+Range:
+- OF-B01 A1
+- OF-B02 header-based
+- OF-B03 selected
+- OF-B04 last row
+- OF-B05 ambiguous "همه"
+
+Formula:
+- OF-C01 SUM
+- OF-C02 XLOOKUP
+- OF-C03 relative fill
+- OF-C04 absolute refs
+- OF-C05 formula error
+- OF-C06 circular risk
+
+Sort/filter:
+- OF-D01 numeric
+- OF-D02 date
+- OF-D03 Persian text
+- OF-D04 filtered row verification
+
+Data cleaning:
+- OF-E01 duplicates
+- OF-E02 trim
+- OF-E03 text-to-columns
+- OF-E04 preserve leading zeros
+
+Charts/pivot:
+- OF-F01 chart
+- OF-F02 pivot
+- OF-F03 refresh
+- OF-F04 wrong field disambiguation
+
+Word/PPT:
+- OF-G01 text/heading
+- OF-G02 replace
+- OF-G03 slide create/reorder
+- OF-G04 export PDF
+
+Safety:
+- OF-H01 clear vs delete
+- OF-H02 percent format vs value change
+- OF-H03 batch preview
+- OF-H04 protected sheet
+- OF-H05 external file changed
+
+Undo/verify:
+- OF-I01 revert cell
+- OF-I02 revert batch
+- OF-I03 formula verification
+- OF-I04 save/export verification
+
+---
+
+### 34. Acceptance criteria
+
+1. MARIA resolves cells/ranges by reference, header, selection and context.
+2. clear/delete distinctions are preserved.
+3. formatting never silently changes underlying values.
+4. formula operations preserve relative/absolute semantics.
+5. phone/ID leading zeros are protected by data-type awareness.
+6. filters/sorts are verified.
+7. destructive bulk transformations require appropriate preview/backup.
+8. charts/pivots use actual selected source data.
+9. Office shortcuts resolve semantically by active app.
+10. local Office mutations use structured APIs where available.
+11. every mutation is verified and journaled where reversible.
+12. critical intents reach 1000–1500 language examples.
+13. real Excel/Word/PowerPoint integration tests pass before IMPLEMENTED.
+
+---
+
+### 35. Local implementation plan
+
+When MARIA Windows system is online:
+1. detect Office installation/version.
+2. inspect existing Excel handlers.
+3. add OfficeAppResolver and COM/API adapter.
+4. implement workbook/sheet/range resolution.
+5. implement values/formulas.
+6. implement sort/filter/table operations.
+7. add formatting and data cleanup.
+8. add charts/pivots.
+9. add import/export.
+10. add Word adapter.
+11. add PowerPoint adapter.
+12. add OfficeSelectionContext.
+13. add verifier/undo/checkpoint system.
+14. generate 1000–1500 language packs for critical intents.
+15. run real multi-workbook/large-sheet tests.
+16. test RTL/Persian/number/date edge cases.
+17. mark only verified modules IMPLEMENTED.
