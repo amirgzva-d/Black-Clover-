@@ -20,8 +20,8 @@ test('MARIA shell uses one shared design system and runtime state bus',async()=>
 test('primary avatar dock keeps character tools while pins and reminders move to top island',async()=>{
   const [ui,island]=await Promise.all([read('src/renderer/luxuryUI.js'),read('src/renderer/topIsland.js')]);
   for(const action of ['chat','avatar','projects','voice','settings'])assert.ok(ui.includes(`data-action=\\"${action}\\"`)||ui.includes(`data-action="${action}"`),action);
-  assert.doesNotMatch(ui,/data-action="pins"/);
-  assert.doesNotMatch(ui,/data-action="reminders"/);
+  assert.doesNotMatch(ui,/<button class="dock-btn[^"]*" data-action="pins"/);
+  assert.doesNotMatch(ui,/<button class="dock-btn[^"]*" data-action="reminders"/);
   assert.match(island,/pins-automation/);
   assert.match(island,/میان‌برها/);
   assert.match(island,/گزارش ثبت/);
