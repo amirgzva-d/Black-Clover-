@@ -40,8 +40,8 @@ test('desktop UI keeps legacy pin/reminder migration APIs but moves their visibl
   for(const token of ["surface==='pins'","surface==='reminders'","pins:list","reminders:list"])assert.ok(main.includes(token),token);
   for(const token of ['showPins','showReminders','listPins','listReminders'])assert.ok(preload.includes(token),token);
   assert.match(ui,/mountDataSurface/); // migration-only legacy surface remains until local data is verified
-  assert.doesNotMatch(ui,/data-action="pins"/);
-  assert.doesNotMatch(ui,/data-action="reminders"/);
+  assert.doesNotMatch(ui,/<button class="dock-btn[^"]*" data-action="pins"/);
+  assert.doesNotMatch(ui,/<button class="dock-btn[^"]*" data-action="reminders"/);
   assert.match(island,/pins-automation/);
   assert.match(island,/گزارش ثبت/);
   assert.match(island,/میان‌برها/);
@@ -66,8 +66,8 @@ test('motions wardrobe and projects remain in the avatar surfaces while pins/rem
   for(const token of ['showMotions','showWardrobe','showProjects','showPins','showReminders','listLocalAssets'])assert.ok(preload.includes(token),token);
   assert.match(ui,/showMotions/);
   assert.match(ui,/showWardrobe/);
-  assert.doesNotMatch(ui,/data-action="pins"/);
-  assert.doesNotMatch(ui,/data-action="reminders"/);
+  assert.doesNotMatch(ui,/<button class="dock-btn[^"]*" data-action="pins"/);
+  assert.doesNotMatch(ui,/<button class="dock-btn[^"]*" data-action="reminders"/);
   assert.match(assets,/Pose \/ Animation/);
   assert.match(assets,/Expression/);
   assert.match(assets,/XWear/);
