@@ -37,14 +37,20 @@ test('desktop UI keeps legacy pin/reminder migration APIs but moves their visibl
     fs.readFile(new URL('../src/renderer/chatSurfaceV2.js',import.meta.url),'utf8'),
     fs.readFile(new URL('../src/renderer/topIsland.js',import.meta.url),'utf8')
   ]);
-  for(const token of ["surface==='pins'","surface==='reminders'","pins:list","reminders:list"])assert.ok(main.includes(token),token);
-  for(const token of ['showPins','showReminders','listPins','listReminders'])assert.ok(preload.includes(token),token);
+  for(const token of ["surface==='pins'","surface==='reminders'","pins:list","reminders:list","assistant:show-island-module","showIslandModule('pins')","showIslandModule('tasks')"])assert.ok(main.includes(token),token);
+  for(const token of ['showPins','showReminders','showIslandModule','onIslandModule','listPins','listReminders'])assert.ok(preload.includes(token),token);
   assert.match(ui,/mountDataSurface/); // migration-only legacy surface remains until local data is verified
   assert.doesNotMatch(ui,/<button class="dock-btn[^"]*" data-action="pins"/);
   assert.doesNotMatch(ui,/<button class="dock-btn[^"]*" data-action="reminders"/);
-  assert.match(island,/pins-automation/);
+  assert.match(island,/id:'home'/);
+  assert.match(island,/id:'pins'/);
+  assert.match(island,/id:'tasks'/);
   assert.match(island,/گزارش ثبت/);
   assert.match(island,/میان‌برها/);
+  assert.match(island,/autoHideSeconds:60/);
+  assert.match(island,/data-panel-pin/);
+  assert.match(island,/data-panel-sound/);
+  assert.match(island,/data-context-add/);
   assert.match(renderer,/chatSurfaceV2/);
   assert.match(chat,/const queue=\[\]/);
   assert.doesNotMatch(chat,/input\.disabled\s*=\s*true/);
