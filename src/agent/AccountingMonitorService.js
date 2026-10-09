@@ -23,11 +23,21 @@ export class AccountingMonitorService{
     for(const w of this.watchers.values())try{w.close();}catch{}
     this.watchers.clear();
     const monitors=(await this.store.listMonitors()).filter(x=>x.enabled!==false);
+    const groups=new Map();
     for(const m of monitors){
+      const dir=path.dirname(m.path),items=groups.get(dir)||[];
+      items.push(m);groups.set(dir,items);
+    }
+    for(const [dir,items] of groups){
       try{
-        const w=fs.watch(m.path,{persistent:false},()=>this.queueScan(m.id,'file-change'));
+        const w=fs.watch(dir,{persistent:false},(_event,filename)=>{
+          const changed=filename?String(filename).toLowerCase():'';
+          for(const m of items){
+            if(!changed||path.basename(m.path).toLowerCase()===changed)this.queueScan(m.id,'file-change');
+          }
+        });
         w.on('error',()=>{});
-        this.watchers.set(m.id,w);
+        this.watchers.set(dir,w);
       }catch{}
     }
   }
