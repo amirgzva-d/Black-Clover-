@@ -26634,3 +26634,19 @@ When MARIA Windows is online:
 **TOP ISLAND / COMMAND HUB v3 DESIGN: COMPLETE**
 
 The UI/UX, data flow, accounting model, task model, Pin migration, performance policy and local integration sequence are now defined in enough detail that the online phase should be implementation verification and bug-fixing rather than redesign.
+
+### TOP ISLAND v3 — NON-NEGOTIABLE VISUAL MIGRATION RULE
+
+Effective immediately:
+
+- `src/renderer/topIslandV3.js` + `src/renderer/topIslandV3.css` are the **only active Top Island UI runtime**.
+- Legacy `topIsland.js/css` must **not** be used as the visual/UX base for v3.
+- Legacy Pin UI must **not** be visually reused.
+- Legacy Reminder UI must **not** be visually reused.
+- Legacy cards, spacing, menus, page layouts, icon treatment and visual hierarchy are not design references for v3.
+- Only non-visual backend/data components may be preserved when healthy: `PinnedNoteStore`, `ReminderStore`, Scheduler/Planner services, Accounting stores/scanners/resolvers, shortcut store and IPC contracts.
+- User data, IDs, schedules and accounting configurations are migrated; **presentation is rebuilt from scratch**.
+- Runtime entry `src/renderer/main.js` must load `topIslandV3.js`, never `topIsland.js`.
+- The user-provided reference screenshots define the visual direction: top-edge rectangular island, centered temporary character, icon groups at both sides, dark navy/black glass, violet/blue edge light, subtle star field, slim hidden state, expandable rectangle, rich compact cards, progress/status lighting, cohesive custom icons and motion.
+- Every new module/page must use the same v3 design language; no plain placeholder-style production page is acceptable.
+- "100% match" cannot be marked verified from source code alone. Final visual acceptance requires local render at the user's real Windows DPI/resolution and screenshot-by-screenshot comparison/fix pass.
