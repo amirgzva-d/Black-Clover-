@@ -183,8 +183,8 @@ Priority controls development order only; it does NOT lower quality requirements
 | 15 | Selection / Clipboard | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 16 | Translation / OCR | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 17 | Screen Understanding | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 18 | Download / Convert / Archive | NEXT | WAITING |
-| 19 | Web-App Agent | QUEUED | WAITING |
+| 18 | Download / Convert / Archive | DESIGN COMPLETE v1 ADVANCED | WAITING |
+| 19 | Web-App Agent | NEXT | WAITING |
 | 20 | Face Presence | FUTURE | WAITING |
 | 21 | Gesture Control | FUTURE | WAITING |
 | 22 | Planner / Routines | QUEUED | WAITING |
@@ -17186,3 +17186,1055 @@ When MARIA Windows system is online:
 17. test real dynamic UI/stale-element/privacy/error cases.
 18. test multi-monitor and scaled displays.
 19. mark only verified modules IMPLEMENTED.
+
+
+---
+
+## 18 — Download / Convert / Archive Intelligence
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`download.*\`, \`convert.*\`, \`archive.*\`, \`compression.*\`, \`extract.*\`, \`media_convert.*\`, \`document_convert.*\`  
+**Owner modules:** Download Orchestrator / Source Resolver / Download Manager / Resume Manager / Destination Resolver / Filename Resolver / Integrity Verifier / Signature Verifier / Malware Scan Handoff / Archive Engine / Archive Safety Guard / Conversion Registry / Media Conversion Skill / Image Conversion Skill / Document Conversion Skill / Spreadsheet Conversion Skill / Batch Conversion Planner / Metadata Policy / Output Verifier / Undo/Cleanup Manager / Language Agent  
+**Offline capable:** yes for local conversion/archive; downloads require network  
+**Risk class:** L0–L4 depending on source, executable content, overwrite and destructive replacement  
+**Primary platform:** Windows
+
+### 1. Purpose
+
+MARIA must manage the full lifecycle of downloaded and converted files:
+
+- resolve exact source
+- resolve official/safe download URL
+- choose destination
+- generate safe filename
+- start/pause/resume/cancel download
+- recover interrupted downloads
+- verify file size/type
+- verify hash/signature when available
+- hand suspicious/executable files to security scanning
+- avoid duplicate/partial files
+- open/reveal downloaded item
+- archive files
+- inspect archive contents
+- extract safely
+- handle encrypted/password-protected archives
+- test archive integrity
+- convert image/audio/video/document/spreadsheet/archive formats
+- run batch conversions
+- preserve originals by default
+- define output quality/codec/bitrate/resolution/page/sheet options
+- verify actual output format
+- clean temporary files safely
+- integrate with Browser, Web Search, File, App Install, OCR, Office, Messaging and Scheduler
+
+---
+
+### 2. Critical semantic distinctions
+
+These must remain separate:
+
+- "دانلود کن" => retrieve remote resource
+- "ذخیره کن" => may mean save current/local content
+- "Save As" => create local copy/version
+- "ZIP کن" => archive/compress
+- "Extract کن" => unpack archive
+- "فرمتش رو عوض کن" => real format conversion
+- "پسوندش رو عوض کن" => rename extension only, if explicitly requested
+- "JPG رو PNG کن" => decode/re-encode image, NOT rename
+- "Word رو PDF کن" => export/convert document
+- "MP4 رو MP3 کن" => extract/transcode audio
+- "کم‌حجمش کن" => compress/re-encode, not necessarily change container
+- "کیفیت رو کم کن" => encoding parameter change
+- "رزولوشن رو کم کن" => scale dimensions
+- "این فایل رو باز کن" => File Open, not Extract
+
+Changing the filename extension alone must never be reported as successful format conversion.
+
+---
+
+### 3. Canonical intents — download
+
+- \`download.start\`
+- \`download.start_url\`
+- \`download.start_official\`
+- \`download.pause\`
+- \`download.resume\`
+- \`download.cancel\`
+- \`download.retry\`
+- \`download.status\`
+- \`download.list_active\`
+- \`download.get_last\`
+- \`download.open\`
+- \`download.reveal\`
+- \`download.change_destination\`
+- \`download.rename_on_complete\`
+- \`download.verify\`
+
+Examples:
+- "این فایل رو دانلود کن"
+- "لینک رسمی رو بگیر"
+- "بذارش تو Downloads"
+- "روی Desktop دانلودش کن"
+- "اسمش بعد دانلود بشه setup.exe"
+- "دانلود رو Pause کن"
+- "ادامه بده"
+- "کنسلش کن"
+- "دانلود قبلی رو از همون‌جا ادامه بده"
+- "آخرین دانلود رو باز کن"
+- "برو پوشه‌ای که دانلود شده"
+
+---
+
+### 4. Source resolution
+
+SourceResolver may receive:
+- direct URL
+- current browser page
+- selected link
+- search result
+- email attachment
+- message attachment
+- cloud file
+- official vendor page
+- API/connector result
+
+Source priority:
+1. explicit URL
+2. exact selected link
+3. official/vendor download
+4. trusted structured connector
+5. current page download target
+6. browser result resolved by Web Search
+
+Executable/installable content:
+- must hand off to App Install / DownloadVerifier
+- unknown mirrors are not preferred
+- suspicious redirects trigger review
+
+---
+
+### 5. Download destination resolution
+
+Canonical:
+- \`download.destination.get\`
+- \`download.destination.set\`
+- \`download.destination.use_default\`
+
+Aliases:
+- Downloads
+- Desktop
+- Documents
+- project folder
+- user-learned locations
+
+Examples:
+- "بریز تو Downloads"
+- "روی دسکتاپ ذخیره کن"
+- "تو پوشه پروژه MARIA"
+- "همون جای قبلی"
+
+Rules:
+- verify destination exists/is writable
+- removable/network destination disappearance => fail safely
+- do not silently redirect to another folder
+- protected/system folders require stronger permission
+
+---
+
+### 6. Filename and collision policy
+
+Canonical:
+- \`download.filename.set\`
+- \`download.collision.ask\`
+- \`download.collision.keep_both\`
+- \`download.collision.replace\`
+- \`download.collision.skip\`
+
+Default:
+- no silent overwrite
+- partial files use temporary/partial naming
+- completed file receives final name only after verification
+
+Examples:
+- "اگه فایل بود جایگزین نکن"
+- "هر دو نسخه بمونه"
+- "با شماره جدید ذخیره کن"
+- "نسخه قبلی رو Replace کن"
+
+---
+
+### 7. Resume / interruption recovery
+
+DownloadManager tracks:
+- URL
+- destination
+- expected size
+- bytes received
+- ETag/Last-Modified when available
+- Range support
+- checksum
+- started_at
+- retry count
+- expiry
+
+Resume is allowed only if remote resource identity matches.
+
+Never append resumed bytes to a changed remote file without validation.
+
+---
+
+### 8. Download verification
+
+Verifier may check:
+- completion
+- expected size
+- file magic/type
+- filename/extension consistency
+- checksum
+- Authenticode/signature for supported executables
+- publisher identity
+- archive integrity where appropriate
+
+Result states:
+- verified
+- completed_unverified
+- hash_verified
+- signature_verified
+- type_mismatch
+- corrupt
+- incomplete
+- suspicious
+
+No false "دانلود شد" while file is still partial.
+
+---
+
+### 9. Security scan handoff
+
+Downloaded executables/scripts/archives may route to Security capability.
+
+Examples:
+- "دانلود شد، قبل باز کردن چکش کن"
+- "با Defender اسکنش کن"
+- "اگه مشکوکه اجرا نکن"
+
+Rules:
+- scan result is one signal, not absolute proof of safety
+- downloaded scripts from unknown sources are never auto-executed
+- archive contents may be scanned after safe extraction when appropriate
+
+---
+
+### 10. Archive canonical intents
+
+- \`archive.create\`
+- \`archive.zip\`
+- \`archive.create_7z\`
+- \`archive.create_tar\`
+- \`archive.extract\`
+- \`archive.extract_here\`
+- \`archive.extract_to\`
+- \`archive.list_contents\`
+- \`archive.test_integrity\`
+- \`archive.add_items\`
+- \`archive.remove_items\`
+- \`archive.rename_entry\`
+- \`archive.convert_container\`
+- \`archive.get_metadata\`
+
+Examples:
+- "این فایل‌ها رو ZIP کن"
+- "از این پوشه یه 7z بساز"
+- "Extract here"
+- "بریز تو پوشه X"
+- "قبل Extract محتویاتش رو نشون بده"
+- "آرشیو سالمه؟"
+- "این فایل رو به ZIP تبدیل کن"
+
+Supported formats are capability-discovered.
+
+Baseline:
+- ZIP
+- TAR
+- GZIP/TGZ
+
+Optional registered backends:
+- 7z
+- RAR extraction/handling where a licensed/compatible tool exists
+
+MARIA must not claim support for an archive format without an installed backend.
+
+---
+
+### 11. Archive safety guard
+
+Must prevent:
+- Zip Slip / path traversal
+- absolute-path extraction outside target
+- parent-directory escape
+- dangerous symlink/junction extraction
+- extraction over protected system paths
+- silent overwrite
+- archive bombs / extreme expansion
+- excessive file counts
+- recursive archive explosions
+
+Safety checks:
+- normalized destination path
+- entry path validation
+- estimated expanded size
+- compression ratio anomaly
+- available disk space
+- symlink policy
+- collision policy
+
+If suspicious:
+- inspect/list only
+- ask/deny extraction
+
+---
+
+### 12. Password-protected archives
+
+Canonical:
+- \`archive.password.extract\`
+- \`archive.password.create\`
+
+Rules:
+- password is secret
+- never stored in normal memory/logs
+- user may type/provide it ephemerally
+- wrong-password retry is bounded
+- do not brute-force passwords
+
+Examples:
+- "رمزش رو میدم Extract کن"
+- "با رمز ZIP بساز"
+- "رمز رو ذخیره نکن"
+
+---
+
+### 13. Multipart archives
+
+Capability-gated support:
+- .part1.rar
+- .001/.002
+- split 7z/zip
+
+Resolver should:
+- identify parts
+- verify all required parts are present
+- start from correct first segment
+- report missing part rather than corrupting output
+
+---
+
+### 14. True format conversion
+
+Canonical:
+- \`convert.file\`
+- \`convert.batch\`
+- \`convert.image\`
+- \`convert.audio\`
+- \`convert.video\`
+- \`convert.document\`
+- \`convert.spreadsheet\`
+- \`convert.presentation\`
+- \`convert.archive\`
+
+Every converter is registered as explicit source → target pairs.
+
+Rules:
+- unsupported pair => report unsupported
+- preserve source by default
+- output goes to new file unless user explicitly requests replacement
+- never fake conversion by extension rename
+- verify output by probing/opening with target decoder
+
+---
+
+### 15. Image conversion
+
+Canonical:
+- \`image.convert\`
+- \`image.resize\`
+- \`image.compress\`
+- \`image.rotate\`
+- \`image.strip_metadata\`
+- \`image.preserve_metadata\`
+
+Potential formats:
+- PNG
+- JPEG
+- WebP
+- BMP
+- TIFF
+- GIF where supported
+
+Examples:
+- "JPG رو PNG کن"
+- "WebP کن"
+- "حجم عکس رو کم کن"
+- "عرضش بشه 1920"
+- "کیفیت 85 درصد"
+- "Metadata رو پاک کن"
+- "EXIF بمونه"
+
+Transparency/color-profile limitations must be surfaced when conversion may lose them.
+
+---
+
+### 16. Audio conversion
+
+Canonical:
+- \`audio.convert\`
+- \`audio.extract_from_video\`
+- \`audio.set_bitrate\`
+- \`audio.set_codec\`
+- \`audio.normalize\`
+
+Potential formats:
+- MP3
+- AAC/M4A
+- WAV
+- FLAC
+- OGG/Opus where backend supports
+
+Examples:
+- "MP4 رو MP3 کن"
+- "این صدا رو WAV کن"
+- "Bitrate رو 192 بذار"
+- "کیفیتش زیاد خراب نشه"
+
+Do not promise lossless output when source is lossy and target is lossy.
+
+---
+
+### 17. Video conversion
+
+Canonical:
+- \`video.convert\`
+- \`video.compress\`
+- \`video.resize\`
+- \`video.set_codec\`
+- \`video.set_bitrate\`
+- \`video.change_container\`
+- \`video.extract_audio\`
+- \`video.keep_subtitles\`
+- \`video.remove_audio\`
+
+Potential target containers/codecs depend on backend.
+
+Examples:
+- "MOV رو MP4 کن"
+- "حجم ویدئو رو نصف کن"
+- "رزولوشن 1080"
+- "H.264 کن"
+- "صداشو جدا کن"
+- "زیرنویس‌ها بمونه"
+- "ویدئو بدون صدا خروجی بده"
+
+Media conversion backend can use a registered FFmpeg-based adapter when installed/approved.
+
+---
+
+### 18. Media quality presets
+
+Presets:
+- preserve_quality
+- balanced
+- smaller_file
+- web_compatible
+- messaging_compatible
+- archive_quality
+- custom
+
+Examples:
+- "تا جای ممکن کیفیت حفظ شه"
+- "برای WhatsApp سبک‌ش کن"
+- "برای وب مناسبش کن"
+- "کم‌حجم ولی قابل قبول"
+
+Preset expands into explicit parameters and is logged for reproducibility.
+
+---
+
+### 19. Hardware acceleration
+
+Conversion backend may detect:
+- CPU codec support
+- GPU encoder availability
+- hardware acceleration
+
+Rules:
+- optional
+- output quality/compatibility verified
+- fall back safely to software encoder
+- do not fail whole conversion merely because hardware path unavailable
+
+---
+
+### 20. Document conversion
+
+Canonical:
+- \`document.convert\`
+- \`document.to_pdf\`
+- \`document.to_docx\`
+- \`document.to_text\`
+- \`document.to_html\`
+
+Examples:
+- "Word رو PDF کن"
+- "این متن رو DOCX کن"
+- "PDF رو متن کن"
+- "این سند رو HTML کن"
+
+Important:
+- PDF → editable Word is not guaranteed to preserve exact layout
+- scanned PDF may require OCR first
+- Office export should use Office/application APIs when available
+- complex fidelity limits must be reported
+
+---
+
+### 21. Spreadsheet conversion
+
+Canonical:
+- \`spreadsheet.convert\`
+- \`spreadsheet.to_csv\`
+- \`spreadsheet.to_xlsx\`
+- \`spreadsheet.sheet_to_csv\`
+- \`spreadsheet.range_to_csv\`
+
+Examples:
+- "Excel رو CSV کن"
+- "فقط Sheet فروش CSV"
+- "این محدوده رو خروجی CSV بده"
+
+CSV limitations:
+- one sheet per file
+- formulas become evaluated values unless another policy is selected
+- formatting/charts are not represented
+
+MARIA must warn before lossy conversion.
+
+---
+
+### 22. Presentation conversion
+
+Canonical:
+- \`presentation.to_pdf\`
+- \`presentation.export_images\`
+- \`presentation.export_video\`
+
+Examples:
+- "PowerPoint رو PDF کن"
+- "اسلایدها رو عکس بگیر"
+- "هر اسلاید PNG"
+
+Use Office/PowerPoint export when available for fidelity.
+
+---
+
+### 23. PDF workflows
+
+Potential operations:
+- merge
+- split
+- extract pages
+- rotate pages
+- compress
+- OCR handoff
+- convert to image
+- image to PDF
+
+Canonical:
+- \`pdf.merge\`
+- \`pdf.split\`
+- \`pdf.extract_pages\`
+- \`pdf.rotate_pages\`
+- \`pdf.compress\`
+- \`pdf.to_images\`
+- \`pdf.from_images\`
+
+Examples:
+- "این سه PDF رو یکی کن"
+- "صفحه 5 تا 10 رو جدا کن"
+- "هر صفحه رو JPG کن"
+- "این عکس‌ها رو PDF کن"
+
+Order and page range must be explicit/verified.
+
+---
+
+### 24. Batch conversion
+
+Canonical:
+- \`convert.batch\`
+- \`convert.batch.preview\`
+- \`convert.batch.cancel\`
+- \`convert.batch.retry_failed\`
+
+Examples:
+- "همه JPGهای این پوشه رو WebP کن"
+- "این 20 فایل رو PDF کن"
+- "قبلش بگو چه خروجی‌هایی ساخته میشه"
+- "فقط فایل‌های خراب‌شده رو دوباره امتحان کن"
+
+Batch planner stores item-level status:
+- queued
+- converting
+- verified
+- skipped
+- unsupported
+- failed
+
+No all-or-nothing false success.
+
+---
+
+### 25. Output naming
+
+Templates:
+- \`{name}.{target_ext}\`
+- \`{name}_converted.{ext}\`
+- \`{name}_{preset}.{ext}\`
+- timestamp/version suffix
+
+Examples:
+- "اصلش بمونه"
+- "آخر اسم _small بزن"
+- "همون اسم ولی MP4"
+- "نسخه جدید شماره‌دار باشه"
+
+Never overwrite original by default.
+
+---
+
+### 26. Metadata policy
+
+Options:
+- preserve
+- strip
+- minimal
+- custom
+
+Metadata examples:
+- EXIF
+- creation date
+- tags
+- title/artist
+- GPS
+- document properties
+
+Privacy:
+- GPS/location metadata removal may be recommended before external sharing
+- never silently strip metadata unless preset/policy says so
+
+---
+
+### 27. Conversion verifier
+
+Verifier probes:
+- actual file magic/container
+- decoder open
+- duration
+- dimensions
+- codec
+- bitrate when relevant
+- page count
+- sheet count
+- output size
+- expected content count
+
+Examples:
+- PNG output must actually decode as PNG
+- MP4 should have expected duration tolerance
+- PDF export page count should match
+- CSV should parse
+
+Result:
+- verified_success
+- partial
+- format_mismatch
+- corrupt_output
+- quality_warning
+- unsupported
+
+---
+
+### 28. Temporary file management
+
+Conversion may create:
+- temp decode files
+- intermediate audio/video
+- partial downloads
+- extraction staging folders
+
+Cleanup policy:
+- remove temp only after output verification
+- preserve failed intermediates only when useful/user-approved
+- never remove source
+- startup recovery can clean stale temp items after safe age threshold
+
+---
+
+### 29. Cancellation
+
+Canonical:
+- \`download.cancel\`
+- \`convert.cancel\`
+- \`archive.cancel\`
+
+Cancellation should:
+- stop current process safely
+- keep resumable partial downloads when policy says so
+- remove unusable temp output
+- preserve source
+- report current state
+
+---
+
+### 30. Scheduler integration
+
+Examples:
+- "وقتی دانلود تموم شد Extract کن"
+- "شب این پوشه رو ZIP کن"
+- "بعد تبدیل، فایل رو برای علی بفرست"
+- "وقتی اینترنت وصل شد دانلود رو ادامه بده"
+
+Scheduler stores canonical Skill actions and conditions.
+
+---
+
+### 31. Browser integration
+
+Browser may identify download target.
+Download capability owns:
+- file transfer state
+- destination
+- verification
+- final file identity
+
+Browser must not report file completion merely because the browser click started a download.
+
+---
+
+### 32. Messaging integration
+
+Examples:
+- "این ویدئو رو برای WhatsApp سبک کن و بفرست"
+- "این فایل‌ها رو ZIP کن و برای علی بفرست"
+
+Pipeline:
+resolve files → convert/archive → verify → recipient/service → send → verify external result.
+
+---
+
+### 33. Install/update integration
+
+Examples:
+- "آخرین نسخه OBS رو دانلود و نصب کن"
+
+Flow:
+Web Search official source → DownloadVerifier → App Install → installer verification → install → verify version.
+
+Capability 18 handles transfer, not installation itself.
+
+---
+
+### 34. Copyright / DRM / access controls
+
+MARIA must not:
+- bypass DRM
+- defeat paywalls/access controls
+- present arbitrary copyrighted-stream ripping as a supported default workflow
+- bypass site protections to extract restricted media
+
+Allowed workflows include:
+- official platform download/offline feature
+- user-owned content
+- direct downloadable resources
+- public/licensed content where access permits
+
+---
+
+### 35. Network policy
+
+Options:
+- Wi‑Fi only
+- any network
+- pause on metered connection
+- speed/bandwidth limit where supported
+- retry on reconnect
+
+Examples:
+- "فقط با Wi‑Fi دانلود کن"
+- "اگه نت قطع شد بعداً ادامه بده"
+- "روی اینترنت متری Pause کن"
+
+---
+
+### 36. Disk-space planning
+
+Before large download/extract/convert:
+- estimate expected output/temp size
+- query free space
+- account for archive expansion
+- refuse/ask if likely insufficient
+
+Example:
+"این ZIP فقط 2GB است ولی بعد Extract ممکنه 80GB بشه."
+
+---
+
+### 37. Permissions / risk
+
+L0:
+- inspect archive
+- inspect metadata
+- preview conversion
+- status
+
+L1:
+- download normal document
+- create archive
+- non-destructive conversion to new file
+
+L2:
+- batch conversions
+- extraction with collision handling
+- large downloads
+
+L3:
+- overwrite output
+- executable downloads
+- encrypted archive handling
+- remove metadata affecting provenance
+
+L4:
+- destructive replace-original conversion
+- extraction into protected/system paths
+- suspicious executable/script workflow
+
+---
+
+### 38. Massive language packs
+
+Critical intents target **1000–1500 examples each**:
+- download.start
+- download.pause/resume/cancel
+- download.verify
+- archive.zip
+- archive.extract
+- archive.extract_to
+- convert.file
+- image.convert
+- video.convert
+- audio.convert
+- document.to_pdf
+- spreadsheet.to_csv
+- convert.batch
+
+Secondary intents target 500–1000.
+
+Mandatory axes:
+- source URL/page/selection
+- destination
+- filename
+- overwrite policy
+- resume
+- offline/reconnect
+- archive passwords
+- format names
+- Persian pronunciation of formats
+- quality/bitrate/resolution
+- preserve original
+- batch
+- typo/STT
+- mixed Persian-English
+- multi-step
+- scheduler
+- send-after-convert
+- hard negatives
+
+Hard negatives:
+- "اسم فایل رو .png کن" => extension rename
+- "عکس رو PNG کن" => real conversion
+- "ZIP رو باز کن" may mean inspect/extract/open; resolve
+- "فایل رو باز کن" => File Open
+- "این رو دانلود کن" => remote transfer
+- "این رو ذخیره کن" may be local save
+- "حجمش رو کم کن" => compression/re-encode, not delete content
+- "کیفیتش رو کم کن" => media/image quality setting
+- "این پوشه رو فشرده کن" => archive/compress
+- "از فشرده درش بیار" => extract
+
+Family target: tens of thousands of examples.
+
+---
+
+### 39. Skill / Agent package
+
+- \`DownloadOrchestrator\`
+- \`DownloadSourceResolver\`
+- \`DownloadManager\`
+- \`ResumeManager\`
+- \`DownloadDestinationResolver\`
+- \`DownloadFilenameResolver\`
+- \`DownloadIntegrityVerifier\`
+- \`SignatureVerifier\`
+- \`DownloadSecurityHandoff\`
+- \`ArchiveSkill\`
+- \`ArchiveSafetyGuard\`
+- \`ArchiveIntegrityVerifier\`
+- \`ConversionRegistry\`
+- \`ConversionPlanner\`
+- \`ImageConversionSkill\`
+- \`AudioConversionSkill\`
+- \`VideoConversionSkill\`
+- \`DocumentConversionSkill\`
+- \`SpreadsheetConversionSkill\`
+- \`PresentationConversionSkill\`
+- \`PDFTransformationSkill\`
+- \`BatchConversionSkill\`
+- \`ConversionPresetResolver\`
+- \`MetadataPolicyManager\`
+- \`OutputVerifier\`
+- \`ConversionCleanupManager\`
+- \`DownloadConvertLanguageAgent\`
+
+All register through Skill Registry / Tool Registry.
+
+---
+
+### 40. Implementation direction
+
+Potential adapters:
+- browser/HTTP download backend with resume support
+- Windows BITS where appropriate for durable background downloads
+- browser download APIs for browser-originated tasks
+- Office export adapters
+- image codec library
+- FFmpeg adapter for audio/video if installed/approved
+- ZIP/TAR native libraries
+- registered 7z/RAR-compatible backend
+
+Each adapter reports:
+- supported operations
+- formats
+- max capabilities
+- verification support
+- cancellation/resume support
+
+No backend is assumed present until capability detection passes.
+
+---
+
+### 41. Test matrix
+
+Download:
+- DC-A01 direct URL
+- DC-A02 browser selected link
+- DC-A03 resume
+- DC-A04 remote file changed
+- DC-A05 collision
+- DC-A06 low disk space
+- DC-A07 network loss
+- DC-A08 executable verification
+
+Archive:
+- DC-B01 ZIP
+- DC-B02 Extract to
+- DC-B03 password
+- DC-B04 Zip Slip attack
+- DC-B05 archive bomb
+- DC-B06 collision
+- DC-B07 multipart missing part
+- DC-B08 integrity test
+
+Image:
+- DC-C01 JPEG→PNG
+- DC-C02 WebP
+- DC-C03 resize
+- DC-C04 transparency loss warning
+- DC-C05 metadata strip
+
+Audio/video:
+- DC-D01 MP4→MP3
+- DC-D02 MOV→MP4
+- DC-D03 bitrate
+- DC-D04 resolution
+- DC-D05 hardware encoder unavailable fallback
+- DC-D06 subtitles retained
+
+Office/PDF:
+- DC-E01 Word→PDF
+- DC-E02 Excel→CSV
+- DC-E03 scanned PDF OCR handoff
+- DC-E04 PDF split/merge
+- DC-E05 layout loss warning
+
+Batch:
+- DC-F01 100 images
+- DC-F02 mixed supported/unsupported
+- DC-F03 cancel mid-job
+- DC-F04 retry failed
+
+Verification:
+- DC-G01 extension mismatch
+- DC-G02 corrupt output
+- DC-G03 partial download
+- DC-G04 expected duration/page count
+
+Language:
+- DC-H01 typo
+- DC-H02 STT
+- DC-H03 rename extension vs conversion
+- DC-H04 extract vs open
+- DC-H05 compress vs quality reduction
+
+---
+
+### 42. Acceptance criteria
+
+1. downloads support exact source/destination tracking.
+2. resumable downloads verify remote identity before continuing.
+3. no silent overwrite.
+4. executable downloads hand off to security/install verification.
+5. archive extraction blocks path traversal and suspicious expansion.
+6. password secrets are ephemeral.
+7. true conversion never degrades into extension renaming.
+8. unsupported source→target pairs are reported honestly.
+9. originals are preserved by default.
+10. output format/content is verified after conversion.
+11. lossy conversions warn about fidelity/feature loss when relevant.
+12. batch operations report item-level results.
+13. critical intents reach 1000–1500 language examples.
+14. real download/archive/media/document tests pass before IMPLEMENTED.
+
+---
+
+### 43. Local implementation plan
+
+When MARIA Windows system is online:
+1. inspect current download/archive/convert handlers.
+2. detect available download backends.
+3. implement durable DownloadManager + resume.
+4. add destination/collision policies.
+5. add integrity/signature verification.
+6. connect Defender/security handoff.
+7. implement ArchiveSkill + Zip Slip/archive-bomb guards.
+8. detect registered archive backends.
+9. build ConversionRegistry.
+10. implement image conversion.
+11. integrate FFmpeg adapter if available/approved.
+12. integrate Office document/spreadsheet/presentation export.
+13. implement PDF transformation.
+14. add batch conversion + cancellation.
+15. add output verifier/temp cleanup.
+16. connect Browser/File/Messaging/Scheduler/AppInstall.
+17. generate 1000–1500 utterance packs for critical intents.
+18. run corruption/interruption/archive-attack tests.
+19. test real media/Office conversions.
+20. mark only verified modules IMPLEMENTED.
