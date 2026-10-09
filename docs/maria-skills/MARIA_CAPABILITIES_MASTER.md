@@ -179,8 +179,8 @@ Priority controls development order only; it does NOT lower quality requirements
 | 11 | Timed / Conditional Actions | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 12 | Power / Lock / Security | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 13 | Excel / Office | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 14 | Desktop Organization | NEXT | WAITING |
-| 15 | Selection / Clipboard | QUEUED | WAITING |
+| 14 | Desktop Organization | DESIGN COMPLETE v1 ADVANCED | WAITING |
+| 15 | Selection / Clipboard | NEXT | WAITING |
 | 16 | Translation / OCR | QUEUED | WAITING |
 | 17 | Screen Understanding | QUEUED | WAITING |
 | 18 | Download / Convert / Archive | QUEUED | WAITING |
@@ -13155,3 +13155,872 @@ When MARIA Windows system is online:
 15. run real multi-workbook/large-sheet tests.
 16. test RTL/Persian/number/date edge cases.
 17. mark only verified modules IMPLEMENTED.
+
+
+---
+
+## 14 — Desktop Organization / Workspace Intelligence
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`desktop.*\`, \`workspace.*\`, \`window.layout.*\`, \`icon.*\`, \`virtual_desktop.*\`, \`organization.*\`  
+**Owner modules:** Desktop Orchestrator / Desktop Context Resolver / Desktop File Organizer / Icon Layout Skill / Window Layout Skill / Workspace Manager / Monitor Layout Resolver / Virtual Desktop Adapter / Desktop Rule Engine / Preview Planner / Verifier / Undo Manager / Desktop Language Agent  
+**Offline capable:** yes  
+**Risk class:** L0–L4 depending on whether files are moved/renamed/deleted  
+**Primary platform:** Windows
+
+### 1. Purpose
+
+MARIA must treat "Desktop organization" as several separate domains:
+
+1. **Visual icon arrangement**
+2. **Actual file/folder organization**
+3. **Open-window layout**
+4. **Multi-monitor workspace layout**
+5. **Virtual desktop/workspace switching**
+6. **Reusable work modes**
+7. **Automatic cleanup rules**
+8. **Restore previous layout**
+
+It must never assume that "مرتب کن" means moving files into folders.
+
+---
+
+### 2. Semantic boundaries
+
+Examples:
+
+- "آیکون‌های دسکتاپ رو مرتب کن"
+  => visual icon arrangement
+
+- "فایل‌های دسکتاپ رو مرتب کن"
+  => file organization plan
+
+- "پنجره‌ها رو مرتب کن"
+  => window layout
+
+- "محیط کارم رو بچین"
+  => workspace profile
+
+- "دسکتاپ رو خلوت کن"
+  => ambiguous: may mean move old files, hide icons, or close windows; resolve from context/preference
+
+- "همه چی رو بنداز تو یه پوشه"
+  => actual file move, not visual organization
+
+- "فقط ظاهرش مرتب شه، فایل‌ها جابه‌جا نشن"
+  => icon layout only
+
+These distinctions are mandatory hard negatives.
+
+---
+
+### 3. Canonical intents — desktop inspection
+
+- \`desktop.inspect\`
+- \`desktop.list_items\`
+- \`desktop.get_layout\`
+- \`desktop.get_open_windows\`
+- \`desktop.get_active_monitor\`
+- \`desktop.get_workspace_state\`
+- \`desktop.find_clutter\`
+- \`desktop.find_recent_items\`
+- \`desktop.find_old_items\`
+
+Examples:
+- "روی دسکتاپ چی دارم"
+- "چندتا فایل ریخته رو دسکتاپ"
+- "دسکتاپ شلوغه؟"
+- "فایل‌های قدیمی رو پیدا کن"
+- "چیزایی که امروز اومدن رو نشون بده"
+- "پنجره‌های باز رو بگو"
+
+---
+
+### 4. Visual icon arrangement
+
+Canonical:
+- \`desktop.icons.auto_arrange\`
+- \`desktop.icons.align_grid\`
+- \`desktop.icons.sort_name\`
+- \`desktop.icons.sort_type\`
+- \`desktop.icons.sort_date\`
+- \`desktop.icons.sort_size\`
+- \`desktop.icons.show\`
+- \`desktop.icons.hide\`
+- \`desktop.icons.snapshot\`
+- \`desktop.icons.restore_layout\`
+
+Examples:
+- "آیکونا رو مرتب کن"
+- "به اسم مرتب کن"
+- "بر اساس نوع بچین"
+- "جدیدا بالا باشن"
+- "روی Grid مرتبشون کن"
+- "آیکون‌های دسکتاپ رو مخفی کن"
+- "دوباره نشونشون بده"
+- "چیدمان فعلی رو ذخیره کن"
+- "برگرد همون چیدمان قبلی"
+
+Important:
+- visual sorting does not move actual filesystem locations
+- if Windows/Explorer does not expose stable icon-coordinate control on the current build, use supported Explorer/UI mechanisms and mark exact-position restore capability-gated
+
+---
+
+### 5. Desktop file organization
+
+Canonical:
+- \`desktop.files.organize\`
+- \`desktop.files.organize_by_type\`
+- \`desktop.files.organize_by_date\`
+- \`desktop.files.organize_by_project\`
+- \`desktop.files.move_old\`
+- \`desktop.files.create_categories\`
+- \`desktop.files.preview_organization\`
+- \`desktop.files.undo_organization\`
+
+Examples:
+- "فایل‌های دسکتاپ رو مرتب کن"
+- "عکس‌ها برن پوشه Images"
+- "PDFها رو جدا کن"
+- "فایل‌های کاری رو بذار تو Work"
+- "چیزای بیشتر از یه ماه قدیمی رو ببر Archive"
+- "قبل جابه‌جایی نشونم بده چی کجا میره"
+- "فقط پوشه بساز، هنوز فایل‌ها رو نبر"
+- "همه تغییرات قبلی رو برگردون"
+
+Rules:
+- default for broad organization = preview first
+- never move shortcuts as if they are ordinary source documents without identifying them
+- never merge same-name folders silently
+- preserve file identity and extension
+- use FileOperationSkill from Capability 03 for actual move/copy/rename
+- every file move must be journaled and verified
+
+---
+
+### 6. Organization strategies
+
+Possible strategies:
+
+#### By type
+- Images
+- Videos
+- Documents
+- PDFs
+- Spreadsheets
+- Archives
+- Installers
+- Code
+- Shortcuts
+- Other
+
+#### By date
+- Today
+- This Week
+- This Month
+- Older
+- YYYY-MM
+
+#### By project
+Uses:
+- project aliases
+- folder history
+- filename patterns
+- related open apps/documents
+- user rules
+
+#### By source
+- Downloads
+- Screenshots
+- exports
+- generated files
+- received attachments
+
+#### By status
+- To Review
+- Active
+- Archive
+
+MARIA must not invent project membership from weak filename similarity.
+
+---
+
+### 7. Smart cleanup
+
+Canonical:
+- \`desktop.cleanup.preview\`
+- \`desktop.cleanup.safe\`
+- \`desktop.cleanup.archive_old\`
+- \`desktop.cleanup.remove_broken_shortcuts\`
+- \`desktop.cleanup.find_duplicates\`
+- \`desktop.cleanup.rule.create\`
+
+Examples:
+- "دسکتاپ رو خلوت کن"
+- "فقط فایل‌های قدیمی رو جمع کن"
+- "Shortcut خرابا رو پیدا کن"
+- "Duplicateها رو نشون بده"
+- "چیزی پاک نکن، فقط مرتب کن"
+- "هر جمعه فایل‌های Screenshot رو ببر پوشه Screenshots"
+
+Safety:
+- cleanup does NOT imply delete
+- duplicate detection is read-only until user chooses action
+- broken shortcut removal is reversible where possible
+- broad delete requires separate explicit file-delete intent
+
+---
+
+### 8. Window layout
+
+Canonical:
+- \`window.layout.inspect\`
+- \`window.layout.tile\`
+- \`window.layout.cascade\`
+- \`window.layout.grid\`
+- \`window.layout.two_column\`
+- \`window.layout.three_column\`
+- \`window.layout.focus\`
+- \`window.layout.restore\`
+- \`window.snap.left\`
+- \`window.snap.right\`
+- \`window.snap.top\`
+- \`window.snap.bottom\`
+- \`window.move_monitor\`
+- \`window.move_position\`
+- \`window.resize\`
+
+Examples:
+- "پنجره‌ها رو مرتب کن"
+- "Chrome چپ، VS Code راست"
+- "سه تا برنامه کنار هم"
+- "Excel وسط باشه"
+- "Telegram رو ببر مانیتور دوم"
+- "این پنجره رو نصف صفحه کن"
+- "برگرد چیدمان قبل"
+- "فقط همین برنامه بزرگ باشه"
+
+WindowLayoutSkill resolves:
+- app/process
+- top-level window
+- monitor
+- desired region
+- minimized/maximized state
+- overlapping constraints
+
+---
+
+### 9. Snap layouts
+
+Canonical:
+- \`window.snap.apply\`
+- \`window.snap.quadrant\`
+- \`window.snap.half\`
+- \`window.snap.third\`
+- \`window.snap.custom\`
+
+Examples:
+- "این رو سمت چپ نصف صفحه"
+- "سه ستونه بچین"
+- "چهارتا پنجره چهار گوشه"
+- "Chrome دو سوم، Telegram یک سوم"
+- "VS Code بزرگ‌تر باشه"
+
+Custom ratios are capability-gated by the actual window manager/adapter.
+
+---
+
+### 10. Multi-monitor workspace
+
+Canonical:
+- \`workspace.monitor.assign_app\`
+- \`workspace.monitor.move_group\`
+- \`workspace.monitor.primary_layout\`
+- \`workspace.monitor.restore\`
+
+Examples:
+- "Chrome و Telegram مانیتور دوم"
+- "VS Code و Terminal مانیتور اصلی"
+- "همه ابزارهای ارتباطی رو ببر صفحه دوم"
+- "برگرد چیدمان دو مانیتور قبلی"
+
+Uses stable monitor identity from Display capability.
+
+Never rely only on monitor index when stable IDs are available.
+
+---
+
+### 11. Workspace profiles
+
+Canonical:
+- \`workspace.create\`
+- \`workspace.save_current\`
+- \`workspace.apply\`
+- \`workspace.update\`
+- \`workspace.rename\`
+- \`workspace.delete\`
+- \`workspace.restore_previous\`
+- \`workspace.list\`
+
+Profiles may include:
+- apps to launch
+- app-to-monitor mapping
+- window positions/sizes
+- browser profile/tabs
+- project folder
+- display profile
+- audio profile
+- notification/focus profile
+- optional virtual desktop assignment
+
+Examples:
+- "این چیدمان رو به اسم حالت کار ذخیره کن"
+- "Workspace برنامه‌نویسی"
+- "حالت طراحی رو اجرا کن"
+- "برگرد محیط قبلی"
+- "Workspace کار رو آپدیت کن با این چیدمان"
+
+---
+
+### 12. Example workspace — Programming
+
+Potential plan:
+1. open VS Code
+2. open project
+3. open terminal
+4. open browser on approved profile
+5. position VS Code on primary monitor
+6. browser on secondary
+7. terminal bottom/right
+8. apply focus/notification profile
+9. verify all windows
+10. save snapshot for undo
+
+No step is assumed; workspace definition is explicit and user-editable.
+
+---
+
+### 13. Example workspace — Communication
+
+Potential:
+- Telegram
+- WhatsApp
+- Gmail
+- Calendar
+- browser
+- notification profile
+
+User:
+"محیط پیام‌هام رو باز کن"
+
+Workspace Manager maps alias only after user defines/approves it.
+
+---
+
+### 14. Virtual desktops
+
+Canonical:
+- \`virtual_desktop.list\`
+- \`virtual_desktop.create\`
+- \`virtual_desktop.switch\`
+- \`virtual_desktop.rename\`
+- \`virtual_desktop.move_window\`
+- \`virtual_desktop.close\`
+
+Examples:
+- "یه دسکتاپ مجازی جدید"
+- "برو دسکتاپ دوم"
+- "اسمش رو Work بذار"
+- "Chrome رو ببر Work"
+- "این Virtual Desktop رو ببند"
+
+Implementation notes:
+- Windows public support for programmatic virtual-desktop management can vary by build
+- use supported interfaces/automation when available
+- avoid hard dependency on undocumented private COM contracts
+- mark unsupported operations honestly
+
+---
+
+### 15. Desktop rules / automation
+
+Canonical:
+- \`desktop.rule.create\`
+- \`desktop.rule.enable\`
+- \`desktop.rule.disable\`
+- \`desktop.rule.delete\`
+
+Examples:
+- "هر Screenshot که میاد بره Screenshots"
+- "PDFهای جدید دسکتاپ بعد یک روز برن Documents"
+- "فایل‌های موقت جمعه‌ها Archive بشن"
+- "وقتی پروژه Maria رو باز کردم Workspace برنامه‌نویسی اجرا شه"
+
+Actual scheduling/event watching is delegated to Capability 11.
+
+---
+
+### 16. Restore / snapshot
+
+Canonical:
+- \`desktop.snapshot.create\`
+- \`desktop.snapshot.restore\`
+- \`workspace.snapshot.create\`
+- \`workspace.snapshot.restore\`
+
+Snapshot may include:
+- file locations affected by organization
+- icon layout if supported
+- open windows
+- window bounds
+- monitor assignment
+- active virtual desktop
+- workspace profile state
+
+Restore must never delete newly-created user files merely to mimic an old visual snapshot.
+
+---
+
+### 17. Context resolution
+
+Phrases:
+- "اینارو مرتب کن"
+- "همه‌شون"
+- "این پنجره‌ها"
+- "اون برنامه"
+- "همون چیدمان"
+- "مثل دیروز"
+- "برگرد قبلی"
+
+Context sources:
+1. current selection
+2. active desktop
+3. open windows
+4. recent organization preview
+5. current workspace
+6. last saved snapshot
+7. explicit user alias
+
+Destructive ambiguity => ask.
+
+---
+
+### 18. Preview planner
+
+Broad operations get a preview:
+
+Example:
+"فایل‌های دسکتاپ رو مرتب کن"
+
+Preview:
+- 18 images → Desktop\\Images
+- 7 PDFs → Desktop\\Documents\\PDF
+- 4 ZIPs → Desktop\\Archives
+- 6 shortcuts remain on Desktop
+- 3 unknown files unchanged
+
+Then execute after confirmation according to user policy.
+
+Preview is especially important for:
+- project grouping
+- moving old files
+- duplicate handling
+- large batch moves
+- renames
+
+---
+
+### 19. Duplicate awareness
+
+Canonical:
+- \`desktop.duplicates.find\`
+- \`desktop.duplicates.compare\`
+- \`desktop.duplicates.preview_action\`
+
+Signals:
+- exact hash
+- file size
+- modified date
+- filename similarity
+
+Never delete based only on filename similarity.
+
+---
+
+### 20. Shortcut awareness
+
+Shortcuts are recognized as references, not original files.
+
+MARIA can:
+- identify target
+- remove broken shortcut
+- create shortcut
+- rename shortcut
+- leave target untouched
+
+Examples:
+- "Shortcut Chrome رو از دسکتاپ بردار"
+- "برای VS Code میانبر بساز"
+- "این میانبر خرابه؟"
+
+---
+
+### 21. Special desktop items
+
+Handle carefully:
+- This PC
+- Recycle Bin
+- Network
+- user profile/system shell items
+
+Do not treat shell namespace items as normal filesystem files.
+
+---
+
+### 22. Window matching
+
+WindowResolver uses:
+- process ID
+- executable
+- window handle
+- title
+- app identity
+- document identity
+- recent focus
+- user alias
+
+Do not move the wrong window merely because two titles are similar.
+
+---
+
+### 23. App launch + layout workflow
+
+User:
+"حالت کار رو اجرا کن"
+
+Plan:
+1. read workspace definition
+2. launch missing apps
+3. wait for ready windows
+4. resolve windows
+5. apply monitor/position
+6. restore tabs/projects if defined
+7. apply display/audio/focus profiles
+8. verify
+9. report partial failures
+
+If one app fails to launch, remaining workspace may still be applied and result reported as partial.
+
+---
+
+### 24. Desktop + file handoff
+
+Actual filesystem operations are executed by Capability 03.
+
+Desktop Organizer produces normalized actions:
+- move
+- create folder
+- rename
+- copy
+- shortcut create/remove
+
+FileOperationSkill executes and verifies them.
+
+This avoids duplicating file mutation logic.
+
+---
+
+### 25. Desktop + browser handoff
+
+Workspace may request:
+- browser profile
+- exact sites
+- pinned tabs
+- window placement
+
+Browser Automation owns browser actions; Workspace Manager orchestrates.
+
+---
+
+### 26. Desktop + scheduler handoff
+
+Examples:
+- "هر روز 8 حالت کار رو اجرا کن"
+- "جمعه عصر دسکتاپ رو مرتب کن"
+- "بعد از بستن پروژه چیدمان عادی رو برگردون"
+
+Scheduler owns time/events.
+
+---
+
+### 27. Desktop + presence/proactive future
+
+Future composition:
+- user returns to PC => restore workspace
+- idle => reduce clutter/notification state
+- face/presence/gesture modules can trigger workspace actions only after explicit user rule
+
+No automatic surveillance behavior.
+
+---
+
+### 28. Permissions / risk
+
+L0:
+- inspect desktop/windows
+- preview organization
+- find clutter/duplicates
+
+L1:
+- visual icon arrange
+- window layout
+- workspace launch
+- show/hide desktop icons
+
+L2:
+- create folders
+- move non-sensitive user files with preview
+- create/remove shortcuts
+
+L3:
+- bulk move/rename
+- archive old files
+- modify large workspace state
+
+L4:
+- delete files
+- destructive cleanup
+- broad irreversible history/layout changes
+
+File deletion remains governed by File capability.
+
+---
+
+### 29. Verification
+
+Icon:
+- requested sort/layout state where observable
+
+Files:
+- source/destination verified through FileVerifier
+
+Windows:
+- actual bounds/monitor/state re-read
+
+Workspace:
+- each required component verified independently
+
+Virtual desktop:
+- active desktop/window placement verified where API allows
+
+Result:
+- verified_success
+- partial_success
+- unsupported_component
+- failed
+- rolled_back
+
+---
+
+### 30. Undo / rollback
+
+Undo supports:
+- file move organization
+- folder creation if unchanged/empty
+- shortcut create/remove when recoverable
+- window positions
+- monitor assignment
+- workspace state
+- icon state where supported
+
+Store:
+- operation ID
+- before/after paths
+- window bounds
+- monitor IDs
+- workspace profile
+- time
+- fingerprints
+
+---
+
+### 31. Massive language packs
+
+Critical intents target **1000–1500 examples each**:
+- desktop.files.organize
+- desktop.cleanup.preview
+- desktop.icons.auto_arrange
+- window.layout.apply/grid
+- window.snap.*
+- window.move_monitor
+- workspace.create/save_current/apply/restore
+- desktop.snapshot.restore
+
+Secondary intents: 500–1000.
+
+Mandatory axes:
+- formal
+- colloquial
+- one-word
+- incomplete
+- typo
+- STT
+- Persian-English
+- selected files
+- active windows
+- relative position
+- monitor reference
+- workspace alias
+- correction
+- negation
+- "فایل‌ها جابه‌جا نشن"
+- "چیزی پاک نکن"
+- preview request
+- undo
+- scheduled/conditional
+- multiple monitors
+- duplicate app windows
+- stale context
+- hard negatives
+
+Hard negatives:
+- "دسکتاپ رو مرتب کن" => requires semantic resolution
+- "آیکون‌ها رو مرتب کن" => visual only
+- "فایل‌ها رو مرتب کن" => file organization
+- "پنجره‌ها رو مرتب کن" => window layout
+- "دسکتاپ دوم" can mean monitor 2 or virtual desktop 2 depending context
+- "ببر صفحه دوم" => monitor 2
+- "برو دسکتاپ دوم" => virtual desktop
+- "همه رو ببند" => window/app close, not file delete
+- "دسکتاپ رو پاک کن" is destructive/ambiguous and must clarify
+
+Family target: tens of thousands of examples.
+
+---
+
+### 32. Skill / Agent package
+
+- \`DesktopOrchestrator\`
+- \`DesktopContextResolver\`
+- \`DesktopInspectionSkill\`
+- \`DesktopIconLayoutSkill\`
+- \`DesktopFileOrganizer\`
+- \`DesktopCleanupPlanner\`
+- \`DuplicateDetectionSkill\`
+- \`ShortcutSkill\`
+- \`WindowResolver\`
+- \`WindowLayoutSkill\`
+- \`SnapLayoutSkill\`
+- \`MonitorWindowPlacementSkill\`
+- \`WorkspaceManager\`
+- \`WorkspaceProfileSkill\`
+- \`WorkspaceSnapshotManager\`
+- \`VirtualDesktopAdapter\`
+- \`DesktopRuleEngine\`
+- \`DesktopPreviewPlanner\`
+- \`DesktopVerifier\`
+- \`DesktopUndoManager\`
+- \`DesktopPolicyGuard\`
+- \`DesktopLanguageAgent\`
+
+All register through Skill Registry / Tool Registry.
+
+---
+
+### 33. Test matrix
+
+Visual icons:
+- DO-A01 auto-arrange
+- DO-A02 sort by type
+- DO-A03 hide/show
+- DO-A04 restore if supported
+
+Files:
+- DO-B01 organize by type
+- DO-B02 preview-only
+- DO-B03 shortcuts preserved
+- DO-B04 collisions
+- DO-B05 project ambiguity
+- DO-B06 undo moves
+
+Windows:
+- DO-C01 two-column
+- DO-C02 three-column
+- DO-C03 duplicate app windows
+- DO-C04 minimized app
+- DO-C05 fullscreen app
+- DO-C06 restore layout
+
+Monitors:
+- DO-D01 move app to second monitor
+- DO-D02 stable monitor ID
+- DO-D03 monitor disconnected
+- DO-D04 topology changed
+
+Workspace:
+- DO-E01 save current
+- DO-E02 apply
+- DO-E03 missing app
+- DO-E04 browser profile
+- DO-E05 partial result
+- DO-E06 restore previous
+
+Virtual desktop:
+- DO-F01 create
+- DO-F02 switch
+- DO-F03 unsupported capability
+- DO-F04 move window
+
+Safety:
+- DO-G01 "چیزی پاک نکن"
+- DO-G02 ambiguous "دسکتاپ رو پاک کن"
+- DO-G03 batch preview
+- DO-G04 symlink/shortcut
+- DO-G05 shell namespace item
+
+Language:
+- DO-H01 typo
+- DO-H02 STT
+- DO-H03 monitor vs virtual desktop
+- DO-H04 icons vs files vs windows
+- DO-H05 stale context
+
+---
+
+### 34. Acceptance criteria
+
+1. visual icon arrangement and filesystem organization never conflate.
+2. broad file organization previews before moving by default.
+3. shortcuts/shell namespace items are treated safely.
+4. file operations delegate to FileOperationSkill and remain undoable.
+5. window layout uses stable window/monitor identities.
+6. multi-monitor assignment survives index/order changes when stable IDs exist.
+7. virtual desktop capability is feature-gated and does not depend blindly on unstable private APIs.
+8. workspace application reports partial failures honestly.
+9. "چیزی پاک نکن" causes zero delete operations.
+10. reversible organization/layout changes create undo snapshots.
+11. critical intents reach 1000–1500 examples.
+12. real Windows multi-window/multi-monitor tests pass before IMPLEMENTED.
+
+---
+
+### 35. Local implementation plan
+
+When MARIA Windows system is online:
+1. inspect current desktop/window handlers.
+2. inventory Explorer/Desktop shell behavior.
+3. add DesktopContextResolver.
+4. implement visual icon operations that are reliably supported.
+5. implement DesktopFileOrganizer on top of FileOperationSkill.
+6. add PreviewPlanner and Undo journal.
+7. implement stable WindowResolver.
+8. implement window layout/snap/monitor placement.
+9. implement WorkspaceManager.
+10. integrate Browser/Display/Audio/Focus profiles.
+11. add VirtualDesktopAdapter with capability detection.
+12. integrate Scheduler events.
+13. generate 1000–1500 language packs for critical intents.
+14. test real shortcuts/shell items/multiple monitors/windows.
+15. test layout restore after app/window recreation.
+16. mark only verified modules IMPLEMENTED.
