@@ -25475,3 +25475,1162 @@ This remains optional and is not required for the Windows Top Hub implementation
 **Visual/performance QA:** WAITING FOR LOCAL DISPLAY/GPU
 
 No redesign is expected before local integration. Remaining work is binding to real machine state, exact workbook profiles, testing, bug fixing and polish.
+
+---
+
+# MARIA TOP ISLAND / COMMAND HUB v3 — COUCOU-INSPIRED, MARIA-NATIVE
+
+**Status:** DESIGN COMPLETE v3 — IMPLEMENTATION-READY IN GITHUB — WAITING FOR LOCAL WINDOWS VERIFICATION  
+**Canonical UI direction:** top-of-screen rectangular floating island, hidden/peekable when idle, expandable into a multi-page Command Hub  
+**Important migration rule:** the old bottom-character Pin/Reminder UI is deprecated. Pin and Reminder/Automation data stores are preserved, but their canonical UI moves into Top Island v3.  
+**Reference style:** user-provided screenshots + public interaction patterns from Coucou. MARIA must use its own original icon/art/sound assets; the current simple squircle face is a temporary placeholder until the user chooses the final MARIA character.
+
+## 1. Product goal
+
+Top Island is not a decorative widget. It is the high-frequency operational surface for MARIA.
+
+It must provide:
+- quick access
+- live agent/task monitoring
+- approvals
+- Pin library
+- Reminders + real scheduled actions
+- Accounting Watch
+- shortcut launcher
+- drag/drop context
+- current MARIA state
+- task progress
+- warnings
+- settings
+- local sound controls
+- panel pinning
+- contextual add button
+- future modular pages
+
+The character below on the desktop remains a separate companion surface.  
+Top Island must not depend on the old bottom menu architecture.
+
+## 2. Shell state machine
+
+Canonical states:
+
+- hidden
+- peek
+- compact
+- expanded
+- modal
+- pinned_compact
+- pinned_expanded
+
+Transitions:
+
+- startup -> compact
+- no interaction for 60 seconds -> peek
+- pointer enters peek -> compact
+- click peek -> expanded or last-used state
+- click character/home -> toggle compact/expanded
+- click module -> expanded + selected page
+- open modal -> modal
+- close modal -> previous expanded page
+- panel Pin enabled -> no automatic hide
+- panel Pin disabled -> 60-second idle timer resumes
+- Escape from expanded -> compact
+- Escape from compact -> peek
+- active text input/dialog -> idle timer pauses
+- active external approval requiring user -> panel must remain visible until resolved or explicitly dismissed
+
+Default idle timeout: **60 seconds**.
+
+Configurable:
+- 30 sec
+- 60 sec
+- 120 sec
+- never
+
+## 3. Hidden / peek state
+
+When hidden at top:
+- only a narrow top tab/notch remains
+- current temporary MARIA face is visible
+- 2–3 tiny status dots show state
+- panel does not occupy a large visual area
+- mouse hover reveals compact island
+- clicking reveals full page
+- notification/approval may briefly peek the island
+
+Status dots:
+- violet = MARIA idle/ready
+- blue = thinking
+- green = completed/healthy
+- amber = waiting/user attention
+- red = error/blocked
+
+The dots are informational only; no color is the sole accessibility signal.
+
+## 4. Window behavior
+
+Windows implementation:
+- transparent frameless BrowserWindow
+- always-on-top floating level
+- skip taskbar
+- no unnecessary focus stealing
+- centered on selected monitor
+- DPI-aware
+- primary monitor baseline, future setting can choose monitor/follow pointer
+- window bounds controlled by state
+
+Baseline 1920px screen target:
+- peek: ~390–480 × 52
+- compact: ~720–980 × 86
+- expanded: ~820–1120 × ~610
+
+Responsive width is preferred over fixed pixel-only behavior.
+
+## 5. Visual language
+
+Theme direction from provided references:
+- near-black glass
+- soft navy/purple background
+- thin translucent border
+- violet/blue edge glow
+- subtle star/noise particles
+- glass blur
+- rounded bottom corners
+- compact neon indicators
+- colored progress bars
+- small technical labels
+- clean, high-contrast Persian text
+- no oversized decorative text in operational pages
+
+Design tokens baseline:
+- background: near-black / deep navy
+- main accent: violet
+- secondary: electric blue
+- success: mint/green
+- warning: warm amber/orange
+- danger: muted coral/red
+- primary text: off-white
+- secondary text: cool gray
+- blur: 28–34px
+- border: 1px translucent white
+- glow: soft, never large bloom that hurts readability
+
+## 6. Animation system
+
+Animation principles:
+- spring-like but restrained
+- 60 fps target
+- transform/opacity first
+- avoid layout-heavy animation
+- respect reduced-motion setting
+
+Core motions:
+- hidden notch slides from top edge
+- compact expands vertically into panel
+- selected page crossfades/slides 8–12px
+- character idle breath
+- blink
+- eyes follow pointer within small range
+- thinking = faster subtle breathing
+- executing = small pulse
+- success = tiny bounce
+- warning = one amber pulse
+- error = brief red edge pulse
+- pin toggle = small lock/snap animation
+- add button = short scale response
+- cards use 1px lift on hover
+
+No continuous expensive particle animation when panel is hidden.
+
+## 7. Top control bar
+
+Controls, from functional perspective:
+
+- MARIA character / Home
+- current status
+- live task pills
+- Home icon
+- Chat icon
+- context-aware Plus icon
+- panel Pin icon
+- panel Sound icon
+- Settings icon
+- collapse/hide control
+
+### Home
+Shows Agent Monitor dashboard.
+
+### Chat
+Opens MARIA chat surface.
+
+### Plus
+Behavior changes by current page:
+- Shortcuts -> add shortcut
+- Accounting -> add Excel monitor
+- Pins -> add Pin
+- Tasks -> create Reminder/Action
+- Home -> opens quick-create chooser
+- Reserved page -> page-specific future action
+
+### Panel Pin
+Pins **the Top Island itself**, not a data item.
+
+When enabled:
+- no idle auto-hide
+- icon visibly active
+- state persists across MARIA restart
+
+### Panel Sound
+Controls only Top Island UI sounds/alerts.
+
+It does NOT:
+- mute Windows
+- mute current movie/music
+- mute global MARIA voice unless user explicitly maps that behavior
+
+### Settings
+Opens Top Island Settings inside the rectangle, not a separate legacy Pins/Reminder window.
+
+## 8. Module navigation
+
+Canonical page registry:
+
+1. Home / Agent Monitor
+2. Quick Launch / میان‌برها
+3. Accounting Watch / گزارش ثبت
+4. Pins / پین‌ها
+5. Tasks & Automations / یادآور و اجرا
+6. Reserved Slot / بخش بعدی
+
+The registry is reorderable/configurable later.  
+Pages must not be hard-wired to navigation position.
+
+This keeps the user's requested "future empty slot" without forcing another rewrite.
+
+## 9. Page transition contract
+
+When a module icon is clicked:
+- old page stops accepting input
+- old page content exits
+- selected nav state changes
+- new page renders
+- scroll position is restored per page where useful
+- plus button updates to page-specific action
+- selected page persists as lastPage
+
+No stacked old/new content.
+
+## 10. Home / Agent Monitor
+
+Purpose:
+show what MARIA is doing right now.
+
+Cards:
+- active plan
+- current step
+- running tool
+- waiting for permission
+- waiting for user
+- scheduled action pending
+- last successful task
+- failed task
+- download/conversion progress
+- accounting warning
+- relevant service status
+
+Live pills:
+- compact task indicators on top bar
+- clicking pill opens its detail
+
+Coucou-inspired public interaction patterns adapted for MARIA:
+- live agent/session activity
+- step-by-step status
+- permission card
+- Allow / Review / Deny
+- jump/open the relevant app, terminal, file or web surface
+- built-in AI chat shortcut
+- drag/drop context
+- integrations represented as compact status pills
+- character reactions
+- hide when idle
+- open on hover
+- customizable keyboard shortcuts
+- weekly activity recap
+- custom UI sounds
+- optional media pill
+- multi-agent session cards
+
+MARIA-specific additions:
+- Planner graph status
+- Scheduler status
+- Windows/system state
+- accounting watch alerts
+- message send verification
+- current privacy mode
+- current owner/presence state
+- emergency stop button for active MARIA workflow
+
+## 11. Quick Launch
+
+Supports:
+- file
+- folder
+- application
+- URL
+- movie
+- music
+- project
+- workspace
+- contact/conversation
+- routine
+- MARIA action
+- command when explicitly configured and policy-approved
+
+Per shortcut:
+- title
+- icon
+- custom icon
+- type
+- target
+- group
+- global hotkey
+- open mode
+- pinned priority
+- health
+- last used
+- usage count
+
+UX:
+- first row/strip for favorites
+- wheel scroll when overflowed
+- "دیدن همه" when item count exceeds compact capacity
+- search
+- drag reorder later
+- broken target indicator
+- right-click/edit menu
+- custom icons
+- no arbitrary executable command runs without existing permission policy
+
+## 12. Pins — rebuilt canonical page
+
+Pin types:
+- text
+- prompt
+- URL
+- file
+- folder
+- image
+- audio
+- video
+- Excel
+- selected text
+- webpage
+- message
+- conversation
+- routine
+- project
+- workspace
+- checklist
+- note
+
+Pin fields:
+- title
+- type
+- body/reference
+- preview
+- source
+- tags
+- group
+- icon
+- accent
+- favorite
+- lock
+- sensitivity
+- health
+- lastUsed
+- useCount
+
+Actions:
+- open
+- copy
+- send
+- edit
+- duplicate
+- favorite
+- unpin
+- delete
+- convert to Shortcut
+- convert to Task
+- send to MARIA chat
+
+Search/filter:
+- group
+- type
+- tag
+- favorite
+- recent
+
+The old character-bottom Pin UI must no longer be the canonical route.
+
+## 13. Tasks / Reminders / Real Automations — rebuilt canonical page
+
+Three types:
+
+### Reminder
+MARIA only notifies the user.
+
+Example:
+"ساعت ۵ یادم بنداز فاکتورها رو چک کنم."
+
+### Scheduled Action
+MARIA performs a real action through Planner.
+
+Example:
+"ساعت ۹ پیام آخر Saved Messages تلگرام رو برای گروه شرکت بفرست."
+
+### Conditional Automation
+Action occurs when a condition becomes true.
+
+Example:
+"وقتی دانلود تموم شد فایل رو نصب کن."
+
+Task fields:
+- id
+- title
+- natural-language instruction
+- normalized plan summary
+- type
+- next run
+- recurrence
+- trigger
+- conditions
+- account/service
+- target
+- source
+- risk
+- permission scope
+- missed-run policy
+- retry policy
+- idempotency key
+- last run
+- last result
+- verification state
+- paused/enabled
+
+Actions:
+- Run now
+- Pause
+- Resume
+- Edit
+- Duplicate
+- Cancel
+- Delete
+- Show plan
+- Show history
+- Retry failed
+- Open result
+
+Examples this page must support:
+
+- at time T forward latest Telegram message from a private chat
+- at time T read a message from Saved Messages and send/forward it to selected groups
+- send to Telegram chat-folder recipient set
+- sleep PC
+- lock PC
+- remind user to perform a task
+- research a topic at time T and read/summarize report
+- download a user-authorized/legal file from official/allowed source
+- after download, remind to install
+- after download, automatically install/update if permissions allow
+- run a MARIA routine
+- run only if user is present
+- run when network returns
+
+Every real action still passes Planner, Permission, Risk, Idempotency and Verify.
+
+## 14. Accounting Watch — critical page
+
+This is a first-class operational page, not a generic spreadsheet widget.
+
+Maximum default active workbooks:
+**20**
+
+Default health refresh:
+**3 minutes**
+
+Fast refresh:
+event-driven on workbook/evidence-folder change.
+
+No 1-second full scan.
+
+## 15. Accounting Watch performance architecture
+
+Use:
+- fs.watch for saved workbook/evidence-folder changes
+- debounce ~1.8 seconds
+- immediate re-scan after change
+- 180-second fallback integrity scan
+- 2 concurrent workers maximum by default
+- hash/mtime checks to skip unchanged workbook
+- read-only OpenXML scan for .xlsx/.xlsm
+- Excel COM events later for open/unsaved workbook awareness
+- never open 20 Excel UI windows every three minutes
+
+This design is safe for ~20 monitored files and should not cause constant CPU/disk churn.
+
+## 16. Accounting file card
+
+Each workbook row displays:
+
+- pin/star
+- display name
+- parsed customer/party name
+- parsed invoice number
+- workbook type
+- total records
+- registered records
+- missing records
+- partial records
+- broken links
+- duplicate IDs
+- ID/path mismatch count
+- percent completion
+- last workbook modification
+- last scan
+- last open by MARIA
+- last user-open event when Excel COM event bridge is available
+- source availability
+- Open button
+- Details button
+
+Sorting:
+1. pinned
+2. source unavailable/error
+3. broken/duplicate/mismatch
+4. incomplete
+5. neutral
+6. complete
+
+Complete items naturally move to the bottom.
+Pin can override ordering.
+
+## 17. Workbook identity and invoice-number reuse
+
+Because invoice numbers can restart after older files are moved/backed up, invoice number alone is NOT a unique ID.
+
+Stable monitor identity uses:
+- full workbook path
+- internal monitor UUID
+- file fingerprint
+- configured cycle/period if needed
+- parsed filename only for display
+
+Example:
+"اسماعیل زاده 112"
+
+Display parsing:
+- party: اسماعیل زاده
+- invoice: 112
+
+But another future invoice "اسماعیل زاده 112" after archive is a different workbook cycle.
+
+## 18. Known accounting source layout
+
+User-provided current evidence folder:
+
+\Alimohajeristee\حسابداری\share 1405\pic\New folder (2)
+
+This path is treated as a configured evidence root.
+
+When the Windows machine is online:
+- verify whether it is a UNC/network path, mapped-drive path or local path
+- never silently rewrite it
+- verify read/write access
+- preserve last verified report if network share temporarily disappears
+- mark result stale instead of falsely showing zero
+
+## 19. Row detection model
+
+Current known baseline:
+- anchor/source column begins from C downward
+- evidence/photo-link area is around H and I
+- exact row start and record-type conditions must be configured from the real workbook
+
+The scanner must NOT guess a dangerous permanent mapping.
+
+Rule schema:
+
+- sheet selector
+- start row
+- end row optional
+- anchor columns
+- record classifier
+- evidence rules
+- evidence root
+- required count
+- hyperlink verification mode
+
+## 20. Receipt vs plate rules
+
+Required support:
+
+### Receipt / فیش
+Typical rule:
+- row represents a financial receipt
+- expected evidence count: 1 image
+
+### Plate / پلاک
+Typical rule:
+- row represents a plate/vehicle record
+- expected evidence count: 2 images
+
+Because the exact field that identifies receipt vs plate has not yet been provided, the system must expose a Cell Rule Wizard.
+
+Wizard:
+- "این ستون = رکورد"
+- "این ستون/سلول = نوع"
+- "وقتی مقدار شامل X است = فیش"
+- "وقتی مقدار شامل Y است = پلاک"
+- "این ستون = عکس ۱"
+- "این ستون = عکس ۲"
+- "شروع از این ردیف"
+- "این شیت‌ها را بررسی کن"
+
+Configuration can be done by:
+- typing column names
+- later, direct Excel Selection capture
+
+## 21. Registration definition
+
+A record is **registered** only when required evidence is verified.
+
+For numeric-linked evidence:
+- visible cell value contains a valid numeric ID
+- hyperlink exists
+- hyperlink resolves to a target
+- target file exists
+- numeric ID matches file name according to configured policy
+- no duplicate reservation/collision invalidates it
+
+A non-empty cell alone does NOT mean registered.
+
+## 22. Row states
+
+- complete
+- partial
+- missing
+- broken_link
+- numeric_id_missing
+- evidence_file_missing
+- id_target_mismatch
+- duplicate_id
+- source_unavailable
+- needs_configuration
+- unsupported
+
+For plate requiring two images:
+- 2/2 valid = complete
+- 1/2 valid = partial
+- 0/2 = missing
+
+## 23. Details view
+
+For each workbook:
+- per-sheet summary
+- exact missing rows
+- row number
+- source summary
+- record type
+- which image/evidence is missing
+- broken link details
+- duplicate IDs
+- invalid hyperlink target
+- quick open Excel
+- quick open evidence folder
+- refresh now
+- configure cell rules
+
+Future action:
+"Go to row" via Excel COM when local system is online.
+
+## 24. Numeric attachment ID allocator
+
+Requirement:
+new evidence file must never reuse an existing numeric name.
+
+Allocator:
+1. inspect evidence folder
+2. read all numeric file names
+3. read active MARIA reservations
+4. compute max + 1
+5. create atomic reservation lock
+6. assign unique ID
+7. rename/copy downloaded evidence
+8. verify final file
+9. write visible ID to Excel
+10. create hyperlink
+11. verify link target
+12. release reservation
+
+Existing backend uses a reservation directory:
+.maria-id-reservations
+
+This prevents two simultaneous tasks choosing the same number.
+
+## 25. Excel hyperlink insertion
+
+The user's manual workflow uses Ctrl+K.
+
+MARIA should not emulate Ctrl+K if structured Excel automation is available.
+
+Preferred implementation:
+- Excel COM/Object Model
+- set visible cell text to numeric ID
+- Hyperlinks.Add with exact target path
+- preserve displayed numeric ID
+- verify hyperlink target and cell
+- save only when user/task policy permits
+
+Keyboard Ctrl+K is fallback only.
+
+## 26. Evidence acquisition workflow
+
+Optional assisted workflow:
+
+"برای این فیش عکس رو ثبت کن."
+
+Plan:
+1. resolve workbook/sheet/row
+2. resolve downloaded image
+3. reserve next numeric ID
+4. rename/move/copy image according to configured policy
+5. verify file exists
+6. insert numeric value
+7. add hyperlink
+8. if plate requires second image, continue or mark partial
+9. save
+10. re-scan
+11. verify row complete
+
+No silent overwrite.
+
+## 27. Broken-link recovery
+
+If Excel contains numeric ID but link is broken:
+- search configured evidence root for matching numeric file
+- if exactly one valid target exists, offer/perform link repair according to policy
+- if multiple candidates exist, do not guess
+- if none exist, show missing file
+
+Visible numeric ID remains useful for manual recovery.
+
+## 28. Barبری special workbook
+
+Special type:
+transport / باربری
+
+Requirements:
+- one Excel workbook
+- multiple sheets
+- user chooses which sheets are monitored
+- exact evidence columns configured per sheet/profile
+- each verified unload photo counts as a completed unload
+- show per-sheet count
+- show total verified unload photos
+- label result as "تخلیه‌شده"
+- do not force invoice-style total if user only wants photo count
+
+Card example:
+- باربری
+- همتی: 34 تخلیه‌شده
+- اظهار: 18 تخلیه‌شده
+- Total: 52
+- last scan
+- quick open
+
+## 29. Pinned accounting monitors
+
+Accounting monitors can be pinned.
+
+Pin behavior:
+- stays near top
+- quick-open button always available
+- completion still visually shown
+- user can unpin
+- pinned is different from data Pin Library
+
+## 30. Last-open semantics
+
+Track separately:
+
+- lastModifiedAt: file mtime
+- lastScannedAt
+- lastOpenedByMaria
+- lastObservedExcelOpenAt (future COM event bridge)
+- lastObservedExcelSaveAt
+
+Do not pretend filesystem mtime equals "last time user opened Excel."
+
+## 31. Accounting stale-data policy
+
+If Share/evidence path disappears:
+- preserve last verified counts
+- mark stale
+- show amber warning
+- record staleSince
+- do not replace previous result with zero
+
+This is essential for network/share folders.
+
+## 32. Contextual status icons
+
+Use original MARIA icons with a consistent line/glow style.
+
+Examples:
+- registered = check
+- partial = half/ring
+- missing = hollow document/image
+- broken link = broken chain
+- duplicate ID = stacked numbers/warning
+- source offline = cloud/folder slash
+- unloaded = truck/check
+- shortcut = bolt/arrow
+- scheduled = clock
+- pin = pin
+- running = pulse
+- waiting = pause/hourglass
+
+Do not copy Coucou/Mochi brand assets.
+
+## 33. Character placeholder
+
+For Top Island v3, keep the current simple white squircle face as a temporary placeholder.
+
+States:
+- idle
+- listening
+- thinking
+- executing
+- success
+- warning
+- error
+- offline
+- privacy
+
+Later replacement must not require rewriting page architecture.
+
+Character is a slot/component:
+TopIslandCharacterAdapter
+
+## 34. Drag & drop
+
+Dropping a file on island opens context choices:
+- Ask MARIA
+- Pin
+- Translate
+- Send
+- Convert
+- Open
+- Add as shortcut
+
+Future:
+drop on Accounting page may offer:
+- add workbook monitor
+- use as evidence
+- compare with monitored workbook
+
+## 35. Keyboard shortcuts
+
+Configurable global shortcuts:
+- open Top Island
+- open Chat
+- show Home
+- show Shortcuts
+- show Accounting
+- show Pins
+- show Tasks
+- emergency stop
+- mute island
+- pin/unpin island
+
+Shortcut conflict detection is required.
+
+## 36. Weekly recap / activity recap
+
+Optional MARIA recap:
+- number of completed tasks
+- scheduled actions
+- failed/retried tasks
+- downloads
+- files processed
+- accounting items completed
+- messages sent after verification
+- research jobs
+- active time by project if user opts in
+
+Privacy:
+local aggregate only by default.
+
+## 37. Integration pills
+
+Potential compact pills:
+- GitHub
+- email
+- Telegram
+- WhatsApp
+- browser
+- downloads
+- media
+- scheduler
+- accounting
+- security
+- active AI model/provider
+
+Each pill:
+- healthy/offline/error/waiting state
+- click opens detail
+- no background polling faster than needed
+
+## 38. Top Island settings page
+
+Cards:
+
+### Behavior
+- Open on hover
+- Auto-hide timeout
+- Start expanded/compact
+- Remember last page
+- Stay pinned
+- screen/monitor
+
+### Appearance
+- theme
+- glow intensity
+- blur
+- density
+- reduced motion
+- character placeholder/adapter
+
+### Sound
+- Island sounds enabled
+- volume
+- alert sounds
+- custom sound mapping later
+
+### Notifications
+- approval alerts
+- accounting warnings
+- scheduled task completion
+- failures
+- important communication
+
+### Modules
+- show/hide page
+- reorder page icons
+- reserved slot assignment later
+
+## 39. Legacy Pin/Reminder UI migration
+
+Data must NOT be deleted.
+
+Preserve:
+- PinnedNoteStore
+- ReminderStore
+- existing IDs
+- schedules
+- recurrence
+- last results
+
+Change:
+- old bottom-character Pin/Reminder buttons are removed/deprecated
+- old standalone utility windows are no longer primary
+- requests to open legacy Pins/Reminders route to Top Island page
+- no duplicate Pin/Reminder UIs maintained long term
+
+Migration acceptance:
+- old items visible in new Top Island
+- no reminders lost
+- no scheduled action duplicated
+- no IDs regenerated
+
+## 40. Coucou-inspired capability mapping
+
+Public Coucou patterns useful to MARIA are incorporated as patterns, not as copied brand assets:
+
+- top-edge island on Windows
+- hidden when idle
+- open on hover
+- live agent session pills
+- permission cards
+- jump to relevant terminal/app
+- built-in AI chat
+- file drop
+- window/app context
+- service integrations
+- animated companion
+- customizable global shortcuts
+- weekly recap
+- multi-language UI
+- plan/usage status where provider exposes it
+- terminal/session awareness
+- media/Spotify-style control pill
+- custom sounds
+- multiple active agents
+
+MARIA extends this with:
+- Windows control
+- Planner/Routines
+- full Scheduler
+- Accounting Watch
+- messaging automation
+- Translation/OCR
+- Screen Understanding
+- Files/Office control
+- Presence/Owner identity
+- Gesture Control
+
+## 41. Performance budgets
+
+When idle/peek:
+- no 60fps decorative animation requirement
+- no aggressive network polling
+- no 1-second accounting scans
+- event-driven updates preferred
+
+Accounting:
+- <= 20 active by default
+- 2 scan workers default
+- debounce 1.8 sec
+- fallback scan 180 sec
+
+UI:
+- use transform/opacity animations
+- virtualize long lists later if >200 items
+- cap live event history in memory
+
+## 42. Error states
+
+Top Island must display useful errors:
+- workbook missing
+- share unavailable
+- permission denied
+- Excel protected
+- unsupported format
+- broken hyperlink
+- duplicate ID
+- scheduler blocked
+- task needs confirmation
+- app/service offline
+- shortcut target missing
+
+Never show generic "Error" if a classified cause is known.
+
+## 43. Test matrix — shell
+
+- TI-A01 startup compact
+- TI-A02 60s idle -> peek
+- TI-A03 hover peek -> compact
+- TI-A04 click peek -> expanded
+- TI-A05 panel pin prevents hide
+- TI-A06 unpin restores timer
+- TI-A07 sound toggle isolated from system sound
+- TI-A08 context Plus changes action
+- TI-A09 page transition clears old interaction state
+- TI-A10 settings persists
+
+## 44. Test matrix — shortcuts/pins/tasks
+
+- TI-B01 add/open file shortcut
+- TI-B02 URL
+- TI-B03 custom icon
+- TI-B04 overflow + scroll
+- TI-B05 broken target
+- TI-C01 existing old Pin migrates
+- TI-C02 Pin search/copy/open
+- TI-D01 reminder
+- TI-D02 scheduled action
+- TI-D03 conditional action
+- TI-D04 pause/resume
+- TI-D05 no duplicate external action after retry
+- TI-D06 scheduled Telegram workflow reaches Planner
+- TI-D07 sleep/lock action respects risk/policy
+
+## 45. Test matrix — Accounting Watch
+
+- TI-E01 20 files
+- TI-E02 saved workbook event triggers scan
+- TI-E03 evidence folder change triggers scan
+- TI-E04 unchanged file skipped on fallback
+- TI-E05 share unavailable keeps stale result
+- TI-E06 invoice filename parser
+- TI-E07 invoice number reused in different workbook does not merge
+- TI-E08 one-image receipt
+- TI-E09 two-image plate
+- TI-E10 partial 1/2 plate
+- TI-E11 missing hyperlink
+- TI-E12 hyperlink target missing
+- TI-E13 duplicate numeric ID
+- TI-E14 numeric ID/path mismatch
+- TI-E15 next ID atomic reservation
+- TI-E16 complete workbook sorts down
+- TI-E17 pinned workbook remains prioritized
+- TI-E18 transport multi-sheet count
+- TI-E19 exact user-selected sheets only
+- TI-E20 Excel COM direct hyperlink insertion
+- TI-E21 last user-open tracking
+- TI-E22 protected/locked workbook
+- TI-E23 xls unsupported path explicitly reported or COM fallback used
+
+## 46. Existing code mapping
+
+Current repository already contains:
+- src/renderer/topIsland.js
+- src/renderer/topIsland.css
+- src/agent/QuickShortcutStore.js
+- src/agent/PinnedNoteStore.js
+- src/agent/ReminderStore.js
+- src/agent/AccountingReportStore.js
+- src/agent/AccountingMonitorService.js
+- src/agent/AccountingWorkbookScanner.js
+- src/agent/AccountingEvidenceResolver.js
+- src/agent/AttachmentIdAllocator.js
+- src/main/preload.cjs
+- src/main/main.js
+
+Therefore implementation is an upgrade/migration, not a greenfield rewrite.
+
+## 47. Local integration sequence
+
+When MARIA Windows is online:
+
+1. sync exact GitHub commit
+2. backup current local app data
+3. inspect actual Top Island rendering
+4. verify monitor DPI/top-edge placement
+5. migrate Pin/Reminder routes
+6. verify no duplicate scheduled jobs
+7. activate 60s hide/peek behavior
+8. verify panel pin
+9. verify panel-only sound mute
+10. verify contextual Plus
+11. verify module navigation
+12. test Quick Launch targets
+13. connect Excel COM Selection Wizard
+14. verify real workbook columns/sheets with the user
+15. define receipt vs plate classifier
+16. test H/I or actual evidence columns
+17. verify evidence share path
+18. test next numeric image ID
+19. test hyperlink insert and reopen
+20. configure Barبری sheets/columns
+21. run 20-file performance test
+22. run Scheduler/Planner examples
+23. remove any remaining legacy bottom Pin/Reminder entry points
+24. run full regression
+25. only then mark Top Island v3 IMPLEMENTED
+
+## 48. Final status
+
+**TOP ISLAND / COMMAND HUB v3 DESIGN: COMPLETE**
+
+The UI/UX, data flow, accounting model, task model, Pin migration, performance policy and local integration sequence are now defined in enough detail that the online phase should be implementation verification and bug-fixing rather than redesign.
