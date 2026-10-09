@@ -21904,3 +21904,800 @@ When MARIA Windows system is online:
 19. run destructive/external-action safety tests.
 20. run real end-to-end workflows across Browser, Files, Office, Messaging, Scheduler and System controls.
 21. mark Planner/Routines IMPLEMENTED only after all core flows verify.
+
+---
+
+# FINAL CROSS-CAPABILITY REVIEW — DESIGN FREEZE CANDIDATE
+
+**Status:** COMPLETE — READY FOR LOCAL IMPLEMENTATION VALIDATION  
+**Scope:** all 22 capability families + deferred Email/Notification experience + Coucou-inspired desktop companion patterns + cross-skill safety/verification/language consistency  
+**Important:** This status means the **design/specification is complete**. It does NOT mean the features are already implemented on the user's Windows MARIA system.
+
+## A. Final architecture convergence
+
+All capability families must converge on the same runtime spine:
+
+Normalize Input  
+→ Typo/STT Recovery  
+→ Semantic Intent  
+→ Slot/Entity Extraction  
+→ Context Resolution  
+→ Capability/Skill Resolution  
+→ Permission/Risk Check  
+→ Planner/Task Graph  
+→ Execute  
+→ Verify  
+→ Undo/Rollback/Recovery  
+→ Audit  
+→ Memory/Learning only when allowed
+
+No capability may bypass this spine for convenience.
+
+### Unified runtime modules
+
+- Maria Core
+- Intent Router
+- Context Engine
+- Skill Registry
+- Tool Registry
+- Capability Manifest Registry
+- Model Router
+- Memory
+- RAG / Knowledge
+- Planner
+- Executor
+- Verifier
+- Permission Layer
+- Event Bus
+- Scheduler
+- Notification Center
+- Audit Log
+- Update Manager
+- Failure/Recovery Coordinator
+
+## B. One canonical action language
+
+All Skills must expose stable internal actions.
+
+Examples:
+- audio.volume.set
+- browser.tab.close
+- file.move
+- message.send_text
+- schedule.create_once
+- office.excel.range.set_values
+- translate.selection
+- screen.find_element
+- webapp.form.submit
+- workspace.apply
+- planner.execute
+
+Natural Persian/English/mixed-language input maps into these canonical actions.
+
+The runtime must NOT become a giant collection of exact spoken phrases.
+
+## C. Final ambiguity-routing matrix
+
+The following high-frequency ambiguous phrases require Context Engine routing:
+
+### "قطعش کن"
+Possible:
+- audio.mute
+- media.pause/stop
+- network.disconnect
+- bluetooth.device.disconnect
+- call/session termination
+- download.cancel
+
+Resolver uses:
+- current target
+- current task
+- last explicit noun
+- active app/media
+- expected reversible action
+
+### "پاکش کن"
+Possible:
+- clear text
+- delete file
+- delete message
+- delete record
+- remove playlist item
+- clear clipboard
+- remove formatting
+- unsave Pinterest item
+
+Destructive ambiguity must never execute silently.
+
+### "برگرد"
+Possible:
+- browser.back
+- undo
+- restore_previous_setting
+- previous app/window
+- previous media item
+- planner.rollback
+- previous workspace
+
+### "ذخیره کن"
+Possible:
+- save document
+- Save As
+- download
+- bookmark
+- Pinterest save
+- Watch Later
+- save attachment
+- save screenshot
+
+### "اینو بفرست"
+Must resolve:
+- source object: selected text/file/image/message/link/result
+- destination service
+- recipient/conversation
+- account/profile
+- whether user means type/draft/send
+
+### "بازش کن"
+Possible:
+- open file
+- open folder
+- open app
+- open URL
+- open message
+- open archive vs extract
+- open web-app object
+
+### "خاموشش کن"
+Possible:
+- shutdown system
+- display off
+- Wi-Fi off
+- Bluetooth off
+- mute audio
+- disable feature/rule
+
+These phrases are mandatory cross-domain hard-negative datasets.
+
+## D. Unified object reference model
+
+Short-lived contextual references must use typed handles:
+
+- current_app
+- active_window
+- active_browser_tab
+- current_webapp
+- current_account
+- current_conversation
+- selected_text
+- selected_files
+- selected_image
+- selected_excel_range
+- current_media
+- current_download
+- current_workspace
+- current_plan
+- last_result
+- last_error
+- current_screen_region
+
+References expire when stale.
+
+No Skill may reuse stale browser DOM IDs, window handles, file paths, Office object refs or screen coordinates without revalidation.
+
+## E. Unified account / identity model
+
+Account identity must be separated across layers:
+
+- Windows user
+- browser profile
+- website account
+- app account
+- email account
+- service workspace/team/tenant
+
+Example:
+Chrome profile "Work" does NOT automatically prove Gmail/ChatGPT account identity.
+
+Before external write actions:
+1. verify service
+2. verify account
+3. verify workspace/team when relevant
+4. verify target recipient/object
+5. verify payload
+6. commit
+7. verify result
+
+## F. Unified Permission / Risk model
+
+Final levels:
+
+- **L0** read-only / inspect
+- **L1** low-risk local/reversible
+- **L2** reversible content/state changes
+- **L3** disruptive or external side effects
+- **L4** destructive / sensitive / security / bulk external
+- **L5** system-critical / payment / account deletion / core-security weakening
+
+Rules:
+- a Plan inherits the highest relevant risk
+- a Routine cannot hide a high-risk action
+- external sends/publishes/deletes are verified
+- permissions are scoped to exact target/action where possible
+- "هر کاری لازمه" never means unlimited authority
+
+## G. Unified verification contract
+
+Every state-changing Skill must define:
+- expected pre-state
+- action
+- expected post-state
+- verifier
+- timeout
+- failure states
+- retry rule
+- rollback rule if available
+
+MARIA must never equate:
+- click succeeded
+- process launched
+- command returned zero
+- UI changed
+
+with final task success unless the intended state is actually verified.
+
+## H. Unified undo / rollback contract
+
+Reversible actions should store:
+- operation_id
+- target identity
+- before state
+- after state
+- timestamp
+- source Skill
+- rollback handler
+
+Examples:
+- file move
+- display/audio setting
+- window layout
+- Office edit
+- workspace switch
+- temporary firewall rule
+- clipboard replacement
+- translation replacement
+
+Irreversible actions must be explicitly marked:
+- sent external message
+- payment
+- permanent deletion
+- account deletion
+- completed shutdown/sign-out
+- some web-app transactions
+
+## I. Unified Event Bus
+
+All proactive/conditional behaviors should publish/subscribe through one Event Bus.
+
+Core event families:
+- email.new
+- message.new
+- download.completed
+- file.created
+- file.changed
+- network.online
+- network.offline
+- battery.threshold
+- app.started
+- app.closed
+- system.wake
+- user.login
+- presence.left
+- presence.returned
+- gesture.triggered
+- security.warning
+- job.completed
+- webapp.job.completed
+- screen.error_detected
+
+Scheduler/Planner consumes events rather than every Skill inventing its own watcher.
+
+## J. Email / Notification Experience — FINAL INTEGRATION
+
+This deferred requirement is now promoted into the final runtime design.
+
+### J1. Email awareness
+
+MARIA should support:
+- unread count
+- new-mail event
+- important-mail candidate
+- sender-specific alerts
+- account-specific notifications
+- search/read/summarize
+- read aloud
+- attachment awareness
+- verification-code candidate
+- compose/draft/reply/forward/send
+- account switching
+
+### J2. Notification Center
+
+A unified MARIA Notification Center should aggregate:
+- email
+- messaging services
+- downloads
+- scheduled jobs
+- security alerts
+- failed automations
+- completed long-running tasks
+- app/web-app events
+- presence-delayed notifications
+
+Notification objects:
+- source
+- account
+- severity
+- timestamp
+- safe preview
+- action buttons
+- privacy level
+- read/unread
+- expiry
+- related task ID
+
+### J3. Privacy-first preview
+
+Default notification preview:
+- service
+- sender/source
+- subject/title
+- safe short preview
+
+Sensitive content is hidden or summarized unless user explicitly opts in.
+
+### J4. Continuation commands
+
+After an email/message notification:
+
+- "بخونش"
+- "خلاصه کن"
+- "جواب بده"
+- "فایلش رو باز کن"
+- "پیوست رو ذخیره کن"
+- "برای بعد نگه دار"
+- "این یکی مهمه"
+- "دیگه از این فرستنده بلند نخون"
+
+Context Engine must bind "ش" / "این یکی" to the notification object.
+
+### J5. Voice behavior
+
+AssistantVoiceSkill integrates with notifications.
+
+User preferences:
+- announce only important
+- sender only
+- sender + subject
+- full read on request
+- no read aloud when Presence says user absent
+- no sensitive read aloud when possible onlooker detected
+- silent during Focus mode
+
+### J6. Background watcher behavior
+
+EmailWatcher and connector event streams should be:
+- event-driven where possible
+- bounded polling only as fallback
+- account-specific
+- privacy-safe
+- reconnect-aware
+- deduplicated
+
+No aggressive polling.
+
+### J7. Compact inbox panel
+
+Future UI component can show:
+- account switcher
+- unread count
+- latest messages
+- important marker
+- quick actions
+- read/summarize/reply
+- attachment indicator
+- notification privacy state
+
+This is UI on top of existing Email/Connector architecture, not a separate logic stack.
+
+## K. Coucou-inspired desktop companion review — FINAL INTEGRATION
+
+The user requested a later review of useful interaction patterns inspired by Coucou-like desktop companions.
+
+MARIA should adopt **general interaction patterns**, not proprietary branding/code/internals.
+
+### K1. Ambient presence
+
+MARIA can remain lightly available on desktop:
+- compact character/window
+- minimal idle presence
+- expandable quick panel
+- keyboard/voice invocation
+- wake-word integration
+- context-aware quick actions
+
+### K2. Non-intrusive proactive behavior
+
+MARIA may surface:
+- important email
+- failed scheduled task
+- download finished
+- security warning
+- reminder
+- workflow awaiting user
+
+It must avoid:
+- constant interruptions
+- reading private content without permission
+- unnecessary popups
+- repetitive confirmations for low-risk actions
+
+### K3. Return / idle behavior
+
+With Presence + Scheduler:
+- when user returns: show concise "what changed"
+- when user goes away: suppress non-urgent voice output
+- after long idle: retain tasks safely
+- do not cancel downloads/uploads unless rule says so
+
+### K4. Personality reactions
+
+MARIA can express state through:
+- character expression
+- short text reaction
+- voice style
+- subtle animation
+
+Examples:
+- listening
+- thinking
+- executing
+- success
+- warning
+- waiting
+- offline
+- privacy mode
+
+Personality must never obscure task status or safety warnings.
+
+### K5. Voice/Text handoff
+
+Examples:
+- voice command begins task
+- text panel shows plan/status
+- user edits text before send
+- voice asks follow-up
+- user clicks confirmation
+
+The same task object persists across modalities.
+
+### K6. Quick Actions
+
+Contextual quick actions:
+- current file
+- current browser page
+- selected text
+- latest email
+- current media
+- current error
+- active app
+
+Examples:
+- Summarize
+- Translate
+- Send
+- Copy
+- Explain
+- Open folder
+- Fix issue
+- Add reminder
+
+### K7. App/context awareness
+
+Companion UI can adapt to:
+- Browser active
+- Office active
+- media playing
+- message notification
+- error dialog
+- selected file
+- current workspace
+
+It should expose relevant actions without taking control automatically.
+
+## L. Proactive Assistant policy
+
+MARIA may be proactive only when:
+- user has enabled the category
+- event has clear relevance
+- privacy policy allows it
+- frequency/cooldown allows it
+
+Categories:
+- important communications
+- security
+- scheduled task failure
+- completion of long-running user task
+- reminders
+- explicit watched condition
+
+Default behavior should not become an attention-hijacking notification engine.
+
+## M. Unified failure language
+
+All Skills should return common result semantics:
+
+- success_verified
+- success_unverified
+- partial
+- waiting_for_user
+- waiting_for_network
+- waiting_for_event
+- permission_required
+- unsupported
+- ambiguous
+- retryable_failure
+- terminal_failure
+- canceled
+- rolled_back
+
+User-facing language should be precise:
+- "انجام شد و بررسی شد"
+- "دستور اجرا شد ولی نتیجه هنوز تأیید نشده"
+- "دو مرحله موفق شد، یک مرحله ناموفق بود"
+- "برای ادامه باید خودت CAPTCHA رو انجام بدی"
+
+## N. Cross-capability anti-duplication rules
+
+Ownership is final:
+
+- Files owns filesystem mutation
+- Browser owns browser/tab/page mechanics
+- Web-App owns app semantics/workflows
+- Messaging owns communication side effects
+- Scheduler owns future/conditional execution
+- Planner owns composition
+- Office owns Office document objects
+- Translation/OCR owns translation and OCR
+- Screen owns perception
+- Selection owns current selected/focused objects
+- Security owns security controls/scans
+- Download/Convert owns transfer/conversion/archive
+- Workspace owns window/layout/workspace
+- Presence owns presence context
+- Gesture owns gesture recognition only
+- Audio/Display own their device domains
+
+Higher layers orchestrate; they do not reimplement lower-layer logic.
+
+## O. Unified offline/online behavior
+
+Each Skill manifest declares:
+- offline_supported
+- online_required
+- connector_required
+- degraded_mode
+- retry_on_reconnect
+
+Planner/Scheduler can then decide:
+- execute locally now
+- queue until online
+- use fallback
+- ask user
+- expire after deadline
+
+## P. Connector / Plugin final policy
+
+Preferred integration order:
+1. official structured connector/API
+2. official SDK
+3. service-specific authorized browser/web-app adapter
+4. generic browser/UI automation
+5. visual fallback
+
+Connectors must declare:
+- permissions
+- read/write actions
+- event support
+- account identity
+- health
+- version
+- auth state
+
+Secrets live in secure OS/provider storage, not conversation memory or plain config.
+
+## Q. Language Pack final governance
+
+Global standards are now frozen:
+
+### Critical daily intents
+**1000–1500** high-quality examples each
+
+### Secondary intents
+**500–1000**
+
+### Rare/specialized intents
+**250–500**
+
+Datasets include:
+- curated natural speech
+- colloquial Persian
+- incomplete commands
+- typo/STT noise
+- Persian-English mix
+- context references
+- corrections
+- negation
+- multi-action
+- scheduling
+- conditional language
+- permission/failure states
+- hard negatives
+- boundary/adversarial examples
+
+Quality requirements:
+- deduplicate trivial paraphrases
+- separate train/dev/test
+- held-out evaluation must not use the exact generation templates
+- tag intent/slots/context/risk/expected outcome
+- secrets synthetic/redacted
+
+## R. Acceptance gate before any capability becomes IMPLEMENTED
+
+A capability may be marked IMPLEMENTED only when:
+
+1. real code exists on the actual MARIA system
+2. Skill/Tool manifests are registered
+3. target Windows/app/service integration works
+4. canonical intents resolve
+5. relevant language tests pass
+6. permission/risk tests pass
+7. failure handling passes
+8. verification passes
+9. rollback passes where promised
+10. real user workflow test passes
+11. GitHub and local version are synced
+
+Spec completion alone is never implementation completion.
+
+## S. Local implementation readiness order
+
+When the Windows MARIA machine becomes available, implementation should proceed in integration-first phases:
+
+### Phase 0 — Reality check
+- inspect local repo
+- compare local branch/commit with GitHub
+- inspect existing architecture
+- inspect installed dependencies/apps
+- inspect Windows version/build
+- inspect current MARIA UI/runtime
+- create safe working branch/checkpoint
+
+### Phase 1 — Core contracts
+- Skill Registry
+- Tool Registry
+- Capability Manifests
+- canonical intent schema
+- typed context objects
+- unified result types
+- Permission Layer
+- Verifier contract
+- Audit log
+
+### Phase 2 — Core Windows control
+- Audio
+- Display
+- Files
+- App/Settings
+- Power/Security
+- Desktop/Selection
+
+### Phase 3 — Browser/Web
+- Browser Companion
+- Account resolver
+- Web Search
+- Web-App Agent
+- Download/Convert
+
+### Phase 4 — Communication
+- Gmail/Email connector
+- Messaging
+- multi-account
+- notification/event integration
+- scheduled send
+
+### Phase 5 — Office/Perception
+- Excel/Office
+- Translation/OCR
+- Screen Understanding
+
+### Phase 6 — Intelligence layer
+- Planner
+- Scheduler
+- Routines
+- Recovery
+- Checkpoint/Idempotency
+
+### Phase 7 — Presence/Interaction
+- Wake word
+- Presence
+- Gesture
+- companion UI/personality
+- proactive notification UX
+
+### Phase 8 — Language materialization
+- LanguagePackBuilder
+- generate/version datasets
+- held-out tests
+- regression suite
+
+### Phase 9 — End-to-end hardening
+- cross-skill workflows
+- multi-account tests
+- restart/offline/network-loss
+- permission/safety
+- rollback
+- UI drift
+- performance
+- startup/update
+- installer/package
+- release candidate
+
+## T. GitHub ↔ local synchronization protocol
+
+When local system becomes available:
+
+1. identify current local commit
+2. identify GitHub design/main commits
+3. diff local vs remote
+4. never overwrite uncommitted user work
+5. create backup/checkpoint
+6. pull/rebase/merge safely
+7. implement against real architecture
+8. run tests
+9. fix failures
+10. commit code
+11. push GitHub
+12. verify remote SHA
+13. only then update capability status to IMPLEMENTED
+
+This directly answers the user's earlier requirement that GitHub remains the durable source of design truth until the local system is online.
+
+## U. Final missing-capability check
+
+The review found no missing **top-level** capability family that requires adding a 23rd main roadmap item before local implementation.
+
+Important behaviors not deserving separate top-level duplication are already covered through composition:
+- email notification experience → Email + Event Bus + Voice + Presence + Notification Center
+- ChatGPT/Claude/Qwen/DeepSeek → Web-App + Messaging/AI adapters
+- scheduled send/actions → Scheduler + Planner
+- desktop companion behavior → Workspace + Presence + Voice + UI
+- quick actions → Selection + Context + Planner
+- screen-based actions → Screen perception + owning Skill
+- Wake Word → Voice/activation layer in local implementation
+- routines → Planner + Scheduler
+- plugin/connectors → Connector Registry
+- app/web dual surfaces → Surface Resolver
+
+If a new domain emerges during real implementation, it can be added without changing the core architecture.
+
+## V. DESIGN FREEZE decision
+
+The 22-family capability architecture plus deferred final enhancements is now considered:
+
+**DESIGN COMPLETE — FREEZE CANDIDATE — READY FOR LOCAL IMPLEMENTATION**
+
+Design may still evolve when real Windows testing exposes machine-specific requirements, but no major planning gap currently blocks implementation.
+
+The next major milestone is **LOCAL IMPLEMENTATION & INTEGRATION**, not another speculative capability-design round.
+
