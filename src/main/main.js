@@ -10,6 +10,7 @@ import { pinnedNotes } from '../agent/PinnedNoteStore.js';
 import { quickShortcuts } from '../agent/QuickShortcutStore.js';
 import { accountingReports } from '../agent/AccountingReportStore.js';
 import { AccountingMonitorService } from '../agent/AccountingMonitorService.js';
+import { attachmentIdAllocator } from '../agent/AttachmentIdAllocator.js';
 import { runTool } from '../agent/toolRegistry.js';
 import { projectService } from '../agent/ProjectService.js';
 import { Phase1DependencyManager } from './Phase1DependencyManager.js';
@@ -140,7 +141,7 @@ ipcMain.handle('shortcuts:list',()=>quickShortcuts.list({limit:1000}));
 ipcMain.handle('shortcuts:create',async(_e,payload)=>{const item=await quickShortcuts.create(payload||{});send({type:'data-changed',store:'shortcuts'});return item;});
 ipcMain.handle('shortcuts:update',async(_e,payload)=>{const item=await quickShortcuts.update(String(payload?.id||''),payload?.patch||payload||{});send({type:'data-changed',store:'shortcuts'});return item;});
 ipcMain.handle('shortcuts:remove',async(_e,id)=>{const ok=await quickShortcuts.remove(String(id||''));send({type:'data-changed',store:'shortcuts'});return ok;});
-ipcMain.handle('shortcuts:open',async(_e,id)=>{const item=(await quickShortcuts.list({limit:1000})).find(x=>x.id===String(id||''));if(!item)throw new Error('Shortcut not found');const target=String(item.target||'').trim();if(item.kind==='agent'||item.kind==='routine')return agent.chat(target,{profile:'quick-shortcut'});if(/^https?:\/\//i.test(target)){await shell.openExternal(target);return {ok:true,type:'url',target};}const error=await shell.openPath(target);if(error)throw new Error(error);return {ok:true,type:'path',target};});
+ipcMain.handle('shortcuts:open',async(_e,id)=>{const sid=String(id||''),item=(await quickShortcuts.list({limit:1000})).find(x=>x.id===sid);if(!item)throw new Error('Shortcut not found');const target=String(item.target||'').trim();let result;if(item.kind==='agent'||item.kind==='routine')result=await agent.chat(target,{profile:'quick-shortcut'});else if(/^https?:\/\//i.test(target)){await shell.openExternal(target);result={ok:true,type:'url',target};}else{const error=await shell.openPath(target);if(error)throw new Error(error);result={ok:true,type:'path',target};}await quickShortcuts.markUsed(sid);send({type:'data-changed',store:'shortcuts'});return result;});
 
 ipcMain.handle('accounting:dashboard',()=>accountingReports.dashboard());
 ipcMain.handle('accounting:create-monitor',async(_e,payload)=>{const item=await accountingReports.createMonitor(payload||{});await accountingMonitor.rebuildWatchers();await accountingMonitor.refreshOne(item.id,{force:true,reason:'created'});send({type:'data-changed',store:'accounting'});return item;});
@@ -149,6 +150,10 @@ ipcMain.handle('accounting:remove-monitor',async(_e,id)=>{const ok=await account
 ipcMain.handle('accounting:refresh',(_e,payload)=>accountingMonitor.refresh({force:Boolean(payload?.force),reason:'manual'}));
 ipcMain.handle('accounting:rebuild-watchers',()=>accountingMonitor.rebuildWatchers());
 ipcMain.handle('accounting:open-monitor',async(_e,id)=>{const item=(await accountingReports.listMonitors()).find(x=>x.id===String(id||''));if(!item)throw new Error('Accounting workbook not found');const error=await shell.openPath(item.path);if(error)throw new Error(error);await accountingReports.markOpened(item.id);send({type:'data-changed',store:'accounting'});return {ok:true,path:item.path};});
+ipcMain.handle('accounting:open-evidence-root',async(_e,id)=>{const item=(await accountingReports.listMonitors()).find(x=>x.id===String(id||''));if(!item)throw new Error('Accounting workbook not found');const root=String(item.profile?.evidenceRoot||item.profile?.attachmentRoot||'').trim();if(!root)throw new Error('Evidence root is not configured');const error=await shell.openPath(root);if(error)throw new Error(error);return {ok:true,path:root};});
+ipcMain.handle('accounting:reserve-attachment-id',async(_e,id)=>{const item=(await accountingReports.listMonitors()).find(x=>x.id===String(id||''));if(!item)throw new Error('Accounting workbook not found');const root=String(item.profile?.evidenceRoot||item.profile?.attachmentRoot||'').trim();if(!root)throw new Error('Evidence root is not configured');return attachmentIdAllocator.reserve(root);});
+ipcMain.handle('accounting:release-attachment-id',async(_e,reservation)=>attachmentIdAllocator.release(reservation||{}));
+ipcMain.handle('accounting:inspect-attachment-ids',async(_e,id)=>{const item=(await accountingReports.listMonitors()).find(x=>x.id===String(id||''));if(!item)throw new Error('Accounting workbook not found');const root=String(item.profile?.evidenceRoot||item.profile?.attachmentRoot||'').trim();if(!root)throw new Error('Evidence root is not configured');return attachmentIdAllocator.inspect(root);});
 
 ipcMain.handle('assets:list-local',()=>localAssets.list());
 ipcMain.handle('assets:read-local',(_e,name)=>localAssets.read(String(name||'')));
@@ -178,6 +183,9 @@ ipcMain.handle('pins:update',async(_e,payload)=>{const item=await pinnedNotes.up
 ipcMain.handle('pins:remove',async(_e,id)=>{const ok=await pinnedNotes.remove(String(id||''));send({type:'data-changed',store:'pins'});return ok;});
 ipcMain.handle('reminders:list',()=>reminders.list());
 ipcMain.handle('reminders:create',async(_e,payload)=>{const item=payload?.kind==='action'?await reminders.createAction(payload):await reminders.create(payload||{});send({type:'data-changed',store:'reminders'});return item;});
+ipcMain.handle('reminders:update',async(_e,payload)=>{const item=await reminders.update(String(payload?.id||''),payload?.patch||{});send({type:'data-changed',store:'reminders'});return item;});
+ipcMain.handle('reminders:pause',async(_e,id)=>{const item=await reminders.pause(String(id||''));send({type:'data-changed',store:'reminders'});return item;});
+ipcMain.handle('reminders:resume',async(_e,id)=>{const item=await reminders.resume(String(id||''));send({type:'data-changed',store:'reminders'});return item;});
 ipcMain.handle('reminders:cancel',async(_e,id)=>{const ok=await reminders.cancel(String(id||''));send({type:'data-changed',store:'reminders'});return ok;});
 ipcMain.handle('system:diagnostics',async()=>({dependencies:await deps.status(),speech:await speech.status(),presence:presence.status(),startup:startupStatus(),admin:await isAdmin(),packaged:app.isPackaged,version:app.getVersion()}));
 ipcMain.handle('system:install-dependency',(_e,id)=>deps.install(String(id||'')));
