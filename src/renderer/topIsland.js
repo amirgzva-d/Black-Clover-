@@ -53,6 +53,7 @@ function setMode(next){
 function armIdle(){
   clearTimeout(idleTimer);
   if(prefs.panelPinned)return;
+  if(Number(prefs.autoHideSeconds)===0)return;
   const delay=Math.max(15,Number(prefs.autoHideSeconds)||60)*1000;
   idleTimer=setTimeout(()=>{
     if($('.hub-overlay')||$('input:focus,textarea:focus,select:focus,button:focus-visible')){armIdle();return;}
@@ -434,14 +435,14 @@ function pinEditor(item=null){
     onSubmit:async fd=>{
       const payload={id:item?.id,title:fd.get('title'),type:fd.get('type'),body:fd.get('body'),text:fd.get('body'),tags:String(fd.get('tags')||'').split(',').map(x=>x.trim()).filter(Boolean),group:fd.get('group'),pinned:true};
       if(item)await window.blackClover.updatePin(payload);else await window.blackClover.createPin(payload);
-      await renderTasks();
+      await renderPins();
     }
   });
   if(item)$('[data-delete-pin]',overlay)?.addEventListener('click',async()=>{
     if(!confirm(`پین «${item.title||'این مورد'}» حذف شود؟`))return;
     await window.blackClover.removePin(item.id);
     overlay.remove();
-    await renderTasks();
+    await renderPins();
   });
   return overlay;
 }
@@ -646,7 +647,7 @@ export async function mountTopIsland(){
   document.body.addEventListener('change',e=>{
     if(e.target.matches('[data-setting-timeout]')){
       const value=Number(e.target.value);
-      savePrefs({autoHideSeconds:value===0?86400:value});
+      savePrefs({autoHideSeconds:value});
       armIdle();
     }
   });
