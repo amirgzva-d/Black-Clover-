@@ -25,8 +25,8 @@ From this point forward, every new capability specification is appended to the s
 | 17 | Screenshot / screen understanding | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 18 | Downloads / format conversion / archive | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 19 | Web-app automation incl. ChatGPT | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 20 | Face presence (future) | NEXT FUTURE-DESIGN | WAITING |
-| 21 | Gesture control (future) | FUTURE | WAITING |
+| 20 | Face presence (future) | DESIGN COMPLETE v1 FUTURE-ADVANCED | WAITING |
+| 21 | Gesture control (future) | NEXT FUTURE-DESIGN | WAITING |
 | 22 | Multi-step planner / routines | QUEUED | WAITING |
 
 ## Global understanding requirements
