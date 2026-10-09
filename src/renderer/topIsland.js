@@ -367,27 +367,80 @@ async function showReportDetails(id){
 }
 function openCellDefinition(m){
   const p=m.profile||{};
+  const receiptRule=(p.rules||[]).find(r=>r.type==='receipt')||{};
+  const plateRule=(p.rules||[]).find(r=>r.type==='plate')||{};
+  const generic=(p.evidence||[])[0]||{};
   openOverlay({
-    title:'تعریف سلول‌های بررسی',
-    subtitle:'CELL RULE WIZARD • STAGED',
+    title:'تعریف دقیق سلول‌های بررسی',
+    subtitle:'ACCOUNTING CELL RULE WIZARD',
     wide:true,
     body:`
-      <div class="config-note"><b>مرحله آنلاین: انتخاب مستقیم از Excel</b><span>وقتی سیستم در دسترس باشد، دکمه‌های «این ستون = رکورد»، «این ستون = عکس ۱» و «این ستون = عکس ۲» از Selection واقعی Excel مقدار می‌گیرند. فعلاً می‌توانی تعریف متنی را ذخیره کنی.</span></div>
+      <div class="config-note"><b>مرحله آنلاین: انتخاب مستقیم از Excel</b><span>وقتی سیستم در دسترس باشد، همین Wizard از Selection واقعی Excel می‌گیرد: ستون رکورد، ستون نوع، عکس ۱، عکس ۲ و شیت‌ها. هیچ ستون ناشناخته‌ای خودکار حدس زده نمی‌شود.</span></div>
       <div class="field-grid">
-        ${field('ستون رکورد',`<input name="anchors" value="${esc((p.anchorColumns||['C']).join(','))}">`)}
-        ${field('شروع ردیف',`<input name="startRow" type="number" value="${Number(p.startRow||2)}">`)}
+        ${field('ستون رکورد',`<input name="anchors" value="${esc((p.anchorColumns||['C']).join(','))}" placeholder="C">`)}
+        ${field('شروع ردیف',`<input name="startRow" type="number" min="1" value="${Number(p.startRow||2)}">`)}
+      </div>
+      ${field('شیت‌های مورد بررسی',`<input name="sheets" value="${esc((p.sheets||[]).join(', '))}" placeholder="مثلاً همتی, اظهار">`,'خالی = همه شیت‌ها؛ برای باربری فقط شیت‌های انتخاب‌شده را وارد کن.')}
+      <div class="rule-block">
+        <header><b>Rule عمومی</b><small>اگر نوع رکورد تشخیص داده نشد</small></header>
+        <div class="field-grid">
+          ${field('ستون/ستون‌های مدرک',`<input name="genericEvidence" value="${esc((generic.columns||[]).join(','))}" placeholder="مثلاً H یا H,I">`)}
+          ${field('تعداد لازم',`<input name="genericRequired" type="number" min="1" max="4" value="${Number(generic.required||1)}">`)}
+        </div>
+      </div>
+      <div class="rule-block receipt">
+        <header><b>فیش</b><small>معمولاً یک عکس</small></header>
+        <div class="field-grid">
+          ${field('ستون تشخیص نوع',`<input name="receiptTypeColumn" value="${esc(receiptRule.when?.column||'')}" placeholder="مثلاً D">`)}
+          ${field('متن تشخیص فیش',`<input name="receiptKeyword" value="${esc(receiptRule.when?.includes||'')}" placeholder="مثلاً فیش">`)}
+        </div>
+        <div class="field-grid">
+          ${field('ستون مدرک فیش',`<input name="receiptEvidence" value="${esc((receiptRule.evidence?.[0]?.columns||[]).join(','))}" placeholder="مثلاً H">`)}
+          ${field('تعداد عکس لازم',`<input name="receiptRequired" type="number" min="1" max="4" value="${Number(receiptRule.evidence?.[0]?.required||1)}">`)}
+        </div>
+      </div>
+      <div class="rule-block plate">
+        <header><b>پلاک</b><small>می‌تواند دو عکس لازم داشته باشد</small></header>
+        <div class="field-grid">
+          ${field('ستون تشخیص نوع',`<input name="plateTypeColumn" value="${esc(plateRule.when?.column||'')}" placeholder="مثلاً D">`)}
+          ${field('متن تشخیص پلاک',`<input name="plateKeyword" value="${esc(plateRule.when?.includes||'')}" placeholder="مثلاً پلاک">`)}
+        </div>
+        <div class="field-grid">
+          ${field('ستون‌های عکس پلاک',`<input name="plateEvidence" value="${esc((plateRule.evidence?.[0]?.columns||[]).join(','))}" placeholder="مثلاً H,I">`)}
+          ${field('تعداد عکس لازم',`<input name="plateRequired" type="number" min="1" max="4" value="${Number(plateRule.evidence?.[0]?.required||2)}">`)}
+        </div>
       </div>
       <div class="field-grid">
-        ${field('ستون/ستون‌های مدرک حالت عمومی','<input name="genericEvidence" placeholder="مثلاً H یا H,I">')}
-        ${field('تعداد لازم حالت عمومی','<input name="genericRequired" type="number" min="1" max="4" value="1">')}
+        ${field('پوشه مدرک',`<input name="evidenceRoot" value="${esc(p.evidenceRoot||DEFAULT_EVIDENCE_ROOT)}">`)}
+        ${field('حالت شمارش باربری',`<select name="transportCountMode"><option value="" ${!p.transportCountMode?'selected':''}>عادی</option><option value="photo_count" ${p.transportCountMode==='photo_count'?'selected':''}>هر عکس معتبر = تخلیه‌شده</option></select>`)}
       </div>
-      ${field('پوشه مدرک',`<input name="evidenceRoot" value="${esc(p.evidenceRoot||DEFAULT_EVIDENCE_ROOT)}">`)}
-      <div class="config-note"><b>فیش و پلاک با Rule جدا</b><span>برای اینکه پلاک دو عکس و فیش یک عکس بخواهد، باید شرط تشخیص نوع رکورد را از فایل واقعی تعیین کنیم. این بخش عمداً به یک حدس خطرناک تبدیل نشده است.</span></div>
+      <div class="config-note"><b>ثبت فقط با Verify واقعی</b><span>پر بودن H/I کافی نیست: شماره باید معتبر باشد، Hyperlink وجود داشته باشد، فایل مقصد واقعاً باشد و شماره با فایل تطبیق کند. برای پلاک ۱/۲ به‌صورت «ناقص» نمایش داده می‌شود.</span></div>
     `,
     onSubmit:async fd=>{
-      const cols=String(fd.get('genericEvidence')||'').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
-      const evidence=cols.length?[{label:'مدرک',columns:cols,required:Number(fd.get('genericRequired'))||1,mode:'verified_numeric_hyperlink'}]:[];
-      await window.blackClover.updateAccountingMonitor(m.id,{profile:{...p,startRow:Number(fd.get('startRow'))||2,dataStartRow:Number(fd.get('startRow'))||2,anchorColumns:String(fd.get('anchors')||'C').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean),evidenceRoot:String(fd.get('evidenceRoot')||'').trim(),requireVerifiedAttachment:true,evidence}});
+      const cols=value=>String(value||'').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean);
+      const genericCols=cols(fd.get('genericEvidence'));
+      const evidence=genericCols.length?[{label:'مدرک',columns:genericCols,required:Number(fd.get('genericRequired'))||1,mode:'verified_numeric_hyperlink'}]:[];
+      const rules=[];
+      const addRule=(type,label,column,keyword,evidenceCols,required)=>{
+        const ec=cols(evidenceCols),col=String(column||'').trim().toUpperCase(),key=String(keyword||'').trim();
+        if(!col||!key||!ec.length)return;
+        rules.push({type,recordType:type,when:{column:col,includes:key},evidence:[{label,columns:ec,required:Number(required)||1,mode:'verified_numeric_hyperlink'}]});
+      };
+      addRule('receipt','عکس فیش',fd.get('receiptTypeColumn'),fd.get('receiptKeyword'),fd.get('receiptEvidence'),fd.get('receiptRequired'));
+      addRule('plate','عکس پلاک',fd.get('plateTypeColumn'),fd.get('plateKeyword'),fd.get('plateEvidence'),fd.get('plateRequired'));
+      const sheets=String(fd.get('sheets')||'').split(',').map(x=>x.trim()).filter(Boolean);
+      await window.blackClover.updateAccountingMonitor(m.id,{profile:{
+        ...p,
+        startRow:Number(fd.get('startRow'))||2,
+        dataStartRow:Number(fd.get('startRow'))||2,
+        anchorColumns:cols(fd.get('anchors')).length?cols(fd.get('anchors')):['C'],
+        sheets,
+        evidenceRoot:String(fd.get('evidenceRoot')||'').trim(),
+        requireVerifiedAttachment:true,
+        evidence,
+        rules,
+        transportCountMode:String(fd.get('transportCountMode')||'')
+      }});
       await window.blackClover.rebuildAccountingWatchers();
       await window.blackClover.refreshAccountingReports({force:true});
       await renderReports();
