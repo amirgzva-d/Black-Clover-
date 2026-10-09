@@ -62,6 +62,7 @@ function createAvatarWindow(){if(avatarWin&&!avatarWin.isDestroyed())return avat
 function createIslandWindow(){if(islandWin&&!islandWin.isDestroyed())return islandWin;const b=islandBounds('compact');islandWin=new BrowserWindow({...b,minWidth:390,minHeight:48,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:false,alwaysOnTop:true,skipTaskbar:true,hasShadow:false,title:'MARIA Command Island',webPreferences:commonWebPreferences()});loadSurface(islandWin,'island');islandWin.setAlwaysOnTop(true,'floating');islandWin.on('close',e=>{if(!quitting){e.preventDefault();islandWin.hide();}});islandWin.on('closed',()=>{islandWin=null;});return islandWin;}
 function setIslandMode(mode='compact'){const safe=['peek','compact','expanded'].includes(mode)?mode:'compact',w=createIslandWindow();w.setBounds(islandBounds(safe),true);w.setAlwaysOnTop(true,'floating');if(!w.isVisible())w.showInactive();announceSurfaceState();return {ok:true,mode:safe,bounds:w.getBounds()};}
 function showIsland(mode='compact'){const w=createIslandWindow();w.setBounds(islandBounds(mode));w.showInactive();w.setAlwaysOnTop(true,'floating');announceSurfaceState();return w;}
+function showIslandModule(module='home'){const w=showIsland('expanded');sendWhenReady(w,'assistant:island-module',{module:String(module||'home')});return w;}
 function hideIsland(){hideAnimated(islandWin);}
 function createChatWindow(){if(chatWin&&!chatWin.isDestroyed())return chatWin;const b=chatBounds();chatWin=new BrowserWindow({...b,minWidth:470,minHeight:560,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:'Maria Chat',webPreferences:commonWebPreferences()});loadSurface(chatWin,'chat');chatWin.on('close',e=>{if(!quitting){e.preventDefault();chatWin.hide();}});chatWin.on('closed',()=>{chatWin=null;});return chatWin;}
 function createUtilityWindow(surface){const key=surface==='pins'?'pins':'reminders',current=key==='pins'?pinsWin:remindersWin;if(current&&!current.isDestroyed())return current;const b=utilityBounds(),w=new BrowserWindow({...b,minWidth:480,minHeight:560,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:key==='pins'?'Maria Pins':'Maria Reminders',webPreferences:commonWebPreferences()});loadSurface(w,key);w.on('close',e=>{if(!quitting){e.preventDefault();w.hide();}});w.on('closed',()=>{if(key==='pins')pinsWin=null;else remindersWin=null;});if(key==='pins')pinsWin=w;else remindersWin=w;return w;}
@@ -83,7 +84,7 @@ function toggleChat(){if(chatWin&&!chatWin.isDestroyed()&&chatWin.isVisible())hi
 
 function trayIcon(){return nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAK0lEQVR42mNkYPj/n4ECwESJ5lEDRg0YNYDQgBqGQWjAoAGjBgwaMGgAAJs7Ah7lQ3jMAAAAAElFTkSuQmCC').resize({width:16,height:16});}
 async function installAllFromTray(){if(provisioning)return;provisioning=true;try{await deps.installAll({includeOptional:true});}catch{}finally{provisioning=false;}}
-function desktopMenu(){const pinned=Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop());return Menu.buildFromTemplate([{label:'پنل بالای MARIA',click:()=>showIsland('compact')},{label:'نمایش ماریا',click:showAvatar},{label:'مخفی کردن ماریا',click:hideAvatar},{label:'باز کردن چت',click:()=>showChat()},{label:'پین‌شده‌ها',click:()=>showUtility('pins')},{label:'یادآورها و کارهای زمان‌بندی‌شده',click:()=>showUtility('reminders')},{label:'پروژه‌ها',click:showProjects},{label:'حرکت‌ها',click:()=>showAssetSurface('motions')},{label:'لباس و وسایل',click:()=>showAssetSurface('wardrobe')},{type:'separator'},{label:pinned?'برداشتن از روی همه پنجره‌ها':'همیشه روی پنجره‌ها',type:'checkbox',checked:pinned,click:toggleAlwaysOnTop},{label:'تنظیمات ماریا',click:()=>{const w=showChat();w.webContents.send('assistant:open-settings');}},{type:'separator'},{label:'آماده‌سازی کامل ابزارها',click:installAllFromTray},{label:'اجرا با دسترسی Administrator',click:()=>restartElevated().catch(()=>{})},{type:'separator'},{label:'خروج کامل',click:()=>{quitting=true;app.quit();}}]);}
+function desktopMenu(){const pinned=Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop());return Menu.buildFromTemplate([{label:'پنل بالای MARIA',click:()=>showIsland('compact')},{label:'نمایش ماریا',click:showAvatar},{label:'مخفی کردن ماریا',click:hideAvatar},{label:'باز کردن چت',click:()=>showChat()},{label:'پین‌شده‌ها',click:()=>showIslandModule('pins')},{label:'یادآورها و کارهای زمان‌بندی‌شده',click:()=>showIslandModule('tasks')},{label:'پروژه‌ها',click:showProjects},{label:'حرکت‌ها',click:()=>showAssetSurface('motions')},{label:'لباس و وسایل',click:()=>showAssetSurface('wardrobe')},{type:'separator'},{label:pinned?'برداشتن از روی همه پنجره‌ها':'همیشه روی پنجره‌ها',type:'checkbox',checked:pinned,click:toggleAlwaysOnTop},{label:'تنظیمات ماریا',click:()=>{const w=showChat();w.webContents.send('assistant:open-settings');}},{type:'separator'},{label:'آماده‌سازی کامل ابزارها',click:installAllFromTray},{label:'اجرا با دسترسی Administrator',click:()=>restartElevated().catch(()=>{})},{type:'separator'},{label:'خروج کامل',click:()=>{quitting=true;app.quit();}}]);}
 function createTray(){if(tray)return;tray=new Tray(trayIcon());tray.setToolTip('Maria • Black Clover');const refresh=()=>tray.setContextMenu(desktopMenu());refresh();tray.on('right-click',refresh);tray.on('click',toggleAvatar);}
 function psQuote(s){return `'${String(s).replaceAll("'","''")}'`;}
 async function isAdmin(){try{const {stdout}=await execFileAsync('powershell.exe',['-NoProfile','-NonInteractive','-Command','([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)'],{windowsHide:true,timeout:10000});return stdout.trim().toLowerCase()==='true';}catch{return false;}}
@@ -113,6 +114,7 @@ ipcMain.handle('brain:test-provider',async(_e,provider)=>{await refreshBrainProv
 ipcMain.handle('brain:github-login',async()=>{if(!brainStore)brainStore=new BrainProviderStore();return brainStore.startGithubLogin();});
 ipcMain.handle('assistant:toggle',()=>{toggleChat();return true;});
 ipcMain.handle('assistant:show-island',(_e,mode='compact')=>{showIsland(String(mode||'compact'));return true;});
+ipcMain.handle('assistant:show-island-module',(_e,module='home')=>{showIslandModule(String(module||'home'));return true;});
 ipcMain.handle('assistant:hide-island',()=>{hideIsland();return true;});
 ipcMain.handle('assistant:set-island-mode',(_e,mode)=>setIslandMode(String(mode||'compact')));
 ipcMain.handle('assistant:show-chat',()=>{showChat();return true;});
@@ -121,10 +123,10 @@ ipcMain.handle('assistant:show-avatar',()=>{showAvatar();return true;});
 ipcMain.handle('assistant:hide-avatar',()=>{hideAvatar();return true;});
 ipcMain.handle('assistant:show-projects',()=>{showProjects();return true;});
 ipcMain.handle('assistant:hide-projects',()=>{hideProjects();return true;});
-ipcMain.handle('assistant:show-pins',()=>{showUtility('pins');return true;});
-ipcMain.handle('assistant:hide-pins',()=>{hideUtility('pins');return true;});
-ipcMain.handle('assistant:show-reminders',()=>{showUtility('reminders');return true;});
-ipcMain.handle('assistant:hide-reminders',()=>{hideUtility('reminders');return true;});
+ipcMain.handle('assistant:show-pins',()=>{showIslandModule('pins');return true;});
+ipcMain.handle('assistant:hide-pins',()=>{hideIsland();return true;});
+ipcMain.handle('assistant:show-reminders',()=>{showIslandModule('tasks');return true;});
+ipcMain.handle('assistant:hide-reminders',()=>{hideIsland();return true;});
 ipcMain.handle('assistant:show-motions',()=>{showAssetSurface('motions');return true;});
 ipcMain.handle('assistant:hide-motions',()=>{hideAssetSurface('motions');return true;});
 ipcMain.handle('assistant:show-wardrobe',()=>{showAssetSurface('wardrobe');return true;});
@@ -133,7 +135,7 @@ ipcMain.handle('assistant:toggle-top',()=>toggleAlwaysOnTop());
 ipcMain.handle('assistant:window-state',()=>surfaceState());
 ipcMain.handle('assistant:set-ui-state',(_e,payload)=>setUiState(payload?.mode||'online',payload?.detail||''));
 ipcMain.handle('assistant:minimize-chat',()=>{const w=createChatWindow();w.minimize();return true;});
-ipcMain.handle('assistant:minimize-surface',(_e,surface)=>{const w=surface==='pins'?pinsWin:surface==='reminders'?remindersWin:surface==='projects'?projectsWin:surface==='motions'?motionsWin:surface==='wardrobe'?wardrobeWin:chatWin;if(w&&!w.isDestroyed())w.minimize();return true;});
+ipcMain.handle('assistant:minimize-surface',(_e,surface)=>{if(surface==='pins'||surface==='reminders'){setIslandMode('peek');return true;}const w=surface==='projects'?projectsWin:surface==='motions'?motionsWin:surface==='wardrobe'?wardrobeWin:chatWin;if(w&&!w.isDestroyed())w.minimize();return true;});
 ipcMain.handle('assistant:open-settings',(_e,section='general')=>{const w=showChat();sendWhenReady(w,'assistant:open-settings',{section:String(section||'general')});return true;});
 ipcMain.handle('assistant:prompt',(_e,text)=>{const w=showChat();sendWhenReady(w,'assistant:prefill-prompt',{text:String(text||''),submit:true});return true;});
 
