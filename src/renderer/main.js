@@ -8,7 +8,11 @@ const afterSurface=()=>((surface==='chat'||surface==='avatar')?import('./voiceSe
   .then(()=>import('./shellRuntime.js'))
   .catch(error=>console.error('UI extension bootstrap failed',error));
 
-if(surface==='chat'){
+if(surface==='island'){
+  import('./topIsland.js')
+    .then(({mountTopIsland})=>mountTopIsland())
+    .catch(error=>console.error('Top Island bootstrap failed',error));
+}else if(surface==='chat'){
   import('./chatSurfaceV2.js')
     .then(({mountChatSurface})=>mountChatSurface())
     .then(afterSurface)
