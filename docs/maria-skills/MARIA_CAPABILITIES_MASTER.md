@@ -177,8 +177,8 @@ Priority controls development order only; it does NOT lower quality requirements
 | 09 | YouTube / Web Media | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 10 | Messaging / Forwarding | DESIGN COMPLETE v1 ADVANCED | WAITING |
 | 11 | Timed / Conditional Actions | DESIGN COMPLETE v1 ADVANCED | WAITING |
-| 12 | Power / Lock / Security | NEXT | WAITING |
-| 13 | Excel / Office | QUEUED | WAITING |
+| 12 | Power / Lock / Security | DESIGN COMPLETE v1 ADVANCED | WAITING |
+| 13 | Excel / Office | NEXT | WAITING |
 | 14 | Desktop Organization | QUEUED | WAITING |
 | 15 | Selection / Clipboard | QUEUED | WAITING |
 | 16 | Translation / OCR | QUEUED | WAITING |
@@ -11578,3 +11578,645 @@ When MARIA Windows system is online:
 14. generate 1000–1500 utterance packs.
 15. run multi-tab/multi-player tests.
 16. mark only verified modules IMPLEMENTED.
+
+
+---
+
+## 12 — Power / Lock / Session / Security Control
+
+**Status:** DESIGN COMPLETE v1 ADVANCED — WAITING FOR LOCAL IMPLEMENTATION  
+**Capability family:** \`power.*\`, \`session.*\`, \`lock.*\`, \`security.*\`, \`defender.*\`, \`firewall.*\`, \`privacy.*\`  
+**Owner modules:** Power Orchestrator / Session Resolver / Shutdown Coordinator / Sleep/Hibernate Skill / Lock Skill / Security Status Skill / Defender Skill / Firewall Skill / Security Policy Guard / Pending-Work Guard / Scheduler Handoff / Verifier / Audit Log  
+**Offline capable:** yes for local power/session/security state  
+**Risk class:** L0–L5 depending on action  
+**Primary platform:** Windows
+
+### 1. Purpose
+
+MARIA must safely control Windows power/session operations and inspect/operate security protections without confusing adjacent intents.
+
+Core scope:
+- lock workstation
+- sign out/log off
+- sleep
+- hibernate
+- shutdown
+- restart
+- restart to advanced startup when explicitly requested and supported
+- cancel pending shutdown/restart
+- detect active unsaved-work risk where possible
+- detect ongoing downloads/installs/transfers before disruptive power action
+- schedule any power/session action through Scheduler
+- report security status
+- inspect Microsoft Defender state
+- run quick/full/custom malware scans when supported
+- inspect firewall state
+- open Windows Security pages
+- inspect security notifications/health
+- quarantine/history inspection when exposed
+- update security definitions where supported
+- manage carefully scoped safe security actions
+- never silently weaken core protections
+
+### 2. Critical semantic boundaries
+
+These are separate:
+
+- "سیستم رو خاموش کن" => shutdown
+- "صفحه رو خاموش کن" => display power off
+- "بخوابونش" => sleep, unless context clearly targets display
+- "هایبرنیت کن" => hibernate
+- "قفلش کن" => lock workstation
+- "از حساب خارج شو" => sign out/log off
+- "ریستارت کن" => restart
+- "برنامه رو ریستارت کن" => restart app, NOT Windows
+- "وای‌فای رو خاموش کن" => Wi‑Fi, NOT shutdown
+- "Defender رو خاموش کن" => sensitive security mutation, not a normal toggle
+- "اسکن کن" => security scan only when context is security/malware; otherwise may be document/device scanning
+
+Hard negatives are mandatory.
+
+### 3. Canonical intents — power/session
+
+- \`power.shutdown\`
+- \`power.shutdown.force\`
+- \`power.restart\`
+- \`power.restart.force\`
+- \`power.sleep\`
+- \`power.hibernate\`
+- \`power.cancel_pending\`
+- \`power.get_pending\`
+- \`session.lock\`
+- \`session.sign_out\`
+- \`session.get_active_user\`
+- \`session.get_state\`
+- \`power.advanced_startup\`
+- \`power.wake_capabilities.get\`
+
+### 4. Natural language — shutdown
+
+Examples:
+- "سیستم رو خاموش کن"
+- "کامپیوتر رو خاموش کن"
+- "PC رو خاموش کن"
+- "ویندوز رو خاموش کن"
+- "Shut down"
+- "خاموشش کن"
+- "کامل خاموش شه"
+- "خاموش کن ولی ریستارت نکن"
+- "کارم تمومه خاموشش کن"
+- "همین الآن خاموش کن"
+- "اگه چیزی بازه اول چک کن بعد خاموش کن"
+- "بدون بستن اجباری برنامه‌ها خاموش کن"
+- typo/STT:
+  - "سیسم خاموش"
+  - "کامپیوتر خامش کن"
+  - "شات داون"
+  - "شاتدون کن"
+
+Context rule:
+"خاموشش کن" with recent target=monitor => Display power.
+"خاموشش کن" with recent target=Bluetooth => Bluetooth.
+Without a clear local target and in system-power context => shutdown candidate, but confirmation may be required.
+
+### 5. Restart
+
+Examples:
+- "ریستارت کن"
+- "سیستم رو دوباره راه‌اندازی کن"
+- "Restart ویندوز"
+- "کامپیوتر رو ریبوت کن"
+- "یه بار خاموش روشنش کن"
+- "بعد نصب ریستارت کن"
+- "ریستارت کن ولی برنامه‌ها رو زورکی نبند"
+
+Distinguish:
+- app restart
+- browser restart
+- service restart
+- Windows restart
+
+### 6. Sleep / Hibernate
+
+Sleep:
+- "سیستم رو بخوابون"
+- "Sleep کن"
+- "برو حالت خواب"
+- "یه استراحت سیستم"
+- "لپتاپ رو Sleep کن"
+
+Hibernate:
+- "Hibernate کن"
+- "هایبرنیت"
+- "حالت خواب عمیق"
+- "خاموش نشه، هایبرنیت شه"
+
+Rules:
+- capability detection: hibernate may be disabled/unsupported
+- report unsupported honestly
+- scheduled sleep/hibernate delegated to Scheduler
+
+### 7. Lock
+
+Canonical:
+- \`session.lock\`
+- \`session.lock_after\`
+- \`session.auto_lock_rule.create\`
+
+Examples:
+- "قفلش کن"
+- "ویندوز رو Lock کن"
+- "صفحه قفل"
+- "سیستم رو قفل کن"
+- "وقتی رفتم 5 دقیقه بعد قفل کن"
+- "اگه 10 دقیقه بیکار بودم Lock کن"
+
+Lock is not sign-out and not sleep.
+
+### 8. Sign out
+
+Examples:
+- "از ویندوز خارج شو"
+- "Sign out"
+- "Log off کن"
+- "از این حساب خارج شو"
+- "کاربر فعلی رو sign out کن"
+
+Because sign-out may close apps and lose unsaved work:
+- pending-work guard required
+- strong confirmation unless user has explicitly enabled a policy
+
+### 9. Pending-work guard
+
+Before disruptive actions, inspect where feasible:
+- unsaved document windows
+- active file copy/move
+- active download
+- active installer/update
+- running conversion/export
+- active terminal/build process
+- active media upload
+- scheduled job currently executing
+- external message send in progress
+
+Result:
+- clear_to_proceed
+- possible_unsaved_work
+- active_transfer
+- active_install
+- active_critical_job
+- unknown
+
+MARIA should say:
+"یک دانلود و یک فایل Excel بازه که احتمالاً ذخیره نشده؛ خاموش کنم؟"
+
+It must not claim certainty about unsaved state if the application does not expose it.
+
+### 10. Force shutdown/restart
+
+Force close can cause data loss.
+
+Canonical:
+- \`power.shutdown.force\`
+- \`power.restart.force\`
+
+Examples:
+- "هرچی بازه ببند و خاموش کن"
+- "اجباری ریستارت کن"
+- "Force restart"
+- "برنامه‌ها رو ببند و خاموش کن"
+
+Risk L4/L5 depending on active state.
+Explicit confirmation required when data loss is plausible.
+
+### 11. Cancel pending shutdown/restart
+
+Examples:
+- "خاموش شدن رو لغو کن"
+- "ریستارت رو کنسل کن"
+- "نذار خاموش شه"
+- "Shutdown رو Cancel کن"
+
+Verifier:
+- confirm no pending action remains when API/state allows.
+
+### 12. Scheduled power actions
+
+Handled by Capability 11.
+
+Examples:
+- "ساعت 12 خاموش کن"
+- "20 دقیقه دیگه Lock کن"
+- "هر شب 1 سیستم Sleep شه"
+- "بعد دانلود خاموش کن"
+- "وقتی Backup تموم شد Shutdown"
+
+Stored as canonical action + condition/deadline.
+
+### 13. Power-action result states
+
+- initiated
+- verified_pending
+- canceled
+- blocked_unsaved_work
+- blocked_active_transfer
+- unsupported
+- failed
+- permission_denied
+- user_confirmation_required
+
+For actual shutdown/restart, full post-action verification may be impossible from the same running process.
+MARIA should report "shutdown initiated" rather than falsely saying "system has shut down" before termination.
+
+---
+
+### 14. Security status
+
+Canonical:
+- \`security.status.summary\`
+- \`security.status.open_windows_security\`
+- \`security.health.get\`
+- \`security.notifications.get\`
+
+Inspect when available:
+- Microsoft Defender antivirus state
+- real-time protection state
+- security intelligence freshness
+- firewall profiles
+- Windows Update/security update state
+- device security indicators
+- account protection warnings
+- ransomware protection status where exposed
+- tamper protection state where readable
+
+Examples:
+- "امنیت سیستم چطوره"
+- "Defender روشنه؟"
+- "فایروال فعاله؟"
+- "ویندوز سکوریتی مشکلی داره؟"
+- "چیزی هشدار داده؟"
+- "وضعیت امنیت رو چک کن"
+
+### 15. Microsoft Defender scan intents
+
+- \`defender.scan.quick\`
+- \`defender.scan.full\`
+- \`defender.scan.custom\`
+- \`defender.scan.file\`
+- \`defender.scan.folder\`
+- \`defender.scan.status\`
+- \`defender.definitions.update\`
+- \`defender.history.get\`
+
+Examples:
+- "یه Quick Scan بزن"
+- "اسکن کامل"
+- "این فایل رو با Defender چک کن"
+- "این پوشه رو اسکن کن"
+- "ببین اسکن تموم شد یا نه"
+- "تعریف ویروس‌ها رو آپدیت کن"
+- "آخرین تهدیدها چی بودن"
+
+Rules:
+- scan target resolved exactly
+- don't report "clean" unless scan result actually indicates no detected threat
+- scan result is not a universal guarantee of safety
+
+### 16. Threat/quarantine handling
+
+Potential intents:
+- \`defender.threats.list\`
+- \`defender.threat.details\`
+- \`defender.quarantine.list\`
+- \`defender.quarantine.remove\`
+- \`defender.quarantine.restore\`
+
+Restoring quarantined items is high-risk.
+
+Rules:
+- show exact threat/item
+- explain why restore may be dangerous
+- require explicit confirmation
+- never restore merely because an app stopped working
+- prefer vendor verification/signature checks before restore
+
+### 17. Firewall
+
+Canonical:
+- \`firewall.status\`
+- \`firewall.profile.get\`
+- \`firewall.open_settings\`
+- \`firewall.rule.list\`
+- \`firewall.rule.inspect\`
+- \`firewall.rule.create\`
+- \`firewall.rule.enable\`
+- \`firewall.rule.disable\`
+- \`firewall.rule.remove\`
+
+Security policy:
+- status/read = low risk
+- rule changes = high risk
+- global firewall disable is NOT a normal convenience action
+- if requested, require strong confirmation and preferably time-bounded/temporary alternative
+- never disable firewall as generic troubleshooting
+
+Examples:
+- "فایروال روشنه؟"
+- "این برنامه اجازه اینترنت داره؟"
+- "قانون این برنامه رو نشون بده"
+- "فقط همین برنامه رو اجازه بده"
+- "پورت X رو باز کن" => sensitive network/security action
+
+### 18. Security-control weakening policy
+
+Commands like:
+- "Defender رو خاموش کن"
+- "Real-time protection رو ببند"
+- "Firewall رو کامل خاموش کن"
+- "UAC رو غیرفعال کن"
+
+are security-sensitive.
+
+Policy:
+1. identify exact reason/use case
+2. prefer narrow temporary exception if appropriate
+3. explain risk
+4. require explicit confirmation
+5. use time-bounded restoration when possible
+6. verify re-enable state
+7. audit action
+
+MARIA must never weaken security just because a downloaded script/app requests it.
+
+### 19. Download/install integration
+
+Before running a downloaded executable:
+- source verified by App Install
+- signature/hash if applicable
+- Defender scan where appropriate
+- suspicious reputation => block/ask
+
+If installation says "disable antivirus":
+- MARIA must not auto-comply
+- surface request to user
+- prefer official vendor troubleshooting
+
+### 20. Security event / proactive awareness
+
+Possible events:
+- Defender threat detected
+- firewall/security protection disabled
+- connector auth anomaly
+- repeated failed login
+- Windows Security warning
+- suspicious download result
+
+Proactive Assistant can notify:
+- "Defender یک مورد مشکوک پیدا کرده."
+- "Real-time protection خاموش شده."
+- "Firewall پروفایل فعلی غیرفعال است."
+
+Do not create panic; include severity/context.
+
+### 21. Session/account safety
+
+Canonical:
+- \`session.get_active_user\`
+- \`session.lock\`
+- \`session.sign_out\`
+- \`session.switch_user_handoff\`
+
+Switch user / sign-out should preserve user awareness of open work.
+
+No credential extraction.
+
+### 22. Privacy/security settings hand-off
+
+Privacy toggles and Windows Security settings can route to:
+- Security Skill for sensitive controls
+- Windows Settings for general privacy settings
+
+Examples:
+- camera permission
+- microphone permission
+- location access
+- app permissions
+
+Browser-site permissions remain Browser capability.
+
+### 23. Emergency security actions
+
+Examples:
+- "فوری سیستم رو قفل کن"
+- "الان Lock"
+- "همین لحظه صفحه رو قفل کن"
+
+Lock is low-latency and can execute immediately when clearly requested.
+
+Potential future:
+- "Emergency privacy mode" routine:
+  - lock workstation
+  - mute mic
+  - pause media
+  - hide sensitive notification previews
+Only if user defines/approves routine.
+
+### 24. Verification
+
+Lock:
+- action invoked; OS secure desktop state verification may be limited from process context
+
+Defender scan:
+- actual scan status/result
+
+Firewall:
+- profile/rule state re-read
+
+Security definitions:
+- version/date re-read
+
+Security setting:
+- state re-read after mutation
+
+Shutdown/restart:
+- pending/initiated state where observable
+
+No "done" based only on command launch.
+
+### 25. Undo / rollback
+
+Possible:
+- cancel pending shutdown
+- restore firewall rule
+- restore temporary security setting
+- re-enable protection
+- revert temporary exception
+- undo scheduled power job
+
+Not reliably undoable:
+- actual shutdown after completion
+- sign-out after completion
+- deleted quarantine item in some cases
+
+### 26. Permission / risk
+
+L0:
+- get power/security state
+- inspect Defender/firewall
+- list warnings
+
+L1:
+- lock
+- quick scan
+- open Security UI
+
+L2:
+- sleep
+- hibernate
+- restart/shutdown with clean state
+- custom scan
+- update definitions
+
+L3:
+- sign out
+- firewall scoped rule
+- schedule disruptive power action
+
+L4:
+- forced restart/shutdown
+- restore quarantine
+- broad firewall/security setting changes
+
+L5:
+- disabling core protections
+- destructive security recovery
+- high-risk system-wide security weakening
+
+### 27. Language coverage
+
+Critical intents target **1000–1500 examples each**:
+- power.shutdown
+- power.restart
+- power.sleep
+- power.hibernate
+- session.lock
+- session.sign_out
+- power.cancel_pending
+- security.status.summary
+- defender.scan.quick/full/file
+- firewall.status
+- scheduled power handoff
+
+Hard negatives:
+- "صفحه رو خاموش کن" => Display
+- "سیستم رو خاموش کن" => Shutdown
+- "برنامه رو ببند" => App
+- "برنامه رو ریستارت کن" => App restart
+- "سیستم رو ریستارت کن" => OS restart
+- "قفلش کن" => Lock
+- "از حساب خارج شو" => Sign out
+- "بخوابونش" => Sleep unless display context
+- "صدای سیستم رو خاموش کن" => Audio mute
+
+Family target: many thousands of examples with typo/STT/context/correction/negation/timing/permission/failure.
+
+### 28. Skill / Agent package
+
+- \`PowerOrchestrator\`
+- \`SystemPowerSkill\`
+- \`LockSessionSkill\`
+- \`SignOutSkill\`
+- \`SleepHibernateSkill\`
+- \`PendingWorkGuard\`
+- \`PendingPowerActionSkill\`
+- \`SecurityStatusSkill\`
+- \`DefenderScanSkill\`
+- \`DefenderThreatHistorySkill\`
+- \`FirewallSkill\`
+- \`SecurityPolicyGuard\`
+- \`SecurityEventWatcher\`
+- \`PowerSecurityVerifier\`
+- \`PowerSecurityAuditLog\`
+- \`PowerSecurityLanguageAgent\`
+
+All register through Skill Registry / Tool Registry.
+
+### 29. Test matrix
+
+Power:
+- PS-A01 shutdown
+- PS-A02 restart
+- PS-A03 sleep
+- PS-A04 hibernate unsupported
+- PS-A05 cancel pending
+- PS-A06 active download blocks/asks
+- PS-A07 unsaved-work warning
+- PS-A08 force action confirmation
+
+Semantic:
+- PS-B01 monitor off vs shutdown
+- PS-B02 app restart vs OS restart
+- PS-B03 lock vs sign-out
+- PS-B04 sleep vs hibernate
+- PS-B05 audio mute vs power off
+
+Security:
+- PS-C01 Defender state
+- PS-C02 quick scan
+- PS-C03 file scan
+- PS-C04 definitions update
+- PS-C05 threat history
+- PS-C06 quarantine restore confirmation
+
+Firewall:
+- PS-D01 status
+- PS-D02 inspect app rule
+- PS-D03 scoped rule
+- PS-D04 broad disable blocked/confirmed strongly
+
+Scheduler:
+- PS-E01 scheduled shutdown
+- PS-E02 conditional shutdown after download
+- PS-E03 missed execution policy
+- PS-E04 cancel scheduled job
+
+Verification:
+- PS-F01 command launched but action not pending => fail
+- PS-F02 scan result actually read
+- PS-F03 protection state re-read
+- PS-F04 firewall rule re-read
+
+### 30. Acceptance criteria
+
+1. display-off and system-shutdown never conflate.
+2. lock, sleep, hibernate, sign-out, restart and shutdown are distinct.
+3. disruptive actions inspect pending/unsaved work where feasible.
+4. force actions require strong explicit intent.
+5. security status is evidence-based.
+6. Defender scan results are actually read.
+7. firewall/Defender are never disabled as generic troubleshooting.
+8. core protection weakening requires strong confirmation and preferably temporary rollback.
+9. scheduled power actions route through Scheduler.
+10. critical intents have 1000–1500 examples.
+11. all supported mutations are verified.
+12. real Windows tests pass before IMPLEMENTED.
+
+### 31. Local implementation plan
+
+When system is online:
+1. inspect current shutdown/lock handlers.
+2. add PowerOrchestrator.
+3. implement LockSessionSkill.
+4. implement sleep/hibernate capability detection.
+5. implement shutdown/restart/cancel.
+6. add PendingWorkGuard.
+7. integrate Scheduler.
+8. add SecurityStatusSkill.
+9. add Defender scan/status adapters.
+10. add FirewallSkill.
+11. add SecurityPolicyGuard.
+12. add proactive security events.
+13. generate 1000–1500 language packs.
+14. run destructive-action safety tests.
+15. run real Windows power/security tests.
+16. mark only verified features IMPLEMENTED.
