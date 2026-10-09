@@ -23202,3 +23202,716 @@ These extension packs close explicit requirements without introducing duplicate 
 
 Implementation status remains:
 **WAITING FOR LOCAL WINDOWS SYSTEM / REAL INTEGRATION TESTS**
+
+
+---
+
+# MARIA TOP ISLAND COMMAND CENTER — UI/UX + RUNTIME SPEC v1
+
+**Status:** CODE SCAFFOLD ADDED TO GITHUB — LOCAL VISUAL/INTEGRATION VERIFICATION REQUIRED  
+**Importance:** CRITICAL DAILY UI  
+**Surface:** always-on-top rectangular top-screen island inspired by useful ambient desktop-companion patterns, implemented as MARIA-native UI  
+**Runtime:** Electron BrowserWindow surface = `island`
+
+## TI-1 — Product goal
+
+Replace the old "several text buttons under the character" interaction model with one coherent, premium rectangular command island at the top of the primary screen.
+
+The Island is not merely a toolbar. It is the user's fast operational dashboard for:
+- MARIA live state
+- pinned information
+- reminders and scheduled execution
+- quick shortcuts
+- accounting evidence reports
+- future utility slots
+- agent/task progress
+- permission/waiting states
+- drag/drop handoff
+- direct Chat access
+
+The existing bottom dock must remain available only as a compatibility fallback until the Island passes real local tests. After verification, duplicated bottom utility buttons can be deprecated/migrated instead of maintaining two competing primary navigation systems.
+
+## TI-2 — Surface states
+
+The Island has three size/states:
+
+### Peek
+Very small top strip.
+Use when idle for a while.
+Shows:
+- MARIA identity/state
+- minimal character/status
+
+Purpose:
+- nearly disappear without becoming unreachable
+- restore on pointer/interaction
+
+### Compact
+Default everyday state.
+Shows:
+- mini MARIA character/status
+- Live
+- Pin
+- Automation
+- Menu
+
+### Expanded
+Full working panel.
+Shows the selected page and its complete controls/details.
+
+Transitions must be smooth and must respect OS reduced-motion settings.
+
+## TI-3 — Main pages
+
+### Page A — MARIA Live
+Purpose:
+- show what MARIA is currently doing
+- task/agent activity
+- warnings/errors
+- scheduled action execution
+- waiting/permission state
+- recent events
+- direct Chat button
+- drop-zone for files
+
+Future local integration should add:
+- active Planner plan cards
+- individual Agent session pills
+- pause/cancel task controls
+- inline permission approval/deny
+- provider/model selector
+- active media mini-pill
+- connector health indicator
+- "waiting for user" action button
+
+The character visually reflects:
+- online
+- listening
+- thinking
+- executing
+- success
+- warning/error
+- offline
+- privacy mode
+- waiting
+
+The character must not obscure operational status.
+
+### Page B — Pin
+Purpose:
+keep important information one click away.
+
+Supported pin types:
+- plain text
+- message
+- prompt
+- URL
+- file reference
+- task/result reference
+- snippet
+- note
+- future structured objects
+
+Current existing PinnedNoteStore is reused.
+
+Required UX:
+- add
+- edit
+- delete
+- copy
+- search/filter later
+- tags later
+- reorder/pin priority later
+- open URL/file when pin contains a recognized safe target
+- context action: "send / summarize / translate / schedule"
+
+No second incompatible Pin database should be created.
+
+### Page C — Automation / Reminder
+Two explicit modes:
+
+1. **Remind me**
+   - notify only
+   - no automatic side effect
+
+2. **Do it automatically**
+   - at due time, execute the instruction through MARIA Brain/Planner
+   - still enforce Permission, Risk and Verification
+   - never bypass high-risk confirmations merely because it was scheduled
+
+Examples supported by architecture:
+- "ساعت 9 یادم بنداز گزارش رو بفرستم."
+- "ساعت 9 خودت گزارش رو بفرست."
+- "ساعت 8 تحقیق کن و وقتی برگشتم خلاصه‌اش رو بخون."
+- "امشب سیستم رو Sleep کن."
+- "فردا این فایل رو دانلود کن."
+- "بعد دانلود، نصبش کن اگر من قبلاً این Routine را تأیید کرده‌ام."
+- "آخرین پیام Saved Messages را بردار و در مقصدهای مشخص فوروارد کن."
+
+Current code now wires ReminderStore `action` items to Agent execution.
+The full durable conditional Scheduler defined in Capability 11 remains the target architecture for:
+- event conditions
+- AND/OR conditions
+- network-aware execution
+- missed-run policy
+- retry/deadline
+- after-reboot continuation
+- exact idempotency
+
+The Island must become a UI on top of that Scheduler rather than creating a separate scheduler.
+
+### Page D — Utility Menu
+
+Side rail / nested menu.
+
+Initial pages:
+1. **Shortcuts**
+2. **Accounting Reports**
+3. **Future Slot 03** — intentionally empty
+
+More pages can be added without redesigning the Island navigation.
+
+## TI-4 — Shortcuts
+
+Purpose:
+one-click access to the user's frequently used targets.
+
+Target types:
+- file
+- folder
+- application/executable
+- website/URL
+- video
+- music/audio
+- document
+- project
+- MARIA routine
+- MARIA agent instruction
+- future deep link
+
+Shortcut fields:
+- id
+- label
+- target
+- kind
+- custom icon
+- optional group
+- order
+- enabled
+- created/updated time
+
+UX:
+- icon tile grid
+- editable icon
+- short label
+- tooltip with target
+- scroll when many
+- "See all"/scroll affordance when density grows
+- pin/reorder/group in later polish
+- keyboard navigation
+- drag reorder in later polish
+
+Current scaffold supports persisted shortcuts + custom emoji/text icon + open.
+Local refinement should add:
+- OS file/app icon extraction
+- custom image icon
+- URL favicon
+- drag reorder
+- edit/delete context menu
+- groups/folders
+- hotkey assignment per shortcut
+- conflict detection for hotkeys
+
+## TI-5 — Accounting Reports: purpose
+
+This page is a **read-first evidence completeness monitor** for accounting workbooks.
+
+It must answer quickly:
+- which invoice/workbook is complete?
+- how many relevant records exist?
+- how many have their evidence photo/link registered?
+- how many are missing?
+- which exact rows are missing?
+- when was it last scanned?
+- when did MARIA last open it?
+- open workbook immediately
+- pin important/current workbooks
+- push completed files to the bottom
+
+The monitor must not silently edit accounting data.
+
+## TI-6 — Invoice identity
+
+Typical workbook naming convention:
+`<party/customer name> <invoice number>`
+
+Example shape:
+`Customer Name 112.xlsx`
+
+Parser stores:
+- display filename
+- party/customer portion
+- trailing invoice number if present
+
+If the naming convention differs, explicit monitor metadata overrides parser inference.
+
+## TI-7 — Accounting row/evidence model
+
+The scanner is configuration-driven because the exact business columns/sheets may vary.
+
+A monitor profile declares:
+
+- selected sheets or sheet regex
+- start row
+- optional end row
+- **anchor columns**: determine whether a row is a real accounting record
+- conditional record rules
+- evidence columns
+- required evidence count
+- evidence mode:
+  - hyperlink
+  - value
+  - hyperlink_or_value
+- evidence label
+
+Example concept only — NOT frozen to the user's final workbook yet:
+
+```json
+{
+  "startRow": 2,
+  "anchorColumns": ["C"],
+  "evidence": [
+    {
+      "columns": ["H"],
+      "mode": "hyperlink",
+      "required": 1,
+      "label": "receipt_photo"
+    }
+  ]
+}
+```
+
+The user will later specify exact sheet/cell/column meaning.
+When that information is provided, only the monitor profile is changed; Scanner/UI architecture remains unchanged.
+
+## TI-8 — Two-photo / plaque records
+
+The user's workflow may have record classes that need more than one photo/evidence.
+
+This is supported with conditional rules.
+
+Concept:
+
+```json
+{
+  "rules": [
+    {
+      "when": {"column":"TYPE","equals":"plaque"},
+      "evidence": [
+        {
+          "columns":["H","I"],
+          "mode":"hyperlink",
+          "required":2,
+          "label":"plaque_photos"
+        }
+      ]
+    },
+    {
+      "when": {"column":"TYPE","equals":"receipt"},
+      "evidence": [
+        {
+          "columns":["H"],
+          "mode":"hyperlink",
+          "required":1,
+          "label":"receipt_photo"
+        }
+      ]
+    }
+  ]
+}
+```
+
+Exact TYPE column/conditions are intentionally not guessed.
+
+## TI-9 — Existing numeric photo-ID workflow
+
+Business behavior understood:
+
+- evidence files are named with numeric IDs
+- a new evidence file receives the next unused number
+- duplicate numeric filenames must never be created
+- that number remains visible in Excel
+- Ctrl+K / hyperlink connects the Excel cell to the corresponding evidence file
+- retaining the number makes manual recovery possible if a hyperlink later breaks
+
+For the first accounting monitor version, MARIA is **read-only/reporting**.
+
+A later optional "Assist Link" mode may:
+1. scan approved evidence directory
+2. determine/reserve next unused numeric ID
+3. stage downloaded evidence file
+4. rename to reserved ID without collision
+5. back up workbook
+6. write number to exact configured cell
+7. create hyperlink
+8. reopen/re-read workbook
+9. verify link target and numeric ID
+10. rollback workbook/file rename on failure where safe
+
+This action mode must never be enabled until the user's exact accounting workbook rules are known and real copies are tested.
+
+## TI-10 — Private accounting paths
+
+Private network/SMB paths are **local configuration**, not public design constants.
+
+Rules:
+- do not hard-code the user's private accounting share path into public GitHub source
+- store local path in MARIA userData/config
+- support UNC paths
+- validate access/permissions
+- show network-unavailable status without deleting configuration
+- do not copy confidential workbook data into telemetry/logs
+
+## TI-11 — Scanner implementation
+
+Current GitHub scaffold:
+- `AccountingWorkbookScanner`
+- reads `.xlsx/.xlsm` OOXML read-only using JSZip
+- does not need to visibly open Excel
+- inspects cell values/formulas
+- detects hyperlink elements and HYPERLINK formulas
+- supports multiple sheets
+- returns exact missing row list
+- returns totals/registered/missing/completion
+- parses trailing invoice number
+- `.xls` is explicitly unsupported by this reader and should use a later Excel COM fallback
+
+Why this approach:
+- lighter than opening 20 Excel windows
+- safe read-only behavior
+- works well for background status scans
+- easier to cache and verify
+
+When desktop Office is available, COM can be used as a fallback for legacy/protected/special workbooks.
+
+## TI-12 — Refresh/performance strategy
+
+Do NOT full-scan all network workbooks every second.
+
+Reason:
+- SMB/network I/O
+- repeated decompression of XLSX packages
+- CPU usage
+- disk/cache pressure
+- possible file-sharing/contention
+- needless battery use
+
+Professional strategy:
+
+1. startup scan
+2. manual Refresh
+3. filesystem change event when reliable
+4. ~1.8 second debounce after a change
+5. compare modified time before scanning
+6. only re-scan changed workbook
+7. cached last result for UI
+8. fallback poll every **3 minutes**
+9. maximum active scan set default **20**
+10. scan concurrency default **2**
+
+For a currently open/high-priority workbook, a faster task-scoped refresh can later be enabled.
+
+This gives near-real-time updates after actual file changes without constant full polling.
+
+## TI-13 — Report card
+
+Each workbook card shows:
+
+- pin star
+- workbook/customer name
+- invoice number
+- completion progress
+- total records
+- registered count
+- missing count
+- last scan
+- last opened via MARIA
+- warning/error state
+- Details
+- Open workbook
+
+Sorting:
+1. incomplete current work
+2. pinned priority within status
+3. configured order
+4. completed items at bottom
+
+## TI-14 — Detailed missing rows
+
+Details panel shows per sheet:
+- registered / total
+- exact row number for missing evidence
+- missing evidence label
+- optional anchor value(s)
+
+Later local version may add:
+- "Open at row"
+- "Copy missing list"
+- "Filter only missing"
+- "Export report"
+- "Ask MARIA to help link this row"
+
+## TI-15 — Last-open semantics
+
+"Last time I entered Excel" cannot always be reconstructed exactly from an arbitrary workbook/file after the fact.
+
+Reliable fields:
+- filesystem modified time
+- last scan time
+- **lastOpenedByMaria** — when user opened that workbook through MARIA
+
+If later Windows/Office telemetry provides reliable open events, a local Office watcher can add:
+- lastObservedOpen
+- lastObservedClose
+
+MARIA must not label modified time as "last opened" when it is not.
+
+## TI-16 — Special Transport / Barبری workbook
+
+The Transport workbook is a separate monitor type:
+`type = transport`
+
+It can contain multiple sheets/tabs.
+
+The user will later identify:
+- which sheets are relevant
+- anchor columns/rows
+- evidence/photo columns
+- exclusions
+
+Meaning:
+- evidence photo registered => **تخلیه‌شده**
+- missing photo => **تخلیه‌نشده**
+
+The Island UI changes labels accordingly instead of calling them ordinary invoice "registered" rows.
+
+Outputs:
+- total per sheet
+- unloaded/registered per sheet
+- missing/unloaded-not-confirmed per sheet
+- overall totals
+- missing row details
+- pinned/open controls
+
+## TI-17 — Pinning and completed-bottom behavior
+
+A monitor can be pinned.
+
+Pinning means:
+- quick visibility
+- user priority metadata
+
+Completion still moves fully completed work to the completed/bottom section so the user sees incomplete work first.
+
+If the user later prefers "pinned complete stays top", make sorting a preference rather than hard-coding.
+
+## TI-18 — Error states
+
+Report UI must distinguish:
+
+- ok
+- needs_configuration
+- file_missing
+- network_unavailable
+- permission_denied
+- unsupported_format
+- workbook_locked
+- corrupt_workbook
+- sheet_not_found
+- scan_error
+- stale_cached_result
+
+A stale cached result can remain visible with a warning rather than disappearing.
+
+## TI-19 — Accounting safety contract
+
+Default monitor behavior:
+**READ ONLY**
+
+Never:
+- renumber evidence automatically
+- alter Excel values
+- add hyperlinks
+- delete evidence
+- move accounting files
+- repair workbook structure
+
+unless the user explicitly enables a separately tested mutation workflow.
+
+Before future mutation:
+- backup/checkpoint
+- exact workbook identity
+- exact sheet/row/cell
+- conflict check
+- next-ID reservation
+- post-write verification
+- rollback
+
+## TI-20 — MARIA Live / companion patterns
+
+The Island adopts useful general desktop-companion interaction principles while remaining MARIA-native:
+
+- persistent small top presence
+- expandable operational detail
+- compact character state
+- live agent/task feedback
+- permission/waiting visibility
+- drag/drop handoff
+- quick chat
+- shortcuts
+- idle Peek mode
+- low-interruption behavior
+- eventual model/provider switch
+- eventual media mini controls
+
+Do not copy third-party character art, sounds, branding or proprietary assets.
+
+## TI-21 — Character/animation slot
+
+Current Island code contains a lightweight animated status character placeholder.
+
+Local finalization should connect this area to the actual selected MARIA character system:
+- current avatar thumbnail/face crop where technically appropriate
+- expression tied to MARIA UI state
+- listening/thinking/executing/success/warning
+- eyes/motion response
+- user-selected character assets
+
+Performance rule:
+the Island character must not run a second heavyweight 3D renderer if a lightweight shared/cached rendering path is better.
+
+## TI-22 — Permission UX
+
+Expanded Live view must eventually surface pending permission cards:
+
+- requested action
+- target
+- reason
+- risk
+- approve once
+- deny
+- optional remember-safe-choice only for policy-eligible actions
+
+No generic "Allow everything" button.
+
+## TI-23 — Hotkeys
+
+Island and Shortcuts should support:
+
+- global open/close Island
+- expand/collapse
+- open Chat
+- user-defined shortcut hotkeys
+- conflict detection
+- display current hotkey
+- reset
+
+Current app already has a global Chat shortcut. Local integration should move hotkey registration into one HotkeyRegistry rather than scattering `globalShortcut.register` calls.
+
+## TI-24 — Drag/drop
+
+Drop-zone design exists now.
+
+Final local behavior:
+- resolve actual local file path through safe Electron-supported mechanism
+- create Selection/Task Object
+- do not upload automatically
+- ask/route based on user action:
+  - summarize
+  - send
+  - convert
+  - inspect
+  - attach to AI chat
+  - pin
+
+Drop alone never sends a file externally.
+
+## TI-25 — Data ownership
+
+Persistent UI data:
+- pins → existing pinned-notes store
+- reminders/actions → ReminderStore now; migrate/bridge to full Scheduler store
+- shortcuts → QuickShortcutStore
+- accounting monitor profiles/results → AccountingReportStore
+
+No important state is kept only inside renderer localStorage.
+
+## TI-26 — Local implementation checklist
+
+When MARIA machine is online:
+
+1. fetch/sync latest branch without overwriting local uncommitted work
+2. run npm install
+3. run unit tests
+4. run Vite build
+5. run Electron dev
+6. inspect top placement on real monitor/taskbar layout
+7. tune Island bounds for actual resolution/scaling
+8. connect actual MARIA character visual
+9. verify Pin migration/data
+10. verify scheduled action executor
+11. configure exact accounting workbooks locally
+12. configure exact invoice row rules
+13. configure exact H/I or other evidence rules from real workbook
+14. configure Transport workbook sheets/rules
+15. configure private evidence-share root locally
+16. test network disconnect/reconnect
+17. test file locked/open in Excel
+18. test workbook save triggers event scan
+19. verify 20-workbook performance
+20. compare Scanner result manually against sample invoices
+21. verify missing rows exactly
+22. test completed-bottom/pinning
+23. add legacy XLS COM fallback if needed
+24. connect richer Scheduler conditions/retries
+25. add OS/custom shortcut icons + drag reorder
+26. add pending-permission cards
+27. migrate/deprecate duplicate old bottom menu only after Island passes
+28. run full regression/build/package
+29. fix machine-specific bugs
+30. only then mark the panel **LOCAL IMPLEMENTATION VERIFIED**
+
+## TI-27 — Current GitHub scaffold files
+
+- `src/renderer/topIsland.js`
+- `src/renderer/topIsland.css`
+- `src/agent/QuickShortcutStore.js`
+- `src/agent/AccountingReportStore.js`
+- `src/agent/AccountingWorkbookScanner.js`
+- `src/agent/AccountingMonitorService.js`
+- Main-process IPC/window integration
+- Preload APIs
+- Accounting scanner unit tests
+
+### Current honesty status
+
+What is built now in GitHub:
+- architecture
+- renderer scaffold
+- persistence stores
+- read-only OOXML scanner
+- event-driven/cache-aware monitor
+- IPC wiring
+- scheduled action → Agent executor bridge
+- tests committed
+
+What is NOT yet legitimately claimable:
+- pixel-perfect real Windows rendering
+- real accounting workbook correctness before exact columns/sheets are configured
+- actual network-share access
+- real 20-file load benchmark
+- full conditional Scheduler runtime
+- real character rendering inside Island
+- local Electron package success on the user's machine
+
+Those require the MARIA Windows system to be online and testable.
