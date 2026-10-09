@@ -14,7 +14,7 @@ async function numericIds(root){
   const reservationDir=path.join(root,'.maria-id-reservations');
   try{
     for(const entry of await fs.readdir(reservationDir,{withFileTypes:true})){
-      const m=entry.name.match(/^(\d+)\./);
+      const m=entry.name.match(/^(\d+)\.lock$/);
       if(m)ids.add(Number(m[1]));
     }
   }catch(e){if(e.code!=='ENOENT')throw e;}
@@ -36,7 +36,7 @@ export class AttachmentIdAllocator{
       const ids=await numericIds(root);
       const id=(ids.size?Math.max(...ids):0)+1;
       const token=crypto.randomUUID();
-      const lockPath=path.join(dir,id+'.'+token+'.lock');
+      const lockPath=path.join(dir,id+'.lock');
       try{
         const handle=await fs.open(lockPath,'wx');
         await handle.writeFile(JSON.stringify({id,token,createdAt:new Date().toISOString()}),'utf8');
@@ -50,9 +50,13 @@ export class AttachmentIdAllocator{
     throw new Error('Unable to reserve a unique attachment ID');
   }
   async release(reservation){
-    if(!reservation?.lockPath)return false;
-    try{await fs.unlink(reservation.lockPath);return true;}
-    catch(e){if(e.code==='ENOENT')return false;throw e;}
+    if(!reservation?.lockPath||!reservation?.token)return false;
+    try{
+      const current=JSON.parse(await fs.readFile(reservation.lockPath,'utf8'));
+      if(current?.token!==reservation.token||Number(current?.id)!==Number(reservation.id))return false;
+      await fs.unlink(reservation.lockPath);
+      return true;
+    }catch(e){if(e.code==='ENOENT')return false;throw e;}
   }
 }
 
