@@ -55,4 +55,40 @@ async function renderReports(){
   $('[data-report-refresh]',host)?.addEventListener('click',async e=>{e.currentTarget.disabled=true;await window.blackClover.refreshAccountingReports({force:true});e.currentTarget.disabled=false;renderReports()});
   $('[data-report-add]',host)?.addEventListener('click',async()=>{
     const p=prompt('مسیر کامل فایل Excel:','');if(!p)return;
-    const name=promp
+    const name=prompt('اسم نمایشی؟',p.split(/[\\\\/]/).pop()||'Excel');
+    await window.blackClover.createAccountingMonitor({name:name||'',path:p,type:'invoice',pinned:true,profile:{startRow:2,anchorColumns:['C'],evidence:[]}});
+    await window.blackClover.rebuildAccountingWatchers(); renderReports();
+  });
+}
+function renderUtility(){
+  $$('[data-utility-page]').forEach(b=>b.classList.toggle('active',b.dataset.utilityPage===utility));
+  if(utility==='shortcuts')renderShortcuts();
+  else if(utility==='reports')renderReports();
+  else $('[data-utility-body]').innerHTML='<div class="future-slot"><span>03</span><b>فضای قابلیت بعدی</b><p>این صفحه عمداً خالی است تا قابلیت بعدی بدون تغییر معماری پنل اضافه شود.</p></div>';
+}
+function setTab(next){
+  tab=next;
+  $$('[data-tab]').forEach(b=>b.classList.toggle('active',b.dataset.tab===next));
+  $$('[data-view]').forEach(v=>v.hidden=v.dataset.view!==next);
+  if(next==='pins')refreshPins(); if(next==='automation')refreshReminders(); if(next==='utility')renderUtility();
+  setMode('expanded');
+}
+function bindReportClicks(){
+  $('[data-utility-body]').addEventListener('click',async e=>{
+    const shortcut=e.target.closest('[data-shortcut]'); if(shortcut){await window.blackClover.openShortcut(shortcut.dataset.shortcut);return}
+    const row=e.target.closest('[data-monitor]'); if(!row)return;
+    const id=row.dataset.monitor;
+    if(e.target.closest('[data-monitor-open]')){await window.blackClover.openAccountingMonitor(id);renderReports();return}
+    if(e.target.closest('[data-monitor-pin]')){const rows=await window.blackClover.accountingDashboard(),entry=rows.find(x=>x.monitor.id===id);if(entry)await window.blackClover.updateAccountingMonitor(id,{pinned:!entry.monitor.pinned});renderReports();return}
+    if(e.target.closest('[data-monitor-detail]')){
+      const rows=await window.blackClover.accountingDashboard(),entry=rows.find(x=>x.monitor.id===id),detail=$('[data-report-detail]'); if(!entry||!detail)return;
+      const r=entry.result;
+      detail.hidden=false;
+      detail.innerHTML=`<div class="detail-head"><b>${esc(r?.displayName||entry.monitor.name)}</b><button data-detail-close>×</button></div>${(r?.sheets||[]).map(s=>`<section><h4>${esc(s.sheet)} — ${s.registered}/${s.total}</h4>${s.missingRows?.length?`<div class="missing-lines">${s.missingRows.slice(0,200).map(x=>`<span>ردیف ${x.row}: ${esc(x.missing.join('، '))}</span>`).join('')}</div>`:'<p class="all-good">همه موارد این شیت ثبت هستند.</p>'}</section>`).join('')||'<p>هنوز Scan معتبر نداریم.</p>'}`;
+      $('[data-detail-close]',detail).onclick=()=>detail.hidden=true;
+    }
+  });
+}
+export async function mountTopIsland(){
+  document.body.classList.add('top-island-surface');
+  document.body.innerHTML=`<main class="top-island" data-mode="compact"><header class="island-bar"><button class="island-character" data-state="online" data-toggle-mode><span class="face"><i class="eye e1"></i><i class="eye e2"></i><i class="mouth"></i></span></button><div class="island-status"><smal
