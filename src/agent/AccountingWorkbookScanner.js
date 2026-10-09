@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import JSZip from 'jszip';
+import { accountingEvidenceResolver } from './AccountingEvidenceResolver.js';
 
 const xmlDecode=s=>String(s??'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
 const attr=(tag,name)=>{const m=String(tag).match(new RegExp('(?:^|\\s)'+name.replace(':','\\:')+'="([^"]*)"'));return m?xmlDecode(m[1]):'';};
@@ -117,6 +118,7 @@ export class AccountingWorkbookScanner{
         const entry=zip.file(sheet.target);
         if(!entry){sheetResults.push({sheet:sheet.name,status:'sheet_xml_missing',total:0,registered:0,missing:0,missingRows:[]});continue;}
         const cells=parseCells(await entry.async('string'),shared);
+        const evidenceContext=await accountingEvidenceResolver.prepare({zip,sheetTarget:sheet.target,cells,workbookPath:filePath,profile});
         const startRow=Math.max(1,Number(profile.startRow)||1),endRow=Math.min(Number(profile.endRow)||Number.MAX_SAFE_INTEGER,maxRowFromCells(cells));
         const anchorColumns=(profile.anchorColumns||profile.anchor?.columns||['C']).map(x=>String(x).toUpperCase());
         const rules=Array.isArray(profile.rules)?profile.rules:[];
@@ -129,16 +131,16 @@ export class AccountingWorkbookScanner{
           total++;
           const chosen=rules.find(r=>conditionMatches(cells,row,r.when))||null;
           const evidence=Array.isArray(chosen?.evidence)?chosen.evidence:fallbackEvidence;
-          const missing=[];
+          const missing=[],checks=[];
           if(!evidence.length)missing.push('needs_configuration');
           for(const rule of evidence){
-            const required=Math.max(1,Number(rule.required)||1),count=evidenceCount(cells,row,rule);
-            if(count<required)missing.push(String(rule.label||rule.name||rule.columns?.join('+')||rule.column||'attachment'));
+            const check=accountingEvidenceResolver.evaluate(cells,row,rule,evidenceContext);checks.push(check);
+            if(!check.ok)missing.push(check.label);
           }
           if(!missing.length)registered++;
-          else missingRows.push({row,missing,anchor:Object.fromEntries(anchorColumns.map(col=>[col,String(cells.get(col+row)?.value??'')]))});
+          else missingRows.push({row,missing,checks,anchor:Object.fromEntries(anchorColumns.map(col=>[col,String(cells.get(col+row)?.value??'')]))});
         }
-        sheetResults.push({sheet:sheet.name,status:'ok',total,registered,missing:Math.max(0,total-registered),missingRows});
+        sheetResults.push({sheet:sheet.name,status:'ok',total,registered,missing:Math.max(0,total-registered),missingRows,evidenceSummary:evidenceContext.summary});
       }
       const total=sheetResults.reduce((n,x)=>n+x.total,0),registered=sheetResults.reduce((n,x)=>n+x.registered,0),missing=Math.max(0,total-registered);
       const configured=sheetResults.every(s=>!s.missingRows.some(r=>r.missing.includes('needs_configuration')));
@@ -147,6 +149,7 @@ export class AccountingWorkbookScanner{
         type:monitor.type||'invoice',lastModified:stat.mtime.toISOString(),size:stat.size,
         total,registered,missing,complete:configured&&total>0&&missing===0,
         completion:total?Math.round((registered/total)*100):0,
+        evidenceSummary:sheetResults.find(x=>x.evidenceSummary)?.evidenceSummary||null,
         sheets:sheetResults,scannedAt:new Date().toISOString()
       };
     }catch(e){
