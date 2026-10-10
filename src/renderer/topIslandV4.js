@@ -1,4 +1,6 @@
 import './topIslandV4.css';
+import { createSmartShortcutEditor } from './shortcutEditorV4.js';
+import { IslandHoverController } from './islandHoverController.js';
 
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -15,8 +17,12 @@ const I={
   sound:'<svg viewBox="0 0 24 24"><path d="M5 10h4l4-4v12l-4-4H5z"/><path d="M16 9c1.5 1.5 1.5 4.5 0 6M18.5 6.5c3.2 3 3.2 8 0 11"/></svg>',
   gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.7 5.7 7 7M17 17l1.3 1.3M18.3 5.7 17 7M7 17l-1.3 1.3"/></svg>',
   close:'<svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg>',
-  launch:'<svg viewBox="0 0 24 24"><path d="M8 16 16 8M10 7h7v7"/><path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/></svg>',
-  report:'<svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v5h5M9 12h7M9 16h7"/></svg>',
+  launch:'<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>',
+  folder:'<svg viewBox="0 0 24 24"><path d="M3 6.5h6l2 2h9a1 1 0 0 1 1 1v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></svg>',
+  copy:'<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>',
+  edit:'<svg viewBox="0 0 24 24"><path d="M4 17.5 16.9 4.6a2 2 0 0 1 2.8 2.8L6.8 20.3 3 21z"/><path d="m14.7 6.8 2.8 2.8"/></svg>',
+  trash:'<svg viewBox="0 0 24 24"><path d="M4.5 7h15M9 7V4h6v3M7 7l.7 13h8.6L17 7M10 11v6M14 11v6"/></svg>',
+  report:'<svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 9h7M8.5 13h7M8.5 17H13"/></svg>',
   clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg>',
   reserved:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   refresh:'<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2 5"/><path d="M20 5v6h-6"/></svg>',
@@ -40,16 +46,21 @@ const PAGES=[
 ];
 
 function loadPrefs(){
-  try{return {autoHideSeconds:60,pinned:false,sound:true,lastPage:'home',...(JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{})};}
-  catch{return {autoHideSeconds:60,pinned:false,sound:true,lastPage:'home'};}
+  try{return {autoHideSeconds:60,collapseDelayMs:5000,pinned:false,sound:true,lastPage:'home',...(JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{})};}
+  catch{return {autoHideSeconds:60,collapseDelayMs:5000,pinned:false,sound:true,lastPage:'home'};}
 }
 let prefs=loadPrefs();
 let page=PAGES.some(x=>x.id===prefs.lastPage)?prefs.lastPage:'home';
 let mode='compact';
 let timer=null;
+let hoverController=null;
 let events=[];
 let filter='all';
 let audio=null;
+let greetingTimer=null;
+let shortcutIconObserver=null;
+let nativeShortcutPickerOpen=false;
+let avatarVisibilityState={enabled:false,visible:false};
 
 function savePrefs(patch){prefs={...prefs,...patch};try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}catch{};syncChrome();}
 function playTone(kind='tap'){
@@ -63,26 +74,40 @@ function playTone(kind='tap'){
   }catch{}
 }
 function setMode(next){
-  const safe=['peek','compact','expanded'].includes(next)?next:'compact';
-  mode=prefs.pinned&&safe==='peek'?'compact':safe;
+  const requested=['peek','preview','compact','expanded'].includes(next)?next:'preview';
+  const safe=requested==='compact'?'preview':prefs.pinned&&requested==='peek'?'preview':requested;
+  if(mode===safe){syncChrome();return;}
+  mode=safe;
   document.body.dataset.islandMode=mode;
   $('.maria-island-v4')?.setAttribute('data-mode',mode);
   window.blackClover?.setIslandMode?.(mode).catch(()=>{});
-  syncChrome();armIdle();
+  syncChrome();
+  armIdle();
 }
 function armIdle(){
   clearTimeout(timer);
-  if(prefs.pinned||Number(prefs.autoHideSeconds)===0)return;
-  timer=setTimeout(()=>{
-    if($('.v4-modal')||$('input:focus,textarea:focus,select:focus')){armIdle();return;}
-    setMode('peek');
-  },Math.max(15,Number(prefs.autoHideSeconds)||60)*1000);
+  if(mode!=='peek')hoverController?.refresh();
 }
-function wake(){if(mode==='peek')setMode('compact');armIdle();}
+function wake(){
+  if(mode!=='peek'&&!hoverController?.inside)armIdle();
+}
+function protectedPanel(){
+  return Boolean(nativeShortcutPickerOpen||$('.v4-modal')||$('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus'));
+}
+function setPanelPinned(pinned){
+  savePrefs({pinned:Boolean(pinned)});
+  if(!pinned)armIdle();
+}
 function syncChrome(){
   const root=$('.maria-island-v4');
   root?.classList.toggle('is-pinned',Boolean(prefs.pinned));
   root?.classList.toggle('is-muted',!prefs.sound);
+  $$('[data-page].v4-right-module').forEach(button=>{
+    const active=mode==='expanded'&&button.dataset.page===page;
+    button.classList.toggle('active',active);
+    if(active)button.setAttribute('aria-current','page');
+    else button.removeAttribute('aria-current');
+  });
   $('[data-panel-pin]')?.classList.toggle('active',Boolean(prefs.pinned));
   $('[data-panel-sound]')?.classList.toggle('active',Boolean(prefs.sound));
   $('[data-panel-pin]')?.setAttribute('aria-pressed',String(Boolean(prefs.pinned)));
@@ -90,6 +115,13 @@ function syncChrome(){
 }
 function setCharacter(state='idle'){
   $('.v4-character')?.setAttribute('data-state',state);
+}
+function greetCharacter(){
+  const avatar=$('[data-character]');if(!avatar)return;
+  if(['thinking','executing','error','offline'].includes(avatar.dataset.state))return;
+  clearTimeout(greetingTimer);
+  avatar.dataset.state='hello';
+  greetingTimer=setTimeout(()=>{if(avatar.isConnected&&avatar.dataset.state==='hello')avatar.dataset.state='idle';},1850);
 }
 function readableEventValue(v){
   if(v===null||v===undefined)return '';
@@ -132,7 +164,7 @@ function openModal({title,kicker='',body='',submit='ذخیره',onSubmit=null,wi
     catch(err){let box=$('.v4-error',wrap);if(!box){box=document.createElement('div');box.className='v4-error';$('.v4-dialog-body',wrap).prepend(box)}box.textContent=String(err?.message||err);}
     finally{if(b)b.disabled=false;}
   };
-  requestAnimationFrame(()=>wrap.classList.add('open'));
+  requestAnimationFrame(()=>{wrap.classList.add('open');wrap.querySelector('input:not([type=radio]),textarea')?.focus();});
   return wrap;
 }
 const field=(label,control,help='')=>`<label class="v4-field"><span>${esc(label)}</span>${control}${help?`<small>${esc(help)}</small>`:''}</label>`;
@@ -177,22 +209,59 @@ async function renderHome(){
     </section>`;
 }
 function shortcutCard(x){
-  return `<article class="v4-shortcut" data-shortcut-id="${esc(x.id)}">
-    <button data-shortcut-open><span class="v4-app-icon">${x.customIcon?`<img src="${esc(x.customIcon)}">`:esc(x.icon||'◆')}</span><div><b>${esc(x.label)}</b><small>${esc(x.kind||'auto')}${x.hotkey?` • ${esc(x.hotkey)}`:''}</small></div><i class="health ${esc(x.health||'unknown')}"></i></button>
-    <button class="more" data-shortcut-edit>•••</button>
+  const target=String(x.target||'');
+  const filename=target.split(/[\\/]/).pop()||'';
+  const extension=x.kind==='url'?'':filename.includes('.')?filename.slice(filename.lastIndexOf('.')).toUpperCase():'';
+  const kind={app:'برنامه',file:'فایل',folder:'پوشه',url:'وب‌سایت',media:'رسانه'}[x.kind]||String(x.kind||'میان‌بر');
+  const details=kind+(extension?' • '+extension:'');
+  const image=x.customIcon?`<img src="${esc(x.customIcon)}" alt="" loading="lazy">`:esc(x.icon||'◆');
+  const isImage=x.kind!=='folder'&&/\.(png|jpe?g|gif|webp|bmp)$/i.test(target);
+  return `<article class="v4-shortcut" data-shortcut-id="${esc(x.id)}" data-shortcut-kind="${esc(x.kind)}" data-shortcut-preview="${isImage?'image':'icon'}" title="${esc(target)}">
+    <button type="button" data-shortcut-open title="باز کردن ${esc(x.label)}" aria-label="باز کردن ${esc(x.label)}">
+      <span class="v4-app-icon" data-shortcut-icon="${esc(x.id)}">${image}</span>
+      <span class="v4-shortcut-info"><b>${esc(x.label)}</b><small>${esc(details)}</small><span class="v4-shortcut-path" dir="auto" title="${esc(target)}">${esc(target)}</span></span>
+    </button>
+    ${x.pinned?'<span class="v4-shortcut-favorite" title="میان‌بر ثابت‌شده">★</span>':''}
+    <button type="button" class="more" data-shortcut-edit title="گزینه‌های میان‌بر" aria-label="گزینه‌های ${esc(x.label)}">•••</button>
   </article>`;
+}
+function hydrateShortcutIcons(host){
+  shortcutIconObserver?.disconnect();
+  const elements=$$('[data-shortcut-icon]',host);
+  const fetchIcon=async node=>{
+    const id=node.dataset.shortcutIcon;
+    if(!id||!window.blackClover.shortcutFileIcon)return;
+    try{
+      const data=await window.blackClover.shortcutFileIcon(id);
+      if(!node.isConnected||!data||!data.startsWith('data:image/png;base64,'))return;
+      const picture=document.createElement('img');
+      picture.alt='';picture.src=data;picture.loading='lazy';
+      node.replaceChildren(picture);
+    }catch{/* Keep the built-in fallback icon. */}
+  };
+  if('IntersectionObserver' in window){
+    shortcutIconObserver=new IntersectionObserver(entries=>{
+      for(const entry of entries)if(entry.isIntersecting){
+        shortcutIconObserver?.unobserve(entry.target);
+        void fetchIcon(entry.target);
+      }
+    },{rootMargin:'120px'});
+    for(const item of elements)shortcutIconObserver.observe(item);
+  }else for(const item of elements)void fetchIcon(item);
 }
 async function renderShortcuts(){
   const host=$('[data-page-body]');if(!host)return;
   const items=await window.blackClover.listShortcuts().catch(()=>[]);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>QUICK LAUNCH</small><h2>میان‌برها</h2><p>فایل، پوشه، برنامه، سایت، پروژه، رسانه و Routine را سریع باز کن.</p></div></header>
-    <div class="v4-toolbar"><label>${I.search}<input data-shortcut-search placeholder="جستجو…"></label><span>${items.length} مورد</span></div>
-    ${items.length?`<div class="v4-favorite-strip">${items.slice(0,8).map(shortcutCard).join('')}</div>${items.length>8?'<button class="v4-view-all" data-shortcut-all>دیدن همه</button>':''}<div class="v4-shortcut-grid" data-shortcut-grid>${items.map(shortcutCard).join('')}</div>`:`<section class="v4-empty-panel"><span>${I.launch}</span><small>QUICK LAUNCH</small><h3>اولین میان‌بر را اضافه کن</h3><p>فایل، برنامه، پوشه، سایت، فیلم، آهنگ یا Routine را اینجا بگذار تا با یک کلیک باز شود.</p><button data-context-add>${I.plus} افزودن میان‌بر</button></section>`}`;
+    <header class="v4-page-head"><div><small>QUICK LAUNCH</small><h2>میان‌برها</h2><p>دو روش ساده: فایل را بکش و رها کن، یا روی + بزن و انتخاب کن.</p></div><button type="button" class="v4-head-add" data-context-add>${I.plus} افزودن میان‌بر</button></header>
+    <div class="v4-toolbar"><label>${I.search}<input data-shortcut-search placeholder="جستجوی نام، نوع یا مسیر…" aria-label="جستجوی میانبر"></label><span>${items.length} میان‌بر</span></div>
+    <div class="v4-shortcut-drop-hint" data-shortcut-drop-area role="note">${I.plus}<div><b>فایل، برنامه یا پوشه را اینجا رها کن</b><span>یا لینک را بکش؛ میان‌بر خودکار ساخته می‌شود.</span></div><small>بدون جابه‌جایی فایل اصلی</small></div>
+    <div class="v4-shortcut-notice" data-shortcut-message role="status" aria-live="polite" hidden></div>
+    ${items.length?`<div class="v4-shortcut-grid" data-shortcut-grid>${items.map(shortcutCard).join('')}</div>`:`<section class="v4-shortcut-empty"><span class="v4-shortcut-empty-icon">${I.launch}</span><h3>هنوز میان‌بری نداری</h3><p>فایل را از ویندوز بکش و رها کن، یا از + یک برنامه، پوشه یا لینک انتخاب کن.</p><button type="button" data-context-add>${I.plus} افزودن اولین میان‌بر</button></section>`}`;
   $('[data-shortcut-search]',host)?.addEventListener('input',e=>{
     const q=e.currentTarget.value.trim().toLowerCase();$$('.v4-shortcut',host).forEach(x=>x.hidden=q&&!x.textContent.toLowerCase().includes(q));
   });
-  const strip=$('.v4-favorite-strip',host);strip?.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){e.preventDefault();strip.scrollLeft+=e.deltaY;}},{passive:false});
+  hydrateShortcutIcons(host);
 }
 function reportStatus(r){
   if(!r)return 'در انتظار';
@@ -245,7 +314,7 @@ async function renderReports(){
   const missing=rows.reduce((n,x)=>n+Number(x.result?.missing||0),0);
   const issues=rows.reduce((n,x)=>n+Number(x.result?.brokenLinks||0)+Number(x.result?.duplicateIdCount||0)+Number(x.result?.idMismatches||0),0);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>ACCOUNTING WATCH</small><h2>گزارش ثبت</h2><p>کنترل واقعی فیش، پلاک، لینک عکس و باربری.</p></div><button class="v4-soft" data-report-refresh>${I.refresh}<span>بررسی</span></button></header>
+    <header class="v4-page-head"><div><small>ACCOUNTING WATCH</small><h2>گزارش ثبت</h2><p>کنترل واقعی فیش، پلاک، لینک عکس و باربری.</p></div><button class="v4-head-add" data-context-add>＋ افزودن گزارش</button><button class="v4-soft" data-report-refresh>${I.refresh}<span>بررسی</span></button></header>
     <section class="v4-report-summary">
       <article><b>${rows.length}</b><small>فایل فعال</small></article>
       <article><b>${rows.filter(x=>x.result?.complete).length}</b><small>کامل</small></article>
@@ -263,7 +332,7 @@ async function renderPins(){
   const host=$('[data-page-body]');if(!host)return;
   const items=await window.blackClover.listPins().catch(()=>[]);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>PIN LIBRARY</small><h2>پین‌ها</h2><p>پیام، Prompt، لینک، فایل، گفتگو، پروژه و چیزهای مهم.</p></div></header>
+    <header class="v4-page-head"><div><small>PIN LIBRARY</small><h2>پین‌ها</h2><p>پیام، Prompt، لینک، فایل، گفتگو، پروژه و چیزهای مهم.</p></div><button class="v4-head-add" data-context-add>＋ افزودن پین</button></header>
     <div class="v4-toolbar"><label>${I.search}<input data-pin-search placeholder="جستجوی پین…"></label><span>${items.length} مورد</span></div>
     <section class="v4-pin-grid">${items.map(pinCard).join('')||'<div class="v4-empty">هنوز چیزی پین نشده.</div>'}</section>`;
   $('[data-pin-search]',host)?.addEventListener('input',e=>{const q=e.currentTarget.value.trim().toLowerCase();$$('.v4-pin-card',host).forEach(x=>x.hidden=q&&!x.textContent.toLowerCase().includes(q));});
@@ -280,7 +349,7 @@ async function renderTasks(){
   const host=$('[data-page-body]');if(!host)return;
   const items=(await window.blackClover.listReminders().catch(()=>[])).filter(x=>x.enabled!==false);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>TASKS & AUTOMATIONS</small><h2>یادآور و اجرا</h2><p>فقط یادآوری یا اجرای واقعی از طریق Planner و Verify.</p></div></header>
+    <header class="v4-page-head"><div><small>TASKS & AUTOMATIONS</small><h2>یادآور و اجرا</h2><p>فقط یادآوری یا اجرای واقعی از طریق Planner و Verify.</p></div><button class="v4-head-add" data-context-add>＋ افزودن یادآور</button></header>
     <section class="v4-task-summary"><article><b>${items.length}</b><small>فعال</small></article><article><b>${items.filter(x=>x.kind==='action').length}</b><small>اجرای خودکار</small></article><article><b>${items.filter(x=>x.paused).length}</b><small>Pause</small></article></section>
     <section class="v4-task-list">${items.map(taskCard).join('')||'<div class="v4-empty">وظیفه فعالی نیست.</div>'}</section>`;
 }
@@ -293,9 +362,10 @@ function renderSettings(){
   host.innerHTML=`
     <header class="v4-page-head"><div><small>TOP ISLAND SETTINGS</small><h2>تنظیمات پنل</h2><p>فقط تنظیمات همین پنل بالای صفحه.</p></div></header>
     <section class="v4-settings">
-      <button data-setting-pin><span>${I.pin}</span><div><b>پین پنل</b><small>${prefs.pinned?'پنل مخفی نمی‌شود':'بعد از بی‌کاری جمع می‌شود'}</small></div><i class="${prefs.pinned?'on':''}"></i></button>
+      <button data-setting-pin><span>${I.pin}</span><div><b>پین پنل</b><small>${prefs.pinned?'ثابت تا ۵ ثانیه بی‌کاری':'با کلیک روی پنل، موقتاً ثابت می‌شود'}</small></div><i class="${prefs.pinned?'on':''}"></i></button>
+      <button data-setting-avatar aria-pressed="${avatarVisibilityState.enabled?'true':'false'}"><span>${I.eye}</span><div><b>کاراکتر بزرگ روی دسکتاپ</b><small>${avatarVisibilityState.enabled?'نمایش فعال است؛ برای پنهان‌کردن کلیک کن':'به‌صورت پیش‌فرض پنهان است؛ با کلیک نمایش بده'}</small></div><i class="${avatarVisibilityState.enabled?'on':''}"></i></button>
       <button data-setting-sound><span>${I.sound}</span><div><b>صدای پنل</b><small>مستقل از صدای Windows و MARIA Voice</small></div><i class="${prefs.sound?'on':''}"></i></button>
-      <label><span>${I.clock}</span><div><b>Auto-hide</b><small>زمان تبدیل به حالت مخفی</small></div><select data-setting-timeout><option value="30" ${prefs.autoHideSeconds===30?'selected':''}>۳۰ ثانیه</option><option value="60" ${prefs.autoHideSeconds===60?'selected':''}>۱ دقیقه</option><option value="120" ${prefs.autoHideSeconds===120?'selected':''}>۲ دقیقه</option><option value="0" ${prefs.autoHideSeconds===0?'selected':''}>هرگز</option></select></label>
+      <label><span>${I.clock}</span><div><b>جمع‌شدن خودکار</b><small>زمان بی‌استفاده‌ماندن قبل از کوچک‌شدن</small></div><select data-setting-collapse><option value="2000" ${prefs.collapseDelayMs===2000?'selected':''}>۲ ثانیه</option><option value="2800" ${prefs.collapseDelayMs===2800?'selected':''}>۳ ثانیه</option><option value="5000" ${prefs.collapseDelayMs===5000?'selected':''}>۵ ثانیه</option><option value="10000" ${prefs.collapseDelayMs===10000?'selected':''}>۱۰ ثانیه</option><option value="0" ${prefs.collapseDelayMs===0?'selected':''}>هرگز</option></select></label>
       <button data-full-settings><span>${I.gear}</span><div><b>تنظیمات کامل MARIA</b><small>Voice، مدل‌ها، سیستم و اتصال‌ها</small></div><strong>›</strong></button>
     </section>`;
 }
@@ -315,34 +385,158 @@ async function renderPage(){
   if(body)body.scrollTop=0;
   requestAnimationFrame(()=>body?.classList.remove('switching'));
 }
-function selectPage(id){
+function selectPage(id,{pin=false}={}){
   if(id!=='settings'&&!PAGES.some(x=>x.id===id))return;
-  page=id;setMode('expanded');playTone();renderPage();
+  const unchanged=page===id&&mode==='expanded';
+  if(pin)setPanelPinned(true);
+  page=id;setMode('expanded');
+  if(unchanged)return;
+  playTone();renderPage();
+}
+let shortcutNoticeTimer=null;
+function showShortcutNotice(message,{error=false}={}){
+  const host=$('[data-page-body]');
+  if(page!=='shortcuts'||!host)return;
+  let notice=$('[data-shortcut-message]',host);
+  if(!notice){
+    notice=document.createElement('div');
+    notice.className='v4-shortcut-notice';
+    notice.dataset.shortcutMessage='';
+    notice.setAttribute('role','status');
+    host.querySelector('.v4-page-head')?.after(notice);
+  }
+  notice.textContent=String(message);
+  notice.hidden=false;
+  notice.classList.toggle('error',error);
+  clearTimeout(shortcutNoticeTimer);
+  shortcutNoticeTimer=setTimeout(()=>{if(notice.isConnected)notice.hidden=true;},5200);
+}
+function normalizeQuickShortcutInput(value){
+  const raw=String(value||'').trim();
+  // Paste a bare website like youtube.com without making the user type https://.
+  if(/^(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|io|dev|app|ir|co|tv|me|info|edu|gov|xyz|ai)(?:[/?#][^\s]*)?$/i.test(raw))return 'https://'+raw;
+  return raw;
+}
+async function quickAddShortcut(input){
+  if(!input)return {status:'cancelled'};
+  const resolved=typeof input==='string'?await window.blackClover.resolveShortcut(normalizeQuickShortcutInput(input)):input;
+  if(!resolved?.target)return {status:'cancelled'};
+  const key=String(resolved.target).toLowerCase();
+  const current=await window.blackClover.listShortcuts();
+  const prior=current.find(x=>String(x.target).toLowerCase()===key);
+  if(prior){
+    await renderShortcuts();
+    showShortcutNotice('«'+prior.label+'» قبلاً اضافه شده است.');
+    return {status:'existing',item:prior};
+  }
+  try{
+    const created=await window.blackClover.createShortcut({
+      target:resolved.target,label:resolved.label,kind:resolved.kind,icon:resolved.icon
+    });
+    await renderShortcuts();
+    showShortcutNotice('«'+created.label+'» اضافه شد. برای بازکردن، روی کارت کلیک کن.');
+    const card=$$('[data-shortcut-id]').find(x=>x.dataset.shortcutId===created.id);
+    card?.classList.add('just-added');
+    return {status:'created',item:created};
+  }catch(error){
+    // The main process also guards against duplicates (including .lnk aliases).
+    if(/قبلاً ثبت شده|already exists|duplicate/i.test(String(error?.message||error))){
+      await renderShortcuts();
+      showShortcutNotice('این میان‌بر قبلاً اضافه شده است.');
+      return {status:'existing'};
+    }
+    showShortcutNotice(String(error?.message||error),{error:true});
+    throw error;
+  }
+}
+function openShortcutQuickMenu(){
+  if(mode!=='expanded')setMode('expanded');
+  const modal=openModal({
+    title:'افزودن میان‌بر',kicker:'QUICK LAUNCH',
+    body:`<p class="v4-shortcut-add-intro">فقط یکی از گزینه‌ها را انتخاب کن. نام، نوع و تصویر میان‌بر به‌صورت خودکار شناسایی می‌شود.</p>
+      <div class="v4-shortcut-pick-actions">
+        <button type="button" data-quick-pick="file">${I.launch}<b>فایل یا برنامه</b><small>Excel، PDF، عکس، ویدیو، EXE و…</small></button>
+        <button type="button" data-quick-pick="folder">${I.folder||I.pin}<b>پوشه</b><small>یک پوشه از ویندوز انتخاب کن</small></button>
+      </div>
+      ${field('آدرس وب‌سایت یا مسیر فایل', '<input name="quick-target" dir="auto" placeholder="https://example.com یا C:\\\\..." autocomplete="off">','برای لینک یا مسیر دستی، آدرس را وارد کن و «افزودن» را بزن.')}
+      <p class="v4-shortcut-safe">فقط یک میان‌بر ساخته می‌شود؛ فایل اصلی جابه‌جا، کپی یا حذف نمی‌شود.</p>
+      <div class="v4-shortcut-add-error" data-quick-error role="alert" hidden></div>`,
+    submit:'افزودن',
+    onSubmit:async fd=>{
+      const target=String(fd.get('quick-target')||'').trim();
+      if(!target){modal.querySelector('[name="quick-target"]')?.focus();return false;}
+      try{await quickAddShortcut(target);}
+      catch(error){modal.querySelector('[data-quick-error]').textContent=String(error?.message||error);modal.querySelector('[data-quick-error]').hidden=false;return false;}
+    }
+  });
+  for(const button of $$('[data-quick-pick]',modal)){
+    button.onclick=async()=>{
+      button.disabled=true;
+      nativeShortcutPickerOpen=true;
+      try{
+        const chosen=await window.blackClover.pickShortcutTarget(button.dataset.quickPick);
+        if(chosen){
+          await quickAddShortcut(chosen);
+          modal.remove();
+        }
+      }catch(error){
+        const errorHost=$('[data-quick-error]',modal);
+        if(errorHost){errorHost.textContent=String(error?.message||error);errorHost.hidden=false;}
+      }finally{nativeShortcutPickerOpen=false;button.disabled=false;}
+    };
+  }
+  return modal;
 }
 function contextAdd(){
-  if(page==='shortcuts')return editShortcut();
+  if(page==='shortcuts')return openShortcutQuickMenu();
+  if(mode!=='expanded')setMode('expanded');
   if(page==='reports')return addAccounting();
   if(page==='pins')return editPin();
   if(page==='tasks')return editTask();
   openModal({title:'ایجاد سریع',kicker:'QUICK CREATE',body:'<div class="v4-quick-create"><button type="button" data-quick="shortcut">میان‌بر</button><button type="button" data-quick="report">Excel Watch</button><button type="button" data-quick="pin">پین</button><button type="button" data-quick="task">وظیفه</button></div>'});
 }
-function editShortcut(item=null){
+function editShortcut(item=null,initialTarget=''){return createSmartShortcutEditor({openModal,field,esc,renderShortcuts},item,initialTarget);}
+async function openShortcutOptions(id){
+  const item=(await window.blackClover.listShortcuts()).find(x=>x.id===id);
+  if(!item)return;
+  const local=!['url','webapp'].includes(item.kind);
   const modal=openModal({
-    title:item?'ویرایش میان‌بر':'میان‌بر جدید',kicker:'QUICK LAUNCH',
-    body:`<div class="v4-fields-2">${field('عنوان',`<input name="label" value="${esc(item?.label||'')}" required>`)}${field('نوع',`<select name="kind">${['auto','app','file','folder','url','media','project','routine','workspace','conversation'].map(k=>`<option value="${k}" ${item?.kind===k?'selected':''}>${k}</option>`).join('')}</select>`)}</div>
-      ${field('مسیر / URL / هدف',`<input name="target" value="${esc(item?.target||'')}" required>`)}
-      <div class="v4-fields-2">${field('آیکون',`<input name="icon" value="${esc(item?.icon||'◆')}">`)}${field('کلید میانبر',`<input name="hotkey" value="${esc(item?.hotkey||'')}" placeholder="Ctrl+Alt+1">`)}</div>`,
-    onSubmit:async fd=>{
-      const payload={label:fd.get('label'),kind:fd.get('kind'),target:fd.get('target'),icon:fd.get('icon'),hotkey:fd.get('hotkey')};
-      if(item)await window.blackClover.updateShortcut(item.id,payload);else await window.blackClover.createShortcut(payload);
-      await renderShortcuts();
-    }
+    title:item.label,kicker:'SHORTCUT OPTIONS',
+    body:`<p class="v4-shortcut-options-path" dir="auto" title="${esc(item.target)}">${esc(item.target)}</p>
+      <div class="v4-shortcut-option-grid">
+        <button type="button" data-shortcut-action="open">${I.open}<span>بازکردن</span></button>
+        <button type="button" data-shortcut-action="copy">${I.copy}<span>کپی مسیر یا لینک</span></button>
+        ${local?`<button type="button" data-shortcut-action="reveal">${I.folder}<span>نمایش در پوشه</span></button>`:''}
+        <button type="button" data-shortcut-action="favorite">${I.pin}<span>${item.pinned?'برداشتن از اول فهرست':'ثابت در بالای فهرست'}</span></button>
+        <button type="button" data-shortcut-action="edit">${I.edit}<span>تغییر نام و جزئیات</span></button>
+        <button type="button" data-shortcut-action="remove" class="danger">${I.trash}<span>حذف فقط میان‌بر</span></button>
+      </div>
+      <p class="v4-shortcut-safe">حذف یا ویرایش میان‌بر، فایل اصلی را حذف یا جابه‌جا نمی‌کند.</p>
+      <div class="v4-shortcut-add-error" data-shortcut-options-error role="alert" hidden></div>`
   });
-  if(item){
-    const del=document.createElement('button');del.type='button';del.className='v4-danger';del.textContent='حذف میان‌بر';
-    $('.v4-dialog-body',modal).append(del);
-    del.onclick=async()=>{if(confirm('این میان‌بر حذف شود؟')){await window.blackClover.removeShortcut(item.id);modal.remove();await renderShortcuts();}};
+  for(const actionButton of $$('[data-shortcut-action]',modal)){
+    actionButton.onclick=async()=>{
+      const kind=actionButton.dataset.shortcutAction;
+      if(kind==='remove'&&!confirm('فقط میان‌بر حذف شود؟ فایل اصلی دست‌نخورده می‌ماند.'))return;
+      if(kind==='edit'){modal.remove();editShortcut(item);return;}
+      actionButton.disabled=true;
+      try{
+        if(kind==='open')await window.blackClover.openShortcut(item.id);
+        else if(kind==='copy')await window.blackClover.copyShortcutTarget(item.id);
+        else if(kind==='reveal')await window.blackClover.revealShortcut(item.id);
+        else if(kind==='favorite')await window.blackClover.updateShortcut(item.id,{pinned:!item.pinned});
+        else if(kind==='remove')await window.blackClover.removeShortcut(item.id);
+        modal.remove();
+        if(['favorite','remove'].includes(kind))await renderShortcuts();
+        if(kind==='copy')showShortcutNotice('مسیر یا لینک در کلیپ‌بورد کپی شد.');
+        if(kind==='remove')showShortcutNotice('میان‌بر حذف شد؛ فایل اصلی محفوظ است.');
+      }catch(error){
+        const errorHost=$('[data-shortcut-options-error]',modal);
+        if(errorHost){errorHost.textContent=String(error?.message||error);errorHost.hidden=false;}
+      }finally{actionButton.disabled=false;}
+    };
   }
+  return modal;
 }
 function editPin(item=null){
   const modal=openModal({
@@ -443,8 +637,19 @@ function bindPageActions(){
     const shortcut=e.target.closest('[data-shortcut-id]');
     if(shortcut){
       const id=shortcut.dataset.shortcutId;
-      if(e.target.closest('[data-shortcut-edit]')){const item=(await window.blackClover.listShortcuts()).find(x=>x.id===id);if(item)editShortcut(item);}
-      else if(e.target.closest('[data-shortcut-open]'))await window.blackClover.openShortcut(id);
+      if(e.target.closest('[data-shortcut-edit]')){await openShortcutOptions(id);}
+      else if(e.target.closest('[data-shortcut-open]')){
+        try{await window.blackClover.openShortcut(id);}
+        catch(error){
+          let status=$('[data-shortcut-message]',body);
+          if(!status){
+            status=document.createElement('p');status.className='v4-shortcut-message';
+            status.dataset.shortcutMessage='';status.setAttribute('role','alert');
+            body.querySelector('.v4-page-head')?.after(status);
+          }
+          status.textContent=String(error?.message||error);
+        }
+      }
       return;
     }
     const monitor=e.target.closest('[data-monitor]');
@@ -472,70 +677,194 @@ function bindPageActions(){
 }
 function updateApprovalTimers(){for(const el of $$('[data-approval-wait]')){const start=Number(el.dataset.start)||Date.now(),sec=Math.max(0,Math.floor((Date.now()-start)/1000));el.textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}}
 function bindGlobalActions(){
-  document.addEventListener('click',e=>{
-    if(e.target.closest('[data-context-add]')){playTone();contextAdd();}
-    if(e.target.closest('[data-panel-pin]')){savePrefs({pinned:!prefs.pinned});playTone(prefs.pinned?'ok':'tap');armIdle();}
-    if(e.target.closest('[data-panel-sound]')){savePrefs({sound:!prefs.sound});if(prefs.sound)playTone('ok');}
-    if(e.target.closest('[data-settings]'))selectPage('settings');
-    if(e.target.closest('[data-home]'))selectPage('home');
-    const quick=e.target.closest('[data-quick]')?.dataset.quick;if(quick){$('.v4-modal')?.remove();if(quick==='shortcut')editShortcut();else if(quick==='report')addAccounting();else if(quick==='pin')editPin();else editTask();}
-    if(e.target.closest('[data-setting-pin]')){savePrefs({pinned:!prefs.pinned});renderSettings();armIdle();}
-    if(e.target.closest('[data-setting-sound]')){savePrefs({sound:!prefs.sound});if(prefs.sound)playTone('ok');renderSettings();}
+  const moduleId=element=>element?.dataset.page||(element?.hasAttribute('data-settings')?'settings':element?.hasAttribute('data-home')?'home':null);
+  const moduleSelector='[data-page],[data-settings],[data-home]';
+  document.addEventListener('pointerover',e=>{
+    const icon=e.target.closest('[data-page],[data-settings],[data-home],[data-context-add],[data-panel-sound],[data-open-chat]');
+    if(!icon||icon.contains(e.relatedTarget))return;
+    const character=$('[data-character]');if(!character)return;
+    const center=icon.getBoundingClientRect().left+icon.getBoundingClientRect().width/2;
+    character.dataset.waveSide=center<(window.innerWidth/2)?'left':'right';
+    greetCharacter(); // A greeting never opens a module.
+  });
+  document.addEventListener('click',async e=>{
+    const button=e.target.closest(moduleSelector);
+    if(button){
+      e.preventDefault();
+      hoverController?.clickModule(moduleId(button));
+      return;
+    }
+    if(e.target.closest('[data-context-add]')){playTone();contextAdd();return;}
+    if(e.target.closest('[data-panel-pin]')){const pin=hoverController?.togglePin();playTone(pin?'ok':'tap');return;}
+    if(e.target.closest('[data-panel-sound]')){savePrefs({sound:!prefs.sound});if(prefs.sound)playTone('ok');return;}
+    const quick=e.target.closest('[data-quick]')?.dataset.quick;
+    if(quick){$('.v4-modal')?.remove();if(quick==='shortcut')editShortcut();else if(quick==='report')addAccounting();else if(quick==='pin')editPin();else editTask();return;}
+    if(e.target.closest('[data-setting-pin]')){hoverController?.togglePin();renderSettings();return;}
+    if(e.target.closest('[data-setting-sound]')){savePrefs({sound:!prefs.sound});if(prefs.sound)playTone('ok');renderSettings();return;}
+    if(e.target.closest('[data-setting-avatar]')){
+      try{avatarVisibilityState=await window.blackClover.setAvatarVisibility(!avatarVisibilityState.enabled);renderSettings();}
+      catch(error){console.warn('Avatar visibility:',error);}
+      return;
+    }
     if(e.target.closest('[data-full-settings]'))window.blackClover.openSettings?.('general');
   });
-  document.addEventListener('change',e=>{if(e.target.matches('[data-setting-timeout]')){savePrefs({autoHideSeconds:Number(e.target.value)});armIdle();}});
-  document.addEventListener('keydown',e=>{wake();if(e.key==='Escape'){if($('.v4-modal'))$('.v4-modal').remove();else if(mode==='expanded')setMode('compact');else if(mode==='compact')setMode('peek');}});
+  document.addEventListener('change',e=>{
+    if(e.target.matches('[data-setting-collapse]')){
+      savePrefs({collapseDelayMs:Number(e.target.value)});
+      hoverController?.refresh();
+    }
+  });
+  document.addEventListener('keydown',e=>{
+    wake();
+    if(e.key!=='Escape')return;
+    if($('.v4-modal')){$('.v4-modal').remove();hoverController?.refresh();return;}
+    hoverController?.collapseNow();
+  });
   document.addEventListener('pointermove',e=>{
     wake();
     const root=$('.maria-island-v4'),r=root?.getBoundingClientRect();if(!r)return;
-    const x=Math.max(-1,Math.min(1,(e.clientX-(r.left+r.width/2))/(r.width/2))),y=Math.max(-1,Math.min(1,(e.clientY-34)/60));
-    root.style.setProperty('--look-x',`${x*2.7}px`);root.style.setProperty('--look-y',`${y*1.9}px`);
+    const face=$('[data-character]')?.getBoundingClientRect(),cx=face?face.left+face.width/2:r.left+r.width/2,cy=face?face.top+face.height/2:r.top+r.height/2;
+    const x=Math.max(-1,Math.min(1,(e.clientX-cx)/Math.max(68,(face?.width||r.width)/1.2))),y=Math.max(-1,Math.min(1,(e.clientY-cy)/Math.max(52,(face?.height||r.height)/1.2)));
+    root.style.setProperty('--look-x',`${(x*4.0).toFixed(1)}px`);
+    root.style.setProperty('--look-y',`${(y*2.5).toFixed(1)}px`);
+    root.style.setProperty('--head-x',`${(x*5.8).toFixed(1)}px`);
+    root.style.setProperty('--head-y',`${(y*2.9).toFixed(1)}px`);
+    root.style.setProperty('--head-tilt',`${(x*4).toFixed(1)}deg`);
+    root.style.setProperty('--hand-x',`${(x*3.0).toFixed(1)}px`);
+    root.style.setProperty('--hand-y',`${(y*2.0).toFixed(1)}px`);
   },{passive:true});
 }
 
 export async function mountTopIslandV4(){
+  // Every fresh launch starts in mini, regardless of an old pinned session.
+  prefs={...prefs,pinned:false,collapseDelayMs:5000};
+  try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}catch{}
   document.body.className='top-island-v4-surface';
   document.body.innerHTML=`<main class="maria-island-v4" data-mode="compact">
     <div class="v4-stars" aria-hidden="true"></div>
     <header class="v4-topbar">
       <nav class="v4-left-tools">
         <button data-home title="خانه">${I.home}</button>
-        <button data-open-chat title="چت">${I.chat}</button>
+        <button data-open-chat class="v4-chat-launch" title="باز کردن گفتگوی ماریا" aria-label="باز کردن چت با ماریا">${I.chat}</button>
         <button class="plus" data-context-add title="افزودن">${I.plus}</button>
       </nav>
       <section class="v4-center">
-        <button class="v4-character" data-state="idle" data-character aria-label="MARIA"><span class="face"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></span></button>
+        <button class="v4-character" data-state="idle" data-character aria-label="باز کردن یا ثابت کردن MARIA"><i class="v4-arm left" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i><span class="face"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></span><i class="v4-arm right" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i></button>
         <div class="v4-peek-dots"><i></i><i></i><i></i></div>
         <div class="v4-status"><small>MARIA</small><b data-status>Online • آماده</b></div>
         <div class="v4-live-pills" data-live-pills></div>
       </section>
-      <nav class="v4-right-tools">
-        ${PAGES.filter(x=>!['home','reserved'].includes(x.id)).map(x=>`<button class="v4-top-module ${x.id===page?'active':''}" data-page="${x.id}" title="${x.label}">${x.icon}</button>`).join('')}
-        <button class="v4-top-module ${page==='reserved'?'active':''}" data-page="reserved" title="بخش بعدی">${I.reserved}</button>
-        <span class="v4-tool-divider"></span>
-        <button data-panel-pin title="پین پنل">${I.pin}</button>
-        <button data-panel-sound title="صدای پنل">${I.sound}</button>
-        <button data-settings title="تنظیمات">${I.gear}</button>
+      <nav class="v4-right-tools" aria-label="بخش‌ها و تنظیمات ماریا">
+        ${PAGES.filter(x=>['shortcuts','pins','tasks','reports'].includes(x.id)).map(x=>`<button class="v4-right-module" type="button" data-page="${x.id}" aria-label="نمایش ${esc(x.label)}" title="${esc(x.label)}">${x.icon}</button>`).join('')}
+        <button data-settings type="button" title="تنظیمات" aria-label="تنظیمات">${I.gear}</button>
+        <button data-panel-sound type="button" title="صدای پنل" aria-label="صدای پنل">${I.sound}</button>
       </nav>
     </header>
+    <section class="v4-preview" aria-label="نمای مستطیلی کاراکتر ماریا">
+      <div class="v4-preview-aura" aria-hidden="true"></div>
+    </section>
     <section class="v4-expanded">
       <section class="v4-page" data-page-body></section>
     </section>
-    <div class="v4-drop"><b>فایل را رها کن</b><span>Ask MARIA • Pin • Translate • Send • Convert</span></div>
+    <div class="v4-drop" aria-live="polite"><b data-drop-title>فایل را رها کن</b><span data-drop-subtitle>Ask MARIA • Pin • Translate • Send • Convert</span></div>
   </main>`;
 
-  $$('[data-page]').forEach(b=>b.onclick=()=>selectPage(b.dataset.page));
-  $$('[data-open-chat]').forEach(b=>b.onclick=()=>{playTone();window.blackClover.showChat();});
-  $('[data-character]').onclick=()=>{if(mode==='expanded')setMode('compact');else selectPage(page||'home');};
   const root=$('.maria-island-v4');
-  root.addEventListener('mouseenter',()=>{if(mode==='peek')setMode('compact');});
-  for(const ev of ['dragenter','dragover'])root.addEventListener(ev,e=>{e.preventDefault();root.classList.add('drop-active')});
+  hoverController?.destroy();
+  hoverController=new IslandHoverController({
+    getMode:()=>mode,
+    getPinned:()=>prefs.pinned,
+    setPinned:setPanelPinned,
+    setMode,
+    selectModule:(id,pin)=>selectPage(id,{pin}),
+    isProtected:protectedPanel,
+    getCollapseDelay:()=>Math.max(0,Number(prefs.collapseDelayMs)||0)
+  });
+  $$('[data-open-chat]').forEach(b=>b.onclick=()=>{playTone();void window.blackClover.showChat().catch(console.warn);});
+  $('[data-character]').onclick=e=>{e.stopPropagation();hoverController.clickCharacter();};
+  $('[data-character]').addEventListener('pointerenter',greetCharacter);
+  // A resize can synthesize mouseenter: require pointer movement before opening preview.
+  root.addEventListener('pointermove',()=>{
+    if(!hoverController.inside){hoverController.enter();greetCharacter();}
+    else hoverController.activity();
+  },{passive:true});
+  root.addEventListener('mouseleave',()=>{
+    hoverController.leave();
+    for(const [prop,value] of [['--look-x','0px'],['--look-y','0px'],['--head-x','0px'],['--head-y','0px'],['--head-tilt','0deg'],['--hand-x','0px'],['--hand-y','0px']])root.style.setProperty(prop,value);
+  });
+  root.addEventListener('click',e=>{
+    if(e.target.closest('button,a,input,textarea,select,label,form,[contenteditable],.v4-modal,.v4-expanded'))return;
+    if(mode==='peek'||mode==='preview')hoverController.pinPreview();
+  });
+  for(const ev of ['dragenter','dragover'])root.addEventListener(ev,e=>{
+    if(e.target.closest('.v4-modal'))return;
+    e.preventDefault();
+    root.classList.add('drop-active');
+    if(page==='shortcuts'){
+      $('[data-drop-title]')?.replaceChildren(document.createTextNode('رها کن تا میان‌بر ساخته شود'));
+      $('[data-drop-subtitle]')?.replaceChildren(document.createTextNode('برنامه، فایل، پوشه یا لینک • بدون تغییر فایل اصلی'));
+    }else{
+      $('[data-drop-title]')?.replaceChildren(document.createTextNode('فایل را رها کن'));
+      $('[data-drop-subtitle]')?.replaceChildren(document.createTextNode('Ask MARIA • Pin • Translate • Send • Convert'));
+    }
+  });
   root.addEventListener('dragleave',e=>{if(!root.contains(e.relatedTarget))root.classList.remove('drop-active')});
-  root.addEventListener('drop',e=>{e.preventDefault();root.classList.remove('drop-active');const names=[...(e.dataTransfer?.files||[])].map(x=>x.name).filter(Boolean);if(names.length)openModal({title:'فایل دریافت شد',kicker:'CONTEXT DROP',body:`<div class="v4-drop-choice"><b>${esc(names.join('، '))}</b><p>در اتصال محلی می‌توانی این فایل را به MARIA بدهی، Pin کنی، ترجمه/ارسال/تبدیل کنی یا به Accounting Watch اضافه کنی.</p></div>`});});
+  root.addEventListener('drop',e=>{
+    if(e.target.closest('.v4-modal'))return;
+    e.preventDefault();root.classList.remove('drop-active');
+    const file=e.dataTransfer?.files?.[0];
+    const location=file?window.blackClover.getDroppedFilePath(file):'';
+    const url=e.dataTransfer?.getData('text/uri-list')||e.dataTransfer?.getData('text/plain')||'';
+    if(page==='shortcuts'){
+      const files=[...(e.dataTransfer?.files||[])].slice(0,16);
+      const targets=files.map(f=>window.blackClover.getDroppedFilePath(f)).filter(Boolean);
+      const link=String(url||'').split(/[\r\n]/).find(s=>/^https?:\/\//i.test(s.trim()))?.trim();
+      if(!targets.length&&link)targets.push(link);
+      if(!targets.length){
+        showShortcutNotice('فایل، پوشه یا لینک معتبر را رها کن.',{error:true});
+        return;
+      }
+      // Add multiple real OS files sequentially; one invalid item must not drop the rest.
+      void (async()=>{
+        let added=0,already=0,failed=0;
+        for(const target of targets){
+          try{
+            const result=await quickAddShortcut(target);
+            if(result.status==='created')added++;
+            else if(result.status==='existing')already++;
+          }catch{failed++;}
+        }
+        showShortcutNotice(
+          added?`${added} میان‌بر اضافه شد${already?` • ${already} مورد تکراری`:''}${failed?` • ${failed} خطا`:''}.`:
+          already&&!failed?'این میان‌برها قبلاً وجود دارند.':'فایل قابل‌افزودن نبود.',
+          {error:failed>0&&!added}
+        );
+      })();
+      return;
+    }
+    if(location)openModal({title:'فایل دریافت شد',kicker:'CONTEXT DROP',body:'<div class="v4-drop-choice"><b>'+esc(file.name)+'</b><p>برای ساخت میان‌بر وارد بخش میان‌برها شو و فایل را رها کن.</p></div>'});
+  });
 
   bindPageActions();bindGlobalActions();
+  avatarVisibilityState=await window.blackClover.avatarVisibility?.().catch(()=>({enabled:false,visible:false}))||{enabled:false,visible:false};
+  window.blackClover.onIslandRequestMini?.(()=>hoverController?.collapseNow());
+  window.blackClover.onIslandWindowBlur?.(()=>{
+    // A click in another application releases the floating panel.
+    // Dialogs and native pickers are protected from accidental closure.
+    if(!$('.v4-modal')&&!nativeShortcutPickerOpen&&mode!=='peek')hoverController?.collapseNow();
+  });
   window.blackClover.onEvent?.(e=>{
-    if(e?.type==='ui-state'){ $('[data-status]').textContent=e.detail||e.mode||'MARIA';setCharacter(e.mode==='working'?'thinking':e.mode==='error'?'error':e.mode==='offline'?'offline':'idle');pushEvent(e);}
+    if(e?.type==='ui-state'){
+      const status=e.detail||e.mode||'MARIA';
+      $('[data-status]').textContent=status;
+      if($('[data-preview-status]'))$('[data-preview-status]').textContent=status;
+      setCharacter(e.mode==='working'?'thinking':e.mode==='error'?'error':e.mode==='offline'?'offline':'idle');
+      pushEvent(e);
+    }
+    else if(e?.type==='avatar-visibility-changed'){
+      avatarVisibilityState={enabled:Boolean(e.enabled),visible:Boolean(e.enabled)};
+      if(page==='settings'&&mode==='expanded')renderSettings();
+    }
     else if(e?.type==='thinking'){setCharacter('thinking');pushEvent(e);}
     else if(e?.type==='tool'){setCharacter('executing');pushEvent(e);}
     else if(e?.type==='scheduled-action'||e?.type==='reminder'){pushEvent(e);if(page==='tasks')renderTasks();}
@@ -544,6 +873,6 @@ export async function mountTopIslandV4(){
     else if(e?.type==='data-changed'){if(e.store==='shortcuts'&&page==='shortcuts')renderShortcuts();if(e.store==='pins'&&page==='pins')renderPins();if(e.store==='reminders'&&page==='tasks')renderTasks();if(e.store==='accounting'&&page==='reports')renderReports();}
     else {pushEvent(e);if(page==='home'&&(['approval','confirmation','permission','confirm'].includes(String(e?.type||'').toLowerCase())||e?.requiresConfirmation===true))renderHome();}
   });
-  window.blackClover.onIslandModule?.(payload=>selectPage(String(payload?.module||payload||'home')));
-  syncChrome();renderTopPills();await renderPage();updateApprovalTimers();setInterval(updateApprovalTimers,1000);setMode('compact');
+  window.blackClover.onIslandModule?.(payload=>selectPage(String(payload?.module||payload||'home'),{pin:true}));
+  syncChrome();renderTopPills();await renderPage();updateApprovalTimers();setInterval(updateApprovalTimers,1000);setMode('peek');
 }

@@ -26,11 +26,14 @@ test('audio separates maximum, a little, relative percentages, mute and unmute',
     ['یه کم صدا رو بکش بالا','volume_up',{amount:3}],
     ['صدا رو ۱۵ درصد کم کن','volume_down',{amount:15}],
     ['صدا رو روی ۱۵ درصد بذار','set_volume',{percent:15}],
+    ['صدا رو روی 20 درصد بذار','set_volume',{percent:20}],
     ['صدا رو کاملاً قطع کن','set_mute',{muted:true}],
     ['صدا رو باز کن','set_mute',{muted:false}],
     ['صدا رو صفر کن','set_volume',{percent:0}]
   ];
   for(const [phrase,name,args] of cases){const actual=matchFastCommand(phrase);assert.equal(actual?.name,name,phrase);assert.deepEqual(actual?.args,args,phrase);}
+  assert.equal(matchFastCommand('صدای سیستم چنده؟')?.name,'get_volume');
+  assert.equal(matchFastCommand('روشنایی صفحه چنده؟')?.name,'get_brightness');
   assert.equal(matchFastCommand('چرا صدا رو زیاد می‌کنه؟'),null);
 });
 test('immediate follow-ups reuse the correct subject and its privacy',()=>{

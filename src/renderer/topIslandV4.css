@@ -512,3 +512,808 @@ body.top-island-v4-surface{display:grid;place-items:start center;direction:rtl;u
 .v4-empty-panel{min-height:250px;border:1px solid rgba(255,255,255,.055);border-radius:18px;background:radial-gradient(circle at 50% 10%,rgba(119,94,245,.07),transparent 34%),rgba(255,255,255,.009);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px}
 .v4-empty-panel>span{width:52px;height:52px;border-radius:15px;display:grid;place-items:center;color:#9b91ff;background:rgba(118,92,245,.08);box-shadow:0 0 24px rgba(118,92,245,.06)}
 .v4-empty-panel>span svg{width:24px;height:24px}.v4-empty-panel small{margin-top:12px;font-size:7px;letter-spacing:1.7px;color:#776bd4}.v4-empty-panel h3{font-size:16px;margin:5px 0}.v4-empty-panel p{max-width:430px;margin:0;color:#777b87;font-size:9px;line-height:1.7}.v4-empty-panel button{margin-top:14px;height:37px;border:1px solid rgba(152,139,255,.18);border-radius:11px;background:rgba(118,92,245,.10);color:#ece9ff;padding:0 14px;display:flex;align-items:center;gap:7px;cursor:pointer}
+
+/* MARIA phase 1: actionable contextual add and drop */
+.v4-page-head{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.v4-head-add{flex:0 0 auto;padding:11px 16px;border-radius:12px;border:1px solid rgba(160,141,255,.32);background:linear-gradient(135deg,rgba(125,98,244,.24),rgba(87,69,175,.12));color:#efeaff;cursor:pointer}
+.v4-head-add:hover{background:rgba(125,102,255,.32);border-color:rgba(176,157,255,.65)}
+.v4-shortcut-picker{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px}
+.v4-shortcut-picker button{padding:10px 13px;border:1px solid rgba(160,141,255,.31);border-radius:11px;background:rgba(122,98,242,.14);color:#eeebff;cursor:pointer}
+.v4-shortcut-picker span{font-size:10px;color:#9c98ad}
+.v4-shortcut-type{display:block;min-height:36px;padding:9px;background:rgba(111,90,230,.09);border-radius:9px;color:#d2cbff}
+.v4-shortcut-drop{margin-top:12px;padding:18px;border:1px dashed rgba(157,138,255,.43);border-radius:13px;text-align:center;background:rgba(121,97,246,.05);color:#beb8d9}
+.v4-shortcut-drop.active{border-color:#af9dff;background:rgba(125,94,245,.22)}
+/* Purple sleepy capsule when idle; work and error get distinct light */
+.maria-island-v4[data-mode=peek]{background:radial-gradient(ellipse at 50% 60%,rgba(116,62,249,.31),transparent 72%),linear-gradient(180deg,rgba(13,10,31,.99),rgba(11,9,25,.98));box-shadow:0 15px 45px rgba(93,49,220,.23),inset 0 -1px rgba(144,110,255,.23)}
+.v4-character .eye{transform:translateX(var(--look-x)) scaleY(1);transform-origin:center;animation:mariaEyeBlink 5.5s infinite}
+.v4-character .eye.right{animation-delay:-2.45s}
+@keyframes mariaEyeBlink{0%,41%,44%,100%{transform:translateX(var(--look-x)) scaleY(1)}42%,43%{transform:translateX(var(--look-x)) scaleY(.08)}}
+.v4-character .orbit{opacity:.9!important;width:17px!important;height:20px!important;border-radius:55%!important;background:linear-gradient(145deg,#fff,#e5e1f2)!important;box-shadow:0 0 13px rgba(154,124,255,.17)}
+.v4-character .orbit.a{left:0!important;bottom:9px!important;animation:mariaLeftArm 3.8s ease-in-out infinite}
+.v4-character .orbit.b{right:0!important;top:16px!important;animation:mariaRightArm 3.4s ease-in-out infinite}
+@keyframes mariaLeftArm{0%,100%{transform:rotate(-18deg) translateY(0)}50%{transform:rotate(-31deg) translateY(-4px)}}
+@keyframes mariaRightArm{0%,100%{transform:rotate(24deg) translateY(0)}50%{transform:rotate(40deg) translateY(4px)}}
+.maria-island-v4[data-mode=peek] .v4-character .orbit{scale:.73;opacity:.75!important}
+.maria-island-v4:has(.v4-character[data-state=thinking]),.maria-island-v4:has(.v4-character[data-state=executing]){box-shadow:0 14px 62px rgba(99,89,243,.32),inset 0 0 30px rgba(117,101,255,.09)}
+.maria-island-v4:has(.v4-character[data-state=error]){border-color:rgba(234,112,115,.52)}
+@media(prefers-reduced-motion:reduce){.v4-character .face,.v4-character .eye,.v4-character .orbit{animation:none!important;transition:none!important}}
+
+/* Fix peek clipping caused by the legacy 92px !important toolbar override. */
+.maria-island-v4[data-mode=peek] .v4-topbar{height:56px!important;padding:0 12px!important;grid-template-columns:1fr auto 1fr!important;align-items:center!important}
+.maria-island-v4[data-mode=peek] .v4-center{height:56px!important;align-self:center!important;justify-self:center!important;inset:auto!important}
+.maria-island-v4[data-mode=peek] .v4-character{align-self:center!important;justify-self:center!important}
+
+/* MARIA phase 2 — reference-inspired three-stage Top Island (peek / preview / expanded).
+   The rectangle is a real mode; hovering the shell must NOT open a full module. */
+.v4-preview{display:none}
+.maria-island-v4[data-mode=peek] .v4-preview,
+.maria-island-v4[data-mode=expanded] .v4-preview{display:none!important}
+.maria-island-v4[data-mode=preview]{
+  border-radius:0 0 29px 29px;
+  background:radial-gradient(ellipse at 50% 64%,rgba(82,70,132,.085),transparent 46%),linear-gradient(180deg,#08090e 0%,#0e0f16 100%);
+  box-shadow:0 20px 75px rgba(0,0,0,.58),0 5px 40px rgba(98,75,197,.10),inset 0 1px rgba(255,255,255,.035);
+}
+.maria-island-v4[data-mode=preview] .v4-expanded{display:none!important}
+.maria-island-v4[data-mode=preview] .v4-topbar{height:70px!important;padding:0 12px!important;display:block!important}
+.maria-island-v4[data-mode=preview] .v4-top-module,
+.maria-island-v4[data-mode=preview] .v4-tool-divider{display:none!important}
+.maria-island-v4[data-mode=preview] .v4-left-tools{left:18px!important}
+.maria-island-v4[data-mode=preview] .v4-right-tools{right:18px!important}
+.maria-island-v4[data-mode=preview] .v4-preview{
+  display:block!important;position:absolute;top:66px;bottom:11px;left:14px;right:14px;overflow:hidden;
+  border-radius:25px;background:linear-gradient(180deg,rgba(19,20,27,.96),rgba(16,17,24,.98));
+  border:1px solid rgba(255,255,255,.035);
+  box-shadow:inset 0 1px rgba(255,255,255,.026),inset 0 -14px 38px rgba(0,0,0,.12)
+}
+.v4-preview-aura{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 24%,rgba(168,141,110,.10),transparent 28%),
+             radial-gradient(ellipse at 50% 112%,rgba(112,77,225,.075),transparent 60%);
+}
+.maria-island-v4[data-mode=preview] .v4-center{
+  position:absolute!important;inset:auto!important;left:0!important;right:0!important;
+  top:76px!important;bottom:auto!important;height:89px!important;width:100%!important;min-width:0!important;
+  display:grid!important;place-items:center!important;transform:none!important;pointer-events:none!important;z-index:6!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character{
+  width:112px!important;height:80px!important;grid-column:auto!important;pointer-events:auto!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character .face{
+  width:78px!important;height:65px!important;border-radius:27px 27px 32px 32px!important;
+  background:linear-gradient(160deg,#fff,#e5e4ec)!important;
+  box-shadow:0 10px 25px rgba(0,0,0,.3),0 0 32px rgba(244,228,194,.08)!important
+}
+.maria-island-v4[data-mode=preview] .v4-character .eye{top:22px!important;width:8px!important;height:12px!important}
+.maria-island-v4[data-mode=preview] .v4-character .eye.left{left:23px!important}
+.maria-island-v4[data-mode=preview] .v4-character .eye.right{right:23px!important}
+.maria-island-v4[data-mode=preview] .v4-character .mouth{bottom:11px!important}
+.maria-island-v4[data-mode=preview] .v4-character .orbit.a{left:0!important;bottom:14px!important}
+.maria-island-v4[data-mode=preview] .v4-character .orbit.b{right:0!important;top:17px!important}
+.maria-island-v4[data-mode=preview] .v4-peek-dots{display:none!important}
+.v4-preview-caption{
+  position:absolute;left:24px;top:28px;display:flex;flex-direction:column;gap:6px;max-width:190px;
+  color:#9b9bab;text-align:left;direction:ltr;
+}
+.v4-preview-caption strong{font-size:9px;letter-spacing:2.1px;font-weight:700;color:#9b8bcb}
+.v4-preview-caption span{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v4-preview-modules{
+  position:absolute;left:16px;right:16px;bottom:9px;display:flex;align-items:center;justify-content:center;gap:9px;
+  direction:rtl;z-index:8;
+}
+.v4-preview-modules button{
+  min-width:82px;min-height:38px;display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:5px 9px;border-radius:12px;border:1px solid rgba(255,255,255,.044);
+  background:rgba(255,255,255,.025);color:#a5a0b9;cursor:pointer;
+  transition:background .14s,border-color .14s,transform .14s;
+}
+.v4-preview-modules button:hover,.v4-preview-modules button:focus-visible{
+  background:rgba(118,95,246,.20);border-color:rgba(158,140,255,.40);
+  color:#f3eeff;transform:translateY(-2px);
+}
+.v4-preview-modules button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.65}
+.v4-preview-modules button b{font-weight:500;font-size:10px;white-space:nowrap}
+.maria-island-v4[data-mode=preview].is-pinned{border-color:rgba(146,122,255,.3)}
+@media(max-width:750px){
+  .v4-preview-modules{gap:5px;left:9px;right:9px}
+  .v4-preview-modules button{min-width:36px;padding:7px}
+  .v4-preview-modules button b{display:none}
+  .v4-preview-caption{max-width:100px}
+}
+@media(prefers-reduced-motion:reduce){
+  .v4-preview-modules button{transition:none!important;transform:none!important}
+}
+
+/* Phase 2 companion motion — preserve earlier character's mouse-following behavior. */
+.v4-character .face{
+  transform:translate3d(var(--head-x,0px),var(--head-y,0px),0) rotate(var(--head-tilt,0deg));
+  transition:transform .21s cubic-bezier(.2,.8,.2,1),filter .18s ease;
+  will-change:transform;
+}
+.v4-character .eye{
+  translate:0 var(--look-y,0px);
+  transition:translate .18s ease,filter .15s ease;
+}
+.v4-character .orbit.a{
+  translate:var(--hand-x,0px) var(--hand-y,0px);
+}
+.v4-character .orbit.b{
+  translate:var(--hand-x,0px) var(--hand-y,0px);
+}
+.v4-character[data-state=thinking] .face{
+  animation:mariaCharacterThink 1.45s ease-in-out infinite;
+  filter:drop-shadow(0 0 9px rgba(127,106,255,.30));
+}
+.v4-character[data-state=executing] .face{
+  animation:mariaCharacterWork .9s ease-in-out infinite;
+  filter:drop-shadow(0 0 10px rgba(94,144,255,.26));
+}
+@keyframes mariaCharacterThink{
+  0%,100%{transform:translate3d(var(--head-x,0px),var(--head-y,0px),0) rotate(var(--head-tilt,0deg))}
+  50%{transform:translate3d(var(--head-x,0px),calc(var(--head-y,0px) - 4px),0) rotate(var(--head-tilt,0deg))}
+}
+@keyframes mariaCharacterWork{
+  0%,100%{transform:translate3d(var(--head-x,0px),var(--head-y,0px),0) scale(1)}
+  50%{transform:translate3d(var(--head-x,0px),var(--head-y,0px),0) scale(.96)}
+}
+.maria-island-v4[data-mode=preview] .v4-character{
+  animation:mariaCompanionFloat 3.1s ease-in-out infinite;
+}
+@keyframes mariaCompanionFloat{
+  0%,100%{translate:0 0}
+  50%{translate:0 -3px}
+}
+@media(prefers-reduced-motion:reduce){
+ .v4-character,.v4-character .face,.v4-character .eye,.v4-character .orbit{animation:none!important;transition:none!important}
+}
+
+/* MARIA phase 3 — return to the two-image reference. A clean rectangle only:
+   toolbar at top, centered live companion, no hover-navigation tiles. */
+.maria-island-v4[data-mode=preview] .v4-preview{
+  background:linear-gradient(165deg,rgba(18,18,24,.98),rgba(17,17,23,.96))!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025),0 0 34px rgba(0,0,0,.12)!important;
+}
+.maria-island-v4[data-mode=preview] .v4-preview-aura{
+  background:radial-gradient(ellipse at 50% 43%,rgba(174,144,109,.13),transparent 36%),
+  radial-gradient(ellipse at 50% 115%,rgba(117,80,232,.075),transparent 68%)!important;
+}
+.maria-island-v4[data-mode=preview] .v4-center{
+  top:76px!important;height:125px!important;bottom:auto!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character{
+  width:142px!important;height:110px!important;position:relative!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character .face{
+  width:105px!important;height:82px!important;border-radius:32px 32px 38px 38px!important;
+  background:linear-gradient(160deg,#fff 0%,#f7f6fb 42%,#e0dfe8 100%)!important;
+  box-shadow:0 8px 27px rgba(0,0,0,.34),0 0 23px rgba(255,239,216,.09)!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character .eye{
+  top:27px!important;width:9px!important;height:13px!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character .eye.left{left:29px!important}
+.maria-island-v4[data-mode=preview] .v4-character .eye.right{right:29px!important}
+.maria-island-v4[data-mode=preview] .v4-character .mouth{bottom:12px!important;width:7px!important}
+.maria-island-v4[data-mode=preview] .v4-left-tools button,
+.maria-island-v4[data-mode=preview] .v4-right-tools button{
+  cursor:pointer!important;pointer-events:auto!important;
+}
+.maria-island-v4[data-mode=preview] [data-settings]:hover,
+.maria-island-v4[data-mode=preview] [data-home]:hover{
+  color:#e9e3ff!important;background:rgba(126,102,255,.12)!important;
+}
+.v4-character .v4-arm{
+  display:block;position:absolute;z-index:1;width:34px;height:40px;pointer-events:none;
+  opacity:.99;translate:var(--hand-x,0px) var(--hand-y,0px);
+  transition:translate .18s ease;
+}
+.v4-character .v4-arm.left{left:5px;top:38%;transform-origin:28px 22px;animation:mariaLeftRest 4.2s ease-in-out infinite}
+.v4-character .v4-arm.right{right:5px;top:29%;transform-origin:6px 25px;animation:mariaRightRest 3.8s ease-in-out infinite}
+.v4-character .v4-limb{
+  position:absolute;width:28px;height:10px;border-radius:13px;
+  top:17px;left:9px;background:linear-gradient(155deg,#e4e3f0,#fdfcff);z-index:0;
+  box-shadow:0 2px 8px rgba(0,0,0,.12);
+}
+.v4-character .v4-arm.left .v4-limb{transform:rotate(-15deg)}
+.v4-character .v4-arm.right .v4-limb{left:-3px;transform:rotate(21deg)}
+.v4-character .v4-palm{
+  position:absolute;top:12px;left:0;width:21px;height:25px;border-radius:60%;
+  background:linear-gradient(155deg,#fff,#e5e3ee);box-shadow:0 3px 10px rgba(0,0,0,.20);
+  transform:rotate(-19deg);z-index:2;
+}
+.v4-character .v4-arm.right .v4-palm{left:17px;transform:rotate(19deg)}
+@keyframes mariaLeftRest{
+  0%,100%{transform:rotate(-9deg)}
+  50%{transform:rotate(-17deg)}
+}
+@keyframes mariaRightRest{
+  0%,100%{transform:rotate(7deg)}
+  50%{transform:rotate(17deg)}
+}
+.v4-character[data-state=hello]:not([data-wave-side=left]) .v4-arm.right{
+  animation:mariaGreetingRight .33s ease-in-out 5!important;
+}
+.v4-character[data-state=hello][data-wave-side=left] .v4-arm.left{
+  animation:mariaGreetingLeft .34s ease-in-out 5!important;
+}
+@keyframes mariaGreetingRight{
+  0%,100%{transform:rotate(-14deg)}
+  50%{transform:rotate(-53deg) translateY(-4px)}
+}
+@keyframes mariaGreetingLeft{
+  0%,100%{transform:rotate(12deg)}
+  50%{transform:rotate(51deg) translateY(-4px)}
+}
+.maria-island-v4[data-mode=peek] .v4-character .v4-arm{scale:.64;opacity:.86}
+.maria-island-v4[data-mode=peek] .v4-character .v4-arm.left{left:0;top:27%}
+.maria-island-v4[data-mode=peek] .v4-character .v4-arm.right{right:0;top:16%}
+.maria-island-v4[data-mode=expanded] .v4-character .v4-arm{scale:.82}
+.v4-character .eye{
+  transform:none!important;
+  translate:var(--look-x,0px) var(--look-y,0px)!important;
+  scale:1 1;
+  animation:mariaEyesTogether 6.1s ease-in-out infinite!important;
+  animation-delay:0s!important;
+  transform-origin:center;
+}
+@keyframes mariaEyesTogether{
+  0%,41%,44%,100%{scale:1 1}
+  42%,43%{scale:1 .12}
+}
+@media(prefers-reduced-motion:reduce){
+  .v4-character .v4-arm,.v4-character .eye,.v4-character .face{
+    animation:none!important;transition:none!important;
+  }
+}
+
+/* Visible, connected arms: palms attach to the cheeks through short rounded limbs. */
+.maria-island-v4[data-mode=preview] .v4-character{width:168px!important}
+.maria-island-v4[data-mode=preview] .v4-arm.left{left:4px!important;top:38%!important}
+.maria-island-v4[data-mode=preview] .v4-arm.right{right:4px!important;top:27%!important}
+.maria-island-v4[data-mode=preview] .v4-arm.left .v4-limb,
+.maria-island-v4[data-mode=preview] .v4-arm.right .v4-limb{width:37px!important;height:9px!important}
+.maria-island-v4[data-mode=preview] .v4-arm.left .v4-palm{left:-4px!important}
+.maria-island-v4[data-mode=preview] .v4-arm.right .v4-palm{left:26px!important}
+.v4-character[data-state=hello] .v4-palm{box-shadow:0 4px 12px rgba(124,109,222,.20),0 2px 9px rgba(0,0,0,.19)}
+.v4-shortcut-message{margin:0 0 8px;color:#c7bcff;font-size:11px;line-height:1.7}
+.v4-shortcut .v4-app-icon{display:grid;place-items:center;overflow:hidden;border-radius:12px;min-width:44px;min-height:44px}
+.v4-shortcut .v4-app-icon img{width:42px;height:42px;object-fit:contain;border-radius:8px}
+.v4-shortcut .more{opacity:.45}
+.v4-shortcut:hover .more,.v4-shortcut:focus-within .more{opacity:1}
+
+/* Phase 4 — reference mini capsule. It is ALWAYS the initial MARIA surface.
+   Mini: warm rounded square avatar at left, violet live dot + two dim markers.
+   Hover: existing clean Coucou-style rectangle from Phase 3; click modules for details. */
+.maria-island-v4[data-mode=peek]{
+  width:100%!important;height:54px!important;min-height:54px!important;
+  border-radius:0 0 28px 28px!important;
+  border:1px solid rgba(121,93,247,.19)!important;
+  background:
+    radial-gradient(ellipse 74% 80% at 50% 104%,rgba(103,62,244,.34) 0%,transparent 72%),
+    linear-gradient(180deg,#050509 0%,#090a12 74%,#0b091b 100%)!important;
+  box-shadow:0 6px 20px rgba(0,0,0,.62),0 8px 34px rgba(101,63,233,.31),
+    inset 0 -3px 7px rgba(124,82,245,.21),inset 0 1px rgba(255,255,255,.035)!important;
+}
+.maria-island-v4[data-mode=peek] .v4-topbar{
+  display:block!important;position:relative!important;
+  height:54px!important;min-height:54px!important;padding:0!important;
+}
+.maria-island-v4[data-mode=peek] .v4-center{
+  position:absolute!important;inset:0!important;
+  width:100%!important;height:54px!important;min-width:0!important;
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  transform:none!important;pointer-events:none!important;
+}
+.maria-island-v4[data-mode=peek] .v4-character{
+  position:absolute!important;left:53px!important;top:5px!important;
+  width:45px!important;height:43px!important;grid-column:auto!important;
+  margin:0!important;border-radius:13px!important;
+  display:grid!important;place-items:center!important;
+  pointer-events:auto!important;transition:filter .2s ease!important;
+}
+.maria-island-v4[data-mode=peek] .v4-character .face{
+  position:relative!important;width:34px!important;height:34px!important;
+  border-radius:11px 11px 12px 12px!important;
+  background:linear-gradient(180deg,#ffe8c4 0%,#fff 45%,#f0ecf5 100%)!important;
+  box-shadow:0 1px 5px rgba(252,214,162,.20),0 6px 14px rgba(0,0,0,.45)!important;
+  overflow:hidden!important;
+}
+.maria-island-v4[data-mode=peek] .v4-character .face:before{
+  content:""!important;position:absolute!important;inset:0 0 auto 0!important;
+  height:39%!important;border-radius:10px 10px 8px 8px!important;
+  background:linear-gradient(160deg,#fbe2a5 0%,#f7ba83 43%,#e9a39a 100%)!important;
+  box-shadow:0 3px 6px rgba(246,171,145,.20)!important;
+  z-index:1!important;pointer-events:none!important;
+}
+.maria-island-v4[data-mode=peek] .v4-character .eye{
+  position:absolute!important;top:18px!important;
+  height:5px!important;width:4px!important;background:#272638!important;
+  box-shadow:none!important;z-index:3!important;
+}
+.maria-island-v4[data-mode=peek] .v4-character .eye.left{left:10px!important}
+.maria-island-v4[data-mode=peek] .v4-character .eye.right{right:10px!important}
+.maria-island-v4[data-mode=peek] .v4-character .mouth{
+  bottom:5px!important;width:4px!important;height:2px!important;
+  z-index:3!important;background:#575260!important;
+}
+.maria-island-v4[data-mode=peek] .v4-character .v4-arm{
+  display:none!important;
+}
+.maria-island-v4[data-mode=peek] .v4-character:before{
+  width:53px!important;height:45px!important;
+  background:radial-gradient(ellipse,rgba(255,196,134,.08),transparent 70%)!important;
+}
+.maria-island-v4[data-mode=peek] .v4-peek-dots{
+  display:flex!important;position:absolute!important;
+  left:145px!important;top:21px!important;
+  align-items:center!important;gap:17px!important;z-index:6!important;
+  pointer-events:none!important;
+}
+.maria-island-v4[data-mode=peek] .v4-peek-dots i{
+  display:block!important;width:8px!important;height:8px!important;
+  flex:0 0 8px!important;border-radius:50%!important;
+  background:radial-gradient(circle,#555562,#30313f)!important;
+  box-shadow:0 0 4px rgba(100,91,142,.15)!important;
+}
+.maria-island-v4[data-mode=peek] .v4-peek-dots i:first-child{
+  width:11px!important;height:11px!important;flex-basis:11px!important;
+  background:radial-gradient(circle at 42% 40%,#eeeaff 0%,#9d8cff 36%,#6b4aff 100%)!important;
+  box-shadow:0 0 7px 3px rgba(143,112,255,.75),
+    0 0 23px 7px rgba(97,69,245,.46)!important;
+  animation:mariaLiveDot 3.3s ease-in-out infinite!important;
+}
+@keyframes mariaLiveDot{
+  0%,100%{opacity:.88;filter:brightness(1)}
+  50%{opacity:1;filter:brightness(1.18)}
+}
+/* The enlarged reference has home/chat/+ on the left, settings/sound on right. */
+.maria-island-v4[data-mode=preview] [data-panel-pin]{display:none!important}
+.maria-island-v4[data-mode=preview] .v4-right-tools{
+  display:flex!important;flex-direction:row-reverse!important;
+}
+@media(prefers-reduced-motion:reduce){
+  .maria-island-v4[data-mode=peek] .v4-peek-dots i:first-child{
+    animation:none!important;
+  }
+}
+
+/* Final visual fidelity: floating oval hands (no visible connecting rods), warm halo,
+   and a clearly filled reference-style home shortcut. */
+.maria-island-v4[data-mode=preview] .v4-character .v4-limb{display:none!important}
+.maria-island-v4[data-mode=preview] .v4-character .v4-palm{
+  width:24px!important;height:29px!important;
+  border-radius:55% 55% 52% 52%!important;
+  background:linear-gradient(145deg,#fff 0%,#f5f3fa 67%,#dcdbe9 100%)!important;
+}
+.maria-island-v4[data-mode=preview] .v4-preview-aura{
+  background:
+    radial-gradient(ellipse 23% 68% at 50% 38%,rgba(198,159,123,.17),transparent 82%),
+    radial-gradient(ellipse 70% 100% at 50% 118%,rgba(98,70,192,.075),transparent 70%)!important;
+}
+.maria-island-v4[data-mode=preview] [data-home] svg path,
+.maria-island-v4[data-mode=preview] [data-open-chat] svg path{
+  fill:currentColor!important;
+}
+
+/* Phase 5: click-only mini, contextual creation, native file preview. */
+.maria-island-v4[data-mode=peek]{
+  cursor:pointer;
+}
+.maria-island-v4[data-mode=peek] .v4-character:hover .face{
+  filter:drop-shadow(0 0 7px rgba(178,144,255,.18));
+}
+.maria-island-v4[data-mode=preview] .v4-chat-launch,
+.maria-island-v4[data-mode=expanded] .v4-chat-launch{
+  color:#e5e3fb!important;
+  border-radius:12px!important;
+}
+.maria-island-v4[data-mode=preview] .v4-chat-launch:hover,
+.maria-island-v4[data-mode=expanded] .v4-chat-launch:hover{
+  background:rgba(125,97,253,.21)!important;
+  box-shadow:0 0 17px rgba(128,106,244,.12);
+}
+.v4-shortcut-drop-hint{
+  border:1px dashed rgba(145,125,245,.42);
+  border-radius:14px;padding:12px 15px;
+  margin:4px 0 15px;
+  display:flex;flex-direction:row;align-items:center;gap:10px;
+  background:linear-gradient(110deg,rgba(106,81,225,.1),rgba(27,28,42,.1));
+  color:#cdc6ea;
+}
+.v4-shortcut-drop-hint b{font-weight:500;font-size:12px}
+.v4-shortcut-drop-hint span{font-size:10px;color:#89839b;margin-inline-start:auto}
+.v4-shortcut-drop-hint svg{width:17px;height:17px;color:#9887ff}
+.maria-island-v4.drop-active .v4-shortcut-drop-hint,
+.v4-shortcut-drop-hint:focus-within{
+  background:rgba(123,100,255,.19);
+  border-color:#ad9cff;
+  box-shadow:inset 0 0 0 1px rgba(159,135,255,.17);
+}
+.v4-shortcut-target-meta{
+  font-size:11px;line-height:2;white-space:pre-wrap;overflow-wrap:anywhere;
+  margin-top:12px;padding:11px 12px;
+  border-radius:10px;background:rgba(20,18,36,.75);
+  border:1px solid rgba(140,125,221,.2);color:#bdb6e7;
+}
+.v4-shortcut [data-shortcut-open] small{
+  color:#9c95bb;letter-spacing:.02em;
+}
+@media(max-width:680px){
+  .v4-shortcut-drop-hint{flex-wrap:wrap;gap:6px}
+  .v4-shortcut-drop-hint span{margin-inline-start:0}
+}
+
+/* Clean original rounded rectangular face, soft amber halo, two floating oval hands. */
+.maria-island-v4[data-mode=preview] .v4-center{
+  top:82px!important;height:124px!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character{
+  left:-11px!important;
+  width:168px!important;height:111px!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character .face{
+  width:106px!important;height:83px!important;
+  border-radius:29px 30px 35px 37px!important;
+  background:linear-gradient(150deg,#fff 0%,#fdfcff 62%,#e9e8f0 100%)!important;
+  box-shadow:0 10px 26px rgba(0,0,0,.25),0 0 30px rgba(239,202,160,.10)!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character .mouth{display:none!important}
+.maria-island-v4[data-mode=preview] .v4-character .eye{
+  background:#121218!important;width:8px!important;height:12px!important;
+  top:28px!important;box-shadow:none!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character .eye.left{left:30px!important}
+.maria-island-v4[data-mode=preview] .v4-character .eye.right{right:30px!important}
+.maria-island-v4[data-mode=preview] .v4-character .v4-limb{display:none!important}
+.maria-island-v4[data-mode=preview] .v4-arm.left{
+  left:4px!important;top:47%!important;
+}
+.maria-island-v4[data-mode=preview] .v4-arm.right{
+  right:7px!important;top:26%!important;
+}
+.maria-island-v4[data-mode=preview] .v4-arm.left .v4-palm{
+  width:24px!important;height:25px!important;left:-3px!important;
+  border-radius:49% 52% 50% 51%!important;transform:rotate(-9deg)!important;
+}
+.maria-island-v4[data-mode=preview] .v4-arm.right .v4-palm{
+  width:24px!important;height:30px!important;left:21px!important;
+  border-radius:50% 52% 50% 54%!important;transform:rotate(28deg)!important;
+}
+.maria-island-v4[data-mode=preview] .v4-arm .v4-palm{
+  background:linear-gradient(145deg,#fff 12%,#ecebf5 85%)!important;
+  box-shadow:0 5px 12px rgba(0,0,0,.17),0 0 8px rgba(243,224,196,.08)!important;
+}
+/* The character follows the pointer without overlaying module buttons in expanded view. */
+.maria-island-v4[data-mode=expanded] .v4-center{display:none!important}
+
+
+
+/* Phase 7 — one icon system: right-aligned with Settings and Sound.
+   Buttons match the existing Home/Chat/Gear 36x36 controls, icons 18x18. */
+.maria-island-v4[data-mode=preview] .v4-right-tools,
+.maria-island-v4[data-mode=expanded] .v4-right-tools{
+  right:18px!important;
+  left:auto!important;
+  top:50%!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:3px!important;
+  flex-wrap:nowrap!important;
+  width:max-content!important;
+  z-index:14!important;
+  -webkit-app-region:no-drag!important;
+}
+.maria-island-v4[data-mode=preview] .v4-right-tools button,
+.maria-island-v4[data-mode=expanded] .v4-right-tools button{
+  width:36px!important;
+  height:36px!important;
+  min-width:36px!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  flex:0 0 36px!important;
+  border:0!important;
+  border-radius:11px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#9b9da7!important;
+  cursor:pointer!important;
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  -webkit-app-region:no-drag!important;
+}
+.maria-island-v4[data-mode=preview] .v4-right-tools button svg,
+.maria-island-v4[data-mode=expanded] .v4-right-tools button svg{
+  width:18px!important;
+  height:18px!important;
+  stroke:currentColor!important;
+  stroke-width:1.7!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+  fill:none!important;
+}
+.maria-island-v4[data-mode=preview] .v4-right-tools button:hover,
+.maria-island-v4[data-mode=expanded] .v4-right-tools button:hover,
+.maria-island-v4[data-mode=preview] .v4-right-tools button:focus-visible,
+.maria-island-v4[data-mode=expanded] .v4-right-tools button:focus-visible{
+  background:rgba(255,255,255,.055)!important;
+  color:#f3f3f7!important;
+}
+.maria-island-v4[data-mode=expanded] .v4-right-tools button.active{
+  background:rgba(255,255,255,.055)!important;
+  color:#e5e0ff!important;
+}
+.maria-island-v4[data-mode=peek] .v4-right-tools{display:none!important}
+@media(max-width:740px){
+  .maria-island-v4[data-mode=preview] .v4-right-tools,
+  .maria-island-v4[data-mode=expanded] .v4-right-tools{
+    right:8px!important;gap:1px!important;
+  }
+  .maria-island-v4[data-mode=preview] .v4-right-tools button,
+  .maria-island-v4[data-mode=expanded] .v4-right-tools button{
+    width:31px!important;height:31px!important;min-width:31px!important;flex-basis:31px!important;
+  }
+}
+
+/* Phase 8 — Shortcuts: only (+ select) or native drag-and-drop. */
+.v4-shortcut-grid{
+  display:grid!important;
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:10px!important;
+  padding:3px 2px 18px!important;
+}
+.v4-shortcut{
+  min-width:0!important;
+  min-height:100px!important;
+  border-radius:16px!important;
+  border:1px solid rgba(255,255,255,.075)!important;
+  background:linear-gradient(145deg,rgba(255,255,255,.032),rgba(255,255,255,.008))!important;
+  overflow:hidden!important;
+  transition:background .16s ease,border-color .16s ease,transform .16s ease!important;
+}
+.v4-shortcut:hover,.v4-shortcut:focus-within{
+  background:rgba(113,91,226,.075)!important;
+  border-color:rgba(155,138,255,.29)!important;
+}
+.v4-shortcut.just-added{
+  border-color:rgba(150,132,255,.45)!important;
+  box-shadow:0 0 16px rgba(114,83,255,.15)!important;
+}
+.v4-shortcut>button[data-shortcut-open]{
+  display:grid!important;
+  grid-template-columns:52px minmax(0,1fr)!important;
+  gap:12px!important;
+  width:100%!important;
+  min-height:98px!important;
+  align-items:center!important;
+  padding:13px 13px 15px!important;
+  text-align:right!important;
+  direction:rtl!important;
+}
+.v4-shortcut .v4-app-icon{
+  width:52px!important;height:52px!important;
+  min-width:52px!important;flex:0 0 52px!important;
+  border-radius:14px!important;
+  background:linear-gradient(145deg,#222333,#151723)!important;
+  display:grid!important;place-items:center!important;
+  padding:5px!important;
+  color:#bdb3ff!important;
+  font-size:24px!important;
+}
+.v4-shortcut .v4-app-icon img{
+  width:100%!important;height:100%!important;
+  object-fit:contain!important;
+  border-radius:8px!important;
+  image-rendering:auto!important;
+}
+.v4-shortcut[data-shortcut-kind="file"] .v4-app-icon:has(img[src*="data:image/png"]),
+.v4-shortcut[data-shortcut-kind="media"] .v4-app-icon:has(img[src*="data:image/png"]){
+  background:rgba(255,255,255,.04)!important;
+}
+.v4-shortcut-info{
+  min-width:0!important;display:flex!important;
+  flex-direction:column!important;gap:6px!important;
+  align-items:flex-start!important;text-align:right!important;
+}
+.v4-shortcut-info>b{
+  max-width:100%!important;
+  font-size:11px!important;line-height:1.45!important;
+  font-weight:650!important;color:#eeedf5!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+}
+.v4-shortcut-info>small{
+  font-size:9px!important;font-weight:500!important;
+  color:#ab9edc!important;line-height:1.3!important;
+}
+.v4-shortcut .v4-shortcut-path{
+  max-width:100%!important;
+  display:block!important;
+  overflow:hidden!important;text-overflow:ellipsis!important;
+  white-space:nowrap!important;
+  font-size:8px!important;color:#777c90!important;
+  direction:ltr!important;text-align:left!important;
+}
+.v4-shortcut button.more{
+  position:absolute!important;inset:auto auto 5px 6px!important;
+  width:28px!important;height:28px!important;
+  display:grid!important;place-items:center!important;
+  font-size:15px!important;border-radius:8px!important;
+  color:#a1a2b2!important;
+  border:1px solid transparent!important;
+  background:transparent!important;
+}
+.v4-shortcut button.more:hover{
+  background:rgba(255,255,255,.09)!important;
+  color:#fff!important;
+}
+.v4-shortcut .health.unknown{display:none!important}
+.v4-shortcut-drop-hint{
+  min-height:76px!important;
+  border:1px dashed rgba(147,133,237,.40)!important;
+  padding:14px 17px!important;
+  border-radius:15px!important;
+  background:linear-gradient(120deg,rgba(107,90,224,.105),rgba(33,35,52,.11))!important;
+  gap:14px!important;direction:rtl!important;
+  margin:0 0 14px!important;
+}
+.v4-shortcut-drop-hint>svg{width:23px!important;height:23px!important;flex:0 0 23px!important}
+.v4-shortcut-drop-hint>div{display:flex!important;flex-direction:column!important;gap:5px!important;flex:1!important;min-width:0!important}
+.v4-shortcut-drop-hint b{
+  color:#e0dcff!important;font-size:11px!important;font-weight:600!important;
+}
+.v4-shortcut-drop-hint span{font-size:9px!important;color:#a29db3!important}
+.v4-shortcut-drop-hint>small{
+  font-size:8px!important;color:#868399!important;white-space:nowrap!important;
+}
+.v4-shortcut-notice[hidden],.v4-shortcut-add-error[hidden]{display:none!important}
+.v4-shortcut-notice{
+  margin:8px 0 12px!important;
+  padding:10px 12px!important;
+  border:1px solid rgba(117,219,160,.27)!important;
+  border-radius:11px!important;
+  font-size:10px!important;
+  color:#b4f2cb!important;
+  background:rgba(39,142,83,.11)!important;
+}
+.v4-shortcut-notice.error,.v4-shortcut-add-error{
+  color:#ffb3be!important;
+  border-color:rgba(226,101,122,.35)!important;
+  background:rgba(164,45,66,.11)!important;
+}
+.v4-shortcut-empty{
+  min-height:175px!important;
+  display:flex!important;flex-direction:column!important;
+  align-items:center!important;justify-content:center!important;
+  border:1px dashed rgba(153,147,200,.16)!important;
+  border-radius:17px!important;text-align:center!important;
+  padding:18px!important;gap:9px!important;
+}
+.v4-shortcut-empty-icon{
+  width:42px;height:42px;color:#ac9ef6;
+  background:rgba(128,106,244,.1);
+  border-radius:13px;display:grid;place-items:center;
+}
+.v4-shortcut-empty-icon svg{width:21px;height:21px}
+.v4-shortcut-empty h3{font-size:14px!important;margin:0!important}
+.v4-shortcut-empty p{
+  color:#8e8c9e!important;font-size:10px!important;
+  line-height:1.7!important;max-width:450px!important;margin:0!important;
+}
+.v4-shortcut-empty button{
+  height:36px!important;padding:0 15px!important;
+  border:1px solid rgba(152,126,255,.32)!important;
+  border-radius:10px!important;color:#ebe6ff!important;
+  background:rgba(126,101,255,.11)!important;
+  cursor:pointer!important;display:flex!important;align-items:center!important;gap:7px!important;
+}
+.v4-shortcut-empty button svg{width:14px;height:14px}
+.v4-shortcut-add-intro{
+  font-size:11px!important;line-height:1.8!important;
+  color:#b8b1c9!important;margin:0 0 5px!important;
+}
+.v4-shortcut-pick-actions{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;
+}
+.v4-shortcut-pick-actions button{
+  display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;
+  gap:9px!important;
+  min-height:110px!important;padding:13px!important;
+  border:1px solid rgba(154,142,236,.18)!important;
+  border-radius:15px!important;
+  background:rgba(120,102,234,.055)!important;
+  color:#e5e2f7!important;cursor:pointer!important;
+  transition:background .16s,border-color .16s!important;
+}
+.v4-shortcut-pick-actions button:hover,.v4-shortcut-pick-actions button:focus-visible{
+  background:rgba(120,102,234,.13)!important;
+  border-color:rgba(154,142,236,.40)!important;
+}
+.v4-shortcut-pick-actions button:disabled{opacity:.45!important;cursor:wait!important}
+.v4-shortcut-pick-actions button>svg{
+  width:26px!important;height:26px!important;
+  stroke:currentColor!important;fill:none!important;
+  stroke-width:1.8!important;color:#b6aaf4!important;
+}
+.v4-shortcut-pick-actions button>b{font-size:12px!important;font-weight:600!important}
+.v4-shortcut-pick-actions button>small{font-size:9px!important;color:#9694a8!important}
+.v4-shortcut-safe{
+  padding:8px 10px!important;
+  border-radius:9px!important;
+  font-size:9px!important;line-height:1.6!important;
+  background:rgba(255,255,255,.025)!important;color:#89899a!important;
+}
+.v4-shortcut-add-error{padding:9px 12px!important;border:1px solid;border-radius:9px!important;font-size:10px!important}
+@media(max-width:760px){
+  .v4-shortcut-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .v4-shortcut-drop-hint>small{display:none!important}
+}
+@media(max-width:540px){
+  .v4-shortcut-grid{grid-template-columns:1fr!important}
+  .v4-shortcut-pick-actions{grid-template-columns:1fr!important}
+}
+
+/* True image files show a photographic preview; apps/docs show crisp OS icons. */
+.v4-shortcut[data-shortcut-preview="image"] .v4-app-icon{padding:0!important}
+.v4-shortcut[data-shortcut-preview="image"] .v4-app-icon img{object-fit:cover!important;border-radius:12px!important}
+
+/* Useful secondary actions remain behind the unobtrusive ••• menu. */
+.v4-shortcut-favorite{
+  position:absolute!important;top:7px!important;left:8px!important;
+  color:#b5a7ff!important;font-size:11px!important;pointer-events:none!important;
+}
+.v4-shortcut-options-path{
+  margin:0!important;padding:12px!important;
+  font:10px/1.6 ui-monospace,SFMono-Regular,Consolas,monospace!important;
+  color:#9e9db7!important;
+  background:rgba(255,255,255,.025)!important;
+  border:1px solid rgba(255,255,255,.065)!important;
+  border-radius:10px!important;
+  direction:ltr!important;text-align:left!important;
+  overflow-wrap:anywhere!important;
+}
+.v4-shortcut-option-grid{
+  display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:9px!important;
+}
+.v4-shortcut-option-grid button{
+  min-height:54px!important;
+  display:flex!important;align-items:center!important;justify-content:flex-start!important;
+  gap:11px!important;padding:12px!important;
+  color:#d5d3e1!important;cursor:pointer!important;
+  border:1px solid rgba(255,255,255,.075)!important;border-radius:11px!important;
+  background:rgba(255,255,255,.018)!important;
+  font-size:10px!important;text-align:right!important;
+}
+.v4-shortcut-option-grid button:hover,.v4-shortcut-option-grid button:focus-visible{
+  background:rgba(122,100,243,.10)!important;border-color:rgba(159,141,252,.25)!important;
+  color:#fff!important;
+}
+.v4-shortcut-option-grid button svg{
+  width:18px!important;height:18px!important;flex:0 0 18px!important;
+  stroke:currentColor!important;fill:none!important;stroke-width:1.7!important;
+}
+.v4-shortcut-option-grid button.danger{color:#efadb8!important}
+.v4-shortcut-option-grid button.danger:hover{background:rgba(184,45,65,.13)!important;border-color:rgba(223,97,111,.3)!important}
+.v4-shortcut-option-grid button:disabled{opacity:.5!important;cursor:wait!important}
+@media(max-width:540px){.v4-shortcut-option-grid{grid-template-columns:1fr!important}}
+
+/* Desktop legibility of shortcut details at the real 1000x560 window size. */
+.v4-shortcut-info>b{font-size:12.5px!important}
+.v4-shortcut-info>small{font-size:10px!important}
+.v4-shortcut .v4-shortcut-path{font-size:9px!important}
+.v4-shortcut-drop-hint b{font-size:12px!important}
+.v4-shortcut-drop-hint span{font-size:10px!important}
+.v4-toolbar input{font-size:11px!important}
+.v4-toolbar>span{font-size:10px!important}
+.v4-shortcut-pick-actions button>b{font-size:13px!important}
+.v4-shortcut-pick-actions button>small{font-size:10px!important}
+.v4-shortcut-add-intro{font-size:12px!important}
+.v4-shortcut-safe{font-size:10px!important}
+.v4-shortcut-empty p{font-size:11px!important}
+.v4-dialog:has(.v4-shortcut-pick-actions) .v4-field>span{font-size:10px!important}
+.v4-dialog:has(.v4-shortcut-pick-actions) .v4-field input{font-size:11px!important}
+.v4-dialog:has(.v4-shortcut-pick-actions) .v4-field>small{font-size:9px!important}
+.v4-shortcut-empty button{font-size:11px!important}

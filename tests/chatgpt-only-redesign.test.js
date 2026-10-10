@@ -5,7 +5,7 @@ import {BrainRouter} from '../src/agent/BrainRouter.js';
 
 const read=file=>fs.readFile(new URL('../'+file,import.meta.url),'utf8');
 
-test('ChatGPT default and optional explicit model selector',async()=>{const ui=await read('src/renderer/chatSurfaceV2.js');assert.match(ui,/const CHATGPT_AUTO='chatgpt:auto'/);assert.match(ui,/state.configuredProviders.map/);assert.match(ui,/modelOverride:state.model/);assert.match(ui,/provider:state.model.startsWith/);});
+test('Maria Auto default and optional explicit model selector',async()=>{const ui=await read('src/renderer/chatSurfaceV2.js');assert.match(ui,/const CHATGPT_AUTO='auto'/);assert.match(ui,/state.configuredProviders.map/);assert.match(ui,/modelOverride:state.model/);assert.match(ui,/provider:state.model.startsWith/);});
 
 test('voice controls map to actual persisted voice settings and speech preview',async()=>{
   const s=await read('src/renderer/chatSurfaceV2.js');

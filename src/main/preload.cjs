@@ -1,4 +1,4 @@
-const { contextBridge,ipcRenderer }=require('electron');
+const { contextBridge,ipcRenderer,webUtils }=require('electron');
 contextBridge.exposeInMainWorld('blackClover',{
   chat:(text,options={})=>ipcRenderer.invoke('agent:chat',{text,options}),
   replayMessage:payload=>ipcRenderer.invoke('agent:replay',payload),
@@ -41,6 +41,10 @@ contextBridge.exposeInMainWorld('blackClover',{
   showChat:()=>ipcRenderer.invoke('assistant:show-chat'),
   hideChat:()=>ipcRenderer.invoke('assistant:hide-chat'),
   showAvatar:()=>ipcRenderer.invoke('assistant:show-avatar'),
+  avatarVisibility:()=>ipcRenderer.invoke('assistant:avatar-visibility'),
+  setAvatarVisibility:enabled=>ipcRenderer.invoke('assistant:set-avatar-visibility',Boolean(enabled)),
+  onIslandWindowBlur:fn=>{const h=()=>fn();ipcRenderer.on('assistant:island-window-blur',h);return()=>ipcRenderer.removeListener('assistant:island-window-blur',h);},
+  onIslandRequestMini:fn=>{const h=()=>fn();ipcRenderer.on('assistant:island-request-mini',h);return()=>ipcRenderer.removeListener('assistant:island-request-mini',h);},
   hideAvatar:()=>ipcRenderer.invoke('assistant:hide-avatar'),
   showIsland:(mode='compact')=>ipcRenderer.invoke('assistant:show-island',mode),
   showIslandModule:(module='home')=>ipcRenderer.invoke('assistant:show-island-module',module),
@@ -94,10 +98,16 @@ contextBridge.exposeInMainWorld('blackClover',{
   updatePin:payload=>ipcRenderer.invoke('pins:update',payload),
   removePin:id=>ipcRenderer.invoke('pins:remove',id),
   listShortcuts:()=>ipcRenderer.invoke('shortcuts:list'),
+  shortcutFileIcon:id=>ipcRenderer.invoke('shortcuts:file-icon',id),
+  resolveShortcut:target=>ipcRenderer.invoke('shortcuts:resolve',target),
+  pickShortcutTarget:(kind='file')=>ipcRenderer.invoke('shortcuts:pick-target',kind),
+  getDroppedFilePath:file=>{try{return webUtils.getPathForFile(file);}catch{return '';}},
   createShortcut:payload=>ipcRenderer.invoke('shortcuts:create',payload),
   updateShortcut:(id,patch)=>ipcRenderer.invoke('shortcuts:update',{id,patch}),
   removeShortcut:id=>ipcRenderer.invoke('shortcuts:remove',id),
   openShortcut:id=>ipcRenderer.invoke('shortcuts:open',id),
+  copyShortcutTarget:id=>ipcRenderer.invoke('shortcuts:copy-target',id),
+  revealShortcut:id=>ipcRenderer.invoke('shortcuts:reveal',id),
   accountingDashboard:()=>ipcRenderer.invoke('accounting:dashboard'),
   createAccountingMonitor:payload=>ipcRenderer.invoke('accounting:create-monitor',payload),
   updateAccountingMonitor:(id,patch)=>ipcRenderer.invoke('accounting:update-monitor',{id,patch}),

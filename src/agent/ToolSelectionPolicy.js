@@ -34,6 +34,12 @@ function scoreName(name,text,modes){
   if(/سرچ|جستجو|گوگل|وب|اینترنت/i.test(t)&&/web_|chrome_|live_web|read_web|research/.test(name))score+=190;
   if(/یادآور|یادم بنداز|schedule/i.test(t)&&/reminder|scheduled|get_time/.test(name))score+=190;
   if(/کد|پروژه|vscode|git|باگ|build|test/i.test(t)&&/project_|run_project|git_|inspect_project/.test(name))score+=190;
+  if(/پین ویندوز|رمز ویندوز|windows pin|windows hello|تشخیص چهره|صورت من|face recognition/i.test(t)&&/windows_signin|windows_pin|windows_hello|face_identity/.test(name))score+=260;
+  if(/wake.?on.?lan|remote wake|روشن.*از راه دور|سیستم.*روشن.*شبکه/i.test(t)&&/wake_/.test(name))score+=260;
+  if(/نمای فایل|explorer.*view|details.*فایل|پسوند فایل|فایل مخفی|hidden items|file extensions/i.test(t)&&/explorer_/.test(name))score+=250;
+  if(/اشتراک.*صفحه|screen.?share|share.*screen/i.test(t)&&/screen_share|inspect_ui|vision_|list_windows/.test(name))score+=250;
+  if(/پوشه.*تلگرام|telegram.*folder|چند.*مخاطب|همه.*گروه|bulk.*send|multi.?recipient/i.test(t)&&/telegram_folder|recipient_set|messenger_|inspect_ui|vision_/.test(name))score+=255;
+  if(/گوگل ایمیج|google images|عکس.*گوگل|سرچ.*عکس|جستجوی.*تصویر/i.test(t)&&/google_image_search|chrome_|live_web|read_web/.test(name))score+=250;
   return score;
 }
 

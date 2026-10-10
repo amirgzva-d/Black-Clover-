@@ -7,6 +7,11 @@ test('ordinary questions stay in chat while fresh or explicit research uses the 
   assert.equal(shouldGroundKnowledge('جدیدترین کارت گرافیک انویدیا چیه؟'),true);
   assert.equal(shouldGroundKnowledge('پایتخت مغولستان را با منبع بررسی کن'),true);
   assert.equal(shouldGroundKnowledge('صدا رو تا ته زیاد کن'),false);
+  assert.equal(shouldGroundKnowledge('صدای سیستم چنده؟'),false);
+  assert.equal(shouldGroundKnowledge('روشنایی صفحه چنده؟'),false);
+  assert.equal(shouldGroundKnowledge('باتری لپ تاپ چنده؟'),false);
+  assert.equal(shouldGroundKnowledge('چه پنجره‌هایی بازه؟'),false);
+  assert.equal(shouldGroundKnowledge('وضعیت ویندوز دیفندر چیه؟'),false);
   assert.equal(shouldGroundKnowledge('فتوشاپ رو باز کن'),false);
   assert.equal(shouldGroundKnowledge('سلام ماریا خوبی؟'),false);
 });

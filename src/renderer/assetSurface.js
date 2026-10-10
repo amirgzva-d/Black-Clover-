@@ -1,6 +1,7 @@
 import './assetSurface.css';
 import {listMotions} from './motionStorage.js';
 import {mountAvatar} from './avatar.js';
+import {getCurrentAvatar} from './avatarStorage.js';
 
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=s=>String(s||'').replace(/^\./,'').toUpperCase()||'FILE';
@@ -40,7 +41,7 @@ function setTabs(shell,tabs,active,render){
   host.onclick=e=>{const b=e.target.closest('[data-tab]');if(b)select(b.dataset.tab);};select(active);
 }
 function liveStage(content,{title='Live Preview',subtitle='مدل فعلی ماریا'}={}){
-  content.innerHTML='<section class="live-stage"><div class="live-stage-view" id="liveAvatar"><div class="live-chip">LIVE PREVIEW</div></div><div class="live-stage-info"><small>PREVIEW SANDBOX</small><b id="liveTitle">'+esc(title)+'</b><span id="liveSubtitle">'+esc(subtitle)+'</span><div id="liveActions" class="live-stage-actions"></div></div></section><div class="asset-tab-body"></div>';
+  content.innerHTML='<div class="studio-layout"><aside class="studio-preview"><div class="studio-preview-head"><span class="studio-kicker">MARIA • LIVE CHARACTER</span><span class="studio-live-dot"><i></i> LIVE</span></div><div class="live-stage-view" id="liveAvatar"><div class="live-chip">REAL-TIME PREVIEW</div><div class="stage-vignette"></div><div class="stage-floor"></div></div><div class="live-stage-info"><small>PREVIEW SANDBOX</small><b id="liveTitle">'+esc(title)+'</b><span id="liveSubtitle">'+esc(subtitle)+'</span><div id="liveActions" class="live-stage-actions"></div></div></aside><section class="studio-browser"><div class="studio-browser-head"><div><small>MARIA CUSTOMIZATION</small><b>انتخاب و شخصی‌سازی</b></div><span>Preview → Apply</span></div><div class="asset-tab-body"></div></section></div>';
   const host=content.querySelector('#liveAvatar'),controller=mountAvatar(host);
   window.addEventListener('beforeunload',()=>controller.then(x=>x.dispose()).catch(()=>{}),{once:true});
   return {controller,body:content.querySelector('.asset-tab-body'),title:content.querySelector('#liveTitle'),subtitle:content.querySelector('#liveSubtitle'),actions:content.querySelector('#liveActions'),host};
@@ -91,8 +92,13 @@ async function mountWardrobe(shell,data){
   const local=data.localAssets||[],localAv=local.filter(x=>x.category==='avatar'&&x.direct==='avatar'&&!x.blocked),avatarArchives=local.filter(x=>x.category==='avatar'&&x.direct!=='avatar'&&!x.blocked);
   const wardrobe=data.wardrobe||[],materials=data.materials||[],localWardrobe=local.filter(x=>x.category==='wardrobe'&&!x.blocked),localMaterials=local.filter(x=>x.category==='material'&&!x.blocked),existingAv=unique((data.avatars||[]).filter(x=>x.publicUrl),x=>String(x.name).toLowerCase());
   const content=shell.querySelector('.asset-content'),live=liveStage(content,{title:'Maria Character Studio',subtitle:'کاراکتر را انتخاب کن؛ Preview اینجا زنده است و Maria اصلی تا Apply دست‌نخورده می‌ماند'});
-  let pendingAvatar=null,appliedName='',lock=await window.blackClover.avatarLockState().catch(()=>({locked:false,name:''}));
+  const currentAvatar=await getCurrentAvatar().catch(()=>null),currentMatch=currentAvatar?.url?existingAv.find(x=>x.publicUrl===currentAvatar.url):localAv.find(x=>x.name===currentAvatar?.name),fallbackCurrent=existingAv.find(x=>x.publicUrl==='/models/Model_MOSO.vrm');
+  let pendingAvatar=null,appliedName=currentMatch?.name||currentAvatar?.name||fallbackCurrent?.name||'Model MOSO',lock=await window.blackClover.avatarLockState().catch(()=>({locked:false,name:''}));
   const displayName=x=>x.meta?.title||String(x.name||'Character').replace(/\.vrm$/i,'').replace(/[_-]+/g,' ');
+  let miniObserver=null;const miniControllers=new Map();
+  const clearMiniAvatars=()=>{miniObserver?.disconnect();miniObserver=null;for(const c of miniControllers.values())try{c.dispose();}catch{}miniControllers.clear();};
+  const mountMini=async host=>{if(!host||host.dataset.liveMounted==='1'||host.dataset.liveMounted==='loading')return;host.dataset.liveMounted='loading';try{const c=await mountAvatar(host,{autoLoad:false,mini:true});if(!host.isConnected){c.dispose();return;}if(host.dataset.miniKind==='local'){const f=await localAvatarFile(host.dataset.miniName);await c.loadFile(f,{persist:false});}else await c.loadBuiltIn(host.dataset.miniUrl,{persist:false,name:host.dataset.miniName||'Character'});if(!host.isConnected){c.dispose();return;}host.dataset.liveMounted='1';miniControllers.set(host,c);}catch(err){host.dataset.liveMounted='error';host.dataset.liveError=String(err?.message||err);host.classList.add('mini-failed');}};
+  const hydrateMiniAvatars=()=>{miniObserver?.disconnect();const rootRect=live.body.getBoundingClientRect(),hosts=[...live.body.querySelectorAll('[data-live-mini]')];miniObserver=new IntersectionObserver(entries=>{for(const entry of entries)if(entry.isIntersecting)mountMini(entry.target);},{root:live.body,rootMargin:'160px 0px',threshold:.01});for(const host of hosts){miniObserver.observe(host);const r=host.getBoundingClientRect();if(r.bottom>=rootRect.top-160&&r.top<=rootRect.bottom+160)mountMini(host);}};
   const markSelection=name=>{
     for(const card of live.body.querySelectorAll('[data-avatar-card]'))card.classList.toggle('selected',card.dataset.avatarCard===name);
   };
@@ -132,12 +138,12 @@ async function mountWardrobe(shell,data){
     {id:'local',label:'همه فایل‌ها',count:local.length}
   ];
   const render=id=>{
-    const body=live.body;
+    const body=live.body;clearMiniAvatars();
     if(id==='avatars'){
-      const localCards=localAv.map(x=>{const label=displayName(x);return '<article class="character-card" data-avatar-card="'+esc(x.name)+'" data-search="'+esc([label,x.name,x.meta?.author].join(' ').toLowerCase())+'"><div class="character-card-head"><span>LOCAL CHARACTER</span><i>LIVE VRM</i></div><b>'+esc(label)+'</b><small>'+esc(x.meta?.author||'Local Character')+'</small><div class="character-card-actions"><button data-preview-local="'+esc(x.name)+'">Preview زنده</button></div></article>';}).join('');
-      const builtCards=existingAv.map(x=>{const label=x.meta?.title||x.name,author=x.meta?.author||x.package||'Library Character';return '<article class="character-card library" data-avatar-card="'+esc(x.name)+'" data-search="'+esc([label,x.name,author].join(' ').toLowerCase())+'"><div class="character-card-head"><span>LIBRARY CHARACTER</span><i>'+esc(fmt(x.format))+'</i></div><b>'+esc(label)+'</b><small>'+esc(author)+'</small><div class="character-card-actions"><button data-preview-built="'+esc(x.publicUrl)+'" data-built-name="'+esc(x.name)+'" data-built-label="'+esc(label)+'">Preview زنده</button></div></article>';}).join('');
+      const localCards=localAv.map(x=>{const label=displayName(x),current=x.name===appliedName;return '<article class="character-card '+(current?'current':'')+'" data-avatar-card="'+esc(x.name)+'" data-search="'+esc([label,x.name,x.meta?.author].join(' ').toLowerCase())+'"><div class="character-card-head"><span>LOCAL CHARACTER</span><i>'+(current?'CURRENT':'LIVE VRM')+'</i></div><div class="character-portrait character-live-mini" data-live-mini data-mini-kind="local" data-mini-name="'+esc(x.name)+'"><span>LIVE</span><div class="mini-loader">در حال بارگذاری…</div></div><b>'+esc(label)+'</b><small>'+esc(x.meta?.author||'Local Character')+'</small><div class="character-card-actions"><button data-preview-local="'+esc(x.name)+'">Preview زنده</button></div></article>';}).join('');
+      const builtCards=existingAv.map(x=>{const label=x.meta?.title||x.name,author=x.meta?.author||x.package||'Library Character',current=x.name===appliedName;return '<article class="character-card library '+(current?'current':'')+'" data-avatar-card="'+esc(x.name)+'" data-search="'+esc([label,x.name,author].join(' ').toLowerCase())+'"><div class="character-card-head"><span>LIBRARY CHARACTER</span><i>'+(current?'CURRENT':esc(fmt(x.format)))+'</i></div><div class="character-portrait character-live-mini" data-live-mini data-mini-kind="built" data-mini-name="'+esc(x.name)+'" data-mini-url="'+esc(x.publicUrl)+'"><span>LIVE</span><div class="mini-loader">در حال بارگذاری…</div></div><b>'+esc(label)+'</b><small>'+esc(author)+'</small><div class="character-card-actions"><button data-preview-built="'+esc(x.publicUrl)+'" data-built-name="'+esc(x.name)+'" data-built-label="'+esc(label)+'">Preview زنده</button></div></article>';}).join('');
       const archives=avatarArchives.map(x=>'<article class="character-card pending" data-search="'+esc(x.name.toLowerCase())+'"><div class="character-card-head"><span>ARCHIVE</span><i>Convert</i></div><b>'+esc(x.name)+'</b><small>برای Preview زنده باید ابتدا VRM استخراج/تبدیل شود.</small><div class="character-card-actions"><button disabled>نیاز به تبدیل</button></div></article>').join('');
-      body.innerHTML='<div class="asset-summary"><b>Character Select • '+(localAv.length+existingAv.length+avatarArchives.length)+' کاراکتر</b><span>همه مدل‌های آماده با اسم مشخص هستند. Preview فقط در این صفحه است؛ تغییر Maria اصلی فقط با Apply بالای صفحه انجام می‌شود.</span></div><div class="character-grid">'+localCards+builtCards+archives+'</div>';markSelection(pendingAvatar?.key||appliedName);
+      body.innerHTML='<div class="asset-summary"><b>Character Select • '+(localAv.length+existingAv.length+avatarArchives.length)+' کاراکتر</b><span>کاراکترهای VRM آماده داخل کارت خودشان زنده Render می‌شوند. Preview بزرگ سمت چپ فقط برای بررسی دقیق است؛ تغییر Maria اصلی فقط با Apply انجام می‌شود.</span></div><div class="character-grid">'+localCards+builtCards+archives+'</div>';markSelection(pendingAvatar?.key||appliedName);setTimeout(hydrateMiniAvatars,60);
     }else if(id==='wardrobe'){
       const source=localWardrobe.map(x=>row(x,'<button class="asset-use ghost" data-stage-asset="'+esc(x.name)+'">انتخاب</button>',badge(x.direct?'آماده':'تبدیل لازم',x.direct?'ready':'pending'),'data-asset-name="'+esc(x.name)+'"')).join('');
       const extracted=wardrobe.map(x=>row(x,'<button class="asset-use ghost" data-stage-asset="'+esc(x.name)+'">جزئیات</button>',badge('تبدیل/اتصال لازم','pending'),'data-asset-name="'+esc(x.name)+'"')).join('');
@@ -147,6 +153,7 @@ async function mountWardrobe(shell,data){
     }else body.innerHTML='<div class="asset-summary"><b>'+local.length+' فایل محلی</b><span>'+esc(data.localRoot||'پوشه پیدا نشد')+'</span></div><div class="library-list">'+local.map(x=>row(x,'',x.blocked?badge('محدودیت مجوز','blocked'):badge(x.direct?'مستقیم':x.category,x.direct?'ready':'source'))).join('')+'</div>';
   };
   setTabs(shell,tabs,'avatars',render);
+  window.addEventListener('beforeunload',clearMiniAvatars,{once:true});
 
   live.body.onclick=async e=>{
     const localName=e.target.closest('[data-preview-local]')?.dataset.previewLocal;

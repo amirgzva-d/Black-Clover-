@@ -5,7 +5,7 @@ import DOMPurify from 'dompurify';
 
 const $=q=>document.querySelector(q);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const CHATGPT_AUTO='chatgpt:auto';
+const CHATGPT_AUTO='auto';
 const PROVIDERS=['gemini','anthropic','deepseek','github','groq','openrouter','qwen','mistral','openai'];
 const PROVIDER_NAMES={gemini:'Gemini',anthropic:'Claude',deepseek:'DeepSeek',github:'GitHub Models',groq:'Groq',openrouter:'OpenRouter',qwen:'Qwen',mistral:'Mistral',openai:'OpenAI API'};
 const VOICE_READ_KEY='maria:chat:autoRead';
@@ -82,10 +82,10 @@ function updateAccountUi(){
   const disconnect=$('#disconnectChatGPT');if(disconnect)disconnect.hidden=!usable;
   const usage=$('#chatgptUsage');if(usage)usage.hidden=!usable;
   const model=$('#modelSelect');if(model)model.disabled=false;
-  const banner=$('#connectBanner');if(banner)banner.hidden=usable||state.model!==CHATGPT_AUTO&& !state.model.startsWith('chatgpt:');
+  const banner=$('#connectBanner');if(banner)banner.hidden=usable||!state.model.startsWith('chatgpt:');
   const select=$('#modelSelect');if(select){
     const previous=state.model;
-    select.innerHTML='<option value="'+CHATGPT_AUTO+'">ChatGPT · خودکار'+(usable?'':' (نیازمند مجوز)')+'</option>'+state.models.map(m=>'<option value="chatgpt:'+esc(m.slug)+'">'+esc(m.displayName||m.slug)+'</option>').join('')+state.configuredProviders.map(p=>'<option value="online:'+esc(p.provider)+'">'+esc(PROVIDER_NAMES[p.provider]||p.label)+' · '+esc(p.model)+'</option>').join('');
+    select.innerHTML='<option value="auto">Auto • Maria</option><option value="chatgpt:auto">ChatGPT • Auto'+(usable?'':' (نیازمند اتصال)')+'</option>'+state.models.map(m=>'<option value="chatgpt:'+esc(m.slug)+'">'+esc(m.displayName||m.slug)+'</option>').join('')+state.configuredProviders.map(p=>'<option value="online:'+esc(p.provider)+'">'+esc(PROVIDER_NAMES[p.provider]||p.label)+' · '+esc(p.model)+'</option>').join('');
     state.model=previous;
     if(!Array.from(select.options).some(o=>o.value===state.model))state.model=CHATGPT_AUTO;
     select.value=state.model;

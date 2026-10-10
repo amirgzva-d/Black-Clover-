@@ -25,4 +25,4 @@ test('Usage-sharing response smoke test stays in trusted Electron process',async
   assert.match(preload,/testChatGPTConnection/);
   assert.doesNotMatch(preload,/accessToken|refreshToken|idToken/);
 });
-test('ChatGPT preserved and optional providers configurable',async()=>{const ui=await read('src/renderer/chatSurfaceV2.js');assert.match(ui,/const CHATGPT_AUTO='chatgpt:auto'/);assert.match(ui,/PROVIDERS=/);assert.match(ui,/saveBrainProvider/);assert.match(ui,/removeBrainProvider/);assert.match(ui,/testBrainProvider/);});
+test('Maria Auto preserves ChatGPT and optional providers configurable',async()=>{const ui=await read('src/renderer/chatSurfaceV2.js');assert.match(ui,/const CHATGPT_AUTO='auto'/);assert.match(ui,/PROVIDERS=/);assert.match(ui,/saveBrainProvider/);assert.match(ui,/removeBrainProvider/);assert.match(ui,/testBrainProvider/);});

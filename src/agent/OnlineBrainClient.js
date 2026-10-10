@@ -38,7 +38,7 @@ export class OnlineBrainClient{
   constructor({provider,apiKey,baseUrl,model,timeoutMs=30000}={}){this.provider=provider;this.apiKey=apiKey;this.baseUrl=String(baseUrl||'').replace(/\/$/,'');this.model=model;this.timeoutMs=timeoutMs;this.controllers=new Set();}
   cancel(){for(const controller of this.controllers)try{controller.__manualCancel=true;controller.abort();}catch{}this.controllers.clear();}
   get configured(){return Boolean(this.provider&&this.apiKey&&this.baseUrl&&this.model);}
-  headers(){return {'content-type':'application/json','authorization':'Bearer '+this.apiKey};}
+  headers(){const h={'content-type':'application/json','authorization':'Bearer '+this.apiKey};if(this.provider==='gemini'){h['x-goog-api-key']=this.apiKey;h['x-goog-api-client']='maria-black-clover/0.7.2';}return h;}
   body(messages,tools=[],stream=false){const isNewOpenAI=this.provider==='openai'&&/^gpt-(5|6)/i.test(this.model);const body={model:this.model,messages,stream};if(!isNewOpenAI){body.temperature=.5;body.top_p=.9;}if(tools?.length){body.tools=tools;body.tool_choice='auto';if(isNewOpenAI)body.reasoning_effort='none';}return body;}
   async chat(messages,tools=[]){
     if(!this.configured)throw new Error('Online brain is not configured');const controller=new AbortController();this.controllers.add(controller);

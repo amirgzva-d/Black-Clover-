@@ -17,14 +17,14 @@ test('MARIA shell uses one shared design system and runtime state bus',async()=>
   assert.match(design,/mariaSurfaceOut/);
 });
 
-test('primary avatar dock keeps character tools while pins and reminders move to top island',async()=>{
-  const [ui,island]=await Promise.all([read('src/renderer/luxuryUI.js'),read('src/renderer/topIsland.js')]);
+test('primary avatar dock keeps character tools while pins and reminders use Top Island V4',async()=>{
+  const [ui,island,bootstrap]=await Promise.all([read('src/renderer/luxuryUI.js'),read('src/renderer/topIslandV4.js'),read('src/renderer/main.js')]);
   for(const action of ['chat','avatar','projects','voice','settings'])assert.ok(ui.includes(`data-action=\\"${action}\\"`)||ui.includes(`data-action="${action}"`),action);
   assert.doesNotMatch(ui,/<button class="dock-btn[^"]*" data-action="pins"/);
   assert.doesNotMatch(ui,/<button class="dock-btn[^"]*" data-action="reminders"/);
-  assert.match(island,/pins-automation/);
-  assert.match(island,/میان‌برها/);
-  assert.match(island,/گزارش ثبت/);
+  for(const token of ["id:'home'","id:'pins'","id:'tasks'",'میان‌برها','گزارش ثبت','PIN LIBRARY','TASKS & AUTOMATIONS','ACCOUNTING WATCH'])assert.ok(island.includes(token),token);
+  assert.match(bootstrap,/topIslandV4\.js/);
+  assert.doesNotMatch(bootstrap,/topIslandV3\.js/);
   assert.match(ui,/a==='wardrobe'\|\|a==='avatar'/);
   assert.match(ui,/openSettings\?\.\('voice'\)/);
   assert.match(ui,/openSettings\?\.\('general'\)/);
