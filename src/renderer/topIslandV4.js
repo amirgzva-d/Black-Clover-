@@ -18,6 +18,10 @@ const I={
   gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.7 5.7 7 7M17 17l1.3 1.3M18.3 5.7 17 7M7 17l-1.3 1.3"/></svg>',
   close:'<svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg>',
   launch:'<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>',
+  folder:'<svg viewBox="0 0 24 24"><path d="M3 6.5h6l2 2h9a1 1 0 0 1 1 1v9a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 18.5z"/></svg>',
+  copy:'<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>',
+  edit:'<svg viewBox="0 0 24 24"><path d="M4 17.5 16.9 4.6a2 2 0 0 1 2.8 2.8L6.8 20.3 3 21z"/><path d="m14.7 6.8 2.8 2.8"/></svg>',
+  trash:'<svg viewBox="0 0 24 24"><path d="M4.5 7h15M9 7V4h6v3M7 7l.7 13h8.6L17 7M10 11v6M14 11v6"/></svg>',
   report:'<svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 9h7M8.5 13h7M8.5 17H13"/></svg>',
   clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg>',
   reserved:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
@@ -205,14 +209,20 @@ async function renderHome(){
     </section>`;
 }
 function shortcutCard(x){
-  const path=String(x.target||'');
-  const filename=path.split(/[\\/]/).pop()||'';
-  const extension=filename.includes('.')?filename.slice(filename.lastIndexOf('.')).toUpperCase():'';
+  const target=String(x.target||'');
+  const filename=target.split(/[\\/]/).pop()||'';
+  const extension=x.kind==='url'?'':filename.includes('.')?filename.slice(filename.lastIndexOf('.')).toUpperCase():'';
   const kind={app:'برنامه',file:'فایل',folder:'پوشه',url:'وب‌سایت',media:'رسانه'}[x.kind]||String(x.kind||'میان‌بر');
   const details=kind+(extension?' • '+extension:'');
-  return `<article class="v4-shortcut" data-shortcut-id="${esc(x.id)}" title="${esc(path)}">
-    <button data-shortcut-open title="باز کردن ${esc(x.label)}"><span class="v4-app-icon" data-shortcut-icon="${esc(x.id)}">${x.customIcon?`<img src="${esc(x.customIcon)}">`:esc(x.icon||'◆')}</span><div><b>${esc(x.label)}</b><small>${esc(details)}</small></div><i class="health ${esc(x.health||'unknown')}"></i></button>
-    <button class="more" data-shortcut-edit aria-label="ویرایش میان‌بر">•••</button>
+  const image=x.customIcon?`<img src="${esc(x.customIcon)}" alt="" loading="lazy">`:esc(x.icon||'◆');
+  const isImage=x.kind!=='folder'&&/\.(png|jpe?g|gif|webp|bmp)$/i.test(target);
+  return `<article class="v4-shortcut" data-shortcut-id="${esc(x.id)}" data-shortcut-kind="${esc(x.kind)}" data-shortcut-preview="${isImage?'image':'icon'}" title="${esc(target)}">
+    <button type="button" data-shortcut-open title="باز کردن ${esc(x.label)}" aria-label="باز کردن ${esc(x.label)}">
+      <span class="v4-app-icon" data-shortcut-icon="${esc(x.id)}">${image}</span>
+      <span class="v4-shortcut-info"><b>${esc(x.label)}</b><small>${esc(details)}</small><span class="v4-shortcut-path" dir="auto" title="${esc(target)}">${esc(target)}</span></span>
+    </button>
+    ${x.pinned?'<span class="v4-shortcut-favorite" title="میان‌بر ثابت‌شده">★</span>':''}
+    <button type="button" class="more" data-shortcut-edit title="گزینه‌های میان‌بر" aria-label="گزینه‌های ${esc(x.label)}">•••</button>
   </article>`;
 }
 function hydrateShortcutIcons(host){
@@ -243,10 +253,11 @@ async function renderShortcuts(){
   const host=$('[data-page-body]');if(!host)return;
   const items=await window.blackClover.listShortcuts().catch(()=>[]);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>QUICK LAUNCH</small><h2>میان‌برها</h2><p>فایل را انتخاب کن؛ عکس یا آیکونش همین‌جا می‌آید و با یک کلیک باز می‌شود.</p></div><button class="v4-head-add" data-context-add>＋ انتخاب فایل</button></header>
-    <div class="v4-toolbar"><label>${I.search}<input data-shortcut-search placeholder="جستجو…"></label><span>${items.length} مورد</span></div>
-    <div class="v4-shortcut-drop-hint" data-shortcut-drop-area role="note">${I.plus}<b>برای ساخت میان‌بر، فایل یا پوشه را از Explorer اینجا رها کن.</b><span>فایل اصلی هیچ تغییری نمی‌کند.</span></div>
-    ${items.length?`<div class="v4-shortcut-grid" data-shortcut-grid>${items.map(shortcutCard).join('')}</div>`:`<section class="v4-empty-panel"><span>${I.launch}</span><small>QUICK LAUNCH</small><h3>یک فایل انتخاب کن</h3><p>همین! نام و تصویر فایل نمایش داده می‌شود و با یک کلیک باز خواهد شد؛ فایل اصلی دست‌نخورده می‌ماند.</p><button data-context-add>${I.plus} انتخاب فایل</button></section>`}`;
+    <header class="v4-page-head"><div><small>QUICK LAUNCH</small><h2>میان‌برها</h2><p>دو روش ساده: فایل را بکش و رها کن، یا روی + بزن و انتخاب کن.</p></div><button type="button" class="v4-head-add" data-context-add>${I.plus} افزودن میان‌بر</button></header>
+    <div class="v4-toolbar"><label>${I.search}<input data-shortcut-search placeholder="جستجوی نام، نوع یا مسیر…" aria-label="جستجوی میانبر"></label><span>${items.length} میان‌بر</span></div>
+    <div class="v4-shortcut-drop-hint" data-shortcut-drop-area role="note">${I.plus}<div><b>فایل، برنامه یا پوشه را اینجا رها کن</b><span>یا لینک را بکش؛ میان‌بر خودکار ساخته می‌شود.</span></div><small>بدون جابه‌جایی فایل اصلی</small></div>
+    <div class="v4-shortcut-notice" data-shortcut-message role="status" aria-live="polite" hidden></div>
+    ${items.length?`<div class="v4-shortcut-grid" data-shortcut-grid>${items.map(shortcutCard).join('')}</div>`:`<section class="v4-shortcut-empty"><span class="v4-shortcut-empty-icon">${I.launch}</span><h3>هنوز میان‌بری نداری</h3><p>فایل را از ویندوز بکش و رها کن، یا از + یک برنامه، پوشه یا لینک انتخاب کن.</p><button type="button" data-context-add>${I.plus} افزودن اولین میان‌بر</button></section>`}`;
   $('[data-shortcut-search]',host)?.addEventListener('input',e=>{
     const q=e.currentTarget.value.trim().toLowerCase();$$('.v4-shortcut',host).forEach(x=>x.hidden=q&&!x.textContent.toLowerCase().includes(q));
   });
@@ -382,30 +393,102 @@ function selectPage(id,{pin=false}={}){
   if(unchanged)return;
   playTone();renderPage();
 }
-async function quickAddShortcut(initialTarget=''){
+let shortcutNoticeTimer=null;
+function showShortcutNotice(message,{error=false}={}){
   const host=$('[data-page-body]');
+  if(page!=='shortcuts'||!host)return;
+  let notice=$('[data-shortcut-message]',host);
+  if(!notice){
+    notice=document.createElement('div');
+    notice.className='v4-shortcut-notice';
+    notice.dataset.shortcutMessage='';
+    notice.setAttribute('role','status');
+    host.querySelector('.v4-page-head')?.after(notice);
+  }
+  notice.textContent=String(message);
+  notice.hidden=false;
+  notice.classList.toggle('error',error);
+  clearTimeout(shortcutNoticeTimer);
+  shortcutNoticeTimer=setTimeout(()=>{if(notice.isConnected)notice.hidden=true;},5200);
+}
+function normalizeQuickShortcutInput(value){
+  const raw=String(value||'').trim();
+  // Paste a bare website like youtube.com without making the user type https://.
+  if(/^(?:www\.)?[a-z0-9-]+(?:\.[a-z0-9-]+)*\.(?:com|org|net|io|dev|app|ir|co|tv|me|info|edu|gov|xyz|ai)(?:[/?#][^\s]*)?$/i.test(raw))return 'https://'+raw;
+  return raw;
+}
+async function quickAddShortcut(input){
+  if(!input)return {status:'cancelled'};
+  const resolved=typeof input==='string'?await window.blackClover.resolveShortcut(normalizeQuickShortcutInput(input)):input;
+  if(!resolved?.target)return {status:'cancelled'};
+  const key=String(resolved.target).toLowerCase();
+  const current=await window.blackClover.listShortcuts();
+  const prior=current.find(x=>String(x.target).toLowerCase()===key);
+  if(prior){
+    await renderShortcuts();
+    showShortcutNotice('«'+prior.label+'» قبلاً اضافه شده است.');
+    return {status:'existing',item:prior};
+  }
   try{
-    nativeShortcutPickerOpen=true;
-    const selected=initialTarget
-      ?await window.blackClover.resolveShortcut(initialTarget)
-      :await window.blackClover.pickShortcutTarget('file');
-    if(selected){
-      if(mode!=='expanded')setMode('expanded');
-      // Preview detected name, extension, kind and target before saving.
-      editShortcut(null,selected.target);
-    }
+    const created=await window.blackClover.createShortcut({
+      target:resolved.target,label:resolved.label,kind:resolved.kind,icon:resolved.icon
+    });
+    await renderShortcuts();
+    showShortcutNotice('«'+created.label+'» اضافه شد. برای بازکردن، روی کارت کلیک کن.');
+    const card=$$('[data-shortcut-id]').find(x=>x.dataset.shortcutId===created.id);
+    card?.classList.add('just-added');
+    return {status:'created',item:created};
   }catch(error){
-    let status=$('[data-shortcut-message]',host);
-    if(!status){
-      status=document.createElement('p');status.dataset.shortcutMessage='';
-      status.className='v4-shortcut-message';status.setAttribute('role','alert');
-      host?.querySelector('.v4-page-head')?.after(status);
+    // The main process also guards against duplicates (including .lnk aliases).
+    if(/قبلاً ثبت شده|already exists|duplicate/i.test(String(error?.message||error))){
+      await renderShortcuts();
+      showShortcutNotice('این میان‌بر قبلاً اضافه شده است.');
+      return {status:'existing'};
     }
-    status.textContent=String(error?.message||error);
-  }finally{nativeShortcutPickerOpen=false;}
+    showShortcutNotice(String(error?.message||error),{error:true});
+    throw error;
+  }
+}
+function openShortcutQuickMenu(){
+  if(mode!=='expanded')setMode('expanded');
+  const modal=openModal({
+    title:'افزودن میان‌بر',kicker:'QUICK LAUNCH',
+    body:`<p class="v4-shortcut-add-intro">فقط یکی از گزینه‌ها را انتخاب کن. نام، نوع و تصویر میان‌بر به‌صورت خودکار شناسایی می‌شود.</p>
+      <div class="v4-shortcut-pick-actions">
+        <button type="button" data-quick-pick="file">${I.launch}<b>فایل یا برنامه</b><small>Excel، PDF، عکس، ویدیو، EXE و…</small></button>
+        <button type="button" data-quick-pick="folder">${I.folder||I.pin}<b>پوشه</b><small>یک پوشه از ویندوز انتخاب کن</small></button>
+      </div>
+      ${field('آدرس وب‌سایت یا مسیر فایل', '<input name="quick-target" dir="auto" placeholder="https://example.com یا C:\\\\..." autocomplete="off">','برای لینک یا مسیر دستی، آدرس را وارد کن و «افزودن» را بزن.')}
+      <p class="v4-shortcut-safe">فقط یک میان‌بر ساخته می‌شود؛ فایل اصلی جابه‌جا، کپی یا حذف نمی‌شود.</p>
+      <div class="v4-shortcut-add-error" data-quick-error role="alert" hidden></div>`,
+    submit:'افزودن',
+    onSubmit:async fd=>{
+      const target=String(fd.get('quick-target')||'').trim();
+      if(!target){modal.querySelector('[name="quick-target"]')?.focus();return false;}
+      try{await quickAddShortcut(target);}
+      catch(error){modal.querySelector('[data-quick-error]').textContent=String(error?.message||error);modal.querySelector('[data-quick-error]').hidden=false;return false;}
+    }
+  });
+  for(const button of $$('[data-quick-pick]',modal)){
+    button.onclick=async()=>{
+      button.disabled=true;
+      nativeShortcutPickerOpen=true;
+      try{
+        const chosen=await window.blackClover.pickShortcutTarget(button.dataset.quickPick);
+        if(chosen){
+          await quickAddShortcut(chosen);
+          modal.remove();
+        }
+      }catch(error){
+        const errorHost=$('[data-quick-error]',modal);
+        if(errorHost){errorHost.textContent=String(error?.message||error);errorHost.hidden=false;}
+      }finally{nativeShortcutPickerOpen=false;button.disabled=false;}
+    };
+  }
+  return modal;
 }
 function contextAdd(){
-  if(page==='shortcuts'){if(mode!=='expanded')setMode('expanded');return editShortcut();}
+  if(page==='shortcuts')return openShortcutQuickMenu();
   if(mode!=='expanded')setMode('expanded');
   if(page==='reports')return addAccounting();
   if(page==='pins')return editPin();
@@ -413,6 +496,48 @@ function contextAdd(){
   openModal({title:'ایجاد سریع',kicker:'QUICK CREATE',body:'<div class="v4-quick-create"><button type="button" data-quick="shortcut">میان‌بر</button><button type="button" data-quick="report">Excel Watch</button><button type="button" data-quick="pin">پین</button><button type="button" data-quick="task">وظیفه</button></div>'});
 }
 function editShortcut(item=null,initialTarget=''){return createSmartShortcutEditor({openModal,field,esc,renderShortcuts},item,initialTarget);}
+async function openShortcutOptions(id){
+  const item=(await window.blackClover.listShortcuts()).find(x=>x.id===id);
+  if(!item)return;
+  const local=!['url','webapp'].includes(item.kind);
+  const modal=openModal({
+    title:item.label,kicker:'SHORTCUT OPTIONS',
+    body:`<p class="v4-shortcut-options-path" dir="auto" title="${esc(item.target)}">${esc(item.target)}</p>
+      <div class="v4-shortcut-option-grid">
+        <button type="button" data-shortcut-action="open">${I.open}<span>بازکردن</span></button>
+        <button type="button" data-shortcut-action="copy">${I.copy}<span>کپی مسیر یا لینک</span></button>
+        ${local?`<button type="button" data-shortcut-action="reveal">${I.folder}<span>نمایش در پوشه</span></button>`:''}
+        <button type="button" data-shortcut-action="favorite">${I.pin}<span>${item.pinned?'برداشتن از اول فهرست':'ثابت در بالای فهرست'}</span></button>
+        <button type="button" data-shortcut-action="edit">${I.edit}<span>تغییر نام و جزئیات</span></button>
+        <button type="button" data-shortcut-action="remove" class="danger">${I.trash}<span>حذف فقط میان‌بر</span></button>
+      </div>
+      <p class="v4-shortcut-safe">حذف یا ویرایش میان‌بر، فایل اصلی را حذف یا جابه‌جا نمی‌کند.</p>
+      <div class="v4-shortcut-add-error" data-shortcut-options-error role="alert" hidden></div>`
+  });
+  for(const actionButton of $$('[data-shortcut-action]',modal)){
+    actionButton.onclick=async()=>{
+      const kind=actionButton.dataset.shortcutAction;
+      if(kind==='remove'&&!confirm('فقط میان‌بر حذف شود؟ فایل اصلی دست‌نخورده می‌ماند.'))return;
+      if(kind==='edit'){modal.remove();editShortcut(item);return;}
+      actionButton.disabled=true;
+      try{
+        if(kind==='open')await window.blackClover.openShortcut(item.id);
+        else if(kind==='copy')await window.blackClover.copyShortcutTarget(item.id);
+        else if(kind==='reveal')await window.blackClover.revealShortcut(item.id);
+        else if(kind==='favorite')await window.blackClover.updateShortcut(item.id,{pinned:!item.pinned});
+        else if(kind==='remove')await window.blackClover.removeShortcut(item.id);
+        modal.remove();
+        if(['favorite','remove'].includes(kind))await renderShortcuts();
+        if(kind==='copy')showShortcutNotice('مسیر یا لینک در کلیپ‌بورد کپی شد.');
+        if(kind==='remove')showShortcutNotice('میان‌بر حذف شد؛ فایل اصلی محفوظ است.');
+      }catch(error){
+        const errorHost=$('[data-shortcut-options-error]',modal);
+        if(errorHost){errorHost.textContent=String(error?.message||error);errorHost.hidden=false;}
+      }finally{actionButton.disabled=false;}
+    };
+  }
+  return modal;
+}
 function editPin(item=null){
   const modal=openModal({
     title:item?'ویرایش پین':'پین جدید',kicker:'PIN LIBRARY',
@@ -512,7 +637,7 @@ function bindPageActions(){
     const shortcut=e.target.closest('[data-shortcut-id]');
     if(shortcut){
       const id=shortcut.dataset.shortcutId;
-      if(e.target.closest('[data-shortcut-edit]')){const item=(await window.blackClover.listShortcuts()).find(x=>x.id===id);if(item)editShortcut(item);}
+      if(e.target.closest('[data-shortcut-edit]')){await openShortcutOptions(id);}
       else if(e.target.closest('[data-shortcut-open]')){
         try{await window.blackClover.openShortcut(id);}
         catch(error){
@@ -641,7 +766,7 @@ export async function mountTopIslandV4(){
     <section class="v4-expanded">
       <section class="v4-page" data-page-body></section>
     </section>
-    <div class="v4-drop"><b>فایل را رها کن</b><span>Ask MARIA • Pin • Translate • Send • Convert</span></div>
+    <div class="v4-drop" aria-live="polite"><b data-drop-title>فایل را رها کن</b><span data-drop-subtitle>Ask MARIA • Pin • Translate • Send • Convert</span></div>
   </main>`;
 
   const root=$('.maria-island-v4');
@@ -671,7 +796,18 @@ export async function mountTopIslandV4(){
     if(e.target.closest('button,a,input,textarea,select,label,form,[contenteditable],.v4-modal,.v4-expanded'))return;
     if(mode==='peek'||mode==='preview')hoverController.pinPreview();
   });
-  for(const ev of ['dragenter','dragover'])root.addEventListener(ev,e=>{e.preventDefault();root.classList.add('drop-active')});
+  for(const ev of ['dragenter','dragover'])root.addEventListener(ev,e=>{
+    if(e.target.closest('.v4-modal'))return;
+    e.preventDefault();
+    root.classList.add('drop-active');
+    if(page==='shortcuts'){
+      $('[data-drop-title]')?.replaceChildren(document.createTextNode('رها کن تا میان‌بر ساخته شود'));
+      $('[data-drop-subtitle]')?.replaceChildren(document.createTextNode('برنامه، فایل، پوشه یا لینک • بدون تغییر فایل اصلی'));
+    }else{
+      $('[data-drop-title]')?.replaceChildren(document.createTextNode('فایل را رها کن'));
+      $('[data-drop-subtitle]')?.replaceChildren(document.createTextNode('Ask MARIA • Pin • Translate • Send • Convert'));
+    }
+  });
   root.addEventListener('dragleave',e=>{if(!root.contains(e.relatedTarget))root.classList.remove('drop-active')});
   root.addEventListener('drop',e=>{
     if(e.target.closest('.v4-modal'))return;
@@ -679,7 +815,33 @@ export async function mountTopIslandV4(){
     const file=e.dataTransfer?.files?.[0];
     const location=file?window.blackClover.getDroppedFilePath(file):'';
     const url=e.dataTransfer?.getData('text/uri-list')||e.dataTransfer?.getData('text/plain')||'';
-    if(page==='shortcuts'&&(location||/^https?:\/\//i.test(url))){void quickAddShortcut(location||url);return;}
+    if(page==='shortcuts'){
+      const files=[...(e.dataTransfer?.files||[])].slice(0,16);
+      const targets=files.map(f=>window.blackClover.getDroppedFilePath(f)).filter(Boolean);
+      const link=String(url||'').split(/[\r\n]/).find(s=>/^https?:\/\//i.test(s.trim()))?.trim();
+      if(!targets.length&&link)targets.push(link);
+      if(!targets.length){
+        showShortcutNotice('فایل، پوشه یا لینک معتبر را رها کن.',{error:true});
+        return;
+      }
+      // Add multiple real OS files sequentially; one invalid item must not drop the rest.
+      void (async()=>{
+        let added=0,already=0,failed=0;
+        for(const target of targets){
+          try{
+            const result=await quickAddShortcut(target);
+            if(result.status==='created')added++;
+            else if(result.status==='existing')already++;
+          }catch{failed++;}
+        }
+        showShortcutNotice(
+          added?`${added} میان‌بر اضافه شد${already?` • ${already} مورد تکراری`:''}${failed?` • ${failed} خطا`:''}.`:
+          already&&!failed?'این میان‌برها قبلاً وجود دارند.':'فایل قابل‌افزودن نبود.',
+          {error:failed>0&&!added}
+        );
+      })();
+      return;
+    }
     if(location)openModal({title:'فایل دریافت شد',kicker:'CONTEXT DROP',body:'<div class="v4-drop-choice"><b>'+esc(file.name)+'</b><p>برای ساخت میان‌بر وارد بخش میان‌برها شو و فایل را رها کن.</p></div>'});
   });
 

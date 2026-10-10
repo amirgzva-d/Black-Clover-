@@ -22,7 +22,8 @@ test('new file shortcut uses native picker and image thumbnails without copying 
   read('src/renderer/topIslandV4.js'),read('src/main/main.js'),read('src/main/preload.cjs'),read('src/renderer/shortcutEditorV4.js')
  ]);
  for(const key of ['quickAddShortcut','pickShortcutTarget','editShortcut','shortcutFileIcon','hydrateShortcutIcons','data-shortcut-open'])assert.ok(ui.includes(key),key);
- assert.ok(editor.includes('window.blackClover.createShortcut'),'Confirmation dialog persists the detected target.');
+ assert.ok(ui.includes('await window.blackClover.createShortcut'),'Native picker and drop add the detected shortcut immediately.');
+ assert.ok(editor.includes('window.blackClover.updateShortcut'),'Advanced editor still supports renaming.');
  for(const key of ['shortcuts:file-icon','getFileIcon','nativeImage.createFromBuffer','shortcuts:pick-target'])assert.ok(main.includes(key),key);
  assert.match(preload,/shortcutFileIcon:id=>ipcRenderer.invoke/);
  assert.doesNotMatch(ui,/await fs\.rename\(/);

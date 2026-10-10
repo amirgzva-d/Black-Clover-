@@ -44,7 +44,7 @@ test('top island provides contextual add and native drag-and-drop wiring',async(
     fs.readFile(new URL('../src/main/preload.cjs',import.meta.url),'utf8'),
     fs.readFile(new URL('../src/main/main.js',import.meta.url),'utf8')
   ]);
-  for(const text of ['انتخاب فایل','افزودن پین','افزودن یادآور','getDroppedFilePath','createSmartShortcutEditor'])assert.ok(ui.includes(text));
+  for(const text of ['افزودن میان‌بر','افزودن پین','افزودن یادآور','getDroppedFilePath','createSmartShortcutEditor','openShortcutQuickMenu'])assert.ok(ui.includes(text));
   assert.match(preload,/webUtils\.getPathForFile/);
   assert.match(main,/shortcuts:pick-target/);
   assert.match(main,/shortcuts:resolve/);

@@ -106,6 +106,8 @@ contextBridge.exposeInMainWorld('blackClover',{
   updateShortcut:(id,patch)=>ipcRenderer.invoke('shortcuts:update',{id,patch}),
   removeShortcut:id=>ipcRenderer.invoke('shortcuts:remove',id),
   openShortcut:id=>ipcRenderer.invoke('shortcuts:open',id),
+  copyShortcutTarget:id=>ipcRenderer.invoke('shortcuts:copy-target',id),
+  revealShortcut:id=>ipcRenderer.invoke('shortcuts:reveal',id),
   accountingDashboard:()=>ipcRenderer.invoke('accounting:dashboard'),
   createAccountingMonitor:payload=>ipcRenderer.invoke('accounting:create-monitor',payload),
   updateAccountingMonitor:(id,patch)=>ipcRenderer.invoke('accounting:update-monitor',{id,patch}),

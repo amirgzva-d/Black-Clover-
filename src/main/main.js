@@ -310,6 +310,25 @@ ipcMain.handle('shortcuts:update',async(_e,payload)=>{
   if(!item)throw new Error('میان‌بر برای ویرایش پیدا نشد.');
   send({type:'data-changed',store:'shortcuts'});return item;
 });
+ipcMain.handle('shortcuts:copy-target',async(_e,id)=>{
+  const item=(await quickShortcuts.list({limit:2000,includeDisabled:true})).find(x=>x.id===String(id||''));
+  if(!item)throw new Error('میان‌بر پیدا نشد.');
+  clipboard.writeText(String(item.target||''));
+  return true;
+});
+ipcMain.handle('shortcuts:reveal',async(_e,id)=>{
+  const item=(await quickShortcuts.list({limit:2000,includeDisabled:true})).find(x=>x.id===String(id||''));
+  if(!item)throw new Error('میان‌بر پیدا نشد.');
+  if(!['file','media','app','folder','auto'].includes(item.kind))throw new Error('این میان‌بر مسیر محلی ندارد.');
+  const target=String(item.target||'');
+  const stat=await fs.promises.stat(target).catch(()=>null);
+  if(!stat)throw new Error('فایل یا پوشه در مسیر اصلی پیدا نشد.');
+  if(stat.isDirectory()){
+    const issue=await shell.openPath(target);
+    if(issue)throw new Error(issue);
+  }else shell.showItemInFolder(target);
+  return true;
+});
 ipcMain.handle('shortcuts:remove',async(_e,id)=>{const ok=await quickShortcuts.remove(String(id||''));send({type:'data-changed',store:'shortcuts'});return ok;});
 ipcMain.handle('shortcuts:open',async(_e,id)=>{const sid=String(id||''),item=(await quickShortcuts.list({limit:1000})).find(x=>x.id===sid);if(!item)throw new Error('Shortcut not found');const target=String(item.target||'').trim();let result;if(item.kind==='agent'||item.kind==='routine')result=await agent.chat(target,{profile:'quick-shortcut'});else if(/^https?:\/\//i.test(target)){const safe=shortcutIdentity(target);await shell.openExternal(safe);result={ok:true,type:'url',target:safe};}else{shortcutIdentity(target);const error=await shell.openPath(target);if(error)throw new Error(error);result={ok:true,type:'path',target};}await quickShortcuts.markUsed(sid);send({type:'data-changed',store:'shortcuts'});return result;});
 

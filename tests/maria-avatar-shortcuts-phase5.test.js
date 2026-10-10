@@ -51,8 +51,8 @@ test('shortcuts use original paths, show type, name and extension before saving'
   ]);
   assert.match(ui,/v4-shortcut-drop-hint/);
   assert.match(ui,/data-shortcut-drop-area/);
-  assert.match(ui,/return editShortcut\(\)/);
-  assert.match(ui,/editShortcut\(null,selected\.target\)/);
+  assert.match(ui,/return openShortcutQuickMenu\(\)/);
+  assert.match(ui,/await quickAddShortcut\(chosen\)/);
   assert.match(ui,/getDroppedFilePath\(file\)/);
   assert.match(editor,/data-shortcut-meta/);
   assert.match(editor,/فرمت:/);
