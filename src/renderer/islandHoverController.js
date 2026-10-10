@@ -22,18 +22,9 @@ export class IslandHoverController {
   }
   enter(){
     if(this.suppressUntilLeave)return;
-    if(this.inside){this.activity();return;}
     this.inside=true;
-    this.cancel('openTimer');
-    if(this.getMode()==='peek'){
-      this.openTimer=this.schedule(()=>{
-        this.openTimer=null;
-        if(this.inside&&!this.suppressUntilLeave&&this.getMode()==='peek'){
-          this.setMode('preview');
-          this.scheduleCollapse();
-        }
-      },this.openDelay);
-    }else this.activity();
+    // Pointer hover only animates the character. Explicit click opens the panel.
+    this.activity();
   }
   activity(){
     if(this.suppressUntilLeave)return;

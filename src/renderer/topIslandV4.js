@@ -55,6 +55,8 @@ let filter='all';
 let audio=null;
 let greetingTimer=null;
 let shortcutIconObserver=null;
+let nativeShortcutPickerOpen=false;
+let avatarVisibilityState={enabled:false,visible:false};
 
 function savePrefs(patch){prefs={...prefs,...patch};try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}catch{};syncChrome();}
 function playTone(kind='tap'){
@@ -86,7 +88,7 @@ function wake(){
   if(mode!=='peek'&&!hoverController?.inside)armIdle();
 }
 function protectedPanel(){
-  return Boolean($('.v4-modal')||$('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus'));
+  return Boolean(nativeShortcutPickerOpen||$('.v4-modal')||$('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus'));
 }
 function setPanelPinned(pinned){
   savePrefs({pinned:Boolean(pinned)});
@@ -197,9 +199,14 @@ async function renderHome(){
     </section>`;
 }
 function shortcutCard(x){
-  return `<article class="v4-shortcut" data-shortcut-id="${esc(x.id)}">
-    <button data-shortcut-open title="باز کردن فایل اصلی"><span class="v4-app-icon" data-shortcut-icon="${esc(x.id)}">${x.customIcon?`<img src="${esc(x.customIcon)}">`:esc(x.icon||'◆')}</span><div><b>${esc(x.label)}</b><small>برای باز کردن کلیک کن</small></div><i class="health ${esc(x.health||'unknown')}"></i></button>
-    <button class="more" data-shortcut-edit>•••</button>
+  const path=String(x.target||'');
+  const filename=path.split(/[\\/]/).pop()||'';
+  const extension=filename.includes('.')?filename.slice(filename.lastIndexOf('.')).toUpperCase():'';
+  const kind={app:'برنامه',file:'فایل',folder:'پوشه',url:'وب‌سایت',media:'رسانه'}[x.kind]||String(x.kind||'میان‌بر');
+  const details=kind+(extension?' • '+extension:'');
+  return `<article class="v4-shortcut" data-shortcut-id="${esc(x.id)}" title="${esc(path)}">
+    <button data-shortcut-open title="باز کردن ${esc(x.label)}"><span class="v4-app-icon" data-shortcut-icon="${esc(x.id)}">${x.customIcon?`<img src="${esc(x.customIcon)}">`:esc(x.icon||'◆')}</span><div><b>${esc(x.label)}</b><small>${esc(details)}</small></div><i class="health ${esc(x.health||'unknown')}"></i></button>
+    <button class="more" data-shortcut-edit aria-label="ویرایش میان‌بر">•••</button>
   </article>`;
 }
 function hydrateShortcutIcons(host){
@@ -232,6 +239,7 @@ async function renderShortcuts(){
   host.innerHTML=`
     <header class="v4-page-head"><div><small>QUICK LAUNCH</small><h2>میان‌برها</h2><p>فایل را انتخاب کن؛ عکس یا آیکونش همین‌جا می‌آید و با یک کلیک باز می‌شود.</p></div><button class="v4-head-add" data-context-add>＋ انتخاب فایل</button></header>
     <div class="v4-toolbar"><label>${I.search}<input data-shortcut-search placeholder="جستجو…"></label><span>${items.length} مورد</span></div>
+    <div class="v4-shortcut-drop-hint" data-shortcut-drop-area role="note">${I.plus}<b>برای ساخت میان‌بر، فایل یا پوشه را از Explorer اینجا رها کن.</b><span>فایل اصلی هیچ تغییری نمی‌کند.</span></div>
     ${items.length?`<div class="v4-shortcut-grid" data-shortcut-grid>${items.map(shortcutCard).join('')}</div>`:`<section class="v4-empty-panel"><span>${I.launch}</span><small>QUICK LAUNCH</small><h3>یک فایل انتخاب کن</h3><p>همین! نام و تصویر فایل نمایش داده می‌شود و با یک کلیک باز خواهد شد؛ فایل اصلی دست‌نخورده می‌ماند.</p><button data-context-add>${I.plus} انتخاب فایل</button></section>`}`;
   $('[data-shortcut-search]',host)?.addEventListener('input',e=>{
     const q=e.currentTarget.value.trim().toLowerCase();$$('.v4-shortcut',host).forEach(x=>x.hidden=q&&!x.textContent.toLowerCase().includes(q));
@@ -289,7 +297,7 @@ async function renderReports(){
   const missing=rows.reduce((n,x)=>n+Number(x.result?.missing||0),0);
   const issues=rows.reduce((n,x)=>n+Number(x.result?.brokenLinks||0)+Number(x.result?.duplicateIdCount||0)+Number(x.result?.idMismatches||0),0);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>ACCOUNTING WATCH</small><h2>گزارش ثبت</h2><p>کنترل واقعی فیش، پلاک، لینک عکس و باربری.</p></div><button class="v4-soft" data-report-refresh>${I.refresh}<span>بررسی</span></button></header>
+    <header class="v4-page-head"><div><small>ACCOUNTING WATCH</small><h2>گزارش ثبت</h2><p>کنترل واقعی فیش، پلاک، لینک عکس و باربری.</p></div><button class="v4-head-add" data-context-add>＋ افزودن گزارش</button><button class="v4-soft" data-report-refresh>${I.refresh}<span>بررسی</span></button></header>
     <section class="v4-report-summary">
       <article><b>${rows.length}</b><small>فایل فعال</small></article>
       <article><b>${rows.filter(x=>x.result?.complete).length}</b><small>کامل</small></article>
@@ -338,6 +346,7 @@ function renderSettings(){
     <header class="v4-page-head"><div><small>TOP ISLAND SETTINGS</small><h2>تنظیمات پنل</h2><p>فقط تنظیمات همین پنل بالای صفحه.</p></div></header>
     <section class="v4-settings">
       <button data-setting-pin><span>${I.pin}</span><div><b>پین پنل</b><small>${prefs.pinned?'ثابت تا ۵ ثانیه بی‌کاری':'با کلیک روی پنل، موقتاً ثابت می‌شود'}</small></div><i class="${prefs.pinned?'on':''}"></i></button>
+      <button data-setting-avatar aria-pressed="${avatarVisibilityState.enabled?'true':'false'}"><span>${I.eye}</span><div><b>کاراکتر بزرگ روی دسکتاپ</b><small>${avatarVisibilityState.enabled?'نمایش فعال است؛ برای پنهان‌کردن کلیک کن':'به‌صورت پیش‌فرض پنهان است؛ با کلیک نمایش بده'}</small></div><i class="${avatarVisibilityState.enabled?'on':''}"></i></button>
       <button data-setting-sound><span>${I.sound}</span><div><b>صدای پنل</b><small>مستقل از صدای Windows و MARIA Voice</small></div><i class="${prefs.sound?'on':''}"></i></button>
       <label><span>${I.clock}</span><div><b>جمع‌شدن خودکار</b><small>زمان بی‌استفاده‌ماندن قبل از کوچک‌شدن</small></div><select data-setting-collapse><option value="2000" ${prefs.collapseDelayMs===2000?'selected':''}>۲ ثانیه</option><option value="2800" ${prefs.collapseDelayMs===2800?'selected':''}>۳ ثانیه</option><option value="5000" ${prefs.collapseDelayMs===5000?'selected':''}>۵ ثانیه</option><option value="10000" ${prefs.collapseDelayMs===10000?'selected':''}>۱۰ ثانیه</option><option value="0" ${prefs.collapseDelayMs===0?'selected':''}>هرگز</option></select></label>
       <button data-full-settings><span>${I.gear}</span><div><b>تنظیمات کامل MARIA</b><small>Voice، مدل‌ها، سیستم و اتصال‌ها</small></div><strong>›</strong></button>
@@ -369,28 +378,28 @@ function selectPage(id,{pin=false}={}){
 }
 async function quickAddShortcut(initialTarget=''){
   const host=$('[data-page-body]');
-  const notify=(message)=>{
-    let status=$('[data-shortcut-message]',host);
-    if(!status){
-      status=document.createElement('p');status.dataset.shortcutMessage='';
-      status.className='v4-shortcut-message';status.setAttribute('role','status');
-      host?.querySelector('.v4-page-head')?.after(status);
-    }
-    if(status)status.textContent=message;
-  };
   try{
+    nativeShortcutPickerOpen=true;
     const selected=initialTarget
       ?await window.blackClover.resolveShortcut(initialTarget)
       :await window.blackClover.pickShortcutTarget('file');
-    if(!selected)return;
-    // The selected item is saved as a link; the original file is never moved.
-    await window.blackClover.createShortcut(selected);
-    await renderShortcuts();
-    notify('میان‌بر «'+selected.label+'» اضافه شد.');
-  }catch(error){notify(String(error?.message||error));}
+    if(selected){
+      if(mode!=='expanded')setMode('expanded');
+      // Preview detected name, extension, kind and target before saving.
+      editShortcut(null,selected.target);
+    }
+  }catch(error){
+    let status=$('[data-shortcut-message]',host);
+    if(!status){
+      status=document.createElement('p');status.dataset.shortcutMessage='';
+      status.className='v4-shortcut-message';status.setAttribute('role','alert');
+      host?.querySelector('.v4-page-head')?.after(status);
+    }
+    status.textContent=String(error?.message||error);
+  }finally{nativeShortcutPickerOpen=false;}
 }
 function contextAdd(){
-  if(page==='shortcuts'){if(mode!=='expanded')setMode('expanded');return quickAddShortcut();}
+  if(page==='shortcuts'){if(mode!=='expanded')setMode('expanded');return editShortcut();}
   if(mode!=='expanded')setMode('expanded');
   if(page==='reports')return addAccounting();
   if(page==='pins')return editPin();
@@ -547,7 +556,7 @@ function bindGlobalActions(){
     character.dataset.waveSide=center<(window.innerWidth/2)?'left':'right';
     greetCharacter(); // A greeting never opens a module.
   });
-  document.addEventListener('click',e=>{
+  document.addEventListener('click',async e=>{
     const button=e.target.closest(moduleSelector);
     if(button){
       e.preventDefault();
@@ -561,6 +570,11 @@ function bindGlobalActions(){
     if(quick){$('.v4-modal')?.remove();if(quick==='shortcut')editShortcut();else if(quick==='report')addAccounting();else if(quick==='pin')editPin();else editTask();return;}
     if(e.target.closest('[data-setting-pin]')){hoverController?.togglePin();renderSettings();return;}
     if(e.target.closest('[data-setting-sound]')){savePrefs({sound:!prefs.sound});if(prefs.sound)playTone('ok');renderSettings();return;}
+    if(e.target.closest('[data-setting-avatar]')){
+      try{avatarVisibilityState=await window.blackClover.setAvatarVisibility(!avatarVisibilityState.enabled);renderSettings();}
+      catch(error){console.warn('Avatar visibility:',error);}
+      return;
+    }
     if(e.target.closest('[data-full-settings]'))window.blackClover.openSettings?.('general');
   });
   document.addEventListener('change',e=>{
@@ -600,7 +614,7 @@ export async function mountTopIslandV4(){
     <header class="v4-topbar">
       <nav class="v4-left-tools">
         <button data-home title="خانه">${I.home}</button>
-        <button data-open-chat title="چت">${I.chat}</button>
+        <button data-open-chat class="v4-chat-launch" title="باز کردن گفتگوی ماریا" aria-label="باز کردن چت با ماریا">${I.chat}</button>
         <button class="plus" data-context-add title="افزودن">${I.plus}</button>
       </nav>
       <section class="v4-center">
@@ -638,7 +652,7 @@ export async function mountTopIslandV4(){
     isProtected:protectedPanel,
     getCollapseDelay:()=>Math.max(0,Number(prefs.collapseDelayMs)||0)
   });
-  $$('[data-open-chat]').forEach(b=>b.onclick=()=>{playTone();window.blackClover.showChat();});
+  $$('[data-open-chat]').forEach(b=>b.onclick=()=>{playTone();void window.blackClover.showChat().catch(console.warn);});
   $('[data-character]').onclick=e=>{e.stopPropagation();hoverController.clickCharacter();};
   $('[data-character]').addEventListener('pointerenter',greetCharacter);
   // A resize can synthesize mouseenter: require pointer movement before opening preview.
@@ -667,6 +681,13 @@ export async function mountTopIslandV4(){
   });
 
   bindPageActions();bindGlobalActions();
+  avatarVisibilityState=await window.blackClover.avatarVisibility?.().catch(()=>({enabled:false,visible:false}))||{enabled:false,visible:false};
+  window.blackClover.onIslandRequestMini?.(()=>hoverController?.collapseNow());
+  window.blackClover.onIslandWindowBlur?.(()=>{
+    // A click in another application releases the floating panel.
+    // Dialogs and native pickers are protected from accidental closure.
+    if(!$('.v4-modal')&&!nativeShortcutPickerOpen&&mode!=='peek')hoverController?.collapseNow();
+  });
   window.blackClover.onEvent?.(e=>{
     if(e?.type==='ui-state'){
       const status=e.detail||e.mode||'MARIA';
@@ -674,6 +695,10 @@ export async function mountTopIslandV4(){
       if($('[data-preview-status]'))$('[data-preview-status]').textContent=status;
       setCharacter(e.mode==='working'?'thinking':e.mode==='error'?'error':e.mode==='offline'?'offline':'idle');
       pushEvent(e);
+    }
+    else if(e?.type==='avatar-visibility-changed'){
+      avatarVisibilityState={enabled:Boolean(e.enabled),visible:Boolean(e.enabled)};
+      if(page==='settings'&&mode==='expanded')renderSettings();
     }
     else if(e?.type==='thinking'){setCharacter('thinking');pushEvent(e);}
     else if(e?.type==='tool'){setCharacter('executing');pushEvent(e);}

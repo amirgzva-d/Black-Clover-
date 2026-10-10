@@ -8,7 +8,7 @@ export function createSmartShortcutEditor({openModal,field,esc,renderShortcuts},
     '<div class="v4-fields-2">',
     field('نام میان‌بر','<input name="label" placeholder="نام به صورت خودکار" value="'+esc(item?.label||'')+'">'),
     field('نوع شناسایی‌شده','<output data-shortcut-kind class="v4-shortcut-type">در انتظار انتخاب…</output>'),
-    '</div><div class="v4-shortcut-drop" data-shortcut-drop>فایل، برنامه، پوشه یا لینک را اینجا رها کن</div>'
+    '</div><div class="v4-shortcut-target-meta" data-shortcut-meta role="status">بعد از انتخاب فایل، نام و فرمت و مسیر اصلی آن نمایش داده می‌شود.</div><div class="v4-shortcut-drop" data-shortcut-drop>فایل، برنامه، پوشه یا لینک را اینجا رها کن</div>'
   ].join('');
   const modal=openModal({
     title:item?'ویرایش میان‌بر':'میان‌بر هوشمند',kicker:'SMART SHORTCUT',body:inner,wide:true,
@@ -23,7 +23,7 @@ export function createSmartShortcutEditor({openModal,field,esc,renderShortcuts},
     }
   });
   const $=sel=>modal.querySelector(sel);
-  const target=$('[name="target"]'),label=$('[name="label"]'),status=$('[data-shortcut-kind]');
+  const target=$('[name="target"]'),label=$('[name="label"]'),status=$('[data-shortcut-kind]'),meta=$('[data-shortcut-meta]');
   let suggestion='';
   const preview=async()=>{
     const value=target.value.trim();
@@ -31,9 +31,13 @@ export function createSmartShortcutEditor({openModal,field,esc,renderShortcuts},
     try{
       const result=await window.blackClover.resolveShortcut(value);
       if(target.value.trim()!==value)return;
-      status.textContent=result.icon+' '+result.kind+' • '+result.label;
+      const filename=result.target.split(/[\\/]/).pop()||result.label;
+      const extension=filename.includes('.')?filename.slice(filename.lastIndexOf('.')).toUpperCase():'بدون پسوند';
+      const kind={app:'برنامه',file:'فایل',folder:'پوشه',url:'وب‌سایت',media:'رسانه'}[result.kind]||result.kind;
+      status.textContent=result.icon+' '+kind+' • '+result.label;
+      meta.textContent='نام: '+filename+' | فرمت: '+(result.kind==='folder'?'پوشه':extension)+' | مسیر اصلی: '+result.target;
       if(!label.value.trim()||label.value===suggestion){label.value=result.label;suggestion=result.label;}
-    }catch(err){status.textContent=String(err?.message||err);}
+    }catch(err){status.textContent=String(err?.message||err);meta.textContent='مسیر را اصلاح کن یا فایل موردنظر را از ویندوز انتخاب کن.';}
   };
   const pick=async kind=>{
     try{

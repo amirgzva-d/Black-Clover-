@@ -893,3 +893,51 @@ body.top-island-v4-surface{display:grid;place-items:start center;direction:rtl;u
 .maria-island-v4[data-mode=preview] [data-open-chat] svg path{
   fill:currentColor!important;
 }
+
+/* Phase 5: click-only mini, contextual creation, native file preview. */
+.maria-island-v4[data-mode=peek]{
+  cursor:pointer;
+}
+.maria-island-v4[data-mode=peek] .v4-character:hover .face{
+  filter:drop-shadow(0 0 7px rgba(178,144,255,.18));
+}
+.maria-island-v4[data-mode=preview] .v4-chat-launch,
+.maria-island-v4[data-mode=expanded] .v4-chat-launch{
+  color:#e5e3fb!important;
+  border-radius:12px!important;
+}
+.maria-island-v4[data-mode=preview] .v4-chat-launch:hover,
+.maria-island-v4[data-mode=expanded] .v4-chat-launch:hover{
+  background:rgba(125,97,253,.21)!important;
+  box-shadow:0 0 17px rgba(128,106,244,.12);
+}
+.v4-shortcut-drop-hint{
+  border:1px dashed rgba(145,125,245,.42);
+  border-radius:14px;padding:12px 15px;
+  margin:4px 0 15px;
+  display:flex;flex-direction:row;align-items:center;gap:10px;
+  background:linear-gradient(110deg,rgba(106,81,225,.1),rgba(27,28,42,.1));
+  color:#cdc6ea;
+}
+.v4-shortcut-drop-hint b{font-weight:500;font-size:12px}
+.v4-shortcut-drop-hint span{font-size:10px;color:#89839b;margin-inline-start:auto}
+.v4-shortcut-drop-hint svg{width:17px;height:17px;color:#9887ff}
+.maria-island-v4.drop-active .v4-shortcut-drop-hint,
+.v4-shortcut-drop-hint:focus-within{
+  background:rgba(123,100,255,.19);
+  border-color:#ad9cff;
+  box-shadow:inset 0 0 0 1px rgba(159,135,255,.17);
+}
+.v4-shortcut-target-meta{
+  font-size:11px;line-height:2;white-space:pre-wrap;overflow-wrap:anywhere;
+  margin-top:12px;padding:11px 12px;
+  border-radius:10px;background:rgba(20,18,36,.75);
+  border:1px solid rgba(140,125,221,.2);color:#bdb6e7;
+}
+.v4-shortcut [data-shortcut-open] small{
+  color:#9c95bb;letter-spacing:.02em;
+}
+@media(max-width:680px){
+  .v4-shortcut-drop-hint{flex-wrap:wrap;gap:6px}
+  .v4-shortcut-drop-hint span{margin-inline-start:0}
+}

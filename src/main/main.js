@@ -22,6 +22,7 @@ import { SystemPresence } from './SystemPresence.js';
 import { LocalAssetLibrary } from './LocalAssetLibrary.js';
 import { isRemovedAvatar } from './RemovedAvatars.js';
 import { BrainProviderStore } from './BrainProviderStore.js';
+import { AvatarVisibilityPreferences } from './AvatarVisibilityPreferences.js';
 import { setRuntimeProviderConfig,onlineBrainPoolFromEnv } from '../agent/OnlineBrainPool.js';
 import { chatgptPlan } from './ChatGPTPlanService.js';
 
@@ -39,6 +40,8 @@ if(isDev){
   app.commandLine.appendSwitch('remote-debugging-port',String(process.env.BLACK_CLOVER_DEBUG_PORT||'9223'));
 }
 app.commandLine.appendSwitch('autoplay-policy','no-user-gesture-required');
+let avatarVisiblePreference=false;
+const avatarVisibilityPrefs=()=>new AvatarVisibilityPreferences(path.join(app.getPath('userData'),'avatar-visibility.json'));
 let avatarWin=null,chatWin=null,islandWin=null,pinsWin=null,remindersWin=null,projectsWin=null,motionsWin=null,wardrobeWin=null,devWin=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false,brainStore=null,uiState={mode:'online',detail:'Online • آماده',updatedAt:Date.now()};
 const avatarLockPath=()=>path.join(app.getPath('userData'),'avatar-lock.json');
 function avatarLockState(){try{const x=JSON.parse(fs.readFileSync(avatarLockPath(),'utf8'));if(isRemovedAvatar(x))return setAvatarLockState({locked:false,name:''});return {locked:Boolean(x?.locked),name:String(x?.name||'')};}catch{return {locked:false,name:''};}}
@@ -47,7 +50,7 @@ const livingWindows=()=>[avatarWin,chatWin,islandWin,pinsWin,remindersWin,projec
 const send=event=>{for(const w of livingWindows())w.webContents.send('agent:event',event);};
 const accountingMonitor=new AccountingMonitorService({store:accountingReports,emit:send});
 function setUiState(mode='online',detail=''){uiState={mode:String(mode||'online'),detail:String(detail||''),updatedAt:Date.now()};send({type:'ui-state',...uiState});return uiState;}
-function surfaceState(){return {avatarVisible:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isVisible()),chatVisible:Boolean(chatWin&&!chatWin.isDestroyed()&&chatWin.isVisible()),islandVisible:Boolean(islandWin&&!islandWin.isDestroyed()&&islandWin.isVisible()),pinsVisible:Boolean(pinsWin&&!pinsWin.isDestroyed()&&pinsWin.isVisible()),remindersVisible:Boolean(remindersWin&&!remindersWin.isDestroyed()&&remindersWin.isVisible()),projectsVisible:Boolean(projectsWin&&!projectsWin.isDestroyed()&&projectsWin.isVisible()),motionsVisible:Boolean(motionsWin&&!motionsWin.isDestroyed()&&motionsWin.isVisible()),wardrobeVisible:Boolean(wardrobeWin&&!wardrobeWin.isDestroyed()&&wardrobeWin.isVisible()),devVisible:Boolean(devWin&&!devWin.isDestroyed()&&devWin.isVisible()),alwaysOnTop:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop()),uiState};}
+function surfaceState(){return {avatarVisible:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isVisible()),chatVisible:Boolean(chatWin&&!chatWin.isDestroyed()&&chatWin.isVisible()),islandVisible:Boolean(islandWin&&!islandWin.isDestroyed()&&islandWin.isVisible()),pinsVisible:Boolean(pinsWin&&!pinsWin.isDestroyed()&&pinsWin.isVisible()),remindersVisible:Boolean(remindersWin&&!remindersWin.isDestroyed()&&remindersWin.isVisible()),projectsVisible:Boolean(projectsWin&&!projectsWin.isDestroyed()&&projectsWin.isVisible()),motionsVisible:Boolean(motionsWin&&!motionsWin.isDestroyed()&&motionsWin.isVisible()),wardrobeVisible:Boolean(wardrobeWin&&!wardrobeWin.isDestroyed()&&wardrobeWin.isVisible()),devVisible:Boolean(devWin&&!devWin.isDestroyed()&&devWin.isVisible()),alwaysOnTop:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop()),avatarEnabled:avatarVisiblePreference,uiState};}
 function announceSurfaceState(){send({type:'surface-state',state:surfaceState()});}
 function sendWhenReady(w,channel,payload){if(!w||w.isDestroyed())return;const deliver=()=>{if(w&&!w.isDestroyed())w.webContents.send(channel,payload);};if(w.webContents.isLoadingMainFrame?.()||w.webContents.isLoading?.())w.webContents.once('did-finish-load',deliver);else deliver();}
 function showAnimated(w,bounds,{focus=true}={}){const wasVisible=w.isVisible();if(w.isMinimized())w.restore();if(bounds)w.setBounds(bounds);w.show();w.moveTop();if(!wasVisible)sendWhenReady(w,'assistant:surface-opening');if(focus)w.focus();setTimeout(announceSurfaceState,30);return w;}
@@ -75,10 +78,10 @@ function devBounds(){const a=displayWorkArea(),width=Math.min(1380,Math.max(980,
 function commonWebPreferences(){return {preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false};}
 
 async function beginAutoProvision(){if(autoProvisionStarted||!app.isPackaged||process.platform!=='win32')return;autoProvisionStarted=true;try{if(!await deps.needsProvisioning())return;provisioning=true;send({type:'provision',state:'needed',message:'Full Setup ماریا در حال آماده‌سازی است'});await deps.installAll({includeOptional:true});}catch(e){console.warn('Auto provision:',e.message);send({type:'provision',state:'partial',message:`آماده‌سازی کامل نشد: ${e.message}`});}finally{provisioning=false;}}
-function createAvatarWindow(){if(avatarWin&&!avatarWin.isDestroyed())return avatarWin;const b=avatarBounds();avatarWin=new BrowserWindow({...b,minWidth:330,minHeight:500,transparent:true,frame:false,backgroundColor:'#00000000',show:true,resizable:true,alwaysOnTop:true,skipTaskbar:true,hasShadow:false,title:'Maria • Black Clover',webPreferences:commonWebPreferences()});loadSurface(avatarWin,'avatar');avatarWin.setAlwaysOnTop(true,'floating');avatarWin.webContents.on('context-menu',()=>desktopMenu().popup({window:avatarWin}));avatarWin.webContents.once('did-finish-load',()=>{setTimeout(()=>{if(avatarWin&&!avatarWin.isDestroyed()){avatarWin.setBounds(avatarBounds());avatarWin.showInactive();avatarWin.setAlwaysOnTop(true,'floating');}},120);setTimeout(beginAutoProvision,900);});avatarWin.on('close',e=>{if(!quitting){e.preventDefault();avatarWin.hide();}});avatarWin.on('closed',()=>{avatarWin=null;});return avatarWin;}
-function createIslandWindow(){if(islandWin&&!islandWin.isDestroyed())return islandWin;const b=islandBounds('peek');islandWin=new BrowserWindow({...b,minWidth:260,minHeight:48,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:false,alwaysOnTop:true,skipTaskbar:true,hasShadow:false,title:'MARIA Command Island',webPreferences:commonWebPreferences()});loadSurface(islandWin,'island');islandWin.setAlwaysOnTop(true,'floating');islandWin.on('close',e=>{if(!quitting){e.preventDefault();islandWin.hide();}});islandWin.on('closed',()=>{islandWin=null;});return islandWin;}
+function createAvatarWindow(){if(avatarWin&&!avatarWin.isDestroyed())return avatarWin;const b=avatarBounds();avatarWin=new BrowserWindow({...b,minWidth:330,minHeight:500,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,alwaysOnTop:true,skipTaskbar:true,hasShadow:false,title:'Maria • Black Clover',webPreferences:commonWebPreferences()});loadSurface(avatarWin,'avatar');avatarWin.setAlwaysOnTop(true,'floating');avatarWin.webContents.on('context-menu',()=>desktopMenu().popup({window:avatarWin}));avatarWin.webContents.once('did-finish-load',()=>{setTimeout(()=>{if(avatarWin&&!avatarWin.isDestroyed()){avatarWin.setBounds(avatarBounds());if(avatarVisiblePreference)avatarWin.showInactive();avatarWin.setAlwaysOnTop(true,'floating');}},120);setTimeout(beginAutoProvision,900);});avatarWin.on('close',e=>{if(!quitting){e.preventDefault();avatarWin.hide();}});avatarWin.on('closed',()=>{avatarWin=null;});return avatarWin;}
+function createIslandWindow(){if(islandWin&&!islandWin.isDestroyed())return islandWin;const b=islandBounds('peek');islandWin=new BrowserWindow({...b,minWidth:260,minHeight:48,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:false,alwaysOnTop:true,skipTaskbar:true,hasShadow:false,title:'MARIA Command Island',webPreferences:commonWebPreferences()});loadSurface(islandWin,'island');islandWin.setAlwaysOnTop(true,'floating');islandWin.on('blur',()=>{const win=islandWin;setTimeout(()=>{if(win&&!win.isDestroyed()&&!win.isFocused())win.webContents.send('assistant:island-window-blur');},110);});islandWin.on('close',e=>{if(!quitting){e.preventDefault();islandWin.hide();}});islandWin.on('closed',()=>{islandWin=null;});return islandWin;}
 function setIslandMode(mode='compact'){const safe=['peek','preview','compact','expanded'].includes(mode)?mode:'preview',w=createIslandWindow();w.setBounds(islandBounds(safe),true);w.setAlwaysOnTop(true,'floating');if(!w.isVisible())w.showInactive();announceSurfaceState();return {ok:true,mode:safe,bounds:w.getBounds()};}
-function showIsland(mode='peek'){const w=createIslandWindow();w.setBounds(islandBounds(mode));w.showInactive();w.setAlwaysOnTop(true,'floating');announceSurfaceState();return w;}
+function showIsland(mode='peek'){const w=createIslandWindow();w.setBounds(islandBounds(mode));w.showInactive();w.setAlwaysOnTop(true,'floating');if(mode==='peek')sendWhenReady(w,'assistant:island-request-mini');announceSurfaceState();return w;}
 function showIslandModule(module='home'){const w=showIsland('expanded');sendWhenReady(w,'assistant:island-module',{module:String(module||'home')});return w;}
 function hideIsland(){hideAnimated(islandWin);}
 function createChatWindow(){if(chatWin&&!chatWin.isDestroyed())return chatWin;const b=chatBounds();chatWin=new BrowserWindow({...b,minWidth:720,minHeight:580,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:'Maria Chat',webPreferences:commonWebPreferences()});loadSurface(chatWin,'chat');chatWin.on('close',e=>{if(!quitting){e.preventDefault();chatWin.hide();}});chatWin.on('closed',()=>{chatWin=null;});return chatWin;}
@@ -86,26 +89,35 @@ function createUtilityWindow(surface){const key=surface==='pins'?'pins':'reminde
 function createProjectsWindow(){if(projectsWin&&!projectsWin.isDestroyed())return projectsWin;const b=projectsBounds();projectsWin=new BrowserWindow({...b,minWidth:820,minHeight:600,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:'Maria Projects',webPreferences:commonWebPreferences()});loadSurface(projectsWin,'projects');projectsWin.on('close',e=>{if(!quitting){e.preventDefault();projectsWin.hide();}});projectsWin.on('closed',()=>{projectsWin=null;});return projectsWin;}
 function createAssetWindow(surface){const isMotion=surface==='motions',current=isMotion?motionsWin:wardrobeWin;if(current&&!current.isDestroyed())return current;const b=assetBounds(),w=new BrowserWindow({...b,minWidth:720,minHeight:580,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:isMotion?'Maria Motions':'Maria Wardrobe',webPreferences:commonWebPreferences()});loadSurface(w,surface);w.on('close',e=>{if(!quitting){e.preventDefault();w.hide();}});w.on('closed',()=>{if(isMotion)motionsWin=null;else wardrobeWin=null;});if(isMotion)motionsWin=w;else wardrobeWin=w;return w;}
 function createDevWindow(){if(devWin&&!devWin.isDestroyed())return devWin;const b=devBounds();devWin=new BrowserWindow({...b,minWidth:900,minHeight:620,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:'MARIA Dev Session',webPreferences:commonWebPreferences()});loadSurface(devWin,'dev');devWin.on('close',e=>{if(!quitting){e.preventDefault();devWin.hide();}});devWin.on('closed',()=>{devWin=null;});return devWin;}
-function showAvatar(){return showAnimated(createAvatarWindow(),avatarBounds(),{focus:false});}
-function showChat({focus=true}={}){showAvatar();const w=showAnimated(createChatWindow(),chatBounds(),{focus});if(focus)sendWhenReady(w,'assistant:focus-input');return w;}
-function showUtility(surface){showAvatar();return showAnimated(createUtilityWindow(surface),utilityBounds());}
-function showProjects(){showAvatar();return showAnimated(createProjectsWindow(),projectsBounds());}
-function showAssetSurface(surface){showAvatar();return showAnimated(createAssetWindow(surface),assetBounds());}
+function setAvatarVisibility(enabled){
+  const next=avatarVisibilityPrefs().save(enabled===true);
+  avatarVisiblePreference=next;
+  if(next)showAnimated(createAvatarWindow(),avatarBounds(),{focus:false});
+  else if(avatarWin&&!avatarWin.isDestroyed())avatarWin.hide();
+  announceSurfaceState();
+  send({type:'avatar-visibility-changed',enabled:next});
+  return {enabled:next,visible:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isVisible())};
+}
+function showAvatar(){setAvatarVisibility(true);return avatarWin;}
+function showChat({focus=true}={}){const w=showAnimated(createChatWindow(),chatBounds(),{focus});if(focus)sendWhenReady(w,'assistant:focus-input');return w;}
+function showUtility(surface){return showAnimated(createUtilityWindow(surface),utilityBounds());}
+function showProjects(){return showAnimated(createProjectsWindow(),projectsBounds());}
+function showAssetSurface(surface){return showAnimated(createAssetWindow(surface),assetBounds());}
 function showDevSession(){return showAnimated(createDevWindow(),devBounds());}
-function hideChat(){hideAnimated(chatWin);if(!quitting){const w=showAvatar();w.showInactive();w.moveTop();}}
-function hideAvatar(){hideAnimated(avatarWin);}
+function hideChat(){hideAnimated(chatWin);}
+function hideAvatar(){setAvatarVisibility(false);}
 function hideUtility(surface){hideAnimated(surface==='pins'?pinsWin:remindersWin);}
 function hideProjects(){hideAnimated(projectsWin);}
 function hideAssetSurface(surface){hideAnimated(surface==='motions'?motionsWin:wardrobeWin);}
 function hideDevSession(){hideAnimated(devWin);}
-function toggleAvatar(){if(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isVisible())hideAvatar();else showAvatar();}
+function toggleAvatar(){setAvatarVisibility(!avatarVisiblePreference);}
 function toggleAlwaysOnTop(){const w=showAvatar(),next=!w.isAlwaysOnTop();w.setAlwaysOnTop(next,next?'floating':'normal');return next;}
 function toggleChat(){if(chatWin&&!chatWin.isDestroyed()&&chatWin.isVisible())hideChat();else showChat();}
 
 function trayIcon(){return nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAK0lEQVR42mNkYPj/n4ECwESJ5lEDRg0YNYDQgBqGQWjAoAGjBgwaMGgAAJs7Ah7lQ3jMAAAAAElFTkSuQmCC').resize({width:16,height:16});}
 async function installAllFromTray(){if(provisioning)return;provisioning=true;try{await deps.installAll({includeOptional:true});}catch{}finally{provisioning=false;}}
-function desktopMenu(){const pinned=Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop());return Menu.buildFromTemplate([{label:'پنل بالای MARIA',click:()=>showIsland('compact')},{label:'نمایش ماریا',click:showAvatar},{label:'مخفی کردن ماریا',click:hideAvatar},{label:'باز کردن چت',click:()=>showChat()},{label:'پین‌شده‌ها',click:()=>showIslandModule('pins')},{label:'یادآورها و کارهای زمان‌بندی‌شده',click:()=>showIslandModule('tasks')},{label:'پروژه‌ها',click:showProjects},{label:'MARIA Dev Session',click:showDevSession},{label:'حرکت‌ها',click:()=>showAssetSurface('motions')},{label:'لباس و وسایل',click:()=>showAssetSurface('wardrobe')},{type:'separator'},{label:pinned?'برداشتن از روی همه پنجره‌ها':'همیشه روی پنجره‌ها',type:'checkbox',checked:pinned,click:toggleAlwaysOnTop},{label:'تنظیمات ماریا',click:()=>{const w=showChat();w.webContents.send('assistant:open-settings');}},{type:'separator'},{label:'آماده‌سازی کامل ابزارها',click:installAllFromTray},{label:'اجرا با دسترسی Administrator',click:()=>restartElevated().catch(()=>{})},{type:'separator'},{label:'خروج کامل',click:()=>{quitting=true;app.quit();}}]);}
-function createTray(){if(tray)return;tray=new Tray(trayIcon());tray.setToolTip('Maria • Black Clover');const refresh=()=>tray.setContextMenu(desktopMenu());refresh();tray.on('right-click',refresh);tray.on('click',toggleAvatar);}
+function desktopMenu(){const pinned=Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop());return Menu.buildFromTemplate([{label:'پنل بالای MARIA',click:()=>showIsland('peek')},{label:'نمایش ماریا',click:showAvatar},{label:'مخفی کردن ماریا',click:hideAvatar},{label:'باز کردن چت',click:()=>showChat()},{label:'پین‌شده‌ها',click:()=>showIslandModule('pins')},{label:'یادآورها و کارهای زمان‌بندی‌شده',click:()=>showIslandModule('tasks')},{label:'پروژه‌ها',click:showProjects},{label:'MARIA Dev Session',click:showDevSession},{label:'حرکت‌ها',click:()=>showAssetSurface('motions')},{label:'لباس و وسایل',click:()=>showAssetSurface('wardrobe')},{type:'separator'},{label:pinned?'برداشتن از روی همه پنجره‌ها':'همیشه روی پنجره‌ها',type:'checkbox',checked:pinned,click:toggleAlwaysOnTop},{label:'تنظیمات ماریا',click:()=>{const w=showChat();w.webContents.send('assistant:open-settings');}},{type:'separator'},{label:'آماده‌سازی کامل ابزارها',click:installAllFromTray},{label:'اجرا با دسترسی Administrator',click:()=>restartElevated().catch(()=>{})},{type:'separator'},{label:'خروج کامل',click:()=>{quitting=true;app.quit();}}]);}
+function createTray(){if(tray)return;tray=new Tray(trayIcon());tray.setToolTip('Maria • Black Clover');const refresh=()=>tray.setContextMenu(desktopMenu());refresh();tray.on('right-click',refresh);tray.on('click',()=>showIsland('peek'));}
 function psQuote(s){return `'${String(s).replaceAll("'","''")}'`;}
 async function isAdmin(){try{const {stdout}=await execFileAsync('powershell.exe',['-NoProfile','-NonInteractive','-Command','([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)'],{windowsHide:true,timeout:10000});return stdout.trim().toLowerCase()==='true';}catch{return false;}}
 async function restartElevated(){if(process.platform!=='win32')throw new Error('Administrator elevation is only available on Windows.');if(await isAdmin())return {ok:true,already:true};const args=app.isPackaged?[]:[app.getAppPath()],argList=args.length?` -ArgumentList ${args.map(psQuote).join(',')}`:'';await execFileAsync('powershell.exe',['-NoProfile','-Command',`Start-Process -FilePath ${psQuote(process.execPath)}${argList} -Verb RunAs`],{windowsHide:true,timeout:60000});setTimeout(()=>{quitting=true;app.quit();},350);return {ok:true};}
@@ -142,10 +154,10 @@ async function runDevCheck(kind='test'){
 }
 async function openDevVsCode(){const root=devRepoRoot();try{const child=execFile('code',[root],{cwd:root,windowsHide:false});child.unref?.();return {ok:true,root};}catch(error){throw new Error('VS Code باز نشد: '+String(error?.message||error));}}
 
-const gotLock=app.requestSingleInstanceLock();if(!gotLock){app.quit();}else app.on('second-instance',()=>{showAvatar();showChat();});
-app.whenReady().then(async()=>{brainStore=new BrainProviderStore();await refreshBrainProviders().catch(e=>console.warn('Brain providers:',e.message));createAvatarWindow();showIsland('peek');createTray();presence.start();if(String(process.env.BLACK_CLOVER_REMOTE_DEV||'')==='1')setTimeout(()=>showDevSession(),420);
+const gotLock=app.requestSingleInstanceLock();if(!gotLock){app.quit();}else app.on('second-instance',()=>{showChat();});
+app.whenReady().then(async()=>{avatarVisiblePreference=avatarVisibilityPrefs().load();brainStore=new BrainProviderStore();await refreshBrainProviders().catch(e=>console.warn('Brain providers:',e.message));if(avatarVisiblePreference)createAvatarWindow();showIsland('peek');createTray();presence.start();if(String(process.env.BLACK_CLOVER_REMOTE_DEV||'')==='1')setTimeout(()=>showDevSession(),420);
 reminders.setActionExecutor(async item=>{setUiState('executing','اجرای کار زمان‌بندی‌شده');try{const out=await agent.chat(String(item.instruction||''),{profile:'scheduled-action'});send({type:'scheduled-action',item,result:out});return out;}finally{setUiState('online','Online • آماده');}});
-startReminderPump();accountingMonitor.start().catch(e=>console.warn('Accounting monitor:',e.message));startIdleLearningPump();setTimeout(()=>runTool('get_volume',{}).catch(()=>{}),250);globalShortcut.register('CommandOrControl+Shift+Space',toggleChat);app.on('activate',()=>{showAvatar();showIsland('peek');});});
+startReminderPump();accountingMonitor.start().catch(e=>console.warn('Accounting monitor:',e.message));startIdleLearningPump();setTimeout(()=>runTool('get_volume',{}).catch(()=>{}),250);globalShortcut.register('CommandOrControl+Shift+Space',toggleChat);app.on('activate',()=>{showIsland('peek');});});
 app.on('before-quit',()=>{quitting=true;});
 app.on('will-quit',()=>{globalShortcut.unregisterAll();presence.stop();accountingMonitor.stop().catch(()=>{});if(reminderTimer)clearInterval(reminderTimer);if(learningTimer)clearInterval(learningTimer);});
 app.on('window-all-closed',()=>{});
@@ -224,6 +236,8 @@ ipcMain.handle('assistant:hide-island',()=>{hideIsland();return true;});
 ipcMain.handle('assistant:set-island-mode',(_e,mode)=>setIslandMode(String(mode||'compact')));
 ipcMain.handle('assistant:show-chat',()=>{showChat();return true;});
 ipcMain.handle('assistant:hide-chat',()=>{hideChat();return true;});
+ipcMain.handle('assistant:avatar-visibility',()=>({enabled:avatarVisiblePreference,visible:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isVisible())}));
+ipcMain.handle('assistant:set-avatar-visibility',(_e,enabled)=>setAvatarVisibility(enabled===true));
 ipcMain.handle('assistant:show-avatar',()=>{showAvatar();return true;});
 ipcMain.handle('assistant:hide-avatar',()=>{hideAvatar();return true;});
 ipcMain.handle('assistant:show-projects',()=>{showProjects();return true;});
