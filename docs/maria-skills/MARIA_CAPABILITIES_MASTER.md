@@ -27049,3 +27049,326 @@ Automated repository tests must verify:
 When the system comes online, the task is:
 integrate -> inspect -> configure real workbook rules -> pixel-check -> test -> fix bugs -> verify -> sync GitHub.
 
+
+
+---
+
+# TOP ISLAND V4 — MOTION / APPROVAL / REMOTE CODING SURFACE FREEZE
+
+**Status:** DESIGN COMPLETE — VIDEO-REFERENCE REVIEWED — WAITING FOR REAL WINDOWS/DPI VERIFICATION  
+**Reference basis:** user-provided screenshots + uploaded ~57s Coucou interaction video reviewed frame-by-frame.
+
+## 1. Visual direction is now locked
+
+Top Island V4 must use:
+- near-black background
+- black glass cards
+- very subtle purple/blue edge glow
+- soft interior highlights, not bright neon everywhere
+- compact rounded cards
+- thin borders
+- minimal white text
+- violet/blue/green/orange only as semantic accents
+- character/avatar as a small operational element, not a giant decorative mascot inside work pages
+
+Old MARIA Pin/Reminder/Top-Island UI is **not allowed as a visual source**.
+
+Only safe data/backend stores may be reused.
+
+## 2. Motion language derived from the provided video
+
+The video shows a state-driven interface, not simple page navigation.
+
+Required transitions:
+
+### Rest
+Top Island sits at the top edge in compact/peek form.
+
+### Peek / notch
+- small center notch
+- character tile/avatar
+- 2–3 status dots
+- no unnecessary text
+- soft purple ambient edge
+
+### Expand
+On hover/click/important event:
+- panel grows downward from the top edge
+- corner radius remains visually continuous
+- content fades/slides in after shell expansion
+- no sudden window replacement
+
+### Agent session
+The compact island may become:
+- live coding card
+- media card
+- task/agent card
+- permission card
+- summary card
+
+### Return
+After completion/timeout:
+- card content fades
+- shell contracts
+- returns to compact/notch
+
+Animation budget:
+- shell expand: ~180–260ms
+- content fade/slide: ~120–180ms after shell begins
+- approval emphasis pulse: one short pulse only
+- progress bars interpolate, not jump
+- avoid expensive continuous effects when hidden
+
+## 3. Card grammar
+
+All MARIA operational cards use the same family:
+
+- app/agent icon at edge
+- title
+- one-line state
+- optional secondary detail
+- progress/status line
+- optional actions on the far edge
+- semantic accent dot
+- 14–20px corner radius depending size
+- dark inset background
+- border with low opacity
+
+Card families:
+- Coding
+- Agent
+- Accounting
+- Download
+- Research
+- Messaging
+- Approval
+- Media
+- Scheduler
+- Security
+- Error/Recovery
+- Completion
+
+## 4. Approval / Permission card — exact behavior target
+
+This is a priority UI.
+
+Layout inspired by the reference:
+- left/leading app icon/avatar
+- app name: e.g. VS Code
+- state line: "waiting for your OK"
+- optional countdown / timeout
+- Deny button
+- Allow button
+
+MARIA version adds:
+- exact requested action
+- target file/app/service
+- risk level
+- optional "Details"
+- optional "Allow once"
+- optional "Always allow this narrow action" only when safe and user explicitly chooses it
+
+Visual:
+- Deny = dark red/maroon
+- Allow = bright green
+- text remains white
+- active request uses warm amber/orange state text
+- no confusing icons
+
+Behavior:
+- high-risk request cannot auto-dismiss
+- countdown only when the underlying action genuinely has a deadline
+- approval card stays visible even if idle auto-hide would normally fire
+- Deny/Allow result is immediately verified
+
+## 5. Useful Coucou-style capabilities selected for MARIA
+
+High-value:
+1. live agent cards
+2. permission cards
+3. top-edge hide/hover/expand
+4. per-agent progress
+5. quick jump to app/file/terminal
+6. media control card
+7. integration/service pills
+8. compact multiple-agent view
+9. drag-and-drop context
+10. custom hotkeys
+11. current-task summary
+12. completion/error result card
+13. custom UI sounds
+14. optional activity recap
+
+Not copied blindly:
+- branding
+- proprietary assets
+- exact character art
+- anything that duplicates MARIA core logic
+
+## 6. MARIA additions beyond Coucou
+
+- Accounting Watch
+- file/image-link verification
+- Planner/Scheduler execution
+- Telegram/WhatsApp/Rubika actions
+- Translation/OCR
+- Windows control
+- Screen Understanding
+- owner presence/identity
+- security and rollback state
+- task verification state
+- local/offline state
+
+## 7. Remote Coding Session Surface
+
+This is the surface shown when ChatGPT/Remote Desktop Commander is actively modifying the user's MARIA machine.
+
+Name:
+**MARIA Dev Session**
+
+Purpose:
+replace a plain terminal-looking experience with a focused operational coding surface.
+
+### Layout
+
+Main area:
+- dark code/terminal canvas
+- current repo/project name
+- current branch
+- current operation
+- changed file list
+- live tool commands/events
+- test results
+- diff counts: +added / -removed
+- final verification
+
+Top Island:
+- remains visible above
+- shows "Remote Dev Session"
+- active agent dot
+- current phase: Inspect / Edit / Test / Verify / Sync
+
+Character:
+- small at bottom-right or lower corner
+- expressions:
+  - thinking
+  - coding
+  - testing
+  - success
+  - blocked
+- never covers code or important output
+
+### Coding event rows
+
+Examples:
+- Read src/renderer/topIslandV4.js
+- Update src/main/main.js
+- Run npm test
+- 48 passed
+- Build complete
+- Push GitHub
+- Verify SHA
+
+Each row:
+- small semantic dot
+- action label
+- target
+- result
+- duration when useful
+
+### Diff presentation
+
+Changed file card:
+- filename
+- +N additions
+- -N deletions
+- status:
+  - modified
+  - created
+  - verified
+  - failed
+
+Do not dump full source code into the decorative layer unless user opens Details.
+
+## 8. Remote Dev permission states
+
+Remote Desktop Commander actions with meaningful risk use the same Approval Card.
+
+Examples:
+- run installer
+- delete/move user files
+- restart application
+- restart Windows
+- modify security settings
+- change external account state
+
+Low-risk:
+- inspect files
+- run tests
+- read logs
+can proceed under current authorized development session unless policy says otherwise.
+
+## 9. Remote Dev lifecycle
+
+1. Remote device connects
+2. inspect machine/repo
+3. Top Island switches to Remote Dev Session
+4. show current phase
+5. show changed files live
+6. permission request if required
+7. tests start
+8. test result card
+9. final verify
+10. GitHub sync
+11. local/remote SHA compare
+12. Completion card
+13. session returns to normal Top Island
+
+No "done" until:
+- test succeeded or known exception is clearly reported
+- app state verified
+- GitHub/local state checked when sync was requested
+
+## 10. Failure UI
+
+Blocked/failed coding task:
+- dark card
+- red semantic edge/dot
+- exact failing command/test
+- short reason
+- buttons:
+  - Retry
+  - Details
+  - Stop
+  - Ask MARIA
+
+Never show generic "failed" when exact error is known.
+
+## 11. Standard size targets
+
+For 1920×1080 baseline:
+- Peek/notch: ~420×56
+- Compact: ~920×96
+- Expanded Command Hub: ~1120×640
+- Approval card inside expanded/temporary agent view: ~620–820px wide
+- Remote Dev activity card rows: ~52–68px high
+
+Final dimensions must be tuned on real Windows DPI/scale.
+
+## 12. Final implementation rule
+
+When DESKTOP-LR1PDM2 becomes available via Remote Desktop Commander:
+
+- do not reuse old Pin/Reminder/Top Island visual components
+- load only Top Island V4 visual system
+- compare live rendering side-by-side with the user's references/video
+- tune spacing/radius/blur/glow/animation timing on the real display
+- implement MARIA Dev Session
+- connect Remote Desktop Commander activity events to the Dev Session surface where feasible
+- test approval card behavior
+- test hide/hover/expand/return motion
+- run regression
+- fix visual/runtime issues
+- only then mark V4 visual implementation VERIFIED
+
+**Current limitation:** exact 100% pixel/motion equivalence cannot be truthfully verified until the real app is rendered on the user's Windows display. The target is now frozen; the remaining work is implementation verification and tuning, not redesign.
