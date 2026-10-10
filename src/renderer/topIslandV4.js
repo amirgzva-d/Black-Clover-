@@ -1,6 +1,7 @@
 import './topIslandV4.css';
 import { createSmartShortcutEditor } from './shortcutEditorV4.js';
 import { IslandHoverController } from './islandHoverController.js';
+import {taskForm,pinForm,reportForm} from './workflowFormsV4.js';
 
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -60,6 +61,8 @@ let audio=null;
 let greetingTimer=null;
 let shortcutIconObserver=null;
 let nativeShortcutPickerOpen=false;
+let workbarPinned=false;
+let draggingIntoIsland=false;
 let avatarVisibilityState={enabled:false,visible:false};
 
 function savePrefs(patch){prefs={...prefs,...patch};try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}catch{};syncChrome();}
@@ -92,7 +95,7 @@ function wake(){
   if(mode!=='peek'&&!hoverController?.inside)armIdle();
 }
 function protectedPanel(){
-  return Boolean(nativeShortcutPickerOpen||$('.v4-modal')||$('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus'));
+  return Boolean(workbarPinned||draggingIntoIsland||nativeShortcutPickerOpen||$('.v4-modal')||$('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus'));
 }
 function setPanelPinned(pinned){
   savePrefs({pinned:Boolean(pinned)});
@@ -181,10 +184,12 @@ function approvalCard(e){
 
 async function renderHome(){
   const host=$('[data-page-body]');if(!host)return;
-  const [status,tasks,reports]=await Promise.all([
+  const [status,tasks,reports,shortcuts,pins]=await Promise.all([
     window.blackClover.getStatus?.().catch(()=>null),
     window.blackClover.listReminders?.().catch(()=>[]),
-    window.blackClover.accountingDashboard?.().catch(()=>[])
+    window.blackClover.accountingDashboard?.().catch(()=>[]),
+    window.blackClover.listShortcuts?.().catch(()=>[]),
+    window.blackClover.listPins?.().catch(()=>[])
   ]);
   const active=(tasks||[]).filter(x=>x.enabled!==false&&!x.paused).sort((a,b)=>new Date(a.dueAt)-new Date(b.dueAt));
   const next=active[0];
@@ -206,6 +211,24 @@ async function renderHome(){
     <section class="v4-activity">
       <header><div><small>LIVE ACTIVITY</small><b>فعالیت MARIA</b></div><button data-home-refresh>${I.refresh}</button></header>
       <div class="v4-activity-list">${events.slice(0,7).map(e=>`<article><i class="${esc(e.type)}"></i><div><b>${esc(e.text)}</b><small>${fmt(e.at)}</small>${e.progress!==null?`<span class="event-progress"><em style="width:${e.progress}%"></em></span>`:''}</div></article>`).join('')||'<div class="v4-empty">هنوز رویداد زنده‌ای ثبت نشده.</div>'}</div>
+    </section>
+    <section class="v4-home-media" aria-label="کنترل رسانهٔ ویندوز">
+      <header><b>پخش رسانه</b><small>Spotify • مرورگر • پخش‌کنندهٔ ویندوز</small></header>
+      <div>
+        <button type="button" data-media-command="previous" title="قبلی">⏮</button>
+        <button type="button" data-media-command="play_pause" title="پخش یا توقف">⏯</button>
+        <button type="button" data-media-command="next" title="بعدی">⏭</button>
+        <button type="button" data-media-command="mute" title="قطع صدا">◖</button>
+      </div>
+    </section>
+    <section class="v4-home-quick">
+      <header><b>دسترسی سریع</b><small>موارد اخیر و مهم</small></header>
+      <div class="v4-home-quick-items">
+        ${(shortcuts||[]).slice(0,3).map(s=>`<button data-home-shortcut="${esc(s.id)}" title="${esc(s.target)}">${esc(s.label)}</button>`).join('')}
+        ${(pins||[]).filter(p=>p.favorite).slice(0,2).map(p=>`<button data-home-module="pins">★ ${esc(p.title)}</button>`).join('')}
+        <button data-home-module="tasks">یادآورها</button>
+        <button data-home-module="reports">گزارش‌ها</button>
+      </div>
     </section>`;
 }
 function shortcutCard(x){
@@ -255,7 +278,6 @@ async function renderShortcuts(){
   host.innerHTML=`
     <header class="v4-page-head"><div><small>QUICK LAUNCH</small><h2>میان‌برها</h2><p>دو روش ساده: فایل را بکش و رها کن، یا روی + بزن و انتخاب کن.</p></div><button type="button" class="v4-head-add" data-context-add>${I.plus} افزودن میان‌بر</button></header>
     <div class="v4-toolbar"><label>${I.search}<input data-shortcut-search placeholder="جستجوی نام، نوع یا مسیر…" aria-label="جستجوی میانبر"></label><span>${items.length} میان‌بر</span></div>
-    <div class="v4-shortcut-drop-hint" data-shortcut-drop-area role="note">${I.plus}<div><b>فایل، برنامه یا پوشه را اینجا رها کن</b><span>یا لینک را بکش؛ میان‌بر خودکار ساخته می‌شود.</span></div><small>بدون جابه‌جایی فایل اصلی</small></div>
     <div class="v4-shortcut-notice" data-shortcut-message role="status" aria-live="polite" hidden></div>
     ${items.length?`<div class="v4-shortcut-grid" data-shortcut-grid>${items.map(shortcutCard).join('')}</div>`:`<section class="v4-shortcut-empty"><span class="v4-shortcut-empty-icon">${I.launch}</span><h3>هنوز میان‌بری نداری</h3><p>فایل را از ویندوز بکش و رها کن، یا از + یک برنامه، پوشه یا لینک انتخاب کن.</p><button type="button" data-context-add>${I.plus} افزودن اولین میان‌بر</button></section>`}`;
   $('[data-shortcut-search]',host)?.addEventListener('input',e=>{
@@ -309,12 +331,12 @@ function reportRow({monitor:m,result:r}){
 }
 async function renderReports(){
   const host=$('[data-page-body]');if(!host)return;
-  const rows=(await window.blackClover.accountingDashboard().catch(()=>[])).sort((a,b)=>rankReport(a)-rankReport(b));
+  const rows=(await window.blackClover.accountingDashboard().catch(()=>[])).sort((a,b)=>Number(a.monitor?.type==='transport')-Number(b.monitor?.type==='transport')||rankReport(a)-rankReport(b));
   const visible=rows.filter(reportMatches);
   const missing=rows.reduce((n,x)=>n+Number(x.result?.missing||0),0);
   const issues=rows.reduce((n,x)=>n+Number(x.result?.brokenLinks||0)+Number(x.result?.duplicateIdCount||0)+Number(x.result?.idMismatches||0),0);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>ACCOUNTING WATCH</small><h2>گزارش ثبت</h2><p>کنترل واقعی فیش، پلاک، لینک عکس و باربری.</p></div><button class="v4-head-add" data-context-add>＋ افزودن گزارش</button><button class="v4-soft" data-report-refresh>${I.refresh}<span>بررسی</span></button></header>
+    <header class="v4-page-head"><div><small>ACCOUNTING WATCH</small><h2>گزارش ثبت</h2><p>حسابداری: پلاک C، مبلغ فیش D، تصویر H از ردیف ۱۴؛ باربری در انتهای فهرست.</p></div><button class="v4-head-add" data-context-add>＋ افزودن گزارش</button><button class="v4-soft" data-report-refresh>${I.refresh}<span>بررسی</span></button></header>
     <section class="v4-report-summary">
       <article><b>${rows.length}</b><small>فایل فعال</small></article>
       <article><b>${rows.filter(x=>x.result?.complete).length}</b><small>کامل</small></article>
@@ -326,7 +348,7 @@ async function renderReports(){
     <aside class="v4-detail" data-report-detail hidden></aside>`;
 }
 function pinCard(x){
-  return `<article class="v4-pin-card" data-pin-id="${esc(x.id)}"><span class="kind">${esc(x.icon||'◆')}</span><div><small>${esc(x.type||'text')}</small><b>${esc(x.title||'پین')}</b><p>${esc(x.body||x.text||'')}</p></div><footer><button data-pin-copy>کپی</button><button data-pin-edit>•••</button></footer></article>`;
+  return `<article class="v4-pin-card" data-pin-id="${esc(x.id)}"><span class="kind">${esc(x.icon||'◆')}</span><div><small>${esc(x.type||'text')}</small><b>${esc(x.title||'پین')}</b><p>${esc(x.body||x.text||'')}</p></div><footer><button data-pin-favorite title="مهم">${x.favorite?'★':'☆'}</button><button data-pin-copy>کپی</button><button data-pin-edit>ویرایش</button></footer></article>`;
 }
 async function renderPins(){
   const host=$('[data-page-body]');if(!host)return;
@@ -342,15 +364,15 @@ function taskCard(x){
   return `<article class="v4-task-card ${x.paused?'paused':''}" data-reminder-id="${esc(x.id)}">
     <span class="task-icon ${isAction?'action':'reminder'}">${isAction?I.play:I.clock}</span>
     <div><small>${isAction?'SCHEDULED ACTION':'REMINDER'}</small><b>${esc(x.title||x.label||x.message||x.instruction)}</b><p>${x.paused?'متوقف':fmt(x.dueAt)}${x.intervalMinutes?` • هر ${x.intervalMinutes} دقیقه`:''}</p>${x.lastResult?`<em class="${x.lastResult.ok?'ok':'bad'}">${esc(x.lastResult.text||'')}</em>`:''}</div>
-    <footer><button ${x.paused?'data-reminder-resume':'data-reminder-pause'}>${x.paused?'ادامه':'Pause'}</button><button data-reminder-cancel>لغو</button></footer>
+    <footer>${isAction?'<button data-reminder-run>اجرا</button>':''}<button data-reminder-snooze="5">۵ دقیقه بعد</button><button data-reminder-edit>ویرایش</button><button ${x.paused?'data-reminder-resume':'data-reminder-pause'}>${x.paused?'ادامه':'توقف'}</button><button data-reminder-cancel>لغو</button></footer>
   </article>`;
 }
 async function renderTasks(){
   const host=$('[data-page-body]');if(!host)return;
-  const items=(await window.blackClover.listReminders().catch(()=>[])).filter(x=>x.enabled!==false);
+  const items=(await window.blackClover.listReminders().catch(()=>[])).filter(x=>x.enabled!==false||Boolean(x.lastResult));
   host.innerHTML=`
     <header class="v4-page-head"><div><small>TASKS & AUTOMATIONS</small><h2>یادآور و اجرا</h2><p>فقط یادآوری یا اجرای واقعی از طریق Planner و Verify.</p></div><button class="v4-head-add" data-context-add>＋ افزودن یادآور</button></header>
-    <section class="v4-task-summary"><article><b>${items.length}</b><small>فعال</small></article><article><b>${items.filter(x=>x.kind==='action').length}</b><small>اجرای خودکار</small></article><article><b>${items.filter(x=>x.paused).length}</b><small>Pause</small></article></section>
+    <div class="v4-workflow-count">${items.filter(x=>x.enabled!==false).length} کار فعال • ${items.filter(x=>x.kind==='action').length} عملیات</div>
     <section class="v4-task-list">${items.map(taskCard).join('')||'<div class="v4-empty">وظیفه فعالی نیست.</div>'}</section>`;
 }
 function renderReserved(){
@@ -362,7 +384,7 @@ function renderSettings(){
   host.innerHTML=`
     <header class="v4-page-head"><div><small>TOP ISLAND SETTINGS</small><h2>تنظیمات پنل</h2><p>فقط تنظیمات همین پنل بالای صفحه.</p></div></header>
     <section class="v4-settings">
-      <button data-setting-pin><span>${I.pin}</span><div><b>پین پنل</b><small>${prefs.pinned?'ثابت تا ۵ ثانیه بی‌کاری':'با کلیک روی پنل، موقتاً ثابت می‌شود'}</small></div><i class="${prefs.pinned?'on':''}"></i></button>
+      <button data-setting-pin><span>${I.pin}</span><div><b>پین پنل</b><small>${workbarPinned?'ثابت است؛ تا آزاد نکنی جمع نمی‌شود':'پنل را برای درگ و کار با فایل ثابت کن'}</small></div><i class="${workbarPinned?'on':''}"></i></button>
       <button data-setting-avatar aria-pressed="${avatarVisibilityState.enabled?'true':'false'}"><span>${I.eye}</span><div><b>کاراکتر بزرگ روی دسکتاپ</b><small>${avatarVisibilityState.enabled?'نمایش فعال است؛ برای پنهان‌کردن کلیک کن':'به‌صورت پیش‌فرض پنهان است؛ با کلیک نمایش بده'}</small></div><i class="${avatarVisibilityState.enabled?'on':''}"></i></button>
       <button data-setting-sound><span>${I.sound}</span><div><b>صدای پنل</b><small>مستقل از صدای Windows و MARIA Voice</small></div><i class="${prefs.sound?'on':''}"></i></button>
       <label><span>${I.clock}</span><div><b>جمع‌شدن خودکار</b><small>زمان بی‌استفاده‌ماندن قبل از کوچک‌شدن</small></div><select data-setting-collapse><option value="2000" ${prefs.collapseDelayMs===2000?'selected':''}>۲ ثانیه</option><option value="2800" ${prefs.collapseDelayMs===2800?'selected':''}>۳ ثانیه</option><option value="5000" ${prefs.collapseDelayMs===5000?'selected':''}>۵ ثانیه</option><option value="10000" ${prefs.collapseDelayMs===10000?'selected':''}>۱۰ ثانیه</option><option value="0" ${prefs.collapseDelayMs===0?'selected':''}>هرگز</option></select></label>
@@ -539,59 +561,13 @@ async function openShortcutOptions(id){
   return modal;
 }
 function editPin(item=null){
-  const modal=openModal({
-    title:item?'ویرایش پین':'پین جدید',kicker:'PIN LIBRARY',
-    body:`<div class="v4-fields-2">${field('عنوان',`<input name="title" value="${esc(item?.title||'')}">`)}${field('نوع',`<select name="type">${['text','prompt','url','file','folder','image','audio','video','excel','message','conversation','routine','project','workspace','note'].map(k=>`<option value="${k}" ${item?.type===k?'selected':''}>${k}</option>`).join('')}</select>`)}</div>
-      ${field('محتوا / مرجع',`<textarea name="body" rows="5" required>${esc(item?.body||item?.text||'')}</textarea>`)}
-      <div class="v4-fields-2">${field('تگ‌ها',`<input name="tags" value="${esc((item?.tags||[]).join(', '))}">`)}${field('گروه',`<input name="group" value="${esc(item?.group||'')}">`)}</div>`,
-    onSubmit:async fd=>{
-      const payload={id:item?.id,title:fd.get('title'),type:fd.get('type'),body:fd.get('body'),text:fd.get('body'),tags:String(fd.get('tags')||'').split(',').map(x=>x.trim()).filter(Boolean),group:fd.get('group'),pinned:true};
-      if(item)await window.blackClover.updatePin(payload);else await window.blackClover.createPin(payload);
-      await renderPins();
-    }
-  });
-  if(item){
-    const del=document.createElement('button');del.type='button';del.className='v4-danger';del.textContent='حذف پین';
-    $('.v4-dialog-body',modal).append(del);
-    del.onclick=async()=>{if(confirm('این پین حذف شود؟')){await window.blackClover.removePin(item.id);modal.remove();await renderPins();}};
-  }
+  return pinForm({openModal,field,esc,bridge:window.blackClover,refresh:renderPins},item);
 }
-function editTask(){
-  const due=new Date(Date.now()+10*60*1000);due.setMinutes(due.getMinutes()-due.getTimezoneOffset());
-  openModal({
-    title:'ایجاد وظیفه',kicker:'REMIND • EXECUTE • VERIFY',wide:true,
-    body:`<div class="v4-choice"><label><input type="radio" name="kind" value="reminder" checked><span><b>فقط یادآوری</b><small>MARIA فقط خبر می‌دهد</small></span></label><label><input type="radio" name="kind" value="action"><span><b>خودش انجام بده</b><small>از Planner و Permission عبور می‌کند</small></span></label></div>
-      ${field('دستور',`<textarea name="instruction" rows="5" required placeholder="مثلاً ساعت ۹ پیام آخر Saved Messages را برای گروه شرکت بفرست…"></textarea>`)}
-      <div class="v4-fields-2">${field('زمان',`<input name="dueAt" type="datetime-local" value="${due.toISOString().slice(0,16)}" required>`)}${field('تکرار',`<select name="repeat"><option value="0">یک‌بار</option><option value="60">هر ساعت</option><option value="1440">هر روز</option><option value="10080">هر هفته</option></select>`)}</div>
-      ${field('اگر زمان گذشته بود',`<select name="missed"><option value="grace_or_ask">اگر نزدیک بود اجرا / وگرنه بپرس</option><option value="skip">رد کن</option><option value="run_immediately">بعد از برگشت اجرا کن</option><option value="ask">بپرس</option></select>`)}
-      <div class="v4-policy">اجرای خودکار مجوز نامحدود نیست؛ Planner، Risk، Permission، Idempotency و Verify فعال می‌مانند.</div>`,
-    onSubmit:async fd=>{
-      const instruction=String(fd.get('instruction')||'').trim(),date=new Date(String(fd.get('dueAt')||'')),kind=String(fd.get('kind')||'reminder');
-      if(!instruction||Number.isNaN(date.getTime()))throw new Error('دستور و زمان معتبر لازم است.');
-      const common={dueAt:date.toISOString(),intervalMinutes:Number(fd.get('repeat'))||0,missedRunPolicy:String(fd.get('missed')||'grace_or_ask')};
-      await window.blackClover.createReminder(kind==='action'?{kind:'action',instruction,label:instruction,...common}:{kind:'reminder',message:instruction,...common});
-      await renderTasks();
-    }
-  });
+function editTask(item=null){
+  return taskForm({openModal,field,esc,bridge:window.blackClover,refresh:renderTasks},item);
 }
 function addAccounting(){
-  openModal({
-    title:'افزودن فایل حسابداری',kicker:'ACCOUNTING WATCH',wide:true,
-    body:`${field('مسیر کامل فایل Excel','<input name="path" required placeholder="\\\\server\\share\\file.xlsx">')}
-      <div class="v4-fields-2">${field('اسم نمایشی','<input name="name" placeholder="مثلاً اسماعیل زاده 112">')}${field('نوع','<select name="type"><option value="invoice">فاکتور / حسابداری</option><option value="transport">باربری</option></select>')}</div>
-      ${field('پوشه عکس/مدرک',`<input name="root" value="${esc(DEFAULT_EVIDENCE_ROOT)}">`)}
-      <div class="v4-fields-2">${field('شروع ردیف','<input name="start" type="number" min="1" value="2">')}${field('ستون رکورد','<input name="anchors" value="C">')}</div>
-      ${field('شیت‌ها','<input name="sheets" placeholder="مثلاً همتی, اظهار">','خالی = همه شیت‌ها')}
-      <div class="v4-policy">بعد از اضافه‌شدن فایل، Rule Wizard مشخص می‌کند کدام ستون فیش، پلاک، عکس ۱ و عکس ۲ است.</div>`,
-    onSubmit:async fd=>{
-      const type=String(fd.get('type')||'invoice');
-      await window.blackClover.createAccountingMonitor({name:String(fd.get('name')||'').trim(),path:String(fd.get('path')||'').trim(),type,pinned:true,profile:{
-        startRow:Number(fd.get('start'))||2,dataStartRow:Number(fd.get('start'))||2,anchorColumns:String(fd.get('anchors')||'C').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean),
-        sheets:String(fd.get('sheets')||'').split(',').map(x=>x.trim()).filter(Boolean),evidenceRoot:String(fd.get('root')||'').trim(),requireVerifiedAttachment:true,transportCountMode:type==='transport'?'photo_count':'',evidence:[]
-      }});
-      await window.blackClover.rebuildAccountingWatchers();await window.blackClover.refreshAccountingReports({force:true});await renderReports();
-    }
-  });
+  return reportForm({openModal,field,esc,bridge:window.blackClover,refresh:renderReports,defaultRoot:DEFAULT_EVIDENCE_ROOT});
 }
 async function showReportDetails(id){
   const rows=await window.blackClover.accountingDashboard();
@@ -662,15 +638,49 @@ function bindPageActions(){
     const f=e.target.closest('[data-report-filter]')?.dataset.reportFilter;if(f){filter=f;await renderReports();return;}
     if(e.target.closest('[data-report-refresh]')){await window.blackClover.refreshAccountingReports({force:true});await renderReports();return;}
     const pin=e.target.closest('[data-pin-id]');
-    if(pin){const id=pin.dataset.pinId,item=(await window.blackClover.listPins()).find(x=>x.id===id);if(e.target.closest('[data-pin-copy]')&&item){await navigator.clipboard.writeText(item.body||item.text||'');return;}if(e.target.closest('[data-pin-edit]')&&item){editPin(item);return;}}
+    if(pin){
+      const id=pin.dataset.pinId,item=(await window.blackClover.listPins()).find(x=>x.id===id);
+      if(e.target.closest('[data-pin-copy]')&&item){await navigator.clipboard.writeText(item.body||item.text||'');return;}
+      if(e.target.closest('[data-pin-favorite]')&&item){await window.blackClover.updatePin({id,favorite:!item.favorite});await renderPins();return;}
+      if(e.target.closest('[data-pin-edit]')&&item){editPin(item);return;}
+    }
     const task=e.target.closest('[data-reminder-id]');
-    if(task){const id=task.dataset.reminderId;if(e.target.closest('[data-reminder-pause]')){await window.blackClover.pauseReminder(id);await renderTasks();return;}if(e.target.closest('[data-reminder-resume]')){await window.blackClover.resumeReminder(id);await renderTasks();return;}if(e.target.closest('[data-reminder-cancel]')){await window.blackClover.cancelReminder(id);await renderTasks();return;}}
+    if(task){
+      const id=task.dataset.reminderId;
+      try{
+        if(e.target.closest('[data-reminder-run]'))await window.blackClover.runReminderNow(id);
+        else if(e.target.closest('[data-reminder-snooze]'))await window.blackClover.snoozeReminder(id,5);
+        else if(e.target.closest('[data-reminder-edit]')){
+          const item=(await window.blackClover.listReminders()).find(x=>x.id===id);
+          if(item)editTask(item);
+          return;
+        }
+        else if(e.target.closest('[data-reminder-pause]'))await window.blackClover.pauseReminder(id);
+        else if(e.target.closest('[data-reminder-resume]'))await window.blackClover.resumeReminder(id);
+        else if(e.target.closest('[data-reminder-cancel]'))await window.blackClover.cancelReminder(id);
+        else return;
+        await renderTasks();
+      }catch(error){pushEvent({type:'error',text:String(error?.message||error)});}
+      return;
+    }
     const approval=e.target.closest('[data-approval-id]');
     if(approval){
       const id=approval.dataset.approvalId;
       if(e.target.closest('[data-approval-allow]')){await window.blackClover.confirm?.(id,true);playTone('ok');approval.remove();return;}
       if(e.target.closest('[data-approval-deny]')){await window.blackClover.confirm?.(id,false);playTone('warn');approval.remove();return;}
     }
+    const media=e.target.closest('[data-media-command]');
+    if(media){
+      media.disabled=true;
+      try{await window.blackClover.mediaControl(media.dataset.mediaCommand);}
+      catch(error){pushEvent({type:'warning',text:'کنترل رسانه: '+String(error.message||error)});}
+      finally{media.disabled=false;}
+      return;
+    }
+    const quickShortcut=e.target.closest('[data-home-shortcut]');
+    if(quickShortcut){try{await window.blackClover.openShortcut(quickShortcut.dataset.homeShortcut);}catch(e){pushEvent({type:'error',text:String(e.message||e)});}return;}
+    const quickModule=e.target.closest('[data-home-module]');
+    if(quickModule){selectPage(quickModule.dataset.homeModule,{pin:true});return;}
     if(e.target.closest('[data-home-refresh]'))renderHome();
     if(e.target.closest('[data-open-chat]'))window.blackClover.showChat();
   });
@@ -694,12 +704,23 @@ function bindGlobalActions(){
       hoverController?.clickModule(moduleId(button));
       return;
     }
+    if(e.target.closest('[data-workflow-lock]')){
+      workbarPinned=!workbarPinned;
+      const control=$('[data-workflow-lock]');
+      if(control){
+        control.setAttribute('aria-pressed',String(workbarPinned));
+        control.textContent=workbarPinned?'📌 صفحه ثابت است':'📌 ثابت نگه دار';
+        control.classList.toggle('active',workbarPinned);
+      }
+      hoverController?.refresh();
+      return;
+    }
     if(e.target.closest('[data-context-add]')){playTone();contextAdd();return;}
     if(e.target.closest('[data-panel-pin]')){const pin=hoverController?.togglePin();playTone(pin?'ok':'tap');return;}
     if(e.target.closest('[data-panel-sound]')){savePrefs({sound:!prefs.sound});if(prefs.sound)playTone('ok');return;}
     const quick=e.target.closest('[data-quick]')?.dataset.quick;
     if(quick){$('.v4-modal')?.remove();if(quick==='shortcut')editShortcut();else if(quick==='report')addAccounting();else if(quick==='pin')editPin();else editTask();return;}
-    if(e.target.closest('[data-setting-pin]')){hoverController?.togglePin();renderSettings();return;}
+    if(e.target.closest('[data-setting-pin]')){workbarPinned=!workbarPinned;renderSettings();hoverController?.refresh();return;}
     if(e.target.closest('[data-setting-sound]')){savePrefs({sound:!prefs.sound});if(prefs.sound)playTone('ok');renderSettings();return;}
     if(e.target.closest('[data-setting-avatar]')){
       try{avatarVisibilityState=await window.blackClover.setAvatarVisibility(!avatarVisibilityState.enabled);renderSettings();}
@@ -717,6 +738,7 @@ function bindGlobalActions(){
   document.addEventListener('keydown',e=>{
     wake();
     if(e.key!=='Escape')return;
+    if(workbarPinned){workbarPinned=false;$('[data-workflow-lock]')?.setAttribute('aria-pressed','false');}
     if($('.v4-modal')){$('.v4-modal').remove();hoverController?.refresh();return;}
     hoverController?.collapseNow();
   });
@@ -770,6 +792,10 @@ export async function mountTopIslandV4(){
   </main>`;
 
   const root=$('.maria-island-v4');
+  const pinbar=document.createElement('div');
+  pinbar.className='v4-workflow-lock';
+  pinbar.innerHTML='<button type="button" data-workflow-lock aria-pressed="false" title="برای نگه‌داشتن صفحه هنگام درگ و انتخاب فایل">📌 ثابت نگه دار</button>';
+  $('.v4-expanded')?.append(pinbar);
   hoverController?.destroy();
   hoverController=new IslandHoverController({
     getMode:()=>mode,
@@ -781,7 +807,7 @@ export async function mountTopIslandV4(){
     getCollapseDelay:()=>Math.max(0,Number(prefs.collapseDelayMs)||0)
   });
   $$('[data-open-chat]').forEach(b=>b.onclick=()=>{playTone();void window.blackClover.showChat().catch(console.warn);});
-  $('[data-character]').onclick=e=>{e.stopPropagation();hoverController.clickCharacter();};
+  $('[data-character]').onclick=e=>{e.stopPropagation();workbarPinned=false;hoverController.clickCharacter();};
   $('[data-character]').addEventListener('pointerenter',greetCharacter);
   // A resize can synthesize mouseenter: require pointer movement before opening preview.
   root.addEventListener('pointermove',()=>{
@@ -789,6 +815,7 @@ export async function mountTopIslandV4(){
     else hoverController.activity();
   },{passive:true});
   root.addEventListener('mouseleave',()=>{
+    if(draggingIntoIsland||workbarPinned)return;
     hoverController.leave();
     for(const [prop,value] of [['--look-x','0px'],['--look-y','0px'],['--head-x','0px'],['--head-y','0px'],['--head-tilt','0deg'],['--hand-x','0px'],['--hand-y','0px']])root.style.setProperty(prop,value);
   });
@@ -797,6 +824,7 @@ export async function mountTopIslandV4(){
     if(mode==='peek'||mode==='preview')hoverController.pinPreview();
   });
   for(const ev of ['dragenter','dragover'])root.addEventListener(ev,e=>{
+    draggingIntoIsland=true;hoverController?.activity();
     if(e.target.closest('.v4-modal'))return;
     e.preventDefault();
     root.classList.add('drop-active');
@@ -808,10 +836,10 @@ export async function mountTopIslandV4(){
       $('[data-drop-subtitle]')?.replaceChildren(document.createTextNode('Ask MARIA • Pin • Translate • Send • Convert'));
     }
   });
-  root.addEventListener('dragleave',e=>{if(!root.contains(e.relatedTarget))root.classList.remove('drop-active')});
+  root.addEventListener('dragleave',e=>{if(!root.contains(e.relatedTarget)){draggingIntoIsland=false;root.classList.remove('drop-active');}});
   root.addEventListener('drop',e=>{
     if(e.target.closest('.v4-modal'))return;
-    e.preventDefault();root.classList.remove('drop-active');
+    e.preventDefault();draggingIntoIsland=false;root.classList.remove('drop-active');
     const file=e.dataTransfer?.files?.[0];
     const location=file?window.blackClover.getDroppedFilePath(file):'';
     const url=e.dataTransfer?.getData('text/uri-list')||e.dataTransfer?.getData('text/plain')||'';
@@ -847,11 +875,11 @@ export async function mountTopIslandV4(){
 
   bindPageActions();bindGlobalActions();
   avatarVisibilityState=await window.blackClover.avatarVisibility?.().catch(()=>({enabled:false,visible:false}))||{enabled:false,visible:false};
-  window.blackClover.onIslandRequestMini?.(()=>hoverController?.collapseNow());
+  window.blackClover.onIslandRequestMini?.(()=>{workbarPinned=false;hoverController?.collapseNow();});
   window.blackClover.onIslandWindowBlur?.(()=>{
     // A click in another application releases the floating panel.
     // Dialogs and native pickers are protected from accidental closure.
-    if(!$('.v4-modal')&&!nativeShortcutPickerOpen&&mode!=='peek')hoverController?.collapseNow();
+    if(!workbarPinned&&!draggingIntoIsland&&!$('.v4-modal')&&!nativeShortcutPickerOpen&&mode!=='peek')hoverController?.collapseNow();
   });
   window.blackClover.onEvent?.(e=>{
     if(e?.type==='ui-state'){

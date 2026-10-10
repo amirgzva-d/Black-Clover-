@@ -49,8 +49,8 @@ test('shortcuts use original paths, show type, name and extension before saving'
   const [ui,editor,preload]=await Promise.all([
     read('src/renderer/topIslandV4.js'),read('src/renderer/shortcutEditorV4.js'),read('src/main/preload.cjs')
   ]);
-  assert.match(ui,/v4-shortcut-drop-hint/);
-  assert.match(ui,/data-shortcut-drop-area/);
+  assert.doesNotMatch(ui,/v4-shortcut-drop-hint/,'Native drag/drop needs no extra bulky drop box');
+  assert.match(ui,/root\.addEventListener\('drop'/);
   assert.match(ui,/return openShortcutQuickMenu\(\)/);
   assert.match(ui,/await quickAddShortcut\(chosen\)/);
   assert.match(ui,/getDroppedFilePath\(file\)/);

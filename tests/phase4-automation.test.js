@@ -34,8 +34,13 @@ test('scheduled actions execute through registered agent executor instead of bec
     await store.whenIdle();
     assert.deepEqual(seen,['تحقیق کن و گزارش بساز']);
     const active=await store.list();
-    assert.ok(active.some(x=>x.kind==='reminder'&&/اجرا شد/.test(x.message)));
     assert.ok(!active.some(x=>x.kind==='action'));
+    const history=await store.list({includeDisabled:true});
+    const completed=history.find(x=>x.kind==='action');
+    assert.equal(completed.lastResult.ok,true);
+    assert.equal(completed.lastResult.text,'done');
+    assert.equal(completed.runCount,1);
+    assert.equal(history.filter(x=>x.kind==='reminder').length,0,'No duplicate success notification');
   }finally{await fs.rm(dir,{recursive:true,force:true});}
 });
 

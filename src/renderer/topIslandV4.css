@@ -1317,3 +1317,56 @@ body.top-island-v4-surface{display:grid;place-items:start center;direction:rtl;u
 .v4-dialog:has(.v4-shortcut-pick-actions) .v4-field input{font-size:11px!important}
 .v4-dialog:has(.v4-shortcut-pick-actions) .v4-field>small{font-size:9px!important}
 .v4-shortcut-empty button{font-size:11px!important}
+
+/* Phase 9: expanded-page usability ONLY. Mini capsule, reference preview, header
+   icon locations and their original CSS remain unchanged. */
+.v4-expanded .v4-workflow-lock{
+  position:absolute;left:21px;top:3px;z-index:18;direction:rtl;
+  pointer-events:auto;
+}
+.v4-workflow-lock button{
+  min-height:28px;border:1px solid rgba(139,126,211,.22);
+  border-radius:9px;background:rgba(20,20,36,.89);color:#bdb8d7;
+  padding:4px 12px;font-size:10px;cursor:pointer;
+}
+.v4-workflow-lock button:hover,.v4-workflow-lock button.active{
+  border-color:rgba(173,149,255,.53);background:rgba(103,82,201,.25);
+  color:#edeaff;
+}
+.v4-workflow-pair{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.v4-workflow-pair .v4-field{min-width:0}
+.v4-workflow-check{display:flex;align-items:center;gap:10px;font-size:11px;color:#d0cbe6;margin:12px 0}
+.v4-workflow-check input{accent-color:#a69bff;min-width:15px;min-height:15px}
+.v4-workflow-selectors{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:7px 0 10px}
+.v4-workflow-selectors button{
+  border:1px solid rgba(168,146,255,.25);border-radius:9px;
+  background:rgba(99,73,198,.16);color:#eeeaff;padding:9px 13px;cursor:pointer;
+}
+.v4-workflow-selectors button:hover{background:rgba(108,83,216,.28)}
+.v4-workflow-hint{display:block;font-size:10px;color:#9d96b7;margin:7px 0}
+.v4-workflow-advanced{margin-top:12px;padding:10px 12px;border:1px solid rgba(255,255,255,.075);border-radius:10px}
+.v4-workflow-advanced summary{cursor:pointer;font-size:11px;color:#b8b4cd}
+.v4-workflow-advanced[open] .v4-workflow-pair{margin-top:10px}
+.v4-workflow-count{font-size:10px;margin:5px 0 12px;color:#a79fd2}
+.v4-task-card footer{display:flex;flex-wrap:wrap;gap:5px;justify-content:flex-start}
+.v4-task-card footer button{min-height:28px;padding:5px 8px;border:1px solid rgba(140,124,225,.2);border-radius:8px;background:rgba(95,82,165,.08)}
+.v4-home-quick{border:1px solid rgba(138,120,215,.12);border-radius:15px;padding:12px;margin-top:12px;background:rgba(255,255,255,.017)}
+.v4-home-quick header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.v4-home-quick header b{font-size:13px}.v4-home-quick header small{font-size:10px;color:#858090}
+.v4-home-quick-items{display:flex;flex-wrap:wrap;gap:7px}
+.v4-home-quick-items button{
+  min-height:31px;max-width:210px;border:1px solid rgba(148,131,219,.16);
+  border-radius:9px;background:rgba(115,95,209,.10);padding:5px 11px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#ddd8f4;font-size:10.5px;cursor:pointer
+}
+.v4-home-quick-items button:hover{background:rgba(113,90,214,.24)}
+@media(max-width:640px){.v4-workflow-pair{grid-template-columns:1fr}.v4-expanded .v4-workflow-lock{left:10px}}
+
+.v4-home-media{margin-top:10px;border:1px solid rgba(117,111,146,.17);border-radius:14px;padding:11px;background:rgba(22,24,32,.63)}
+.v4-home-media header{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.v4-home-media header b{font-size:12px;color:#dfddef}
+.v4-home-media header small{font-size:9px;color:#878294}
+.v4-home-media>div{display:flex;gap:8px}
+.v4-home-media>div button{height:36px;min-width:47px;background:rgba(119,96,225,.09);color:#e6e2f7;border:1px solid rgba(151,128,222,.19);border-radius:11px;font-size:17px;cursor:pointer}
+.v4-home-media>div button:hover{background:rgba(119,96,225,.21)}
+.v4-home-media>div button:disabled{opacity:.5;cursor:wait}

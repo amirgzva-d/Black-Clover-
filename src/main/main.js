@@ -23,6 +23,8 @@ import { LocalAssetLibrary } from './LocalAssetLibrary.js';
 import { isRemovedAvatar } from './RemovedAvatars.js';
 import { BrainProviderStore } from './BrainProviderStore.js';
 import { AvatarVisibilityPreferences } from './AvatarVisibilityPreferences.js';
+import { createReminderActionExecutor,normalizeReminderOperation } from './ReminderActionExecutor.js';
+import { sendMediaKey } from './MediaKeyControls.js';
 import { setRuntimeProviderConfig,onlineBrainPoolFromEnv } from '../agent/OnlineBrainPool.js';
 import { chatgptPlan } from './ChatGPTPlanService.js';
 
@@ -123,7 +125,49 @@ async function isAdmin(){try{const {stdout}=await execFileAsync('powershell.exe'
 async function restartElevated(){if(process.platform!=='win32')throw new Error('Administrator elevation is only available on Windows.');if(await isAdmin())return {ok:true,already:true};const args=app.isPackaged?[]:[app.getAppPath()],argList=args.length?` -ArgumentList ${args.map(psQuote).join(',')}`:'';await execFileAsync('powershell.exe',['-NoProfile','-Command',`Start-Process -FilePath ${psQuote(process.execPath)}${argList} -Verb RunAs`],{windowsHide:true,timeout:60000});setTimeout(()=>{quitting=true;app.quit();},350);return {ok:true};}
 function startupStatus(){const s=app.getLoginItemSettings();return {openAtLogin:Boolean(s.openAtLogin),executableWillLaunchAtLogin:Boolean(s.executableWillLaunchAtLogin),path:process.execPath};}
 function setStartup(enabled){if(!app.isPackaged)return {ok:false,message:'Start-with-Windows is enabled after installing the packaged app.',...startupStatus()};app.setLoginItemSettings({openAtLogin:Boolean(enabled),path:process.execPath,args:[]});return {ok:true,...startupStatus()};}
-function startReminderPump(){if(reminderTimer)return;reminderTimer=setInterval(async()=>{try{for(const item of await reminders.takeDue()){const text=item.message||item.label||item.instruction||'یادآوری';send({type:'reminder',item,text});if(Notification.isSupported())new Notification({title:'یادآوری ماریا',body:text}).show();}}catch(e){console.warn('Reminder pump:',e.message);}},5000);}
+function showReminderToast({title='یادآوری ماریا',body=''}){if(Notification.isSupported())new Notification({title:String(title).slice(0,120),body:String(body).slice(0,420)}).show();}
+function draftReminderInChat(text){
+  const chat=showChat({focus:true});
+  sendWhenReady(chat,'assistant:prefill-prompt',{text:String(text||''),submit:false});
+  return chat;
+}
+const reminderActionExecutor=createReminderActionExecutor({
+  openExternal:url=>shell.openExternal(url),
+  openPath:target=>shell.openPath(target),
+  stat:target=>fs.promises.stat(target),
+  openShortcut:async id=>{
+    const shortcut=(await quickShortcuts.list({limit:2000})).find(x=>x.id===String(id));
+    if(!shortcut)throw new Error('میانبر زمان‌بندی‌شده پیدا نشد.');
+    if(['agent','routine','system_action','command'].includes(shortcut.kind))throw new Error('میانبر دستوری نیاز به تأیید کاربر دارد.');
+    if(/^https?:\/\//i.test(shortcut.target))await shell.openExternal(shortcutIdentity(shortcut.target));
+    else{const error=await shell.openPath(shortcut.target);if(error)throw new Error(error);}
+    await quickShortcuts.markUsed(shortcut.id);
+    send({type:'data-changed',store:'shortcuts'});
+  },
+  writeClipboard:value=>clipboard.writeText(value),
+  showChatDraft:async text=>{draftReminderInChat(text);},
+  notify:showReminderToast,
+  emit:send,
+});
+let reminderPumpBusy=false;
+async function tickReminders(){
+  if(reminderPumpBusy)return;
+  reminderPumpBusy=true;
+  try{
+    for(const item of await reminders.takeDue()){
+      const text=item.message||item.label||item.instruction||'یادآوری';
+      send({type:'reminder',item,text});
+      showReminderToast({title:'یادآوری ماریا',body:text});
+      if(item.notifyChat)draftReminderInChat(text);
+    }
+  }catch(e){console.warn('Reminder pump:',e.message);}
+  finally{reminderPumpBusy=false;}
+}
+function startReminderPump(){
+  if(reminderTimer)return;
+  void tickReminders();
+  reminderTimer=setInterval(tickReminders,1000);
+}
 function startIdleLearningPump(){if(learningTimer)return;learningTimer=setInterval(async()=>{try{if(provisioning)return;const idle=presence.status().idleSeconds;if(!Number.isFinite(idle)||idle<300)return;const dependencyState=await deps.status();if(!dependencyState.recommendedReady)return;await agent.improveOne({allowCurriculum:true});}catch(e){console.warn('Idle learning:',e.message);}},10*60*1000);}
 async function refreshBrainProviders(){if(!brainStore)brainStore=new BrainProviderStore();const cfg=await brainStore.runtimeConfig();setRuntimeProviderConfig(cfg);agent.client.online=onlineBrainPoolFromEnv();chatAgents.clear();projectService.reloadBrains();return {settings:await brainStore.publicState(),catalog:await agent.modelCatalog()};}
 
@@ -156,8 +200,8 @@ async function openDevVsCode(){const root=devRepoRoot();try{const child=execFile
 
 const gotLock=app.requestSingleInstanceLock();if(!gotLock){app.quit();}else app.on('second-instance',()=>{showChat();});
 app.whenReady().then(async()=>{avatarVisiblePreference=avatarVisibilityPrefs().load();brainStore=new BrainProviderStore();await refreshBrainProviders().catch(e=>console.warn('Brain providers:',e.message));if(avatarVisiblePreference)createAvatarWindow();showIsland('peek');createTray();presence.start();if(String(process.env.BLACK_CLOVER_REMOTE_DEV||'')==='1')setTimeout(()=>showDevSession(),420);
-reminders.setActionExecutor(async item=>{setUiState('executing','اجرای کار زمان‌بندی‌شده');try{const out=await agent.chat(String(item.instruction||''),{profile:'scheduled-action'});send({type:'scheduled-action',item,result:out});return out;}finally{setUiState('online','Online • آماده');}});
-startReminderPump();accountingMonitor.start().catch(e=>console.warn('Accounting monitor:',e.message));startIdleLearningPump();setTimeout(()=>runTool('get_volume',{}).catch(()=>{}),250);globalShortcut.register('CommandOrControl+Shift+Space',toggleChat);app.on('activate',()=>{showIsland('peek');});});
+reminders.setActionExecutor(async item=>{setUiState('executing','اجرای کار زمان‌بندی‌شده');try{const out=await reminderActionExecutor(item);if(item.notifyChat&&item.operation?.type!=='chat_draft')draftReminderInChat((item.label||item.instruction||'عملیات زمان‌بندی‌شده')+' — '+out.text);return out;}finally{setUiState('online','Online • آماده');}});
+startReminderPump();await accountingReports.applyFixedInvoiceTemplateToExisting().catch(e=>console.warn('Invoice template migration:',e.message));accountingMonitor.start().catch(e=>console.warn('Accounting monitor:',e.message));startIdleLearningPump();setTimeout(()=>runTool('get_volume',{}).catch(()=>{}),250);globalShortcut.register('CommandOrControl+Shift+Space',toggleChat);app.on('activate',()=>{showIsland('peek');});});
 app.on('before-quit',()=>{quitting=true;});
 app.on('will-quit',()=>{globalShortcut.unregisterAll();presence.stop();accountingMonitor.stop().catch(()=>{});if(reminderTimer)clearInterval(reminderTimer);if(learningTimer)clearInterval(learningTimer);});
 app.on('window-all-closed',()=>{});
@@ -332,6 +376,12 @@ ipcMain.handle('shortcuts:reveal',async(_e,id)=>{
 ipcMain.handle('shortcuts:remove',async(_e,id)=>{const ok=await quickShortcuts.remove(String(id||''));send({type:'data-changed',store:'shortcuts'});return ok;});
 ipcMain.handle('shortcuts:open',async(_e,id)=>{const sid=String(id||''),item=(await quickShortcuts.list({limit:1000})).find(x=>x.id===sid);if(!item)throw new Error('Shortcut not found');const target=String(item.target||'').trim();let result;if(item.kind==='agent'||item.kind==='routine')result=await agent.chat(target,{profile:'quick-shortcut'});else if(/^https?:\/\//i.test(target)){const safe=shortcutIdentity(target);await shell.openExternal(safe);result={ok:true,type:'url',target:safe};}else{shortcutIdentity(target);const error=await shell.openPath(target);if(error)throw new Error(error);result={ok:true,type:'path',target};}await quickShortcuts.markUsed(sid);send({type:'data-changed',store:'shortcuts'});return result;});
 
+ipcMain.handle('accounting:pick-file',async event=>{
+  const owner=BrowserWindow.fromWebContents(event.sender);
+  const picked=await dialog.showOpenDialog(owner,{title:'انتخاب فایل Excel گزارش',properties:['openFile'],filters:[{name:'Excel Workbook',extensions:['xlsx','xlsm']}]});
+  if(picked.canceled||!picked.filePaths?.length)return null;
+  return {path:picked.filePaths[0],name:path.parse(picked.filePaths[0]).name};
+});
 ipcMain.handle('accounting:dashboard',()=>accountingReports.dashboard());
 ipcMain.handle('accounting:create-monitor',async(_e,payload)=>{const item=await accountingReports.createMonitor(payload||{});await accountingMonitor.rebuildWatchers();await accountingMonitor.refreshOne(item.id,{force:true,reason:'created'});send({type:'data-changed',store:'accounting'});return item;});
 ipcMain.handle('accounting:update-monitor',async(_e,payload)=>{const item=await accountingReports.updateMonitor(String(payload?.id||''),payload?.patch||{});await accountingMonitor.rebuildWatchers();send({type:'data-changed',store:'accounting'});return item;});
@@ -373,12 +423,23 @@ ipcMain.handle('pins:list',()=>pinnedNotes.list({limit:500}));
 ipcMain.handle('pins:create',async(_e,payload)=>{const item=await pinnedNotes.create(payload||{});send({type:'data-changed',store:'pins'});return item;});
 ipcMain.handle('pins:update',async(_e,payload)=>{const item=await pinnedNotes.update(payload?.id,payload||{});send({type:'data-changed',store:'pins'});return item;});
 ipcMain.handle('pins:remove',async(_e,id)=>{const ok=await pinnedNotes.remove(String(id||''));send({type:'data-changed',store:'pins'});return ok;});
-ipcMain.handle('reminders:list',()=>reminders.list());
-ipcMain.handle('reminders:create',async(_e,payload)=>{const item=payload?.kind==='action'?await reminders.createAction(payload):await reminders.create(payload||{});send({type:'data-changed',store:'reminders'});return item;});
+ipcMain.handle('reminders:list',()=>reminders.list({includeDisabled:true}));
+ipcMain.handle('reminders:create',async(_e,payload)=>{
+  const draft={...(payload||{})};
+  const when=new Date(draft.dueAt);
+  if(Number.isNaN(when.getTime())||when.getTime()<Date.now()-1000)throw new Error('زمان یادآور باید در آینده باشد.');
+  if(draft.kind==='action')draft.operation=normalizeReminderOperation(draft.operation||{type:'chat_draft',target:draft.instruction||''});
+  const item=draft.kind==='action'?await reminders.createAction(draft):await reminders.create(draft);
+  send({type:'data-changed',store:'reminders'});
+  return item;
+});
 ipcMain.handle('reminders:update',async(_e,payload)=>{const item=await reminders.update(String(payload?.id||''),payload?.patch||{});send({type:'data-changed',store:'reminders'});return item;});
 ipcMain.handle('reminders:pause',async(_e,id)=>{const item=await reminders.pause(String(id||''));send({type:'data-changed',store:'reminders'});return item;});
 ipcMain.handle('reminders:resume',async(_e,id)=>{const item=await reminders.resume(String(id||''));send({type:'data-changed',store:'reminders'});return item;});
 ipcMain.handle('reminders:cancel',async(_e,id)=>{const ok=await reminders.cancel(String(id||''));send({type:'data-changed',store:'reminders'});return ok;});
+ipcMain.handle('reminders:snooze',async(_e,id,minutes)=>{const item=await reminders.snooze(String(id||''),Number(minutes));send({type:'data-changed',store:'reminders'});return item;});
+ipcMain.handle('reminders:run-now',async(_e,id)=>{const result=await reminders.runNow(String(id||''));send({type:'data-changed',store:'reminders'});return result;});
+ipcMain.handle('media:control',async(_event,command)=>sendMediaKey(command,{exec:execFileAsync}));
 ipcMain.handle('system:diagnostics',async()=>({dependencies:await deps.status(),speech:await speech.status(),presence:presence.status(),startup:startupStatus(),admin:await isAdmin(),packaged:app.isPackaged,version:app.getVersion()}));
 ipcMain.handle('system:install-dependency',(_e,id)=>deps.install(String(id||'')));
 ipcMain.handle('system:install-all-dependencies',()=>installAllFromTray());

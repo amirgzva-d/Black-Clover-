@@ -157,6 +157,14 @@ export class AccountingWorkbookScanner{
           rows.push({
             row,
             recordType,
+            fields:{
+              plate:String(cells.get('C'+row)?.value??'').trim(),
+              receiptAmount:String(cells.get('D'+row)?.value??'').trim(),
+              photoCell:'H'+row,
+              photoLinked:Boolean(cells.get('H'+row)?.hasHyperlink),
+              photoTarget:cells.get('H'+row)?.hyperlinkTarget||null,
+              photoTargetExists:cells.get('H'+row)?.hyperlinkTargetExists??null
+            },
             sourceSummary:rowSourceSummary(cells,row,anchorColumns),
             anchor:Object.fromEntries(anchorColumns.map(col=>[col,String(cells.get(col+row)?.value??'')])),
             checks,
@@ -190,7 +198,7 @@ export class AccountingWorkbookScanner{
         }
         const total=state.rows.length;
         const completeRows=state.rows.filter(x=>x.missing.length===0);
-        const missingRows=state.rows.filter(x=>x.missing.length>0).map(x=>({row:x.row,recordType:x.recordType,sourceSummary:x.sourceSummary,missing:x.missing,checks:x.checks,issues:x.issues,anchor:x.anchor}));
+        const missingRows=state.rows.filter(x=>x.missing.length>0).map(x=>({row:x.row,recordType:x.recordType,fields:x.fields,sourceSummary:x.sourceSummary,missing:x.missing,checks:x.checks,issues:x.issues,anchor:x.anchor}));
         for(const row of missingRows){
           for(const issue of row.issues||[]){
             if(['hyperlink_missing','target_missing'].includes(issue.type))brokenLinks++;

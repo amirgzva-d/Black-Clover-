@@ -24,6 +24,15 @@ export class ReminderStore{
     const instruction=clean(input.instruction||input.message,12000);
     const due=new Date(input.dueAt||input.nextRunAt||Date.now());
     const intervalMinutes=Math.max(0,Number(input.intervalMinutes)||0);
+    const allowedRecurrence=new Set(['once','interval','daily','weekly','monthly']);
+    const recurrenceType=String(input.recurrence?.type||'');
+    const recurrence=allowedRecurrence.has(recurrenceType)
+      ?structuredClone(input.recurrence)
+      :(intervalMinutes?{type:'interval',minutes:intervalMinutes}:{type:'once'});
+    if(recurrence.type==='monthly'&&!Number.isInteger(Number(recurrence.dayOfMonth)))recurrence.dayOfMonth=due.getDate();
+    const operation=kind==='action'
+      ?structuredClone(input.operation&&typeof input.operation==='object'?input.operation:{type:'chat_draft',target:instruction})
+      :null;
     return {
       kind,
       title:clean(input.title||input.label||message,180),
@@ -33,8 +42,10 @@ export class ReminderStore{
       dueAt:Number.isNaN(due.getTime())?new Date().toISOString():due.toISOString(),
       nextRunAt:Number.isNaN(due.getTime())?new Date().toISOString():due.toISOString(),
       intervalMinutes,
+      operation,
+      notifyChat:Boolean(input.notifyChat),
       trigger:input.trigger&&typeof input.trigger==='object'?structuredClone(input.trigger):{type:'time'},
-      recurrence:input.recurrence&&typeof input.recurrence==='object'?structuredClone(input.recurrence):(intervalMinutes?{type:'interval',minutes:intervalMinutes}:{type:'once'}),
+      recurrence,
       conditions:Array.isArray(input.conditions)?structuredClone(input.conditions):[],
       missedRunPolicy:clean(input.missedRunPolicy||'grace_or_ask',40),
       retryPolicy:input.retryPolicy&&typeof input.retryPolicy==='object'?structuredClone(input.retryPolicy):{maxAttempts:kind==='action'?2:0,backoff:'bounded'},
@@ -92,10 +103,10 @@ export class ReminderStore{
   async createAutomation(payload={}){
     return payload.kind==='action'||payload.kind==='execute'?this.createAction(payload):this.create(payload);
   }
-  async list({includePaused=true}={}){
+  async list({includePaused=true,includeDisabled=false}={}){
     await this.load();
     return this.items
-      .filter(x=>x.enabled&&(includePaused||!x.paused))
+      .filter(x=>(includeDisabled||x.enabled)&&(includePaused||!x.paused))
       .sort((a,b)=>new Date(a.dueAt)-new Date(b.dueAt))
       .map(x=>structuredClone(x));
   }
@@ -119,15 +130,46 @@ export class ReminderStore{
     return true;
   }
   _advance(item,now){
-    if(item.intervalMinutes>0){
-      let next=new Date(item.dueAt).getTime(),step=item.intervalMinutes*60000;
-      while(next<=now)next+=step;
-      item.dueAt=new Date(next).toISOString();
-      item.nextRunAt=item.dueAt;
-    }else{
-      item.enabled=false;
-    }
+    const type=item.recurrence?.type||'once';
+    const repeatDays=type==='daily'?1:type==='weekly'?7:0;
+    let next=new Date(item.dueAt);
+    if(type==='monthly'){
+      const day=Math.max(1,Math.min(31,Number(item.recurrence?.dayOfMonth)||next.getDate()));
+      while(next.getTime()<=now){
+        next.setDate(1);
+        next.setMonth(next.getMonth()+1);
+        const last=new Date(next.getFullYear(),next.getMonth()+1,0).getDate();
+        next.setDate(Math.min(day,last));
+      }
+    }else if(repeatDays){
+      while(next.getTime()<=now)next.setDate(next.getDate()+repeatDays);
+    }else if(type==='interval'||item.intervalMinutes>0){
+      const step=Math.max(1,Number(item.recurrence?.minutes||item.intervalMinutes)||1)*60000;
+      const start=next.getTime();
+      const jumps=Math.max(1,Math.floor((now-start)/step)+1);
+      next=new Date(start+jumps*step);
+    }else item.enabled=false;
+    if(item.enabled){item.dueAt=next.toISOString();item.nextRunAt=item.dueAt;}
     item.updatedAt=new Date().toISOString();
+  }
+  async snooze(id,minutes=5){
+    const delay=Number(minutes);
+    if(![5,15,60,1440].includes(delay))throw new Error('مدت تعویق معتبر نیست.');
+    return this.update(id,{dueAt:new Date(Date.now()+delay*60000).toISOString(),enabled:true,paused:false});
+  }
+  async runNow(id){
+    await this.load();
+    const item=this.items.find(x=>x.id===String(id));
+    if(!item||item.kind!=='action')throw new Error('عملیات پیدا نشد.');
+    if(!this.actionExecutor)throw new Error('موتور اجرای عملیات فعال نیست.');
+    if(this.executing.has(item.id))throw new Error('این عملیات در حال اجراست.');
+    const now=Date.now();
+    if(item.recurrence?.type==='once'||!item.recurrence||item.recurrence.type==='once'){
+      item.enabled=false;item.updatedAt=new Date().toISOString();await this.save();
+    }else if(new Date(item.dueAt).getTime()<=now){this._advance(item,now);await this.save();}
+    await this._runActions([{...item}],now);
+    const after=this.items.find(x=>x.id===String(id));
+    return structuredClone({id:item.id,lastResult:after?.lastResult,runCount:after?.runCount});
   }
   async _runActions(actions,now){
     if(!this.actionExecutor)return;
@@ -144,10 +186,8 @@ export class ReminderStore{
           target.updatedAt=new Date().toISOString();
           await this.save();
         }
-        const report=out?.requiresConfirmation
-          ?`کار زمان‌بندی‌شده «${item.label||item.instruction}» به مرحله‌ای رسید که تأیید دستی لازم دارد و آن بخش خودکار اجرا نشد.`
-          :`کار زمان‌بندی‌شده «${item.label||item.instruction}» اجرا شد${out?.text?` — ${clean(out.text,500)}`:''}`;
-        await this.create({message:report,dueAt:new Date(Date.now()+1000).toISOString()});
+        // The executor already emits a Windows notification and a result event.
+        // Keep history on the original task rather than creating a duplicate reminder.
       }catch(e){
         const target=this.items.find(x=>x.id===item.id);
         if(target){
@@ -157,7 +197,7 @@ export class ReminderStore{
           target.updatedAt=new Date().toISOString();
           await this.save();
         }
-        await this.create({message:`اجرای کار زمان‌بندی‌شده «${item.label||item.instruction}» کامل نشد: ${e.message||e}`,dueAt:new Date(Date.now()+1000).toISOString()});
+        console.warn('Scheduled action failed:',String(e?.message||e));
       }finally{this.executing.delete(item.id);}
     }
   }
@@ -169,6 +209,15 @@ export class ReminderStore{
       if(!item.enabled||item.paused||new Date(item.dueAt).getTime()>now)continue;
       if((item.kind||'reminder')==='action'){
         if(!this.actionExecutor)continue;
+        const lateBy=Math.max(0,now-new Date(item.dueAt).getTime());
+        const policy=String(item.missedRunPolicy||'grace_or_ask');
+        if(lateBy>15*60000&&policy!=='run_immediately'&&(policy==='skip'||policy==='ask'||policy==='grace_or_ask')){
+          item.lastResult={ok:false,requiresConfirmation:policy!=='skip',text:policy==='skip'?'اجرای دیرهنگام رد شد.':'زمان اجرا گذشته است؛ برای اجرا نیاز به تأیید است.'};
+          remindersDue.push({...item,kind:'reminder',message:item.lastResult.text});
+          this._advance(item,now);
+          changed=true;
+          continue;
+        }
         actionsDue.push({...item});
         this._advance(item,now);
         changed=true;

@@ -118,6 +118,10 @@ function statePasses(s,mode){
 }
 function failureReasons(s,mode){
   const reasons=[];
+  if(mode==='hyperlink_existing'||mode==='hyperlink'){
+    if(!s.hasHyperlink)reasons.push('hyperlink_missing');
+    else if(mode==='hyperlink_existing'&&s.hyperlinkTargetExists!==true)reasons.push('target_missing');
+  }
   if(['verified_numeric_hyperlink','verified_numeric_hyperlink_and_index','strict_evidence'].includes(mode)){
     if(!s.hasNumericId)reasons.push('visible_id_missing_or_invalid');
     if(!s.hasHyperlink)reasons.push('hyperlink_missing');

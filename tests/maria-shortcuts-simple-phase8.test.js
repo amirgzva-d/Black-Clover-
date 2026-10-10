@@ -15,7 +15,7 @@ test('Shortcuts has exactly two primary creation pathways: + picker and native d
   assert.match(ui,/name="quick-target"/);
   assert.match(ui,/window\.blackClover\.pickShortcutTarget\(button\.dataset\.quickPick\)/);
   assert.match(ui,/await quickAddShortcut\(chosen\)/);
-  assert.match(ui,/data-shortcut-drop-area/);
+  assert.doesNotMatch(ui,/data-shortcut-drop-area/,'Drop works on the whole page; no extra drop panel');
   assert.match(ui,/getDroppedFilePath\(f\)/);
   assert.match(ui,/for\(const target of targets\)/);
   assert.match(ui,/const result=await quickAddShortcut\(target\)/);
