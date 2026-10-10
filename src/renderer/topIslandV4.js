@@ -1,5 +1,6 @@
 import './topIslandV4.css';
 import { createSmartShortcutEditor } from './shortcutEditorV4.js';
+import { IslandHoverController } from './islandHoverController.js';
 
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -41,13 +42,14 @@ const PAGES=[
 ];
 
 function loadPrefs(){
-  try{return {autoHideSeconds:60,pinned:false,sound:true,lastPage:'home',...(JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{})};}
-  catch{return {autoHideSeconds:60,pinned:false,sound:true,lastPage:'home'};}
+  try{return {autoHideSeconds:60,collapseDelayMs:2800,pinned:false,sound:true,lastPage:'home',...(JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{})};}
+  catch{return {autoHideSeconds:60,collapseDelayMs:2800,pinned:false,sound:true,lastPage:'home'};}
 }
 let prefs=loadPrefs();
 let page=PAGES.some(x=>x.id===prefs.lastPage)?prefs.lastPage:'home';
 let mode='compact';
 let timer=null;
+let hoverController=null;
 let events=[];
 let filter='all';
 let audio=null;
@@ -64,22 +66,30 @@ function playTone(kind='tap'){
   }catch{}
 }
 function setMode(next){
-  const safe=['peek','compact','expanded'].includes(next)?next:'compact';
-  mode=prefs.pinned&&safe==='peek'?'compact':safe;
+  const requested=['peek','preview','compact','expanded'].includes(next)?next:'preview';
+  const safe=requested==='compact'?'preview':prefs.pinned&&requested==='peek'?'preview':requested;
+  if(mode===safe){syncChrome();return;}
+  mode=safe;
   document.body.dataset.islandMode=mode;
   $('.maria-island-v4')?.setAttribute('data-mode',mode);
   window.blackClover?.setIslandMode?.(mode).catch(()=>{});
-  syncChrome();armIdle();
+  syncChrome();
+  armIdle();
 }
 function armIdle(){
   clearTimeout(timer);
-  if(prefs.pinned||Number(prefs.autoHideSeconds)===0)return;
-  timer=setTimeout(()=>{
-    if($('.v4-modal')||$('input:focus,textarea:focus,select:focus')){armIdle();return;}
-    setMode('peek');
-  },Math.max(15,Number(prefs.autoHideSeconds)||60)*1000);
+  if(mode!=='peek')hoverController?.refresh();
 }
-function wake(){if(mode!=='peek')armIdle();}
+function wake(){
+  if(mode!=='peek'&&!hoverController?.inside)armIdle();
+}
+function protectedPanel(){
+  return Boolean($('.v4-modal')||$('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus'));
+}
+function setPanelPinned(pinned){
+  savePrefs({pinned:Boolean(pinned)});
+  if(!pinned)armIdle();
+}
 function syncChrome(){
   const root=$('.maria-island-v4');
   root?.classList.toggle('is-pinned',Boolean(prefs.pinned));
@@ -296,7 +306,7 @@ function renderSettings(){
     <section class="v4-settings">
       <button data-setting-pin><span>${I.pin}</span><div><b>پین پنل</b><small>${prefs.pinned?'پنل مخفی نمی‌شود':'بعد از بی‌کاری جمع می‌شود'}</small></div><i class="${prefs.pinned?'on':''}"></i></button>
       <button data-setting-sound><span>${I.sound}</span><div><b>صدای پنل</b><small>مستقل از صدای Windows و MARIA Voice</small></div><i class="${prefs.sound?'on':''}"></i></button>
-      <label><span>${I.clock}</span><div><b>Auto-hide</b><small>زمان تبدیل به حالت مخفی</small></div><select data-setting-timeout><option value="30" ${prefs.autoHideSeconds===30?'selected':''}>۳۰ ثانیه</option><option value="60" ${prefs.autoHideSeconds===60?'selected':''}>۱ دقیقه</option><option value="120" ${prefs.autoHideSeconds===120?'selected':''}>۲ دقیقه</option><option value="0" ${prefs.autoHideSeconds===0?'selected':''}>هرگز</option></select></label>
+      <label><span>${I.clock}</span><div><b>جمع‌شدن خودکار</b><small>پس از خروج نشانگر، پنل جمع شود</small></div><select data-setting-collapse><option value="2000" ${prefs.collapseDelayMs===2000?'selected':''}>۲ ثانیه</option><option value="2800" ${prefs.collapseDelayMs===2800?'selected':''}>۳ ثانیه</option><option value="5000" ${prefs.collapseDelayMs===5000?'selected':''}>۵ ثانیه</option><option value="10000" ${prefs.collapseDelayMs===10000?'selected':''}>۱۰ ثانیه</option><option value="0" ${prefs.collapseDelayMs===0?'selected':''}>هرگز</option></select></label>
       <button data-full-settings><span>${I.gear}</span><div><b>تنظیمات کامل MARIA</b><small>Voice، مدل‌ها، سیستم و اتصال‌ها</small></div><strong>›</strong></button>
     </section>`;
 }
@@ -316,11 +326,16 @@ async function renderPage(){
   if(body)body.scrollTop=0;
   requestAnimationFrame(()=>body?.classList.remove('switching'));
 }
-function selectPage(id){
+function selectPage(id,{pin=false}={}){
   if(id!=='settings'&&!PAGES.some(x=>x.id===id))return;
-  page=id;setMode('expanded');playTone();renderPage();
+  const unchanged=page===id&&mode==='expanded';
+  if(pin)setPanelPinned(true);
+  page=id;setMode('expanded');
+  if(unchanged)return;
+  playTone();renderPage();
 }
 function contextAdd(){
+  if(mode!=='expanded')setMode('expanded');
   if(page==='shortcuts')return editShortcut();
   if(page==='reports')return addAccounting();
   if(page==='pins')return editPin();
@@ -456,24 +471,54 @@ function bindPageActions(){
 }
 function updateApprovalTimers(){for(const el of $$('[data-approval-wait]')){const start=Number(el.dataset.start)||Date.now(),sec=Math.max(0,Math.floor((Date.now()-start)/1000));el.textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}}
 function bindGlobalActions(){
+  const moduleId=element=>element?.dataset.page||element?.dataset.previewModule||(element?.hasAttribute('data-settings')?'settings':element?.hasAttribute('data-home')?'home':null);
+  const moduleSelector='[data-page],[data-preview-module],[data-settings],[data-home]';
+  document.addEventListener('pointerover',e=>{
+    const button=e.target.closest(moduleSelector);
+    if(button&&!button.contains(e.relatedTarget))hoverController?.hoverModule(moduleId(button));
+  });
   document.addEventListener('click',e=>{
-    if(e.target.closest('[data-context-add]')){playTone();contextAdd();}
-    if(e.target.closest('[data-panel-pin]')){savePrefs({pinned:!prefs.pinned});playTone(prefs.pinned?'ok':'tap');armIdle();}
-    if(e.target.closest('[data-panel-sound]')){savePrefs({sound:!prefs.sound});if(prefs.sound)playTone('ok');}
-    if(e.target.closest('[data-settings]'))selectPage('settings');
-    if(e.target.closest('[data-home]'))selectPage('home');
-    const quick=e.target.closest('[data-quick]')?.dataset.quick;if(quick){$('.v4-modal')?.remove();if(quick==='shortcut')editShortcut();else if(quick==='report')addAccounting();else if(quick==='pin')editPin();else editTask();}
-    if(e.target.closest('[data-setting-pin]')){savePrefs({pinned:!prefs.pinned});renderSettings();armIdle();}
-    if(e.target.closest('[data-setting-sound]')){savePrefs({sound:!prefs.sound});if(prefs.sound)playTone('ok');renderSettings();}
+    const button=e.target.closest(moduleSelector);
+    if(button){
+      e.preventDefault();
+      hoverController?.clickModule(moduleId(button));
+      return;
+    }
+    if(e.target.closest('[data-context-add]')){playTone();contextAdd();return;}
+    if(e.target.closest('[data-panel-pin]')){const pin=hoverController?.togglePin();playTone(pin?'ok':'tap');return;}
+    if(e.target.closest('[data-panel-sound]')){savePrefs({sound:!prefs.sound});if(prefs.sound)playTone('ok');return;}
+    const quick=e.target.closest('[data-quick]')?.dataset.quick;
+    if(quick){$('.v4-modal')?.remove();if(quick==='shortcut')editShortcut();else if(quick==='report')addAccounting();else if(quick==='pin')editPin();else editTask();return;}
+    if(e.target.closest('[data-setting-pin]')){hoverController?.togglePin();renderSettings();return;}
+    if(e.target.closest('[data-setting-sound]')){savePrefs({sound:!prefs.sound});if(prefs.sound)playTone('ok');renderSettings();return;}
     if(e.target.closest('[data-full-settings]'))window.blackClover.openSettings?.('general');
   });
-  document.addEventListener('change',e=>{if(e.target.matches('[data-setting-timeout]')){savePrefs({autoHideSeconds:Number(e.target.value)});armIdle();}});
-  document.addEventListener('keydown',e=>{wake();if(e.key==='Escape'){if($('.v4-modal'))$('.v4-modal').remove();else if(mode==='expanded')setMode('compact');else if(mode==='compact')setMode('peek');}});
+  document.addEventListener('change',e=>{
+    if(e.target.matches('[data-setting-collapse]')){
+      savePrefs({collapseDelayMs:Number(e.target.value)});
+      hoverController?.refresh();
+    }
+  });
+  document.addEventListener('keydown',e=>{
+    wake();
+    if(e.key!=='Escape')return;
+    if($('.v4-modal')){$('.v4-modal').remove();hoverController?.refresh();return;}
+    if(prefs.pinned)setPanelPinned(false);
+    if(mode==='expanded')setMode('preview');
+    else if(mode==='preview')setMode('peek');
+  });
   document.addEventListener('pointermove',e=>{
     wake();
     const root=$('.maria-island-v4'),r=root?.getBoundingClientRect();if(!r)return;
-    const x=Math.max(-1,Math.min(1,(e.clientX-(r.left+r.width/2))/(r.width/2))),y=Math.max(-1,Math.min(1,(e.clientY-34)/60));
-    root.style.setProperty('--look-x',`${x*2.7}px`);root.style.setProperty('--look-y',`${y*1.9}px`);
+    const face=$('[data-character]')?.getBoundingClientRect(),cx=face?face.left+face.width/2:r.left+r.width/2,cy=face?face.top+face.height/2:r.top+r.height/2;
+    const x=Math.max(-1,Math.min(1,(e.clientX-cx)/Math.max(68,(face?.width||r.width)/1.2))),y=Math.max(-1,Math.min(1,(e.clientY-cy)/Math.max(52,(face?.height||r.height)/1.2)));
+    root.style.setProperty('--look-x',`${(x*4.0).toFixed(1)}px`);
+    root.style.setProperty('--look-y',`${(y*2.5).toFixed(1)}px`);
+    root.style.setProperty('--head-x',`${(x*5.8).toFixed(1)}px`);
+    root.style.setProperty('--head-y',`${(y*2.9).toFixed(1)}px`);
+    root.style.setProperty('--head-tilt',`${(x*4).toFixed(1)}deg`);
+    root.style.setProperty('--hand-x',`${(x*3.0).toFixed(1)}px`);
+    root.style.setProperty('--hand-y',`${(y*2.0).toFixed(1)}px`);
   },{passive:true});
 }
 
@@ -502,19 +547,43 @@ export async function mountTopIslandV4(){
         <button data-settings title="تنظیمات">${I.gear}</button>
       </nav>
     </header>
+    <section class="v4-preview" aria-label="نمای عمومی ماریا">
+      <div class="v4-preview-aura" aria-hidden="true"></div>
+      <div class="v4-preview-caption"><strong>MARIA</strong><span data-preview-status>آماده برای کمک</span></div>
+      <nav class="v4-preview-modules" aria-label="بخش‌های ماریا">
+        ${PAGES.filter(x=>!['reserved'].includes(x.id)).map(x=>`<button type="button" data-preview-module="${x.id}" title="${esc(x.label)}" aria-label="${esc(x.label)}"><span>${x.icon}</span><b>${esc(x.label)}</b></button>`).join('')}
+        <button type="button" data-preview-module="settings" title="تنظیمات" aria-label="تنظیمات"><span>${I.gear}</span><b>تنظیمات</b></button>
+      </nav>
+    </section>
     <section class="v4-expanded">
       <section class="v4-page" data-page-body></section>
     </section>
     <div class="v4-drop"><b>فایل را رها کن</b><span>Ask MARIA • Pin • Translate • Send • Convert</span></div>
   </main>`;
 
-  $$('[data-page]').forEach(b=>b.onclick=()=>selectPage(b.dataset.page));
-  $$('[data-open-chat]').forEach(b=>b.onclick=()=>{playTone();window.blackClover.showChat();});
-  $('[data-character]').onclick=()=>{const pin=!prefs.pinned;savePrefs({pinned:pin});setMode(pin?'expanded':'peek');};
   const root=$('.maria-island-v4');
-  let leaveTimer=null;
-  root.addEventListener('mouseenter',()=>{clearTimeout(leaveTimer);if(mode==='peek')setMode('expanded');});
-  root.addEventListener('mouseleave',()=>{clearTimeout(leaveTimer);if(!prefs.pinned&&!$('.v4-modal'))leaveTimer=setTimeout(()=>{if(!prefs.pinned&&!$('.v4-modal'))setMode('peek');},360);});
+  hoverController?.destroy();
+  hoverController=new IslandHoverController({
+    getMode:()=>mode,
+    getPinned:()=>prefs.pinned,
+    setPinned:setPanelPinned,
+    setMode,
+    selectModule:(id,pin)=>selectPage(id,{pin}),
+    isProtected:protectedPanel,
+    getCollapseDelay:()=>Math.max(0,Number(prefs.collapseDelayMs)??2800)
+  });
+  $$('[data-open-chat]').forEach(b=>b.onclick=()=>{playTone();window.blackClover.showChat();});
+  $('[data-character]').onclick=e=>{e.stopPropagation();hoverController.togglePin();};
+  // A resize can synthesize mouseenter: require pointer movement before opening preview.
+  root.addEventListener('pointermove',()=>{if(!hoverController.inside)hoverController.enter();},{passive:true});
+  root.addEventListener('mouseleave',()=>{
+    hoverController.leave();
+    for(const [prop,value] of [['--look-x','0px'],['--look-y','0px'],['--head-x','0px'],['--head-y','0px'],['--head-tilt','0deg'],['--hand-x','0px'],['--hand-y','0px']])root.style.setProperty(prop,value);
+  });
+  root.addEventListener('click',e=>{
+    if(e.target.closest('button,a,input,textarea,select,label,form,[contenteditable],.v4-modal,.v4-expanded'))return;
+    if(mode==='peek'||mode==='preview')hoverController.togglePin();
+  });
   for(const ev of ['dragenter','dragover'])root.addEventListener(ev,e=>{e.preventDefault();root.classList.add('drop-active')});
   root.addEventListener('dragleave',e=>{if(!root.contains(e.relatedTarget))root.classList.remove('drop-active')});
   root.addEventListener('drop',e=>{
@@ -529,7 +598,13 @@ export async function mountTopIslandV4(){
 
   bindPageActions();bindGlobalActions();
   window.blackClover.onEvent?.(e=>{
-    if(e?.type==='ui-state'){ $('[data-status]').textContent=e.detail||e.mode||'MARIA';setCharacter(e.mode==='working'?'thinking':e.mode==='error'?'error':e.mode==='offline'?'offline':'idle');pushEvent(e);}
+    if(e?.type==='ui-state'){
+      const status=e.detail||e.mode||'MARIA';
+      $('[data-status]').textContent=status;
+      $('[data-preview-status]').textContent=status;
+      setCharacter(e.mode==='working'?'thinking':e.mode==='error'?'error':e.mode==='offline'?'offline':'idle');
+      pushEvent(e);
+    }
     else if(e?.type==='thinking'){setCharacter('thinking');pushEvent(e);}
     else if(e?.type==='tool'){setCharacter('executing');pushEvent(e);}
     else if(e?.type==='scheduled-action'||e?.type==='reminder'){pushEvent(e);if(page==='tasks')renderTasks();}
@@ -538,6 +613,6 @@ export async function mountTopIslandV4(){
     else if(e?.type==='data-changed'){if(e.store==='shortcuts'&&page==='shortcuts')renderShortcuts();if(e.store==='pins'&&page==='pins')renderPins();if(e.store==='reminders'&&page==='tasks')renderTasks();if(e.store==='accounting'&&page==='reports')renderReports();}
     else {pushEvent(e);if(page==='home'&&(['approval','confirmation','permission','confirm'].includes(String(e?.type||'').toLowerCase())||e?.requiresConfirmation===true))renderHome();}
   });
-  window.blackClover.onIslandModule?.(payload=>selectPage(String(payload?.module||payload||'home')));
-  syncChrome();renderTopPills();await renderPage();updateApprovalTimers();setInterval(updateApprovalTimers,1000);setMode(prefs.pinned?'expanded':'peek');
+  window.blackClover.onIslandModule?.(payload=>selectPage(String(payload?.module||payload||'home'),{pin:true}));
+  syncChrome();renderTopPills();await renderPage();updateApprovalTimers();setInterval(updateApprovalTimers,1000);setMode(prefs.pinned?'preview':'peek');
 }

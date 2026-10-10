@@ -542,3 +542,126 @@ body.top-island-v4-surface{display:grid;place-items:start center;direction:rtl;u
 .maria-island-v4[data-mode=peek] .v4-topbar{height:56px!important;padding:0 12px!important;grid-template-columns:1fr auto 1fr!important;align-items:center!important}
 .maria-island-v4[data-mode=peek] .v4-center{height:56px!important;align-self:center!important;justify-self:center!important;inset:auto!important}
 .maria-island-v4[data-mode=peek] .v4-character{align-self:center!important;justify-self:center!important}
+
+/* MARIA phase 2 — reference-inspired three-stage Top Island (peek / preview / expanded).
+   The rectangle is a real mode; hovering the shell must NOT open a full module. */
+.v4-preview{display:none}
+.maria-island-v4[data-mode=peek] .v4-preview,
+.maria-island-v4[data-mode=expanded] .v4-preview{display:none!important}
+.maria-island-v4[data-mode=preview]{
+  border-radius:0 0 29px 29px;
+  background:radial-gradient(ellipse at 50% 64%,rgba(82,70,132,.085),transparent 46%),linear-gradient(180deg,#08090e 0%,#0e0f16 100%);
+  box-shadow:0 20px 75px rgba(0,0,0,.58),0 5px 40px rgba(98,75,197,.10),inset 0 1px rgba(255,255,255,.035);
+}
+.maria-island-v4[data-mode=preview] .v4-expanded{display:none!important}
+.maria-island-v4[data-mode=preview] .v4-topbar{height:70px!important;padding:0 12px!important;display:block!important}
+.maria-island-v4[data-mode=preview] .v4-top-module,
+.maria-island-v4[data-mode=preview] .v4-tool-divider{display:none!important}
+.maria-island-v4[data-mode=preview] .v4-left-tools{left:18px!important}
+.maria-island-v4[data-mode=preview] .v4-right-tools{right:18px!important}
+.maria-island-v4[data-mode=preview] .v4-preview{
+  display:block!important;position:absolute;top:66px;bottom:11px;left:14px;right:14px;overflow:hidden;
+  border-radius:25px;background:linear-gradient(180deg,rgba(19,20,27,.96),rgba(16,17,24,.98));
+  border:1px solid rgba(255,255,255,.035);
+  box-shadow:inset 0 1px rgba(255,255,255,.026),inset 0 -14px 38px rgba(0,0,0,.12)
+}
+.v4-preview-aura{
+  position:absolute;inset:0;pointer-events:none;
+  background:radial-gradient(ellipse at 50% 24%,rgba(168,141,110,.10),transparent 28%),
+             radial-gradient(ellipse at 50% 112%,rgba(112,77,225,.075),transparent 60%);
+}
+.maria-island-v4[data-mode=preview] .v4-center{
+  position:absolute!important;inset:auto!important;left:0!important;right:0!important;
+  top:76px!important;bottom:auto!important;height:89px!important;width:100%!important;min-width:0!important;
+  display:grid!important;place-items:center!important;transform:none!important;pointer-events:none!important;z-index:6!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character{
+  width:112px!important;height:80px!important;grid-column:auto!important;pointer-events:auto!important;
+}
+.maria-island-v4[data-mode=preview] .v4-character .face{
+  width:78px!important;height:65px!important;border-radius:27px 27px 32px 32px!important;
+  background:linear-gradient(160deg,#fff,#e5e4ec)!important;
+  box-shadow:0 10px 25px rgba(0,0,0,.3),0 0 32px rgba(244,228,194,.08)!important
+}
+.maria-island-v4[data-mode=preview] .v4-character .eye{top:22px!important;width:8px!important;height:12px!important}
+.maria-island-v4[data-mode=preview] .v4-character .eye.left{left:23px!important}
+.maria-island-v4[data-mode=preview] .v4-character .eye.right{right:23px!important}
+.maria-island-v4[data-mode=preview] .v4-character .mouth{bottom:11px!important}
+.maria-island-v4[data-mode=preview] .v4-character .orbit.a{left:0!important;bottom:14px!important}
+.maria-island-v4[data-mode=preview] .v4-character .orbit.b{right:0!important;top:17px!important}
+.maria-island-v4[data-mode=preview] .v4-peek-dots{display:none!important}
+.v4-preview-caption{
+  position:absolute;left:24px;top:28px;display:flex;flex-direction:column;gap:6px;max-width:190px;
+  color:#9b9bab;text-align:left;direction:ltr;
+}
+.v4-preview-caption strong{font-size:9px;letter-spacing:2.1px;font-weight:700;color:#9b8bcb}
+.v4-preview-caption span{font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.v4-preview-modules{
+  position:absolute;left:16px;right:16px;bottom:9px;display:flex;align-items:center;justify-content:center;gap:9px;
+  direction:rtl;z-index:8;
+}
+.v4-preview-modules button{
+  min-width:82px;min-height:38px;display:flex;align-items:center;justify-content:center;gap:7px;
+  padding:5px 9px;border-radius:12px;border:1px solid rgba(255,255,255,.044);
+  background:rgba(255,255,255,.025);color:#a5a0b9;cursor:pointer;
+  transition:background .14s,border-color .14s,transform .14s;
+}
+.v4-preview-modules button:hover,.v4-preview-modules button:focus-visible{
+  background:rgba(118,95,246,.20);border-color:rgba(158,140,255,.40);
+  color:#f3eeff;transform:translateY(-2px);
+}
+.v4-preview-modules button svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.65}
+.v4-preview-modules button b{font-weight:500;font-size:10px;white-space:nowrap}
+.maria-island-v4[data-mode=preview].is-pinned{border-color:rgba(146,122,255,.3)}
+@media(max-width:750px){
+  .v4-preview-modules{gap:5px;left:9px;right:9px}
+  .v4-preview-modules button{min-width:36px;padding:7px}
+  .v4-preview-modules button b{display:none}
+  .v4-preview-caption{max-width:100px}
+}
+@media(prefers-reduced-motion:reduce){
+  .v4-preview-modules button{transition:none!important;transform:none!important}
+}
+
+/* Phase 2 companion motion — preserve earlier character's mouse-following behavior. */
+.v4-character .face{
+  transform:translate3d(var(--head-x,0px),var(--head-y,0px),0) rotate(var(--head-tilt,0deg));
+  transition:transform .21s cubic-bezier(.2,.8,.2,1),filter .18s ease;
+  will-change:transform;
+}
+.v4-character .eye{
+  translate:0 var(--look-y,0px);
+  transition:translate .18s ease,filter .15s ease;
+}
+.v4-character .orbit.a{
+  translate:var(--hand-x,0px) var(--hand-y,0px);
+}
+.v4-character .orbit.b{
+  translate:var(--hand-x,0px) var(--hand-y,0px);
+}
+.v4-character[data-state=thinking] .face{
+  animation:mariaCharacterThink 1.45s ease-in-out infinite;
+  filter:drop-shadow(0 0 9px rgba(127,106,255,.30));
+}
+.v4-character[data-state=executing] .face{
+  animation:mariaCharacterWork .9s ease-in-out infinite;
+  filter:drop-shadow(0 0 10px rgba(94,144,255,.26));
+}
+@keyframes mariaCharacterThink{
+  0%,100%{transform:translate3d(var(--head-x,0px),var(--head-y,0px),0) rotate(var(--head-tilt,0deg))}
+  50%{transform:translate3d(var(--head-x,0px),calc(var(--head-y,0px) - 4px),0) rotate(var(--head-tilt,0deg))}
+}
+@keyframes mariaCharacterWork{
+  0%,100%{transform:translate3d(var(--head-x,0px),var(--head-y,0px),0) scale(1)}
+  50%{transform:translate3d(var(--head-x,0px),var(--head-y,0px),0) scale(.96)}
+}
+.maria-island-v4[data-mode=preview] .v4-character{
+  animation:mariaCompanionFloat 3.1s ease-in-out infinite;
+}
+@keyframes mariaCompanionFloat{
+  0%,100%{translate:0 0}
+  50%{translate:0 -3px}
+}
+@media(prefers-reduced-motion:reduce){
+ .v4-character,.v4-character .face,.v4-character .eye,.v4-character .orbit{animation:none!important;transition:none!important}
+}
