@@ -9,6 +9,7 @@ import { BrainRouter } from '../agent/BrainRouter.js';
 import { reminders } from '../agent/ReminderStore.js';
 import { pinnedNotes } from '../agent/PinnedNoteStore.js';
 import { quickShortcuts } from '../agent/QuickShortcutStore.js';
+import { resolveShortcutTarget,shortcutIdentity } from '../agent/ShortcutTargetResolver.js';
 import { accountingReports } from '../agent/AccountingReportStore.js';
 import { AccountingMonitorService } from '../agent/AccountingMonitorService.js';
 import { attachmentIdAllocator } from '../agent/AttachmentIdAllocator.js';
@@ -245,11 +246,43 @@ ipcMain.handle('assistant:minimize-surface',(_e,surface)=>{if(surface==='pins'||
 ipcMain.handle('assistant:open-settings',(_e,section='general')=>{const w=showChat();sendWhenReady(w,'assistant:open-settings',{section:String(section||'general')});return true;});
 ipcMain.handle('assistant:prompt',(_e,text)=>{const w=showChat();sendWhenReady(w,'assistant:prefill-prompt',{text:String(text||''),submit:true});return true;});
 
+const inspectShortcut=target=>resolveShortcutTarget(target,{readLink:link=>shell.readShortcutLink(link)});
+ipcMain.handle('shortcuts:resolve',(_e,target)=>inspectShortcut(target));
+ipcMain.handle('shortcuts:pick-target',async(event,kind='file')=>{
+  const owner=BrowserWindow.fromWebContents(event.sender);
+  const options={title:kind==='folder'?'انتخاب پوشه برای میان‌بر':'انتخاب فایل یا برنامه برای میان‌بر',properties:kind==='folder'?['openDirectory']:['openFile']};
+  const selected=await dialog.showOpenDialog(owner,options);
+  if(selected.canceled||!selected.filePaths?.length)return null;
+  return inspectShortcut(selected.filePaths[0]);
+});
 ipcMain.handle('shortcuts:list',()=>quickShortcuts.list({limit:1000}));
-ipcMain.handle('shortcuts:create',async(_e,payload)=>{const item=await quickShortcuts.create(payload||{});send({type:'data-changed',store:'shortcuts'});return item;});
-ipcMain.handle('shortcuts:update',async(_e,payload)=>{const item=await quickShortcuts.update(String(payload?.id||''),payload?.patch||payload||{});send({type:'data-changed',store:'shortcuts'});return item;});
+ipcMain.handle('shortcuts:create',async(_e,payload)=>{
+  let draft={...(payload||{})};
+  if(!draft.target)throw new Error('مسیر میان‌بر خالی است.');
+  if(!draft.kind||['auto','app','file','folder','url','media'].includes(draft.kind)){
+    const detected=await inspectShortcut(draft.target);
+    draft={...detected,...draft,target:detected.target,kind:detected.kind,icon:draft.icon||detected.icon,label:draft.label||detected.label};
+  }
+  const key=shortcutIdentity(draft.target);
+  const existing=(await quickShortcuts.list({limit:2000,includeDisabled:true})).find(x=>{try{return shortcutIdentity(x.target)===key;}catch{return false;}});
+  if(existing)throw new Error('این میان‌بر قبلاً ثبت شده است.');
+  const item=await quickShortcuts.create(draft);
+  send({type:'data-changed',store:'shortcuts'});
+  return item;
+});
+ipcMain.handle('shortcuts:update',async(_e,payload)=>{
+  const id=String(payload?.id||''),patch={...(payload?.patch||payload||{})};
+  if(patch.target&&(!patch.kind||['auto','app','file','folder','url','media'].includes(patch.kind))){
+    const detected=await inspectShortcut(patch.target);
+    patch.target=detected.target;patch.kind=detected.kind;
+    if(!patch.icon)patch.icon=detected.icon;
+  }
+  const item=await quickShortcuts.update(id,patch);
+  if(!item)throw new Error('میان‌بر برای ویرایش پیدا نشد.');
+  send({type:'data-changed',store:'shortcuts'});return item;
+});
 ipcMain.handle('shortcuts:remove',async(_e,id)=>{const ok=await quickShortcuts.remove(String(id||''));send({type:'data-changed',store:'shortcuts'});return ok;});
-ipcMain.handle('shortcuts:open',async(_e,id)=>{const sid=String(id||''),item=(await quickShortcuts.list({limit:1000})).find(x=>x.id===sid);if(!item)throw new Error('Shortcut not found');const target=String(item.target||'').trim();let result;if(item.kind==='agent'||item.kind==='routine')result=await agent.chat(target,{profile:'quick-shortcut'});else if(/^https?:\/\//i.test(target)){await shell.openExternal(target);result={ok:true,type:'url',target};}else{const error=await shell.openPath(target);if(error)throw new Error(error);result={ok:true,type:'path',target};}await quickShortcuts.markUsed(sid);send({type:'data-changed',store:'shortcuts'});return result;});
+ipcMain.handle('shortcuts:open',async(_e,id)=>{const sid=String(id||''),item=(await quickShortcuts.list({limit:1000})).find(x=>x.id===sid);if(!item)throw new Error('Shortcut not found');const target=String(item.target||'').trim();let result;if(item.kind==='agent'||item.kind==='routine')result=await agent.chat(target,{profile:'quick-shortcut'});else if(/^https?:\/\//i.test(target)){const safe=shortcutIdentity(target);await shell.openExternal(safe);result={ok:true,type:'url',target:safe};}else{shortcutIdentity(target);const error=await shell.openPath(target);if(error)throw new Error(error);result={ok:true,type:'path',target};}await quickShortcuts.markUsed(sid);send({type:'data-changed',store:'shortcuts'});return result;});
 
 ipcMain.handle('accounting:dashboard',()=>accountingReports.dashboard());
 ipcMain.handle('accounting:create-monitor',async(_e,payload)=>{const item=await accountingReports.createMonitor(payload||{});await accountingMonitor.rebuildWatchers();await accountingMonitor.refreshOne(item.id,{force:true,reason:'created'});send({type:'data-changed',store:'accounting'});return item;});

@@ -1,4 +1,5 @@
 import './topIslandV4.css';
+import { createSmartShortcutEditor } from './shortcutEditorV4.js';
 
 const $=(s,r=document)=>r.querySelector(s);
 const $$=(s,r=document)=>[...r.querySelectorAll(s)];
@@ -78,7 +79,7 @@ function armIdle(){
     setMode('peek');
   },Math.max(15,Number(prefs.autoHideSeconds)||60)*1000);
 }
-function wake(){if(mode==='peek')setMode('compact');armIdle();}
+function wake(){if(mode!=='peek')armIdle();}
 function syncChrome(){
   const root=$('.maria-island-v4');
   root?.classList.toggle('is-pinned',Boolean(prefs.pinned));
@@ -132,7 +133,7 @@ function openModal({title,kicker='',body='',submit='ذخیره',onSubmit=null,wi
     catch(err){let box=$('.v4-error',wrap);if(!box){box=document.createElement('div');box.className='v4-error';$('.v4-dialog-body',wrap).prepend(box)}box.textContent=String(err?.message||err);}
     finally{if(b)b.disabled=false;}
   };
-  requestAnimationFrame(()=>wrap.classList.add('open'));
+  requestAnimationFrame(()=>{wrap.classList.add('open');wrap.querySelector('input:not([type=radio]),textarea')?.focus();});
   return wrap;
 }
 const field=(label,control,help='')=>`<label class="v4-field"><span>${esc(label)}</span>${control}${help?`<small>${esc(help)}</small>`:''}</label>`;
@@ -186,7 +187,7 @@ async function renderShortcuts(){
   const host=$('[data-page-body]');if(!host)return;
   const items=await window.blackClover.listShortcuts().catch(()=>[]);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>QUICK LAUNCH</small><h2>میان‌برها</h2><p>فایل، پوشه، برنامه، سایت، پروژه، رسانه و Routine را سریع باز کن.</p></div></header>
+    <header class="v4-page-head"><div><small>QUICK LAUNCH</small><h2>میان‌برها</h2><p>فایل، پوشه، برنامه، سایت، پروژه، رسانه و Routine را سریع باز کن.</p></div><button class="v4-head-add" data-context-add>＋ افزودن میان‌بر</button></header>
     <div class="v4-toolbar"><label>${I.search}<input data-shortcut-search placeholder="جستجو…"></label><span>${items.length} مورد</span></div>
     ${items.length?`<div class="v4-favorite-strip">${items.slice(0,8).map(shortcutCard).join('')}</div>${items.length>8?'<button class="v4-view-all" data-shortcut-all>دیدن همه</button>':''}<div class="v4-shortcut-grid" data-shortcut-grid>${items.map(shortcutCard).join('')}</div>`:`<section class="v4-empty-panel"><span>${I.launch}</span><small>QUICK LAUNCH</small><h3>اولین میان‌بر را اضافه کن</h3><p>فایل، برنامه، پوشه، سایت، فیلم، آهنگ یا Routine را اینجا بگذار تا با یک کلیک باز شود.</p><button data-context-add>${I.plus} افزودن میان‌بر</button></section>`}`;
   $('[data-shortcut-search]',host)?.addEventListener('input',e=>{
@@ -263,7 +264,7 @@ async function renderPins(){
   const host=$('[data-page-body]');if(!host)return;
   const items=await window.blackClover.listPins().catch(()=>[]);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>PIN LIBRARY</small><h2>پین‌ها</h2><p>پیام، Prompt، لینک، فایل، گفتگو، پروژه و چیزهای مهم.</p></div></header>
+    <header class="v4-page-head"><div><small>PIN LIBRARY</small><h2>پین‌ها</h2><p>پیام، Prompt، لینک، فایل، گفتگو، پروژه و چیزهای مهم.</p></div><button class="v4-head-add" data-context-add>＋ افزودن پین</button></header>
     <div class="v4-toolbar"><label>${I.search}<input data-pin-search placeholder="جستجوی پین…"></label><span>${items.length} مورد</span></div>
     <section class="v4-pin-grid">${items.map(pinCard).join('')||'<div class="v4-empty">هنوز چیزی پین نشده.</div>'}</section>`;
   $('[data-pin-search]',host)?.addEventListener('input',e=>{const q=e.currentTarget.value.trim().toLowerCase();$$('.v4-pin-card',host).forEach(x=>x.hidden=q&&!x.textContent.toLowerCase().includes(q));});
@@ -280,7 +281,7 @@ async function renderTasks(){
   const host=$('[data-page-body]');if(!host)return;
   const items=(await window.blackClover.listReminders().catch(()=>[])).filter(x=>x.enabled!==false);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>TASKS & AUTOMATIONS</small><h2>یادآور و اجرا</h2><p>فقط یادآوری یا اجرای واقعی از طریق Planner و Verify.</p></div></header>
+    <header class="v4-page-head"><div><small>TASKS & AUTOMATIONS</small><h2>یادآور و اجرا</h2><p>فقط یادآوری یا اجرای واقعی از طریق Planner و Verify.</p></div><button class="v4-head-add" data-context-add>＋ افزودن یادآور</button></header>
     <section class="v4-task-summary"><article><b>${items.length}</b><small>فعال</small></article><article><b>${items.filter(x=>x.kind==='action').length}</b><small>اجرای خودکار</small></article><article><b>${items.filter(x=>x.paused).length}</b><small>Pause</small></article></section>
     <section class="v4-task-list">${items.map(taskCard).join('')||'<div class="v4-empty">وظیفه فعالی نیست.</div>'}</section>`;
 }
@@ -326,24 +327,7 @@ function contextAdd(){
   if(page==='tasks')return editTask();
   openModal({title:'ایجاد سریع',kicker:'QUICK CREATE',body:'<div class="v4-quick-create"><button type="button" data-quick="shortcut">میان‌بر</button><button type="button" data-quick="report">Excel Watch</button><button type="button" data-quick="pin">پین</button><button type="button" data-quick="task">وظیفه</button></div>'});
 }
-function editShortcut(item=null){
-  const modal=openModal({
-    title:item?'ویرایش میان‌بر':'میان‌بر جدید',kicker:'QUICK LAUNCH',
-    body:`<div class="v4-fields-2">${field('عنوان',`<input name="label" value="${esc(item?.label||'')}" required>`)}${field('نوع',`<select name="kind">${['auto','app','file','folder','url','media','project','routine','workspace','conversation'].map(k=>`<option value="${k}" ${item?.kind===k?'selected':''}>${k}</option>`).join('')}</select>`)}</div>
-      ${field('مسیر / URL / هدف',`<input name="target" value="${esc(item?.target||'')}" required>`)}
-      <div class="v4-fields-2">${field('آیکون',`<input name="icon" value="${esc(item?.icon||'◆')}">`)}${field('کلید میانبر',`<input name="hotkey" value="${esc(item?.hotkey||'')}" placeholder="Ctrl+Alt+1">`)}</div>`,
-    onSubmit:async fd=>{
-      const payload={label:fd.get('label'),kind:fd.get('kind'),target:fd.get('target'),icon:fd.get('icon'),hotkey:fd.get('hotkey')};
-      if(item)await window.blackClover.updateShortcut(item.id,payload);else await window.blackClover.createShortcut(payload);
-      await renderShortcuts();
-    }
-  });
-  if(item){
-    const del=document.createElement('button');del.type='button';del.className='v4-danger';del.textContent='حذف میان‌بر';
-    $('.v4-dialog-body',modal).append(del);
-    del.onclick=async()=>{if(confirm('این میان‌بر حذف شود؟')){await window.blackClover.removeShortcut(item.id);modal.remove();await renderShortcuts();}};
-  }
-}
+function editShortcut(item=null,initialTarget=''){return createSmartShortcutEditor({openModal,field,esc,renderShortcuts},item,initialTarget);}
 function editPin(item=null){
   const modal=openModal({
     title:item?'ویرایش پین':'پین جدید',kicker:'PIN LIBRARY',
@@ -504,7 +488,7 @@ export async function mountTopIslandV4(){
         <button class="plus" data-context-add title="افزودن">${I.plus}</button>
       </nav>
       <section class="v4-center">
-        <button class="v4-character" data-state="idle" data-character aria-label="MARIA"><span class="face"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></span></button>
+        <button class="v4-character" data-state="idle" data-character aria-label="باز کردن یا پین کردن MARIA"><i class="orbit a" aria-hidden="true"></i><span class="face"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></span><i class="orbit b" aria-hidden="true"></i></button>
         <div class="v4-peek-dots"><i></i><i></i><i></i></div>
         <div class="v4-status"><small>MARIA</small><b data-status>Online • آماده</b></div>
         <div class="v4-live-pills" data-live-pills></div>
@@ -526,12 +510,22 @@ export async function mountTopIslandV4(){
 
   $$('[data-page]').forEach(b=>b.onclick=()=>selectPage(b.dataset.page));
   $$('[data-open-chat]').forEach(b=>b.onclick=()=>{playTone();window.blackClover.showChat();});
-  $('[data-character]').onclick=()=>{if(mode==='expanded')setMode('compact');else selectPage(page||'home');};
+  $('[data-character]').onclick=()=>{const pin=!prefs.pinned;savePrefs({pinned:pin});setMode(pin?'expanded':'peek');};
   const root=$('.maria-island-v4');
-  root.addEventListener('mouseenter',()=>{if(mode==='peek')setMode('compact');});
+  let leaveTimer=null;
+  root.addEventListener('mouseenter',()=>{clearTimeout(leaveTimer);if(mode==='peek')setMode('expanded');});
+  root.addEventListener('mouseleave',()=>{clearTimeout(leaveTimer);if(!prefs.pinned&&!$('.v4-modal'))leaveTimer=setTimeout(()=>{if(!prefs.pinned&&!$('.v4-modal'))setMode('peek');},360);});
   for(const ev of ['dragenter','dragover'])root.addEventListener(ev,e=>{e.preventDefault();root.classList.add('drop-active')});
   root.addEventListener('dragleave',e=>{if(!root.contains(e.relatedTarget))root.classList.remove('drop-active')});
-  root.addEventListener('drop',e=>{e.preventDefault();root.classList.remove('drop-active');const names=[...(e.dataTransfer?.files||[])].map(x=>x.name).filter(Boolean);if(names.length)openModal({title:'فایل دریافت شد',kicker:'CONTEXT DROP',body:`<div class="v4-drop-choice"><b>${esc(names.join('، '))}</b><p>در اتصال محلی می‌توانی این فایل را به MARIA بدهی، Pin کنی، ترجمه/ارسال/تبدیل کنی یا به Accounting Watch اضافه کنی.</p></div>`});});
+  root.addEventListener('drop',e=>{
+    if(e.target.closest('.v4-modal'))return;
+    e.preventDefault();root.classList.remove('drop-active');
+    const file=e.dataTransfer?.files?.[0];
+    const location=file?window.blackClover.getDroppedFilePath(file):'';
+    const url=e.dataTransfer?.getData('text/uri-list')||e.dataTransfer?.getData('text/plain')||'';
+    if(page==='shortcuts'&&(location||/^https?:\/\//i.test(url))){editShortcut(null,location||url);return;}
+    if(location)openModal({title:'فایل دریافت شد',kicker:'CONTEXT DROP',body:'<div class="v4-drop-choice"><b>'+esc(file.name)+'</b><p>برای ساخت میان‌بر وارد بخش میان‌برها شو و فایل را رها کن.</p></div>'});
+  });
 
   bindPageActions();bindGlobalActions();
   window.blackClover.onEvent?.(e=>{
@@ -545,5 +539,5 @@ export async function mountTopIslandV4(){
     else {pushEvent(e);if(page==='home'&&(['approval','confirmation','permission','confirm'].includes(String(e?.type||'').toLowerCase())||e?.requiresConfirmation===true))renderHome();}
   });
   window.blackClover.onIslandModule?.(payload=>selectPage(String(payload?.module||payload||'home')));
-  syncChrome();renderTopPills();await renderPage();updateApprovalTimers();setInterval(updateApprovalTimers,1000);setMode('compact');
+  syncChrome();renderTopPills();await renderPage();updateApprovalTimers();setInterval(updateApprovalTimers,1000);setMode(prefs.pinned?'expanded':'peek');
 }
