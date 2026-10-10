@@ -617,6 +617,9 @@ export async function mountTopIslandV4(){
         <button data-open-chat class="v4-chat-launch" title="باز کردن گفتگوی ماریا" aria-label="باز کردن چت با ماریا">${I.chat}</button>
         <button class="plus" data-context-add title="افزودن">${I.plus}</button>
       </nav>
+      <nav class="v4-section-tools" aria-label="انتخاب بخش‌های ماریا">
+        ${PAGES.filter(x=>['shortcuts','pins','tasks','reports'].includes(x.id)).map(x=>`<button class="v4-section-button" type="button" data-page="${x.id}" aria-label="نمایش ${esc(x.label)}" title="${esc(x.label)}">${x.icon}<span>${esc(x.id==='tasks'?'یادآور':x.id==='shortcuts'?'میان‌بر':x.id==='reports'?'گزارش':x.label)}</span></button>`).join('')}
+      </nav>
       <section class="v4-center">
         <button class="v4-character" data-state="idle" data-character aria-label="باز کردن یا ثابت کردن MARIA"><i class="v4-arm left" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i><span class="face"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></span><i class="v4-arm right" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i></button>
         <div class="v4-peek-dots"><i></i><i></i><i></i></div>
@@ -624,12 +627,9 @@ export async function mountTopIslandV4(){
         <div class="v4-live-pills" data-live-pills></div>
       </section>
       <nav class="v4-right-tools">
-        ${PAGES.filter(x=>!['home','reserved'].includes(x.id)).map(x=>`<button class="v4-top-module ${x.id===page?'active':''}" data-page="${x.id}" title="${x.label}">${x.icon}</button>`).join('')}
-        <button class="v4-top-module ${page==='reserved'?'active':''}" data-page="reserved" title="بخش بعدی">${I.reserved}</button>
-        <span class="v4-tool-divider"></span>
-        <button data-panel-pin title="پین پنل">${I.pin}</button>
-        <button data-panel-sound title="صدای پنل">${I.sound}</button>
-        <button data-settings title="تنظیمات">${I.gear}</button>
+        <button data-panel-pin title="پین کردن پنل" aria-label="پین کردن پنل">${I.pin}</button>
+        <button data-settings title="تنظیمات" aria-label="تنظیمات">${I.gear}</button>
+        <button data-panel-sound title="صدای پنل" aria-label="صدای پنل">${I.sound}</button>
       </nav>
     </header>
     <section class="v4-preview" aria-label="نمای مستطیلی کاراکتر ماریا">
