@@ -94,6 +94,7 @@ contextBridge.exposeInMainWorld('blackClover',{
   updatePin:payload=>ipcRenderer.invoke('pins:update',payload),
   removePin:id=>ipcRenderer.invoke('pins:remove',id),
   listShortcuts:()=>ipcRenderer.invoke('shortcuts:list'),
+  shortcutFileIcon:id=>ipcRenderer.invoke('shortcuts:file-icon',id),
   resolveShortcut:target=>ipcRenderer.invoke('shortcuts:resolve',target),
   pickShortcutTarget:(kind='file')=>ipcRenderer.invoke('shortcuts:pick-target',kind),
   getDroppedFilePath:file=>{try{return webUtils.getPathForFile(file);}catch{return '';}},

@@ -1,93 +1,106 @@
-// Pure interaction controller for MARIA's three-stage Top Island.
-// All timers and state dependencies are injected so behavior is unit-testable.
+// MARIA Top Island — mini -> reference preview -> clicked module.
+// The 5-second inactivity deadline applies even to a pinned/open panel.
+// Timer adapters are injected so the same behavior is testable without Electron.
 export class IslandHoverController {
   constructor({
     getMode,getPinned,setPinned,setMode,selectModule,
-    isProtected=()=>false,getCollapseDelay=()=>2800,
-    openDelay=120,moduleDelay=85,backDelay=180,
-    // Call browser timers without binding Window methods to this controller.
-    schedule=(callback,delay)=>setTimeout(callback,delay),
-    unschedule=handle=>clearTimeout(handle)
+    isProtected=()=>false,getCollapseDelay=()=>5000,
+    openDelay=180,
+    schedule=(fn,ms)=>setTimeout(fn,ms),
+    unschedule=id=>clearTimeout(id)
   }){
-    Object.assign(this,{getMode,getPinned,setPinned,setMode,selectModule,isProtected,
-      getCollapseDelay,openDelay,moduleDelay,backDelay,schedule,unschedule});
+    Object.assign(this,{getMode,getPinned,setPinned,setMode,selectModule,
+      isProtected,getCollapseDelay,openDelay,schedule,unschedule});
     this.inside=false;
-    this.hoverTimer=null;
-    this.moduleTimer=null;
+    this.suppressUntilLeave=false;
+    this.openTimer=null;
     this.closeTimer=null;
-    this.pendingModule=null;
   }
-  clear(){
-    for(const key of ['hoverTimer','moduleTimer','closeTimer']){
-      if(this[key]!==null)this.unschedule(this[key]);
-      this[key]=null;
-    }
-    this.pendingModule=null;
+  cancel(which){
+    if(this[which]!==null)this.unschedule(this[which]);
+    this[which]=null;
   }
   enter(){
-    this.inside=true;this.clear();
+    if(this.suppressUntilLeave)return;
+    if(this.inside){this.activity();return;}
+    this.inside=true;
+    this.cancel('openTimer');
     if(this.getMode()==='peek'){
-      this.hoverTimer=this.schedule(()=>{
-        this.hoverTimer=null;
-        if(this.inside&&this.getMode()==='peek')this.setMode('preview');
+      this.openTimer=this.schedule(()=>{
+        this.openTimer=null;
+        if(this.inside&&!this.suppressUntilLeave&&this.getMode()==='peek'){
+          this.setMode('preview');
+          this.scheduleCollapse();
+        }
       },this.openDelay);
-    }
+    }else this.activity();
+  }
+  activity(){
+    if(this.suppressUntilLeave)return;
+    if(this.getMode()!=='peek')this.scheduleCollapse();
   }
   leave(){
-    this.inside=false;this.clear();
-    if(this.getPinned())return;
-    if(this.getMode()==='expanded'){
-      this.closeTimer=this.schedule(()=>{
-        this.closeTimer=null;
-        if(this.inside||this.getPinned())return;
-        if(this.isProtected()){this.scheduleCollapse(700);return;}
-        this.setMode('preview');
-        this.scheduleCollapse();
-      },this.backDelay);
-    }else this.scheduleCollapse();
+    this.inside=false;
+    this.suppressUntilLeave=false;
+    this.cancel('openTimer');
+    if(this.getMode()!=='peek')this.scheduleCollapse();
   }
   scheduleCollapse(delay=this.getCollapseDelay()){
-    if(this.inside||this.getPinned()||delay===0)return;
-    if(this.closeTimer!==null)this.unschedule(this.closeTimer);
+    this.cancel('closeTimer');
+    if(this.getMode()==='peek'||Number(delay)===0)return;
     this.closeTimer=this.schedule(()=>{
       this.closeTimer=null;
-      if(this.inside||this.getPinned())return;
-      if(this.isProtected()){this.scheduleCollapse(700);return;}
-      if(this.getMode()==='expanded'){
-        this.setMode('preview');
-        this.scheduleCollapse();
-      }else if(this.getMode()!=='peek')this.setMode('peek');
-    },Math.max(100,Number(delay)||2800));
-  }
-  hoverModule(id){
-    if(!id)return;
-    this.inside=true;this.clear();this.pendingModule=id;
-    this.moduleTimer=this.schedule(()=>{
-      this.moduleTimer=null;
-      // leave() cancels the intent; pointer position can flicker during Electron resize.
-      if(this.pendingModule===id){
-        this.pendingModule=null;
-        this.selectModule(id,false);
+      if(this.getMode()==='peek')return;
+      if(this.isProtected()){
+        this.scheduleCollapse(700);
+        return;
       }
-    },this.moduleDelay);
+      this.collapseNow();
+    },Math.max(100,Number(delay)||5000));
   }
+  // A module's information is only opened by click, never by hover.
   clickModule(id){
     if(!id)return;
-    this.inside=true;this.clear();
+    this.suppressUntilLeave=false;
+    this.cancel('openTimer');
     this.setPinned(true);
     this.selectModule(id,true);
+    this.activity();
+  }
+  pinPreview(){
+    this.suppressUntilLeave=false;
+    this.cancel('openTimer');
+    if(this.getMode()==='peek')this.setMode('preview');
+    this.setPinned(true);
+    this.activity();
+    return true;
   }
   togglePin(){
-    this.clear();
-    if(this.getMode()==='peek')this.setMode('preview');
-    const pinned=!this.getPinned();
-    this.setPinned(pinned);
-    if(!pinned&&!this.inside)this.scheduleCollapse();
-    return pinned;
+    if(!this.getPinned())return this.pinPreview();
+    this.setPinned(false);
+    this.activity();
+    return false;
+  }
+  // Clicking the live character always returns to mini. The mini character
+  // still opens a pinned preview when explicitly clicked.
+  clickCharacter(){
+    if(this.getMode()==='peek')return this.pinPreview();
+    this.collapseNow();
+    return false;
+  }
+  collapseNow(){
+    this.cancel('openTimer');
+    this.cancel('closeTimer');
+    this.suppressUntilLeave=this.inside;
+    this.setPinned(false);
+    this.setMode('peek');
   }
   refresh(){
-    if(this.inside||this.getPinned())return;
-    this.scheduleCollapse();
+    if(this.getMode()!=='peek')this.scheduleCollapse();
+    else this.cancel('closeTimer');
   }
-  destroy(){this.clear();}
+  destroy(){
+    this.cancel('openTimer');
+    this.cancel('closeTimer');
+  }
 }

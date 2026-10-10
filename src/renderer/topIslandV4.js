@@ -42,8 +42,8 @@ const PAGES=[
 ];
 
 function loadPrefs(){
-  try{return {autoHideSeconds:60,collapseDelayMs:2800,pinned:false,sound:true,lastPage:'home',...(JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{})};}
-  catch{return {autoHideSeconds:60,collapseDelayMs:2800,pinned:false,sound:true,lastPage:'home'};}
+  try{return {autoHideSeconds:60,collapseDelayMs:5000,pinned:false,sound:true,lastPage:'home',...(JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{})};}
+  catch{return {autoHideSeconds:60,collapseDelayMs:5000,pinned:false,sound:true,lastPage:'home'};}
 }
 let prefs=loadPrefs();
 let page=PAGES.some(x=>x.id===prefs.lastPage)?prefs.lastPage:'home';
@@ -53,6 +53,8 @@ let hoverController=null;
 let events=[];
 let filter='all';
 let audio=null;
+let greetingTimer=null;
+let shortcutIconObserver=null;
 
 function savePrefs(patch){prefs={...prefs,...patch};try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}catch{};syncChrome();}
 function playTone(kind='tap'){
@@ -101,6 +103,13 @@ function syncChrome(){
 }
 function setCharacter(state='idle'){
   $('.v4-character')?.setAttribute('data-state',state);
+}
+function greetCharacter(){
+  const avatar=$('[data-character]');if(!avatar)return;
+  if(['thinking','executing','error','offline'].includes(avatar.dataset.state))return;
+  clearTimeout(greetingTimer);
+  avatar.dataset.state='hello';
+  greetingTimer=setTimeout(()=>{if(avatar.isConnected&&avatar.dataset.state==='hello')avatar.dataset.state='idle';},1850);
 }
 function readableEventValue(v){
   if(v===null||v===undefined)return '';
@@ -189,21 +198,45 @@ async function renderHome(){
 }
 function shortcutCard(x){
   return `<article class="v4-shortcut" data-shortcut-id="${esc(x.id)}">
-    <button data-shortcut-open><span class="v4-app-icon">${x.customIcon?`<img src="${esc(x.customIcon)}">`:esc(x.icon||'◆')}</span><div><b>${esc(x.label)}</b><small>${esc(x.kind||'auto')}${x.hotkey?` • ${esc(x.hotkey)}`:''}</small></div><i class="health ${esc(x.health||'unknown')}"></i></button>
+    <button data-shortcut-open title="باز کردن فایل اصلی"><span class="v4-app-icon" data-shortcut-icon="${esc(x.id)}">${x.customIcon?`<img src="${esc(x.customIcon)}">`:esc(x.icon||'◆')}</span><div><b>${esc(x.label)}</b><small>برای باز کردن کلیک کن</small></div><i class="health ${esc(x.health||'unknown')}"></i></button>
     <button class="more" data-shortcut-edit>•••</button>
   </article>`;
+}
+function hydrateShortcutIcons(host){
+  shortcutIconObserver?.disconnect();
+  const elements=$$('[data-shortcut-icon]',host);
+  const fetchIcon=async node=>{
+    const id=node.dataset.shortcutIcon;
+    if(!id||!window.blackClover.shortcutFileIcon)return;
+    try{
+      const data=await window.blackClover.shortcutFileIcon(id);
+      if(!node.isConnected||!data||!data.startsWith('data:image/png;base64,'))return;
+      const picture=document.createElement('img');
+      picture.alt='';picture.src=data;picture.loading='lazy';
+      node.replaceChildren(picture);
+    }catch{/* Keep the built-in fallback icon. */}
+  };
+  if('IntersectionObserver' in window){
+    shortcutIconObserver=new IntersectionObserver(entries=>{
+      for(const entry of entries)if(entry.isIntersecting){
+        shortcutIconObserver?.unobserve(entry.target);
+        void fetchIcon(entry.target);
+      }
+    },{rootMargin:'120px'});
+    for(const item of elements)shortcutIconObserver.observe(item);
+  }else for(const item of elements)void fetchIcon(item);
 }
 async function renderShortcuts(){
   const host=$('[data-page-body]');if(!host)return;
   const items=await window.blackClover.listShortcuts().catch(()=>[]);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>QUICK LAUNCH</small><h2>میان‌برها</h2><p>فایل، پوشه، برنامه، سایت، پروژه، رسانه و Routine را سریع باز کن.</p></div><button class="v4-head-add" data-context-add>＋ افزودن میان‌بر</button></header>
+    <header class="v4-page-head"><div><small>QUICK LAUNCH</small><h2>میان‌برها</h2><p>فایل را انتخاب کن؛ عکس یا آیکونش همین‌جا می‌آید و با یک کلیک باز می‌شود.</p></div><button class="v4-head-add" data-context-add>＋ انتخاب فایل</button></header>
     <div class="v4-toolbar"><label>${I.search}<input data-shortcut-search placeholder="جستجو…"></label><span>${items.length} مورد</span></div>
-    ${items.length?`<div class="v4-favorite-strip">${items.slice(0,8).map(shortcutCard).join('')}</div>${items.length>8?'<button class="v4-view-all" data-shortcut-all>دیدن همه</button>':''}<div class="v4-shortcut-grid" data-shortcut-grid>${items.map(shortcutCard).join('')}</div>`:`<section class="v4-empty-panel"><span>${I.launch}</span><small>QUICK LAUNCH</small><h3>اولین میان‌بر را اضافه کن</h3><p>فایل، برنامه، پوشه، سایت، فیلم، آهنگ یا Routine را اینجا بگذار تا با یک کلیک باز شود.</p><button data-context-add>${I.plus} افزودن میان‌بر</button></section>`}`;
+    ${items.length?`<div class="v4-shortcut-grid" data-shortcut-grid>${items.map(shortcutCard).join('')}</div>`:`<section class="v4-empty-panel"><span>${I.launch}</span><small>QUICK LAUNCH</small><h3>یک فایل انتخاب کن</h3><p>همین! نام و تصویر فایل نمایش داده می‌شود و با یک کلیک باز خواهد شد؛ فایل اصلی دست‌نخورده می‌ماند.</p><button data-context-add>${I.plus} انتخاب فایل</button></section>`}`;
   $('[data-shortcut-search]',host)?.addEventListener('input',e=>{
     const q=e.currentTarget.value.trim().toLowerCase();$$('.v4-shortcut',host).forEach(x=>x.hidden=q&&!x.textContent.toLowerCase().includes(q));
   });
-  const strip=$('.v4-favorite-strip',host);strip?.addEventListener('wheel',e=>{if(Math.abs(e.deltaY)>Math.abs(e.deltaX)){e.preventDefault();strip.scrollLeft+=e.deltaY;}},{passive:false});
+  hydrateShortcutIcons(host);
 }
 function reportStatus(r){
   if(!r)return 'در انتظار';
@@ -304,9 +337,9 @@ function renderSettings(){
   host.innerHTML=`
     <header class="v4-page-head"><div><small>TOP ISLAND SETTINGS</small><h2>تنظیمات پنل</h2><p>فقط تنظیمات همین پنل بالای صفحه.</p></div></header>
     <section class="v4-settings">
-      <button data-setting-pin><span>${I.pin}</span><div><b>پین پنل</b><small>${prefs.pinned?'پنل مخفی نمی‌شود':'بعد از بی‌کاری جمع می‌شود'}</small></div><i class="${prefs.pinned?'on':''}"></i></button>
+      <button data-setting-pin><span>${I.pin}</span><div><b>پین پنل</b><small>${prefs.pinned?'ثابت تا ۵ ثانیه بی‌کاری':'با کلیک روی پنل، موقتاً ثابت می‌شود'}</small></div><i class="${prefs.pinned?'on':''}"></i></button>
       <button data-setting-sound><span>${I.sound}</span><div><b>صدای پنل</b><small>مستقل از صدای Windows و MARIA Voice</small></div><i class="${prefs.sound?'on':''}"></i></button>
-      <label><span>${I.clock}</span><div><b>جمع‌شدن خودکار</b><small>پس از خروج نشانگر، پنل جمع شود</small></div><select data-setting-collapse><option value="2000" ${prefs.collapseDelayMs===2000?'selected':''}>۲ ثانیه</option><option value="2800" ${prefs.collapseDelayMs===2800?'selected':''}>۳ ثانیه</option><option value="5000" ${prefs.collapseDelayMs===5000?'selected':''}>۵ ثانیه</option><option value="10000" ${prefs.collapseDelayMs===10000?'selected':''}>۱۰ ثانیه</option><option value="0" ${prefs.collapseDelayMs===0?'selected':''}>هرگز</option></select></label>
+      <label><span>${I.clock}</span><div><b>جمع‌شدن خودکار</b><small>زمان بی‌استفاده‌ماندن قبل از کوچک‌شدن</small></div><select data-setting-collapse><option value="2000" ${prefs.collapseDelayMs===2000?'selected':''}>۲ ثانیه</option><option value="2800" ${prefs.collapseDelayMs===2800?'selected':''}>۳ ثانیه</option><option value="5000" ${prefs.collapseDelayMs===5000?'selected':''}>۵ ثانیه</option><option value="10000" ${prefs.collapseDelayMs===10000?'selected':''}>۱۰ ثانیه</option><option value="0" ${prefs.collapseDelayMs===0?'selected':''}>هرگز</option></select></label>
       <button data-full-settings><span>${I.gear}</span><div><b>تنظیمات کامل MARIA</b><small>Voice، مدل‌ها، سیستم و اتصال‌ها</small></div><strong>›</strong></button>
     </section>`;
 }
@@ -334,9 +367,31 @@ function selectPage(id,{pin=false}={}){
   if(unchanged)return;
   playTone();renderPage();
 }
+async function quickAddShortcut(initialTarget=''){
+  const host=$('[data-page-body]');
+  const notify=(message)=>{
+    let status=$('[data-shortcut-message]',host);
+    if(!status){
+      status=document.createElement('p');status.dataset.shortcutMessage='';
+      status.className='v4-shortcut-message';status.setAttribute('role','status');
+      host?.querySelector('.v4-page-head')?.after(status);
+    }
+    if(status)status.textContent=message;
+  };
+  try{
+    const selected=initialTarget
+      ?await window.blackClover.resolveShortcut(initialTarget)
+      :await window.blackClover.pickShortcutTarget('file');
+    if(!selected)return;
+    // The selected item is saved as a link; the original file is never moved.
+    await window.blackClover.createShortcut(selected);
+    await renderShortcuts();
+    notify('میان‌بر «'+selected.label+'» اضافه شد.');
+  }catch(error){notify(String(error?.message||error));}
+}
 function contextAdd(){
+  if(page==='shortcuts'){if(mode!=='expanded')setMode('expanded');return quickAddShortcut();}
   if(mode!=='expanded')setMode('expanded');
-  if(page==='shortcuts')return editShortcut();
   if(page==='reports')return addAccounting();
   if(page==='pins')return editPin();
   if(page==='tasks')return editTask();
@@ -443,7 +498,18 @@ function bindPageActions(){
     if(shortcut){
       const id=shortcut.dataset.shortcutId;
       if(e.target.closest('[data-shortcut-edit]')){const item=(await window.blackClover.listShortcuts()).find(x=>x.id===id);if(item)editShortcut(item);}
-      else if(e.target.closest('[data-shortcut-open]'))await window.blackClover.openShortcut(id);
+      else if(e.target.closest('[data-shortcut-open]')){
+        try{await window.blackClover.openShortcut(id);}
+        catch(error){
+          let status=$('[data-shortcut-message]',body);
+          if(!status){
+            status=document.createElement('p');status.className='v4-shortcut-message';
+            status.dataset.shortcutMessage='';status.setAttribute('role','alert');
+            body.querySelector('.v4-page-head')?.after(status);
+          }
+          status.textContent=String(error?.message||error);
+        }
+      }
       return;
     }
     const monitor=e.target.closest('[data-monitor]');
@@ -471,11 +537,15 @@ function bindPageActions(){
 }
 function updateApprovalTimers(){for(const el of $$('[data-approval-wait]')){const start=Number(el.dataset.start)||Date.now(),sec=Math.max(0,Math.floor((Date.now()-start)/1000));el.textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}}
 function bindGlobalActions(){
-  const moduleId=element=>element?.dataset.page||element?.dataset.previewModule||(element?.hasAttribute('data-settings')?'settings':element?.hasAttribute('data-home')?'home':null);
-  const moduleSelector='[data-page],[data-preview-module],[data-settings],[data-home]';
+  const moduleId=element=>element?.dataset.page||(element?.hasAttribute('data-settings')?'settings':element?.hasAttribute('data-home')?'home':null);
+  const moduleSelector='[data-page],[data-settings],[data-home]';
   document.addEventListener('pointerover',e=>{
-    const button=e.target.closest(moduleSelector);
-    if(button&&!button.contains(e.relatedTarget))hoverController?.hoverModule(moduleId(button));
+    const icon=e.target.closest('[data-page],[data-settings],[data-home],[data-context-add],[data-panel-sound],[data-open-chat]');
+    if(!icon||icon.contains(e.relatedTarget))return;
+    const character=$('[data-character]');if(!character)return;
+    const center=icon.getBoundingClientRect().left+icon.getBoundingClientRect().width/2;
+    character.dataset.waveSide=center<(window.innerWidth/2)?'left':'right';
+    greetCharacter(); // A greeting never opens a module.
   });
   document.addEventListener('click',e=>{
     const button=e.target.closest(moduleSelector);
@@ -503,9 +573,7 @@ function bindGlobalActions(){
     wake();
     if(e.key!=='Escape')return;
     if($('.v4-modal')){$('.v4-modal').remove();hoverController?.refresh();return;}
-    if(prefs.pinned)setPanelPinned(false);
-    if(mode==='expanded')setMode('preview');
-    else if(mode==='preview')setMode('peek');
+    hoverController?.collapseNow();
   });
   document.addEventListener('pointermove',e=>{
     wake();
@@ -523,6 +591,9 @@ function bindGlobalActions(){
 }
 
 export async function mountTopIslandV4(){
+  // Every fresh launch starts in mini, regardless of an old pinned session.
+  prefs={...prefs,pinned:false,collapseDelayMs:5000};
+  try{localStorage.setItem(PREF_KEY,JSON.stringify(prefs));}catch{}
   document.body.className='top-island-v4-surface';
   document.body.innerHTML=`<main class="maria-island-v4" data-mode="compact">
     <div class="v4-stars" aria-hidden="true"></div>
@@ -533,7 +604,7 @@ export async function mountTopIslandV4(){
         <button class="plus" data-context-add title="افزودن">${I.plus}</button>
       </nav>
       <section class="v4-center">
-        <button class="v4-character" data-state="idle" data-character aria-label="باز کردن یا پین کردن MARIA"><i class="orbit a" aria-hidden="true"></i><span class="face"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></span><i class="orbit b" aria-hidden="true"></i></button>
+        <button class="v4-character" data-state="idle" data-character aria-label="باز کردن یا ثابت کردن MARIA"><i class="v4-arm left" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i><span class="face"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></span><i class="v4-arm right" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i></button>
         <div class="v4-peek-dots"><i></i><i></i><i></i></div>
         <div class="v4-status"><small>MARIA</small><b data-status>Online • آماده</b></div>
         <div class="v4-live-pills" data-live-pills></div>
@@ -547,13 +618,8 @@ export async function mountTopIslandV4(){
         <button data-settings title="تنظیمات">${I.gear}</button>
       </nav>
     </header>
-    <section class="v4-preview" aria-label="نمای عمومی ماریا">
+    <section class="v4-preview" aria-label="نمای مستطیلی کاراکتر ماریا">
       <div class="v4-preview-aura" aria-hidden="true"></div>
-      <div class="v4-preview-caption"><strong>MARIA</strong><span data-preview-status>آماده برای کمک</span></div>
-      <nav class="v4-preview-modules" aria-label="بخش‌های ماریا">
-        ${PAGES.filter(x=>!['reserved'].includes(x.id)).map(x=>`<button type="button" data-preview-module="${x.id}" title="${esc(x.label)}" aria-label="${esc(x.label)}"><span>${x.icon}</span><b>${esc(x.label)}</b></button>`).join('')}
-        <button type="button" data-preview-module="settings" title="تنظیمات" aria-label="تنظیمات"><span>${I.gear}</span><b>تنظیمات</b></button>
-      </nav>
     </section>
     <section class="v4-expanded">
       <section class="v4-page" data-page-body></section>
@@ -570,19 +636,23 @@ export async function mountTopIslandV4(){
     setMode,
     selectModule:(id,pin)=>selectPage(id,{pin}),
     isProtected:protectedPanel,
-    getCollapseDelay:()=>Math.max(0,Number(prefs.collapseDelayMs)??2800)
+    getCollapseDelay:()=>Math.max(0,Number(prefs.collapseDelayMs)||0)
   });
   $$('[data-open-chat]').forEach(b=>b.onclick=()=>{playTone();window.blackClover.showChat();});
-  $('[data-character]').onclick=e=>{e.stopPropagation();hoverController.togglePin();};
+  $('[data-character]').onclick=e=>{e.stopPropagation();hoverController.clickCharacter();};
+  $('[data-character]').addEventListener('pointerenter',greetCharacter);
   // A resize can synthesize mouseenter: require pointer movement before opening preview.
-  root.addEventListener('pointermove',()=>{if(!hoverController.inside)hoverController.enter();},{passive:true});
+  root.addEventListener('pointermove',()=>{
+    if(!hoverController.inside){hoverController.enter();greetCharacter();}
+    else hoverController.activity();
+  },{passive:true});
   root.addEventListener('mouseleave',()=>{
     hoverController.leave();
     for(const [prop,value] of [['--look-x','0px'],['--look-y','0px'],['--head-x','0px'],['--head-y','0px'],['--head-tilt','0deg'],['--hand-x','0px'],['--hand-y','0px']])root.style.setProperty(prop,value);
   });
   root.addEventListener('click',e=>{
     if(e.target.closest('button,a,input,textarea,select,label,form,[contenteditable],.v4-modal,.v4-expanded'))return;
-    if(mode==='peek'||mode==='preview')hoverController.togglePin();
+    if(mode==='peek'||mode==='preview')hoverController.pinPreview();
   });
   for(const ev of ['dragenter','dragover'])root.addEventListener(ev,e=>{e.preventDefault();root.classList.add('drop-active')});
   root.addEventListener('dragleave',e=>{if(!root.contains(e.relatedTarget))root.classList.remove('drop-active')});
@@ -592,7 +662,7 @@ export async function mountTopIslandV4(){
     const file=e.dataTransfer?.files?.[0];
     const location=file?window.blackClover.getDroppedFilePath(file):'';
     const url=e.dataTransfer?.getData('text/uri-list')||e.dataTransfer?.getData('text/plain')||'';
-    if(page==='shortcuts'&&(location||/^https?:\/\//i.test(url))){editShortcut(null,location||url);return;}
+    if(page==='shortcuts'&&(location||/^https?:\/\//i.test(url))){void quickAddShortcut(location||url);return;}
     if(location)openModal({title:'فایل دریافت شد',kicker:'CONTEXT DROP',body:'<div class="v4-drop-choice"><b>'+esc(file.name)+'</b><p>برای ساخت میان‌بر وارد بخش میان‌برها شو و فایل را رها کن.</p></div>'});
   });
 
@@ -601,7 +671,7 @@ export async function mountTopIslandV4(){
     if(e?.type==='ui-state'){
       const status=e.detail||e.mode||'MARIA';
       $('[data-status]').textContent=status;
-      $('[data-preview-status]').textContent=status;
+      if($('[data-preview-status]'))$('[data-preview-status]').textContent=status;
       setCharacter(e.mode==='working'?'thinking':e.mode==='error'?'error':e.mode==='offline'?'offline':'idle');
       pushEvent(e);
     }
@@ -614,5 +684,5 @@ export async function mountTopIslandV4(){
     else {pushEvent(e);if(page==='home'&&(['approval','confirmation','permission','confirm'].includes(String(e?.type||'').toLowerCase())||e?.requiresConfirmation===true))renderHome();}
   });
   window.blackClover.onIslandModule?.(payload=>selectPage(String(payload?.module||payload||'home'),{pin:true}));
-  syncChrome();renderTopPills();await renderPage();updateApprovalTimers();setInterval(updateApprovalTimers,1000);setMode(prefs.pinned?'preview':'peek');
+  syncChrome();renderTopPills();await renderPage();updateApprovalTimers();setInterval(updateApprovalTimers,1000);setMode('peek');
 }

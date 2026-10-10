@@ -68,7 +68,7 @@ function displayWorkArea(){return screen.getPrimaryDisplay().workArea;}
 function avatarBounds(){const a=displayWorkArea(),width=Math.min(405,Math.max(340,Math.round(a.width*.22))),height=Math.min(660,Math.max(540,Math.round(a.height*.68)));return {width,height,x:a.x+a.width-width-14,y:a.y+a.height-height-10};}
 function chatBounds(){const a=displayWorkArea(),width=Math.min(1180,Math.max(760,Math.round(a.width*.68))),height=Math.min(820,Math.max(620,Math.round(a.height*.82)));return {width,height,x:a.x+Math.max(10,Math.round((a.width-width)/2)),y:a.y+Math.max(10,Math.round((a.height-height)/2))};}
 function utilityBounds(){const b=chatBounds();return {...b,width:Math.min(560,b.width+20),height:Math.min(720,b.height+20)};}
-function islandBounds(mode='compact'){const a=displayWorkArea();const maxW=Math.max(360,a.width-24),maxH=Math.max(120,a.height-24);const size=mode==='expanded'?{width:Math.min(1000,maxW),height:Math.min(560,maxH)}:mode==='peek'?{width:Math.min(420,maxW),height:56}:mode==='preview'?{width:Math.min(900,maxW),height:226}:{width:Math.min(900,maxW),height:150};return {...size,x:a.x+Math.round((a.width-size.width)/2),y:a.y};}
+function islandBounds(mode='compact'){const a=displayWorkArea();const maxW=Math.max(360,a.width-24),maxH=Math.max(120,a.height-24);const size=mode==='expanded'?{width:Math.min(1000,maxW),height:Math.min(560,maxH)}:mode==='peek'?{width:Math.min(292,maxW),height:54}:mode==='preview'?{width:Math.min(900,maxW),height:226}:{width:Math.min(900,maxW),height:150};return {...size,x:a.x+Math.round((a.width-size.width)/2),y:a.y};}
 function projectsBounds(){const a=displayWorkArea(),width=Math.min(1120,Math.max(820,Math.round(a.width*.72))),height=Math.min(780,Math.max(620,Math.round(a.height*.82)));return {width,height,x:a.x+Math.max(12,Math.round((a.width-width)/2)),y:a.y+Math.max(12,Math.round((a.height-height)/2))};}
 function assetBounds(){const a=displayWorkArea(),width=Math.min(1320,Math.max(980,Math.round(a.width*.78))),height=Math.min(880,Math.max(660,Math.round(a.height*.86)));return {width,height,x:a.x+Math.max(12,Math.round((a.width-width)/2)),y:a.y+Math.max(12,Math.round((a.height-height)/2))};}
 function devBounds(){const a=displayWorkArea(),width=Math.min(1380,Math.max(980,Math.round(a.width*.82))),height=Math.min(900,Math.max(680,Math.round(a.height*.88)));return {width,height,x:a.x+Math.max(10,Math.round((a.width-width)/2)),y:a.y+Math.max(10,Math.round((a.height-height)/2))};}
@@ -76,9 +76,9 @@ function commonWebPreferences(){return {preload:path.join(__dirname,'preload.cjs
 
 async function beginAutoProvision(){if(autoProvisionStarted||!app.isPackaged||process.platform!=='win32')return;autoProvisionStarted=true;try{if(!await deps.needsProvisioning())return;provisioning=true;send({type:'provision',state:'needed',message:'Full Setup ماریا در حال آماده‌سازی است'});await deps.installAll({includeOptional:true});}catch(e){console.warn('Auto provision:',e.message);send({type:'provision',state:'partial',message:`آماده‌سازی کامل نشد: ${e.message}`});}finally{provisioning=false;}}
 function createAvatarWindow(){if(avatarWin&&!avatarWin.isDestroyed())return avatarWin;const b=avatarBounds();avatarWin=new BrowserWindow({...b,minWidth:330,minHeight:500,transparent:true,frame:false,backgroundColor:'#00000000',show:true,resizable:true,alwaysOnTop:true,skipTaskbar:true,hasShadow:false,title:'Maria • Black Clover',webPreferences:commonWebPreferences()});loadSurface(avatarWin,'avatar');avatarWin.setAlwaysOnTop(true,'floating');avatarWin.webContents.on('context-menu',()=>desktopMenu().popup({window:avatarWin}));avatarWin.webContents.once('did-finish-load',()=>{setTimeout(()=>{if(avatarWin&&!avatarWin.isDestroyed()){avatarWin.setBounds(avatarBounds());avatarWin.showInactive();avatarWin.setAlwaysOnTop(true,'floating');}},120);setTimeout(beginAutoProvision,900);});avatarWin.on('close',e=>{if(!quitting){e.preventDefault();avatarWin.hide();}});avatarWin.on('closed',()=>{avatarWin=null;});return avatarWin;}
-function createIslandWindow(){if(islandWin&&!islandWin.isDestroyed())return islandWin;const b=islandBounds('peek');islandWin=new BrowserWindow({...b,minWidth:390,minHeight:48,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:false,alwaysOnTop:true,skipTaskbar:true,hasShadow:false,title:'MARIA Command Island',webPreferences:commonWebPreferences()});loadSurface(islandWin,'island');islandWin.setAlwaysOnTop(true,'floating');islandWin.on('close',e=>{if(!quitting){e.preventDefault();islandWin.hide();}});islandWin.on('closed',()=>{islandWin=null;});return islandWin;}
+function createIslandWindow(){if(islandWin&&!islandWin.isDestroyed())return islandWin;const b=islandBounds('peek');islandWin=new BrowserWindow({...b,minWidth:260,minHeight:48,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:false,alwaysOnTop:true,skipTaskbar:true,hasShadow:false,title:'MARIA Command Island',webPreferences:commonWebPreferences()});loadSurface(islandWin,'island');islandWin.setAlwaysOnTop(true,'floating');islandWin.on('close',e=>{if(!quitting){e.preventDefault();islandWin.hide();}});islandWin.on('closed',()=>{islandWin=null;});return islandWin;}
 function setIslandMode(mode='compact'){const safe=['peek','preview','compact','expanded'].includes(mode)?mode:'preview',w=createIslandWindow();w.setBounds(islandBounds(safe),true);w.setAlwaysOnTop(true,'floating');if(!w.isVisible())w.showInactive();announceSurfaceState();return {ok:true,mode:safe,bounds:w.getBounds()};}
-function showIsland(mode='compact'){const w=createIslandWindow();w.setBounds(islandBounds(mode));w.showInactive();w.setAlwaysOnTop(true,'floating');announceSurfaceState();return w;}
+function showIsland(mode='peek'){const w=createIslandWindow();w.setBounds(islandBounds(mode));w.showInactive();w.setAlwaysOnTop(true,'floating');announceSurfaceState();return w;}
 function showIslandModule(module='home'){const w=showIsland('expanded');sendWhenReady(w,'assistant:island-module',{module:String(module||'home')});return w;}
 function hideIsland(){hideAnimated(islandWin);}
 function createChatWindow(){if(chatWin&&!chatWin.isDestroyed())return chatWin;const b=chatBounds();chatWin=new BrowserWindow({...b,minWidth:720,minHeight:580,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:'Maria Chat',webPreferences:commonWebPreferences()});loadSurface(chatWin,'chat');chatWin.on('close',e=>{if(!quitting){e.preventDefault();chatWin.hide();}});chatWin.on('closed',()=>{chatWin=null;});return chatWin;}
@@ -254,6 +254,21 @@ ipcMain.handle('shortcuts:pick-target',async(event,kind='file')=>{
   const selected=await dialog.showOpenDialog(owner,options);
   if(selected.canceled||!selected.filePaths?.length)return null;
   return inspectShortcut(selected.filePaths[0]);
+});
+ipcMain.handle('shortcuts:file-icon',async(_event,id)=>{
+  // Resolve icons only for an already saved shortcut, not for arbitrary renderer paths.
+  const item=(await quickShortcuts.list({limit:2000})).find(x=>x.id===String(id||''));
+  if(!item||!['file','folder','app','media','auto'].includes(item.kind))return null;
+  const target=String(item.target||'');
+  try{
+    const info=await fs.promises.stat(target);
+    if(info.isFile()&&info.size<=8_000_000&&['.png','.jpg','.jpeg','.webp','.gif'].some(ext=>target.toLowerCase().endsWith(ext))){
+      const image=nativeImage.createFromBuffer(await fs.promises.readFile(target));
+      if(!image.isEmpty())return image.resize({width:96,quality:'good'}).toDataURL();
+    }
+    const icon=await app.getFileIcon(target,{size:'large'});
+    return icon.isEmpty()?null:icon.toDataURL();
+  }catch{return null;}
 });
 ipcMain.handle('shortcuts:list',()=>quickShortcuts.list({limit:1000}));
 ipcMain.handle('shortcuts:create',async(_e,payload)=>{

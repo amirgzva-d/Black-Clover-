@@ -42,7 +42,7 @@ test('Top Island V4 is the only active island renderer',async()=>{
     "backdrop-filter:blur(30px)"
   ]) assert.ok(css.includes(token),token);
 
-  assert.match(main,/width:Math\.min\(420,maxW\),height:56/);
+  assert.match(main,/width:Math\.min\(292,maxW\),height:54/);
   assert.match(main,/width:Math\.min\(900,maxW\),height:150/);
   assert.match(main,/width:Math\.min\(1000,maxW\),height:Math\.min\(560,maxH\)/);
 });
