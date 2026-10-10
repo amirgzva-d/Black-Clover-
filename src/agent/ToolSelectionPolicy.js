@@ -7,7 +7,7 @@ const modePriorities={
   audio:['get_volume','set_volume','set_mute','toggle_mute','volume_up','volume_down','media_play_pause','media_next','media_previous'],
   display:['get_brightness','set_brightness','brightness_up','brightness_down','open_display_settings','turn_off_display'],
   apps:['find_any_app','find_running_app','launch_any_app','close_app','list_installed_apps','list_windows','focus_window','inspect_ui','invoke_ui_element'],
-  files:['global_find_files','open_named_file','open_named_folder','reveal_named_file','list_directory','file_info','open_file','open_folder','rename_path','move_path','copy_path'],
+  files:['global_find_files','open_named_file','open_named_folder','reveal_named_file','list_directory','file_info','open_file','open_folder','rename_path','move_path','copy_path','zip_files','extract_archive'],
   spreadsheet:['global_find_files','open_named_file','excel_status','excel_list_sheets','excel_read_range','excel_set_cells','excel_append_rows','excel_list_hyperlinks','excel_collect_images','copy_files_to_clipboard'],
   social:['messenger_open','messenger_stage_files','copy_files_to_clipboard','chrome_open_service','list_windows','focus_window','inspect_ui','vision_inspect_screen','invoke_ui_element','set_ui_value','type_text','press_key'],
   web:['chrome_status','chrome_open_url','chrome_search','chrome_open_service','open_url','web_search','youtube_search','live_web_search','read_web_page'],

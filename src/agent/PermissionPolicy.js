@@ -9,7 +9,7 @@ const destructiveTools=new Set([
   'delete_path','uninstall_app','shutdown_pc','restart_pc','sleep_pc','sign_out',
   'forget_memory','clear_memories','unprotect_resource','empty_recycle_bin','clean_user_temp_files','renew_network_lease','stop_service','restart_service','run_sfc_scan','run_dism_restore_health','hibernate_pc'
 ]);
-const persistentWriteTools=new Set(['install_app','excel_set_cells','excel_append_rows','excel_add_image']);
+const persistentWriteTools=new Set(['install_app','excel_set_cells','excel_append_rows','excel_add_image','zip_files','extract_archive']);
 const destructiveWords=/(حذف|پاک|فرمت|فرمتش|آن.?اینستال|uninstall|remove|delete|wipe|shutdown|خاموش|ری.?استارت|restart|sleep|sign.?out)/i;
 const protectPattern=/(?:هیچ.?وقت|هرگز)\s+(.+?)\s+(?:رو|را)?\s*(?:حذف|پاک|آن.?اینستال|remove|delete)\s*(?:نکن|نکنید)/i;
 const unprotectPattern=/(?:دیگه|حالا)?\s*(.+?)\s+(?:رو|را)?\s*(?:از محافظت دربیار|محافظتش رو بردار|می.?تونی حذف کنی|اجازه حذف داری)/i;

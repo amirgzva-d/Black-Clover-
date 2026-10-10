@@ -13,7 +13,11 @@ export function resolveConversationContext(input,history=[]) {
   const adjustment=/(?:کم(?:ش)?|زیاد(?:ش)?|بیشتر(?:ش)?|کمتر(?:ش)?|بالا(?:تر)?|پایین(?:تر)?|قطع|وصل|باز(?:ش)?|ببند(?:ش)?).*?(?:کن|ببر|بیار)|ببر.*(?:بالا|پایین)|بیار.*(?:بالا|پایین)/i.test(original);
   if(adjustment&&!currentControl.some(Boolean)&&previousControl.some(Boolean)){
     if(previousControl.every(Boolean))return {...result,ambiguous:true,reference:prior,private:Boolean(previous._private)};
-    return {...result,text:(previousControl[0]?'صدا ':'روشنایی ')+original,reference:prior,private:Boolean(previous._private)};
+    // Preserve a previous application/media target. "کمترش کن" after
+    // "صدای کروم رو کم کن" must NEVER reduce master system volume.
+    const scoped=previousControl[0]?prior.match(/(?:صدای?\s+(?:فقط\s+)?|صدا\s+(?:رو\s+)?(?:فقط\s+)?(?:توی?|در)\s+)(کروم|فیلم|ویدیو|یوتیوب|تلگرام|واتساپ|روبیکا|اسپاتیفای|برنامه|پلیر)/i):null;
+    const subject=scoped?.[1]?'صدای '+scoped[1]+' ':(previousControl[0]?'صدا ':'روشنایی ');
+    return {...result,text:subject+original,reference:prior,private:Boolean(previous._private)};
   }
   if(currentControl.some(Boolean)||/(?:سرچ|جستجو|تحقیق).*(?:درباره|در مورد)\s+(?!همون|همین|این|اون)/i.test(original))return result;
   const previousWeb=parseWebRequest(prior);

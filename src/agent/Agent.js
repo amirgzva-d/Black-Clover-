@@ -14,6 +14,8 @@ import { matchFastCommand } from './FastCommandRouter.js';
 import { isPrivateRequest,toolMakesContextPrivate } from './PrivacyClassifier.js';
 import { shouldGroundKnowledge,groundedKnowledgeAnswer } from './GroundedKnowledge.js';
 import { canonicalizeCommand } from './SemanticCanonicalizer.js';
+import { understandPersianIntent } from './PersianIntentEngine.js';
+import { summarizeCorpus } from './PersianActionCorpus.js';
 import { matchSmallTalk } from './SmallTalkRouter.js';
 import { actionIntent,actionExecutionHint } from './ActionIntent.js';
 import { searchSemanticActionBook } from './actionBookTools.js';
@@ -65,7 +67,7 @@ export class Agent{
   modelHistory({allowOnline,compact=false}){const groups=[];for(const m of this.history.slice(1)){if(m.role==='user'||!groups.length)groups.push([]);groups.at(-1).push(m);}const eligible=allowOnline?groups.filter(group=>!group.some(m=>m._private)):groups;const recentGroups=compact?eligible.slice(-3):eligible.slice(-6),out=[this.history[0],...recentGroups.flat()].map(publicFields);if(compact&&out[0]?.role==='system')out[0]={role:'system',content:COMPACT_CHAT_SYSTEM+(this.conversationSummary||'')};else if(out[0]?.role==='system'&&this.conversationSummary)out[0]={...out[0],content:String(out[0].content||'')+this.conversationSummary};return out;}
   async modelCatalog(){return this.client.catalog();}
   cancelCurrent(){this.client?.cancel?.();return {ok:true,cancelled:true};}
-  async status(){const [brain,policy,memories,learning,activeReminders,notes]=await Promise.all([this.client.health(),permissions.status(),memory.list(500),skills.stats(),reminders.list(),pinnedNotes.list({limit:100})]);return {ollama:brain.local,brain,model:this.client.model,models:brain.installedLocalModels||await this.client.models(),pending:this.pending.size,tools:Object.keys(tools).length,languagePatterns:CAPABILITY_PHRASE_COUNT,memoryItems:memories.length,permissions:policy,learning,personal:{reminders:activeReminders,notes}};}
+  async status(){const [brain,policy,memories,learning,activeReminders,notes]=await Promise.all([this.client.health(),permissions.status(),memory.list(500),skills.stats(),reminders.list(),pinnedNotes.list({limit:100})]);return {ollama:brain.local,brain,model:this.client.model,models:brain.installedLocalModels||await this.client.models(),pending:this.pending.size,tools:Object.keys(tools).length,languagePatterns:CAPABILITY_PHRASE_COUNT,languageCorpus:summarizeCorpus(),memoryItems:memories.length,permissions:policy,learning,personal:{reminders:activeReminders,notes}};}
   fastReply(turn,text,name,extra={}){const reply=cleanReply(text)||'انجام شد.';this.history.push({role:'assistant',content:reply,_private:turn.private});this.trimHistory();const knowledge=name==='grounded_factual_answer';return {ok:extra.ok??true,text:reply,brain:{mode:knowledge?'grounded-fact':'direct',model:knowledge?'maria-grounded':'windows-fast-path',privacy:turn.private?'local-private':knowledge?'public-grounded':'local'},toolsRouted:turn.routeNames?.length||0,direct:true,tool:name,...extra};}
   async tryFastCommand(fast,turn,routeNames){
     if(!fast||!tools[fast.name])return null;const {name,args={}}=fast,tool=tools[name];turn.routeNames=routeNames;
@@ -91,6 +93,16 @@ export class Agent{
     const name=call.function?.name,args=parseArgs(call.function?.arguments),tool=tools[name],callId=call.id;
     if(!tool){const out={success:false,error:'Unknown tool'};this.history.push(toolMessage(name,out,callId,turn.private));turn.trace.push({name,args,success:false,error:out.error});if(!turn.private){await skills.queueImprovement(turn.original,{tool:name,error:out.error});this.emit({type:'learning',action:'gap-queued',title:turn.original,tool:name,error:out.error});}return {continue:true};}
     const privateTool=toolMakesContextPrivate(name);if(privateTool){turn.private=true;if(turn.assistantMessage)turn.assistantMessage._private=true;}
+    const conditionalAllowed=new Set(['create_reminder','create_scheduled_action','get_time','search_action_book','search_learned_skills']);
+    const blockedForScope=Boolean(turn?.explanationOnly)
+      ||(turn?.conditional&&!conditionalAllowed.has(name))
+      ||(turn?.scopedAudio&&['set_volume','volume_up','volume_down','set_mute','toggle_mute'].includes(name));
+    if(blockedForScope){
+      const out={tool_name:name,success:false,blocked:true,error:'This tool is not allowed for an explanation-only or per-app-audio request.'};
+      this.history.push(toolMessage(name,out,callId,true));
+      turn.trace.push({name,args,success:false,error:out.error});
+      return {continue:true,blocked:true};
+    }
     const protectedMatch=await permissions.protectedMatch(name,args);if(protectedMatch){const out={tool_name:name,success:false,blocked:true,error:`Protected by permanent user rule: ${protectedMatch.label}`};this.history.push(toolMessage(name,out,callId,true));turn.trace.push({name,args,success:false,error:out.error});this.trimHistory();return {continue:true,blocked:true};}
     if(await permissions.shouldConfirm(name,tool,args))return {needsConfirmation:true,name,args,callId};
     this.emit({type:'tool',name});let out;try{await permissions.assertAllowed(name,args);out=await this.toolRunner(name,args);}catch(e){out={tool_name:name,success:false,error:e.message};}
@@ -115,14 +127,39 @@ export class Agent{
     if(!turn.private)await skills.queueImprovement(turn.original,{error:'Agent exceeded safe automatic step limit'});return {ok:false,text:'این کار بیش از حدِ امنِ مراحل خودکار طول کشید. بخش‌های انجام‌شده حفظ شده‌اند؛ از وضعیت فعلی دوباره برنامه‌ریزی می‌کنم.'};
   }
   async chat(text,options={}){
-    const rawOriginal=String(text??'').trim();if(!rawOriginal)return {ok:false,text:'پیام خالی است.'};const resolved=resolveConversationContext(rawOriginal,this.history),original=resolved.text;const effectiveChatOptions={...this.chatOptions,...(options||{})},attachments=(Array.isArray(effectiveChatOptions.attachments)?effectiveChatOptions.attachments:[]).filter(x=>x?.path).slice(0,8),attachmentHint=attachmentContext({attachments});if(!effectiveChatOptions.profile&&/(عمیق|جامع|کامل|حرفه.?ای|سنگین|با جزئیات|دقیق بررسی|تحلیل کامل|deep|comprehensive)/i.test(original))effectiveChatOptions.profile='complex';
+    const rawOriginal=String(text??'').trim();if(!rawOriginal)return {ok:false,text:'پیام خالی است.'};
+    const requestUnderstanding=understandPersianIntent(rawOriginal);
+    if(requestUnderstanding.guard.negated){
+      const rule=await permissions.parseUserRule(rawOriginal);
+      const reply=rule?.type==='protected'?`این مورد رو به فهرست محافظت‌شده اضافه کردم: ${rule.item?.label||''}`:'باشه، این دستور رو اجرا نمی‌کنم.';
+      this.history.push({role:'user',content:rawOriginal,_original:rawOriginal,_private:true},
+        {role:'assistant',content:reply,_private:true});
+      this.trimHistory();
+      return {ok:true,text:reply,executed:false,direct:true,brain:{mode:'negative-imperative-guard',model:'maria-intents',privacy:'local'}};
+    }
+    const resolved=resolveConversationContext(rawOriginal,this.history),original=resolved.text;const effectiveChatOptions={...this.chatOptions,...(options||{})},attachments=(Array.isArray(effectiveChatOptions.attachments)?effectiveChatOptions.attachments:[]).filter(x=>x?.path).slice(0,8),attachmentHint=attachmentContext({attachments});if(!effectiveChatOptions.profile&&/(عمیق|جامع|کامل|حرفه.?ای|سنگین|با جزئیات|دقیق بررسی|تحلیل کامل|deep|comprehensive)/i.test(original))effectiveChatOptions.profile='complex';
     if(resolved.ambiguous){const reply='منظورت صداست یا روشنایی؟ در درخواست قبلی هر دو را تغییر دادی.';return {ok:false,needsClarification:true,text:reply};}
     try{
       const rule=await permissions.parseUserRule(rawOriginal);
-      const routingOriginal=attachments.length?`${original} فایل پیوست را بررسی کن`:original,canonical=canonicalizeCommand(routingOriginal),normalized=normalizePersianCommand(canonical);
-      const sequenceOriginal=planFastSequence(original),sequenceNormalized=planFastSequence(normalized),sequence=sequenceOriginal.multi||sequenceOriginal.complete?sequenceOriginal:sequenceNormalized;
-      const fast=sequence.multi?null:matchFastCommand(original)||matchFastCommand(canonical)||matchFastCommand(normalized);
-      const fastHints=[...new Set([...commandHints(normalized),...capabilityHints(normalized)])],fastPrivate=resolved.private||attachments.length>0||isPrivateRequest(original,fastHints),fastTurn={private:fastPrivate,assistantMessage:null,original,trace:[],routeNames:[],chatOptions:effectiveChatOptions};
+      const intentUnderstanding=understandPersianIntent(original);
+      const routingOriginal=attachments.length?`${intentUnderstanding.corrected} فایل پیوست را بررسی کن`:intentUnderstanding.corrected,
+        canonical=canonicalizeCommand(routingOriginal),normalized=normalizePersianCommand(canonical);
+      const sequenceOriginal=planFastSequence(original),sequenceNormalized=planFastSequence(normalized),
+        sequence=intentUnderstanding.guard.allowDirect
+          ?(sequenceOriginal.multi||sequenceOriginal.complete?sequenceOriginal:sequenceNormalized)
+          :{steps:[],unknown:[],multi:false,complete:false};
+      // No inferred tool is ever executed directly if user asked a question,
+      // quoted another command, or set a future condition.
+      const directAllowed=intentUnderstanding.guard.allowDirect&&!attachments.length&&!intentUnderstanding.needsClarification;
+      const originalFast=directAllowed&&!sequence.multi
+        ?(matchFastCommand(original)||matchFastCommand(canonical)||matchFastCommand(normalized)):null;
+      const inferredFast=directAllowed&&intentUnderstanding.direct&&!sequence.multi
+        ?(matchFastCommand(intentUnderstanding.canonical)
+          ||(['restore_foreground_window','restart_pc'].includes(intentUnderstanding.tool)
+             &&tools[intentUnderstanding.tool] ?{name:intentUnderstanding.tool,args:{}}:null))
+        :null;
+      const fast=originalFast||inferredFast;
+      const fastHints=[...new Set([...commandHints(normalized),...capabilityHints(normalized),...(intentUnderstanding.mode?[intentUnderstanding.mode]:[])])],fastPrivate=resolved.private||attachments.length>0||isPrivateRequest(original,fastHints),fastTurn={private:fastPrivate,assistantMessage:null,original,trace:[],routeNames:[],chatOptions:effectiveChatOptions};
 
       // New chat execution path: obvious Windows actions never wait for an AI model.
       // Match the user's original wording first, then canonical/normalized variants.
@@ -130,7 +167,19 @@ export class Agent{
       if(fast){this.history.push({role:'user',content:rawOriginal,_original:rawOriginal,_resolvedGoal:original,_private:fastPrivate});this.trimHistory();const direct=await this.tryFastCommand(fast,fastTurn,[]);if(direct)return direct;this.history.pop();}
 
       await memory.maybeRememberUserStatement(rawOriginal);
-      const hints=fastHints,basePrivate=fastPrivate,intent=actionIntent(canonical),recipes=intent.action?searchSemanticActionBook(canonical,6):[],recipeTools=recipes.flatMap(r=>(r.steps||[]).flatMap(x=>String(x).split('|'))).filter(n=>tools[n]),rawRouteNames=[...new Set([...this.defaultTools,...selectToolNames(canonical,hints),...recipeTools])].filter(n=>tools[n]),routeNames=compactToolSelection(canonical,rawRouteNames,{modes:intent.modes,action:intent.action,multiStep:intent.multiStep,max:16}).filter(n=>tools[n]);
+      const hints=fastHints,basePrivate=fastPrivate,intent=actionIntent(canonical),
+        recipes=intent.action?searchSemanticActionBook(canonical,6):[],
+        recipeTools=recipes.flatMap(r=>(r.steps||[]).flatMap(x=>String(x).split('|'))).filter(n=>tools[n]),
+        prioritizedTool=intentUnderstanding.confidence>=0.9&&tools[intentUnderstanding.tool]?intentUnderstanding.tool:null,
+        rawRouteNames=[...new Set([...this.defaultTools,...selectToolNames(canonical,hints),...recipeTools,...(prioritizedTool?[prioritizedTool]:[])])].filter(n=>tools[n]),
+        shortlist=compactToolSelection(canonical,rawRouteNames,{modes:[...new Set([...intent.modes,...(intentUnderstanding.mode?[intentUnderstanding.mode]:[])])],action:intent.action||Boolean(prioritizedTool),multiStep:intent.multiStep,max:16}).filter(n=>tools[n]),
+        requestedNames=prioritizedTool?[...new Set([prioritizedTool,...shortlist])].slice(0,17):shortlist,
+        explanationOnly=intentUnderstanding.guard.explanatory||intentUnderstanding.guard.questionForm,
+        routeNames=explanationOnly?[]:(intentUnderstanding.guard.conditional||intentUnderstanding.guard.deferred)
+          ?['create_reminder','create_scheduled_action','get_time','search_action_book','search_learned_skills'].filter(name=>tools[name])
+          :intentUnderstanding.guard.scopedAudio
+          ?requestedNames.filter(name=>!['set_volume','volume_up','volume_down','set_mute','toggle_mute'].includes(name))
+          :requestedNames;
       const small=matchSmallTalk(original);if(small&&!intent.action&&!attachments.length&&!String(effectiveChatOptions.modelOverride||'').startsWith('chatgpt:')&&!(await this.client.chatgptPlan?.available?.().catch(()=>false))){this.history.push({role:'user',content:rawOriginal,_original:rawOriginal,_resolvedGoal:original,_private:false},{role:'assistant',content:small,_private:false});this.trimHistory();return {ok:true,text:small,brain:{mode:'direct-smalltalk',model:'maria-local',privacy:'local'},toolsRouted:0,direct:true};}
       const needsGround=!basePrivate&&(Boolean(effectiveChatOptions.webSearch)||shouldGroundKnowledge(original));
       if(!intent.action&&!needsGround&&!fast&&!attachments.length&&this.defaultTools.length===0){const privateChat=basePrivate;this.history.push({role:'user',content:rawOriginal,_original:rawOriginal,_resolvedGoal:original,_private:privateChat});this.trimHistory();let response;
@@ -143,9 +192,15 @@ export class Agent{
         try{this.emit({type:'thinking',kind:'grounded-research'});const grounded=await groundedKnowledgeAnswer(original,{client:this.client,runTool:this.toolRunner,brainOptions:effectiveChatOptions,conversation:this.history});if(grounded?.answer){this.history.push({role:'user',content:rawOriginal,_original:rawOriginal,_resolvedGoal:original,_private:false},{role:'assistant',content:grounded.answer,_private:false});this.trimHistory();const usedModel=grounded.strategy==='model';return {ok:true,text:grounded.answer,brain:{mode:usedModel?'grounded-research':'grounded-extract',model:usedModel?this.client.model:'maria-grounded',provider:usedModel?(this.client.lastProvider||'ollama'):'web',privacy:'public'},sources:grounded.sources,toolsRouted:routeNames.length};}}catch(e){this.emit({type:'research-error',error:e.message});}
       }
       const [memories,learned]=await Promise.all([memory.recall(original,{limit:8}),skills.recall(original,{limit:7})]),privateRequest=basePrivate||memories.length>0;
-      const execHint=intent.action?actionExecutionHint(canonical):'';const referenceHint=resolved.reference?'Reference from the immediately preceding user request: '+resolved.reference:'';const hostHint=[referenceHint,hints.length?`normalized="${normalized}"; likely capability groups=${hints.join(', ')}`:'',execHint,rule?.type==='protected'?`A permanent never-delete rule was saved for: ${rule.item?.label||''}`:''].filter(Boolean).join('; ');
+      const execHint=intent.action?actionExecutionHint(canonical):'';const referenceHint=resolved.reference?'Reference from the immediately preceding user request: '+resolved.reference:'';
+      const languageIntentHint=intentUnderstanding.intent?`Normalized action intent=${intentUnderstanding.intent}; suggested skill/tool=${intentUnderstanding.tool}; confidence=${intentUnderstanding.confidence}; missing user-selected target must be resolved before execution; never assume an arbitrary filesystem path or recipient.`:'';
+      const scopedAudioHint=intentUnderstanding.guard.scopedAudio?
+        'The user asks about PER-APPLICATION OR PER-MEDIA audio, not system-wide volume. Never use global set_volume/volume_up/volume_down/set_mute. Target the named app with inspected and verified UI actions, or clearly explain the limitation.':'';
+      const explanatoryHint=explanationOnly?'This is a question or explanation request. Do not execute any command.':'';
+      const conditionalHint=(intentUnderstanding.guard.conditional||intentUnderstanding.guard.deferred)?'This is conditional/future automation. Never execute the resulting system action now. Use a supported scheduler only when its condition is representable, otherwise ask for missing requirements.':'';
+      const hostHint=[referenceHint,languageIntentHint,scopedAudioHint,explanatoryHint,conditionalHint,hints.length?`normalized="${normalized}"; likely capability groups=${hints.join(', ')}`:'',execHint,rule?.type==='protected'?`A permanent never-delete rule was saved for: ${rule.item?.label||''}`:''].filter(Boolean).join('; ');
       const content=`${rawOriginal}${attachmentHint}${hostHint?`\n\n[Host routing/policy hint: ${hostHint}. Metadata only; never mention this block.]`:''}${memoryContext(memories)}${skillContext(learned)}`;this.history.push({role:'user',content,_original:rawOriginal,_resolvedGoal:original,_private:privateRequest});this.trimHistory();
-      const turn={private:privateRequest,assistantMessage:null,original,trace:[],routeNames,chatOptions:effectiveChatOptions};return await this.drive({routeNames,turn});
+      const turn={private:privateRequest,assistantMessage:null,original,trace:[],routeNames,scopedAudio:intentUnderstanding.guard.scopedAudio,conditional:(intentUnderstanding.guard.conditional||intentUnderstanding.guard.deferred),explanationOnly,chatOptions:effectiveChatOptions};return await this.drive({routeNames,turn});
     }catch(e){if(/Request cancelled/i.test(String(e?.message||e)))return {ok:false,cancelled:true,text:''};try{await skills.queueImprovement(original,{error:e.message,privateContext:isPrivateRequest(original,[])});this.emit({type:'learning',action:'gap-queued',title:original,error:e.message});}catch{}return {ok:false,text:`الان مغز یا یکی از ابزارها گیر کرد: ${e.message}`};}
   }
   async confirm({id,approved}){
