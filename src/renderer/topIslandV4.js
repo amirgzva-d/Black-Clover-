@@ -91,9 +91,21 @@ function syncChrome(){
 function setCharacter(state='idle'){
   $('.v4-character')?.setAttribute('data-state',state);
 }
+function readableEventValue(v){
+  if(v===null||v===undefined)return '';
+  if(typeof v==='string'||typeof v==='number'||typeof v==='boolean')return String(v);
+  if(Array.isArray(v))return v.map(readableEventValue).filter(Boolean).slice(0,3).join(' • ');
+  if(typeof v==='object'){
+    for(const key of ['text','message','detail','title','label','name','state','mode','tool','action','kind']){const x=v[key];if(x!==undefined&&x!==v){const out=readableEventValue(x);if(out)return out;}}
+    return '';
+  }
+  return '';
+}
 function pushEvent(e={}){
-  const text=String(e.text||e.detail||e.message||e.name||e.state||'رویداد MARIA');
-  events.unshift({id:String(Date.now()+Math.random()),type:e.type||'event',state:e.mode||e.state||'',text,at:new Date().toISOString(),payload:e});
+  const text=readableEventValue(e.text)||readableEventValue(e.detail)||readableEventValue(e.message)||readableEventValue(e.name)||readableEventValue(e.state)||readableEventValue(e)||'رویداد MARIA';
+  const rawProgress=e.progress??e.percent??e.payload?.progress??e.payload?.percent;
+  const progress=Number.isFinite(Number(rawProgress))?Math.max(0,Math.min(100,Number(rawProgress))):null;
+  events.unshift({id:String(Date.now()+Math.random()),type:e.type||'event',state:readableEventValue(e.mode||e.state),text,at:new Date().toISOString(),progress,payload:e});
   events=events.slice(0,80);
   renderTopPills();
 }
@@ -130,7 +142,7 @@ function approvalCard(e){
   const id=String(p.id||p.confirmationId||p.requestId||e?.id||'');
   return `<article class="v4-approval" data-approval-id="${esc(id)}">
     <div class="agent-avatar"><div class="mini-face"><i></i><i></i></div><b></b></div>
-    <div class="approval-copy"><small>${esc(p.app||p.tool||p.source||'MARIA')}</small><b>${esc(e?.text||p.title||p.message||'در انتظار تأیید شما')}</b><span>${esc(p.detail||p.action||'این مرحله برای ادامه به اجازه شما نیاز دارد.')}</span></div>
+    <div class="approval-copy"><small>${esc(p.app||p.tool||p.source||'MARIA')}</small><b>${esc(e?.text||p.title||p.message||'در انتظار تأیید شما')}</b><span>${esc(p.detail||p.action||'این مرحله برای ادامه به اجازه شما نیاز دارد.')}</span><time data-approval-wait data-start="${Number(p.createdAt||Date.parse(e?.at||'')||Date.now())}">0:00</time></div>
     <div class="approval-actions"><button class="deny" data-approval-deny>${I.close}<span>Deny</span></button><button class="allow" data-approval-allow>${I.check}<span>Allow</span></button></div>
   </article>`;
 }
@@ -161,7 +173,7 @@ async function renderHome(){
     </section>
     <section class="v4-activity">
       <header><div><small>LIVE ACTIVITY</small><b>فعالیت MARIA</b></div><button data-home-refresh>${I.refresh}</button></header>
-      <div class="v4-activity-list">${events.slice(0,7).map(e=>`<article><i class="${esc(e.type)}"></i><div><b>${esc(e.text)}</b><small>${fmt(e.at)}</small></div></article>`).join('')||'<div class="v4-empty">هنوز رویداد زنده‌ای ثبت نشده.</div>'}</div>
+      <div class="v4-activity-list">${events.slice(0,7).map(e=>`<article><i class="${esc(e.type)}"></i><div><b>${esc(e.text)}</b><small>${fmt(e.at)}</small>${e.progress!==null?`<span class="event-progress"><em style="width:${e.progress}%"></em></span>`:''}</div></article>`).join('')||'<div class="v4-empty">هنوز رویداد زنده‌ای ثبت نشده.</div>'}</div>
     </section>`;
 }
 function shortcutCard(x){
@@ -176,9 +188,7 @@ async function renderShortcuts(){
   host.innerHTML=`
     <header class="v4-page-head"><div><small>QUICK LAUNCH</small><h2>میان‌برها</h2><p>فایل، پوشه، برنامه، سایت، پروژه، رسانه و Routine را سریع باز کن.</p></div></header>
     <div class="v4-toolbar"><label>${I.search}<input data-shortcut-search placeholder="جستجو…"></label><span>${items.length} مورد</span></div>
-    <div class="v4-favorite-strip">${items.slice(0,8).map(shortcutCard).join('')||'<div class="v4-empty">هنوز میان‌بری نیست.</div>'}</div>
-    ${items.length>8?'<button class="v4-view-all" data-shortcut-all>دیدن همه</button>':''}
-    <div class="v4-shortcut-grid" data-shortcut-grid>${items.map(shortcutCard).join('')}</div>`;
+    ${items.length?`<div class="v4-favorite-strip">${items.slice(0,8).map(shortcutCard).join('')}</div>${items.length>8?'<button class="v4-view-all" data-shortcut-all>دیدن همه</button>':''}<div class="v4-shortcut-grid" data-shortcut-grid>${items.map(shortcutCard).join('')}</div>`:`<section class="v4-empty-panel"><span>${I.launch}</span><small>QUICK LAUNCH</small><h3>اولین میان‌بر را اضافه کن</h3><p>فایل، برنامه، پوشه، سایت، فیلم، آهنگ یا Routine را اینجا بگذار تا با یک کلیک باز شود.</p><button data-context-add>${I.plus} افزودن میان‌بر</button></section>`}`;
   $('[data-shortcut-search]',host)?.addEventListener('input',e=>{
     const q=e.currentTarget.value.trim().toLowerCase();$$('.v4-shortcut',host).forEach(x=>x.hidden=q&&!x.textContent.toLowerCase().includes(q));
   });
@@ -290,8 +300,8 @@ function renderSettings(){
     </section>`;
 }
 async function renderPage(){
-  $$('.v4-module').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
-  $('[data-page-title]').textContent=page==='settings'?'تنظیمات پنل':pageMeta().label;
+  $$('[data-page]').forEach(b=>b.classList.toggle('active',b.dataset.page===page));
+  const title=$('[data-page-title]');if(title)title.textContent=page==='settings'?'تنظیمات پنل':pageMeta().label;
   savePrefs({lastPage:page==='settings'?prefs.lastPage:page});
   const body=$('[data-page-body]');body?.classList.add('switching');
   await new Promise(r=>setTimeout(r,40));
@@ -302,6 +312,7 @@ async function renderPage(){
   else if(page==='tasks')await renderTasks();
   else if(page==='settings')renderSettings();
   else renderReserved();
+  if(body)body.scrollTop=0;
   requestAnimationFrame(()=>body?.classList.remove('switching'));
 }
 function selectPage(id){
@@ -459,6 +470,7 @@ function bindPageActions(){
     if(e.target.closest('[data-open-chat]'))window.blackClover.showChat();
   });
 }
+function updateApprovalTimers(){for(const el of $$('[data-approval-wait]')){const start=Number(el.dataset.start)||Date.now(),sec=Math.max(0,Math.floor((Date.now()-start)/1000));el.textContent=`${Math.floor(sec/60)}:${String(sec%60).padStart(2,'0')}`;}}
 function bindGlobalActions(){
   document.addEventListener('click',e=>{
     if(e.target.closest('[data-context-add]')){playTone();contextAdd();}
@@ -498,18 +510,15 @@ export async function mountTopIslandV4(){
         <div class="v4-live-pills" data-live-pills></div>
       </section>
       <nav class="v4-right-tools">
+        ${PAGES.filter(x=>!['home','reserved'].includes(x.id)).map(x=>`<button class="v4-top-module ${x.id===page?'active':''}" data-page="${x.id}" title="${x.label}">${x.icon}</button>`).join('')}
+        <button class="v4-top-module ${page==='reserved'?'active':''}" data-page="reserved" title="بخش بعدی">${I.reserved}</button>
+        <span class="v4-tool-divider"></span>
         <button data-panel-pin title="پین پنل">${I.pin}</button>
         <button data-panel-sound title="صدای پنل">${I.sound}</button>
         <button data-settings title="تنظیمات">${I.gear}</button>
       </nav>
     </header>
     <section class="v4-expanded">
-      <aside class="v4-module-rail">
-        <div class="rail-title"><small>MODULES</small><b data-page-title>خانه</b></div>
-        ${PAGES.map(x=>`<button class="v4-module ${x.id===page?'active':''}" data-page="${x.id}"><span>${x.icon}</span><div><b>${x.label}</b><small>${x.sub}</small></div></button>`).join('')}
-        <div class="rail-space"></div>
-        <button class="v4-chat-rail" data-open-chat><span>${I.chat}</span><div><b>چت MARIA</b><small>AI / Agent</small></div></button>
-      </aside>
       <section class="v4-page" data-page-body></section>
     </section>
     <div class="v4-drop"><b>فایل را رها کن</b><span>Ask MARIA • Pin • Translate • Send • Convert</span></div>
@@ -536,5 +545,5 @@ export async function mountTopIslandV4(){
     else {pushEvent(e);if(page==='home'&&(['approval','confirmation','permission','confirm'].includes(String(e?.type||'').toLowerCase())||e?.requiresConfirmation===true))renderHome();}
   });
   window.blackClover.onIslandModule?.(payload=>selectPage(String(payload?.module||payload||'home')));
-  syncChrome();renderTopPills();await renderPage();setMode('compact');
+  syncChrome();renderTopPills();await renderPage();updateApprovalTimers();setInterval(updateApprovalTimers,1000);setMode('compact');
 }

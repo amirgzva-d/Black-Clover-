@@ -14,7 +14,7 @@ const bright=/نور|روشنایی|brightness/i;
 const increase=/زیاد|بیشتر|بالا|ببر بالا|بیار بالا|بکش بالا|بده بالا|بکن بالا|بالاتر|بلندتر|تقویت|قوی.?تر|افزایش/i;
 const decrease=/کم|کمتر|پایین|بیار پایین|ببر پایین|بکش پایین|بده پایین|بکن پایین|پایین.?تر|آروم.?تر|آرام.?تر|کاهش/i;
 const maximum=/تا آخر|تا ته|تهش|ته ته|آخرش|انتهاش|انتها|تا نهایت|نهایت|تا سقف|سقف|آخرین حد|آخرین درجه|بیشترین|max|maximum|صد درصد|100 درصد|روی 100|روی ۱۰۰|صدش کن|فول|کامل بالا/i;
-const minimum=/صفر|0 درصد|روی 0|روی صفر|کامل قطع|ته پایین|تا کف|کف|کمترین|کامل پایین|حداقل|min|minimum/i;
+const minimum=/صفر|(?:^|\D)0\s*(?:درصد|%|$)|روی\s*0(?:\D|$)|روی صفر|کامل قطع|ته پایین|تا کف|کف|کمترین|کامل پایین|حداقل|\bmin\b|\bminimum\b/i;
 const launchVerb=/(?:باز کن|بازش کن|اجرا کن|اجراش کن|راه بنداز|راهش بنداز|بالا بیار|بیارش بالا|بنداز بالا|بیار بالا|بیاورش|بیارش|بزن بالا)/i;
 const factualQuestion=/(چیست|چیه|چی هست|کیه|کی هست|کجاست|کجا هست|چرا|چطور|چگونه|چه کسی|چه زمانی|چه موقع|چند تا|فرق .* چیه|تفاوت .* چیه|معنی .* چیه|what\b|who\b|where\b|when\b|why\b|how\b)/i;
 const simpleStableFact=/(پایتخت|capital of|چه سالی|تاریخ تولد)/i;
@@ -71,6 +71,15 @@ function searchQueryFor(raw,engine='generic'){
   for(const re of patterns){const m=s.match(re),q=clean(m?.[1]);if(q&&!/^(?:کن|سرچ|جستجو|بگرد)$/i.test(q))return q;}
   return null;
 }
+function statusReadCommand(raw){
+  const s=normalize(canonicalizeCommand(raw));
+  if(!s)return null;
+  const query=/(?:چند(?:ه| است| هست)?|مقدار|درصد|وضعیت|چقدره|چقدر است|چقدر هست|الان)/i;
+  if(has(s,audio)&&query.test(s)&&extractPercent(s,audio)===null&&!maximum.test(s)&&!minimum.test(s)&&!/(?:کم|زیاد|ببر|بیار|بکش|بذار|بگذار|تنظیم|قطع|وصل|mute|unmute|روشن|خاموش|کن|باشه)/i.test(s))return {name:'get_volume',args:{}};
+  if(has(s,bright)&&query.test(s)&&extractPercent(s,bright)===null&&!/(?:کم|زیاد|ببر|بیار|بکش|بذار|بگذار|تنظیم|خاموش)/i.test(s))return {name:'get_brightness',args:{}};
+  if(/(?:باتری|battery)/i.test(s)&&query.test(s)&&!/(?:حالت ذخیره|battery saver|روشن کن|خاموش کن|تنظیم)/i.test(s))return {name:'get_battery_status',args:{}};
+  return null;
+}
 function namedFileCommand(raw){
   const text=String(raw||'').trim();if(!text)return null;
   const verb=String.raw`(?:پیدا(?:ش)? کن|بگرد|کجاست|کجا هست|باز(?:ش)? کن|بیار(?:ش)?|بیاور(?:ش)?|گیر(?:ش)?\s*(?:بیار|بیارش)|در\s*بیار|دربیار|نشون(?:م)?\s*بده)`;
@@ -91,6 +100,7 @@ function namedFileCommand(raw){
 }
 
 export function matchFastCommand(input){
+  const statusRead=statusReadCommand(input);if(statusRead)return statusRead;
   const localFile=/(?:فایل|پرونده|پوشه|فولدر|اکسل|excel|\.(?:pdf|docx?|xlsx?|xlsm|txt|csv|json|mp[34]|mkv|vrm|png|jpe?g)\b)/i.test(input)&&!/(?:سایت|website|گوگل|google|کروم|chrome|از اینترنت|از وب)/i.test(input)?namedFileCommand(input):null;
   if(localFile)return localFile;
   const web=parseWebRequest(input);
@@ -108,6 +118,7 @@ export function matchFastCommand(input){
   if(!s)return null;
 
   if(has(s,audio)){
+    if(/(?:چند(?:ه| است| هست)?|مقدار|درصد|وضعیت).*(?:صدا|ولوم|volume)|(?:صدا|ولوم|volume).*(?:چند(?:ه| است| هست)?|مقدار|درصد|وضعیت)/i.test(s)&&extractPercent(s,audio)===null&&!/(?:کم|زیاد|ببر|بیار|بکش|بذار|بگذار|تنظیم|قطع|وصل|mute|unmute|روشن|خاموش)/i.test(s))return {name:'get_volume',args:{}};
     if(/unmute|(?:از\s*)?(?:بی.?صدا|سایلنت|mute).*(?:در.?بیار|بردار|خاموش کن)|صدا.*(?:وصل(?:ش)?|فعال|روشن|باز)\s*کن/i.test(s))return {name:'set_mute',args:{muted:false},reply:'صدا دوباره وصله.'};
     if(/(?:بی.?صدا|سایلنت|mute)|صدا.*(?:قطع(?:ش)?|ببند(?:ش)?|خاموش)\s*کن/i.test(s)&&!/unmute|در.?بیار|بردار|وصل|فعال|روشن|باز/i.test(s))return {name:'set_mute',args:{muted:true},reply:'صدا رو بی‌صدا کردم.'};
     if(has(s,maximum)&&has(s,/(?:زیاد|بالا|ببر|بیار|بکش|بده|بکن|کن|بذار|تنظیم|فول|سقف|نهایت|انتها|آخر)/i))return {name:'set_volume',args:{percent:100},reply:'صدا رو تا آخر بردم بالا، رئیس.'};
@@ -121,6 +132,7 @@ export function matchFastCommand(input){
   }
 
   if(has(s,bright)){
+    if(/(?:چند(?:ه| است| هست)?|مقدار|درصد|وضعیت).*(?:نور|روشنایی|brightness)|(?:نور|روشنایی|brightness).*(?:چند(?:ه| است| هست)?|مقدار|درصد|وضعیت)/i.test(s)&&extractPercent(s,bright)===null&&!/(?:کم|زیاد|ببر|بیار|بکش|بذار|بگذار|تنظیم|روشن|خاموش)/i.test(s))return {name:'get_brightness',args:{}};
     if(has(s,maximum))return {name:'set_brightness',args:{percent:100},reply:'روشنایی رو تا آخر بردم بالا.'};
     if(has(s,minimum))return {name:'set_brightness',args:{percent:0},reply:'روشنایی رو روی صفر گذاشتم.'};
     const percent=extractPercent(s,bright);if(percent!==null)return {name:'set_brightness',args:{percent},reply:`روشنایی رو روی ${percent}٪ گذاشتم.`};

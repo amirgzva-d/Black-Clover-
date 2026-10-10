@@ -43,8 +43,8 @@ test('Top Island V4 is the only active island renderer',async()=>{
   ]) assert.ok(css.includes(token),token);
 
   assert.match(main,/width:Math\.min\(420,maxW\),height:56/);
-  assert.match(main,/width:Math\.min\(920,maxW\),height:96/);
-  assert.match(main,/width:Math\.min\(1120,maxW\),height:Math\.min\(640,maxH\)/);
+  assert.match(main,/width:Math\.min\(900,maxW\),height:150/);
+  assert.match(main,/width:Math\.min\(1000,maxW\),height:Math\.min\(560,maxH\)/);
 });
 
 test('legacy Pin and Reminder views are routed into Top Island modules',async()=>{

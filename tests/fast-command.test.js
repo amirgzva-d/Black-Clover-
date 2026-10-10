@@ -13,6 +13,12 @@ test('fast router understands many Persian master volume phrasings',()=>{
   assert.equal(matchFastCommand('اسپیکر رو آروم تر کن').name,'volume_down');
 });
 
+test('fast router reads local device state directly instead of asking an online model',()=>{
+  assert.equal(matchFastCommand('صدای سیستم چنده').name,'get_volume');
+  assert.equal(matchFastCommand('روشنایی چنده').name,'get_brightness');
+  assert.equal(matchFastCommand('باتری چنده').name,'get_battery_status');
+});
+
 test('fast router understands relative and absolute brightness',()=>{
   assert.equal(matchFastCommand('نور صفحه رو بیشتر کن').name,'brightness_up');
   assert.equal(matchFastCommand('روشنایی رو بیار پایین').name,'brightness_down');

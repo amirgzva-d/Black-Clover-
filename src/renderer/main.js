@@ -17,6 +17,11 @@ if(surface==='island'){
     .then(({mountChatSurface})=>mountChatSurface())
     .then(afterSurface)
     .catch(error=>console.error('Chat V2 bootstrap failed',error));
+}else if(surface==='dev'){
+  import('./devSession.js')
+    .then(({mountDevSession})=>mountDevSession())
+    .then(()=>import('./shellRuntime.js'))
+    .catch(error=>console.error('Dev Session bootstrap failed',error));
 }else{
   import('./legacySurface.js')
     .then(afterSurface)

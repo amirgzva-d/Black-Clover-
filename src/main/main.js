@@ -27,22 +27,26 @@ import { chatgptPlan } from './ChatGPTPlanService.js';
 const execFileAsync=promisify(execFile),__dirname=path.dirname(fileURLToPath(import.meta.url));
 const isDev=!app.isPackaged&&process.env.NODE_ENV!=='production';
 if(isDev){
-  const slot=String(process.env.BLACK_CLOVER_DEV_SLOT||'').replace(/[^a-z0-9_-]/gi,'').slice(0,24);
-  const suffix=slot?'-'+slot:'';
-  app.setPath('userData',path.join(app.getPath('appData'),'BlackCloverLiveDev'+suffix));
-  app.setPath('cache',path.join(app.getPath('temp'),'BlackCloverLiveDevCache'+suffix));
+  const override=String(process.env.BLACK_CLOVER_USER_DATA_OVERRIDE||'').trim();
+  if(override)app.setPath('userData',override);
+  else{
+    const slot=String(process.env.BLACK_CLOVER_DEV_SLOT||'').replace(/[^a-z0-9_-]/gi,'').slice(0,24);
+    const suffix=slot?'-'+slot:'';
+    app.setPath('userData',path.join(app.getPath('appData'),'BlackCloverLiveDev'+suffix));
+    app.setPath('cache',path.join(app.getPath('temp'),'BlackCloverLiveDevCache'+suffix));
+  }
   app.commandLine.appendSwitch('remote-debugging-port',String(process.env.BLACK_CLOVER_DEBUG_PORT||'9223'));
 }
 app.commandLine.appendSwitch('autoplay-policy','no-user-gesture-required');
-let avatarWin=null,chatWin=null,islandWin=null,pinsWin=null,remindersWin=null,projectsWin=null,motionsWin=null,wardrobeWin=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false,brainStore=null,uiState={mode:'online',detail:'Online • آماده',updatedAt:Date.now()};
+let avatarWin=null,chatWin=null,islandWin=null,pinsWin=null,remindersWin=null,projectsWin=null,motionsWin=null,wardrobeWin=null,devWin=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false,brainStore=null,uiState={mode:'online',detail:'Online • آماده',updatedAt:Date.now()};
 const avatarLockPath=()=>path.join(app.getPath('userData'),'avatar-lock.json');
 function avatarLockState(){try{const x=JSON.parse(fs.readFileSync(avatarLockPath(),'utf8'));if(isRemovedAvatar(x))return setAvatarLockState({locked:false,name:''});return {locked:Boolean(x?.locked),name:String(x?.name||'')};}catch{return {locked:false,name:''};}}
 function setAvatarLockState(payload={}){const next={locked:Boolean(payload.locked),name:String(payload.name||'')};fs.mkdirSync(path.dirname(avatarLockPath()),{recursive:true});fs.writeFileSync(avatarLockPath(),JSON.stringify(next,null,2),'utf8');return next;}
-const livingWindows=()=>[avatarWin,chatWin,islandWin,pinsWin,remindersWin,projectsWin,motionsWin,wardrobeWin].filter(w=>w&&!w.isDestroyed());
+const livingWindows=()=>[avatarWin,chatWin,islandWin,pinsWin,remindersWin,projectsWin,motionsWin,wardrobeWin,devWin].filter(w=>w&&!w.isDestroyed());
 const send=event=>{for(const w of livingWindows())w.webContents.send('agent:event',event);};
 const accountingMonitor=new AccountingMonitorService({store:accountingReports,emit:send});
 function setUiState(mode='online',detail=''){uiState={mode:String(mode||'online'),detail:String(detail||''),updatedAt:Date.now()};send({type:'ui-state',...uiState});return uiState;}
-function surfaceState(){return {avatarVisible:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isVisible()),chatVisible:Boolean(chatWin&&!chatWin.isDestroyed()&&chatWin.isVisible()),islandVisible:Boolean(islandWin&&!islandWin.isDestroyed()&&islandWin.isVisible()),pinsVisible:Boolean(pinsWin&&!pinsWin.isDestroyed()&&pinsWin.isVisible()),remindersVisible:Boolean(remindersWin&&!remindersWin.isDestroyed()&&remindersWin.isVisible()),projectsVisible:Boolean(projectsWin&&!projectsWin.isDestroyed()&&projectsWin.isVisible()),motionsVisible:Boolean(motionsWin&&!motionsWin.isDestroyed()&&motionsWin.isVisible()),wardrobeVisible:Boolean(wardrobeWin&&!wardrobeWin.isDestroyed()&&wardrobeWin.isVisible()),alwaysOnTop:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop()),uiState};}
+function surfaceState(){return {avatarVisible:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isVisible()),chatVisible:Boolean(chatWin&&!chatWin.isDestroyed()&&chatWin.isVisible()),islandVisible:Boolean(islandWin&&!islandWin.isDestroyed()&&islandWin.isVisible()),pinsVisible:Boolean(pinsWin&&!pinsWin.isDestroyed()&&pinsWin.isVisible()),remindersVisible:Boolean(remindersWin&&!remindersWin.isDestroyed()&&remindersWin.isVisible()),projectsVisible:Boolean(projectsWin&&!projectsWin.isDestroyed()&&projectsWin.isVisible()),motionsVisible:Boolean(motionsWin&&!motionsWin.isDestroyed()&&motionsWin.isVisible()),wardrobeVisible:Boolean(wardrobeWin&&!wardrobeWin.isDestroyed()&&wardrobeWin.isVisible()),devVisible:Boolean(devWin&&!devWin.isDestroyed()&&devWin.isVisible()),alwaysOnTop:Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop()),uiState};}
 function announceSurfaceState(){send({type:'surface-state',state:surfaceState()});}
 function sendWhenReady(w,channel,payload){if(!w||w.isDestroyed())return;const deliver=()=>{if(w&&!w.isDestroyed())w.webContents.send(channel,payload);};if(w.webContents.isLoadingMainFrame?.()||w.webContents.isLoading?.())w.webContents.once('did-finish-load',deliver);else deliver();}
 function showAnimated(w,bounds,{focus=true}={}){const wasVisible=w.isVisible();if(w.isMinimized())w.restore();if(bounds)w.setBounds(bounds);w.show();w.moveTop();if(!wasVisible)sendWhenReady(w,'assistant:surface-opening');if(focus)w.focus();setTimeout(announceSurfaceState,30);return w;}
@@ -63,9 +67,10 @@ function displayWorkArea(){return screen.getPrimaryDisplay().workArea;}
 function avatarBounds(){const a=displayWorkArea(),width=Math.min(405,Math.max(340,Math.round(a.width*.22))),height=Math.min(660,Math.max(540,Math.round(a.height*.68)));return {width,height,x:a.x+a.width-width-14,y:a.y+a.height-height-10};}
 function chatBounds(){const a=displayWorkArea(),width=Math.min(1180,Math.max(760,Math.round(a.width*.68))),height=Math.min(820,Math.max(620,Math.round(a.height*.82)));return {width,height,x:a.x+Math.max(10,Math.round((a.width-width)/2)),y:a.y+Math.max(10,Math.round((a.height-height)/2))};}
 function utilityBounds(){const b=chatBounds();return {...b,width:Math.min(560,b.width+20),height:Math.min(720,b.height+20)};}
-function islandBounds(mode='compact'){const a=displayWorkArea();const maxW=Math.max(360,a.width-24),maxH=Math.max(120,a.height-24);const size=mode==='expanded'?{width:Math.min(1120,maxW),height:Math.min(640,maxH)}:mode==='peek'?{width:Math.min(420,maxW),height:56}:{width:Math.min(920,maxW),height:96};return {...size,x:a.x+Math.round((a.width-size.width)/2),y:a.y};}
+function islandBounds(mode='compact'){const a=displayWorkArea();const maxW=Math.max(360,a.width-24),maxH=Math.max(120,a.height-24);const size=mode==='expanded'?{width:Math.min(1000,maxW),height:Math.min(560,maxH)}:mode==='peek'?{width:Math.min(420,maxW),height:56}:{width:Math.min(900,maxW),height:150};return {...size,x:a.x+Math.round((a.width-size.width)/2),y:a.y};}
 function projectsBounds(){const a=displayWorkArea(),width=Math.min(1120,Math.max(820,Math.round(a.width*.72))),height=Math.min(780,Math.max(620,Math.round(a.height*.82)));return {width,height,x:a.x+Math.max(12,Math.round((a.width-width)/2)),y:a.y+Math.max(12,Math.round((a.height-height)/2))};}
-function assetBounds(){const a=displayWorkArea(),width=Math.min(980,Math.max(760,Math.round(a.width*.62))),height=Math.min(820,Math.max(620,Math.round(a.height*.80)));return {width,height,x:a.x+Math.max(12,Math.round((a.width-width)/2)),y:a.y+Math.max(12,Math.round((a.height-height)/2))};}
+function assetBounds(){const a=displayWorkArea(),width=Math.min(1320,Math.max(980,Math.round(a.width*.78))),height=Math.min(880,Math.max(660,Math.round(a.height*.86)));return {width,height,x:a.x+Math.max(12,Math.round((a.width-width)/2)),y:a.y+Math.max(12,Math.round((a.height-height)/2))};}
+function devBounds(){const a=displayWorkArea(),width=Math.min(1380,Math.max(980,Math.round(a.width*.82))),height=Math.min(900,Math.max(680,Math.round(a.height*.88)));return {width,height,x:a.x+Math.max(10,Math.round((a.width-width)/2)),y:a.y+Math.max(10,Math.round((a.height-height)/2))};}
 function commonWebPreferences(){return {preload:path.join(__dirname,'preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false};}
 
 async function beginAutoProvision(){if(autoProvisionStarted||!app.isPackaged||process.platform!=='win32')return;autoProvisionStarted=true;try{if(!await deps.needsProvisioning())return;provisioning=true;send({type:'provision',state:'needed',message:'Full Setup ماریا در حال آماده‌سازی است'});await deps.installAll({includeOptional:true});}catch(e){console.warn('Auto provision:',e.message);send({type:'provision',state:'partial',message:`آماده‌سازی کامل نشد: ${e.message}`});}finally{provisioning=false;}}
@@ -79,23 +84,26 @@ function createChatWindow(){if(chatWin&&!chatWin.isDestroyed())return chatWin;co
 function createUtilityWindow(surface){const key=surface==='pins'?'pins':'reminders',current=key==='pins'?pinsWin:remindersWin;if(current&&!current.isDestroyed())return current;const b=utilityBounds(),w=new BrowserWindow({...b,minWidth:480,minHeight:560,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:key==='pins'?'Maria Pins':'Maria Reminders',webPreferences:commonWebPreferences()});loadSurface(w,key);w.on('close',e=>{if(!quitting){e.preventDefault();w.hide();}});w.on('closed',()=>{if(key==='pins')pinsWin=null;else remindersWin=null;});if(key==='pins')pinsWin=w;else remindersWin=w;return w;}
 function createProjectsWindow(){if(projectsWin&&!projectsWin.isDestroyed())return projectsWin;const b=projectsBounds();projectsWin=new BrowserWindow({...b,minWidth:820,minHeight:600,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:'Maria Projects',webPreferences:commonWebPreferences()});loadSurface(projectsWin,'projects');projectsWin.on('close',e=>{if(!quitting){e.preventDefault();projectsWin.hide();}});projectsWin.on('closed',()=>{projectsWin=null;});return projectsWin;}
 function createAssetWindow(surface){const isMotion=surface==='motions',current=isMotion?motionsWin:wardrobeWin;if(current&&!current.isDestroyed())return current;const b=assetBounds(),w=new BrowserWindow({...b,minWidth:720,minHeight:580,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:isMotion?'Maria Motions':'Maria Wardrobe',webPreferences:commonWebPreferences()});loadSurface(w,surface);w.on('close',e=>{if(!quitting){e.preventDefault();w.hide();}});w.on('closed',()=>{if(isMotion)motionsWin=null;else wardrobeWin=null;});if(isMotion)motionsWin=w;else wardrobeWin=w;return w;}
+function createDevWindow(){if(devWin&&!devWin.isDestroyed())return devWin;const b=devBounds();devWin=new BrowserWindow({...b,minWidth:900,minHeight:620,transparent:true,frame:false,backgroundColor:'#00000000',show:false,resizable:true,hasShadow:true,title:'MARIA Dev Session',webPreferences:commonWebPreferences()});loadSurface(devWin,'dev');devWin.on('close',e=>{if(!quitting){e.preventDefault();devWin.hide();}});devWin.on('closed',()=>{devWin=null;});return devWin;}
 function showAvatar(){return showAnimated(createAvatarWindow(),avatarBounds(),{focus:false});}
 function showChat({focus=true}={}){showAvatar();const w=showAnimated(createChatWindow(),chatBounds(),{focus});if(focus)sendWhenReady(w,'assistant:focus-input');return w;}
 function showUtility(surface){showAvatar();return showAnimated(createUtilityWindow(surface),utilityBounds());}
 function showProjects(){showAvatar();return showAnimated(createProjectsWindow(),projectsBounds());}
 function showAssetSurface(surface){showAvatar();return showAnimated(createAssetWindow(surface),assetBounds());}
+function showDevSession(){return showAnimated(createDevWindow(),devBounds());}
 function hideChat(){hideAnimated(chatWin);if(!quitting){const w=showAvatar();w.showInactive();w.moveTop();}}
 function hideAvatar(){hideAnimated(avatarWin);}
 function hideUtility(surface){hideAnimated(surface==='pins'?pinsWin:remindersWin);}
 function hideProjects(){hideAnimated(projectsWin);}
 function hideAssetSurface(surface){hideAnimated(surface==='motions'?motionsWin:wardrobeWin);}
+function hideDevSession(){hideAnimated(devWin);}
 function toggleAvatar(){if(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isVisible())hideAvatar();else showAvatar();}
 function toggleAlwaysOnTop(){const w=showAvatar(),next=!w.isAlwaysOnTop();w.setAlwaysOnTop(next,next?'floating':'normal');return next;}
 function toggleChat(){if(chatWin&&!chatWin.isDestroyed()&&chatWin.isVisible())hideChat();else showChat();}
 
 function trayIcon(){return nativeImage.createFromDataURL('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAK0lEQVR42mNkYPj/n4ECwESJ5lEDRg0YNYDQgBqGQWjAoAGjBgwaMGgAAJs7Ah7lQ3jMAAAAAElFTkSuQmCC').resize({width:16,height:16});}
 async function installAllFromTray(){if(provisioning)return;provisioning=true;try{await deps.installAll({includeOptional:true});}catch{}finally{provisioning=false;}}
-function desktopMenu(){const pinned=Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop());return Menu.buildFromTemplate([{label:'پنل بالای MARIA',click:()=>showIsland('compact')},{label:'نمایش ماریا',click:showAvatar},{label:'مخفی کردن ماریا',click:hideAvatar},{label:'باز کردن چت',click:()=>showChat()},{label:'پین‌شده‌ها',click:()=>showIslandModule('pins')},{label:'یادآورها و کارهای زمان‌بندی‌شده',click:()=>showIslandModule('tasks')},{label:'پروژه‌ها',click:showProjects},{label:'حرکت‌ها',click:()=>showAssetSurface('motions')},{label:'لباس و وسایل',click:()=>showAssetSurface('wardrobe')},{type:'separator'},{label:pinned?'برداشتن از روی همه پنجره‌ها':'همیشه روی پنجره‌ها',type:'checkbox',checked:pinned,click:toggleAlwaysOnTop},{label:'تنظیمات ماریا',click:()=>{const w=showChat();w.webContents.send('assistant:open-settings');}},{type:'separator'},{label:'آماده‌سازی کامل ابزارها',click:installAllFromTray},{label:'اجرا با دسترسی Administrator',click:()=>restartElevated().catch(()=>{})},{type:'separator'},{label:'خروج کامل',click:()=>{quitting=true;app.quit();}}]);}
+function desktopMenu(){const pinned=Boolean(avatarWin&&!avatarWin.isDestroyed()&&avatarWin.isAlwaysOnTop());return Menu.buildFromTemplate([{label:'پنل بالای MARIA',click:()=>showIsland('compact')},{label:'نمایش ماریا',click:showAvatar},{label:'مخفی کردن ماریا',click:hideAvatar},{label:'باز کردن چت',click:()=>showChat()},{label:'پین‌شده‌ها',click:()=>showIslandModule('pins')},{label:'یادآورها و کارهای زمان‌بندی‌شده',click:()=>showIslandModule('tasks')},{label:'پروژه‌ها',click:showProjects},{label:'MARIA Dev Session',click:showDevSession},{label:'حرکت‌ها',click:()=>showAssetSurface('motions')},{label:'لباس و وسایل',click:()=>showAssetSurface('wardrobe')},{type:'separator'},{label:pinned?'برداشتن از روی همه پنجره‌ها':'همیشه روی پنجره‌ها',type:'checkbox',checked:pinned,click:toggleAlwaysOnTop},{label:'تنظیمات ماریا',click:()=>{const w=showChat();w.webContents.send('assistant:open-settings');}},{type:'separator'},{label:'آماده‌سازی کامل ابزارها',click:installAllFromTray},{label:'اجرا با دسترسی Administrator',click:()=>restartElevated().catch(()=>{})},{type:'separator'},{label:'خروج کامل',click:()=>{quitting=true;app.quit();}}]);}
 function createTray(){if(tray)return;tray=new Tray(trayIcon());tray.setToolTip('Maria • Black Clover');const refresh=()=>tray.setContextMenu(desktopMenu());refresh();tray.on('right-click',refresh);tray.on('click',toggleAvatar);}
 function psQuote(s){return `'${String(s).replaceAll("'","''")}'`;}
 async function isAdmin(){try{const {stdout}=await execFileAsync('powershell.exe',['-NoProfile','-NonInteractive','-Command','([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)'],{windowsHide:true,timeout:10000});return stdout.trim().toLowerCase()==='true';}catch{return false;}}
@@ -106,8 +114,35 @@ function startReminderPump(){if(reminderTimer)return;reminderTimer=setInterval(a
 function startIdleLearningPump(){if(learningTimer)return;learningTimer=setInterval(async()=>{try{if(provisioning)return;const idle=presence.status().idleSeconds;if(!Number.isFinite(idle)||idle<300)return;const dependencyState=await deps.status();if(!dependencyState.recommendedReady)return;await agent.improveOne({allowCurriculum:true});}catch(e){console.warn('Idle learning:',e.message);}},10*60*1000);}
 async function refreshBrainProviders(){if(!brainStore)brainStore=new BrainProviderStore();const cfg=await brainStore.runtimeConfig();setRuntimeProviderConfig(cfg);agent.client.online=onlineBrainPoolFromEnv();chatAgents.clear();projectService.reloadBrains();return {settings:await brainStore.publicState(),catalog:await agent.modelCatalog()};}
 
+function devRepoRoot(){const configured=String(process.env.BLACK_CLOVER_DEV_REPO||'').trim();return configured||app.getAppPath();}
+async function gitText(args=[]){const {stdout=''}=await execFileAsync('git',args,{cwd:devRepoRoot(),windowsHide:true,timeout:30000,maxBuffer:4*1024*1024});return String(stdout).trim();}
+async function devSnapshot(){
+  const root=devRepoRoot();
+  const [branch,head,status,recent,numstat]=await Promise.all([
+    gitText(['branch','--show-current']).catch(()=>''),gitText(['rev-parse','--short','HEAD']).catch(()=>''),gitText(['status','--porcelain=v1','--branch']).catch(()=>''),gitText(['log','-5','--pretty=format:%h|%s|%cr']).catch(()=>''),gitText(['diff','--numstat']).catch(()=>'')
+  ]);
+  const statMap=new Map(numstat.split(/\r?\n/).filter(Boolean).map(line=>{const [add,del,...rest]=line.split('\t');return [rest.join('\t'),{additions:Number(add)||0,deletions:Number(del)||0}];}));
+  const lines=status.split(/\r?\n/).filter(Boolean),changes=lines.filter(x=>!x.startsWith('##')).map(line=>{const filePath=line.slice(3).trim(),stats=statMap.get(filePath)||{};return {code:line.slice(0,2),path:filePath,additions:Number(stats.additions||0),deletions:Number(stats.deletions||0)};});
+  return {root,branch,head,status,changes,recent:recent.split(/\r?\n/).filter(Boolean).map(line=>{const [sha,...rest]=line.split('|');return {sha,message:rest[0]||'',when:rest.slice(1).join('|')};}),updatedAt:new Date().toISOString()};
+}
+async function runDevCheck(kind='test'){
+  const safe=kind==='build'?'build':'test',command=safe==='build'?'npm.cmd run build':'npm.cmd test',started=Date.now();
+  send({type:'dev-session',phase:safe,state:'running',text:safe==='build'?'Build در حال اجراست':'تست‌ها در حال اجرا هستند'});
+  try{
+    const {stdout='',stderr=''}=await execFileAsync(process.env.ComSpec||'cmd.exe',['/d','/s','/c',command],{cwd:devRepoRoot(),windowsHide:true,timeout:10*60*1000,maxBuffer:12*1024*1024});
+    const output=(String(stdout)+'\n'+String(stderr)).trim(),summary=output.split(/\r?\n/).slice(-36).join('\n');
+    send({type:'dev-session',phase:safe,state:'success',text:safe==='build'?'Build موفق شد':'تست‌ها پاس شدند',durationMs:Date.now()-started});
+    return {ok:true,kind:safe,durationMs:Date.now()-started,summary};
+  }catch(error){
+    const output=[error?.stdout,error?.stderr,error?.message].filter(Boolean).join('\n'),summary=String(output).split(/\r?\n/).slice(-50).join('\n');
+    send({type:'dev-session',phase:safe,state:'error',text:safe==='build'?'Build شکست خورد':'تست شکست خورد',durationMs:Date.now()-started});
+    return {ok:false,kind:safe,durationMs:Date.now()-started,summary};
+  }
+}
+async function openDevVsCode(){const root=devRepoRoot();try{const child=execFile('code',[root],{cwd:root,windowsHide:false});child.unref?.();return {ok:true,root};}catch(error){throw new Error('VS Code باز نشد: '+String(error?.message||error));}}
+
 const gotLock=app.requestSingleInstanceLock();if(!gotLock){app.quit();}else app.on('second-instance',()=>{showAvatar();showChat();});
-app.whenReady().then(async()=>{brainStore=new BrainProviderStore();await refreshBrainProviders().catch(e=>console.warn('Brain providers:',e.message));createAvatarWindow();showIsland('compact');createTray();presence.start();
+app.whenReady().then(async()=>{brainStore=new BrainProviderStore();await refreshBrainProviders().catch(e=>console.warn('Brain providers:',e.message));createAvatarWindow();showIsland('compact');createTray();presence.start();if(String(process.env.BLACK_CLOVER_REMOTE_DEV||'')==='1')setTimeout(()=>showDevSession(),420);
 reminders.setActionExecutor(async item=>{setUiState('executing','اجرای کار زمان‌بندی‌شده');try{const out=await agent.chat(String(item.instruction||''),{profile:'scheduled-action'});send({type:'scheduled-action',item,result:out});return out;}finally{setUiState('online','Online • آماده');}});
 startReminderPump();accountingMonitor.start().catch(e=>console.warn('Accounting monitor:',e.message));startIdleLearningPump();setTimeout(()=>runTool('get_volume',{}).catch(()=>{}),250);globalShortcut.register('CommandOrControl+Shift+Space',toggleChat);app.on('activate',()=>{showAvatar();showIsland('compact');});});
 app.on('before-quit',()=>{quitting=true;});
@@ -123,7 +158,10 @@ ipcMain.handle('agent:chat',async(_e,payload)=>{
     const session=await chatAgentFor(conversationId),userMessage=conversationId?await chats.appendMessage(conversationId,{role:'user',text:visibleText,meta:{attachments}}):null;
     const response=await session.chat(visibleText,{modelOverride:options.model||options.modelOverride||'auto',profile:options.profile||null,provider:options.provider||'auto',webSearch:Boolean(options.webSearch),attachments});
     const assistantMessage=conversationId&&response?.text?await chats.appendMessage(conversationId,{role:'assistant',text:response.text,meta:{brain:response.brain||null,sources:response.sources||[]}}):null;
-    if(response?.requiresConfirmation&&response?.confirmationId)confirmationAgents.set(response.confirmationId,{session,conversationId});
+    if(response?.requiresConfirmation&&response?.confirmationId){
+      confirmationAgents.set(response.confirmationId,{session,conversationId});
+      send({type:'approval',confirmationId:response.confirmationId,text:String(response.text||'در انتظار تأیید شما'),source:'MARIA',requiresConfirmation:true,createdAt:Date.now()});
+    }
     const out={...response,conversationId,persisted:{user:userMessage,assistant:assistantMessage}};sendAvatar('assistant:response',out);return out;
   }catch(error){setUiState('error',String(error?.message||error));throw error;}finally{if(uiState.mode!=='listening')setUiState('online','Online • آماده');}
 });
@@ -131,7 +169,10 @@ ipcMain.handle('agent:confirm',async(_e,payload)=>{
   const id=String(payload?.id||''),bound=confirmationAgents.get(id),session=bound?.session||agent;confirmationAgents.delete(id);
   const response=await session.confirm(payload);let assistantMessage=null;
   if(bound?.conversationId&&response?.text)assistantMessage=await chats.appendMessage(bound.conversationId,{role:'assistant',text:response.text,meta:{brain:response.brain||null}});
-  if(response?.requiresConfirmation&&response?.confirmationId)confirmationAgents.set(response.confirmationId,{session,conversationId:bound?.conversationId||''});
+  if(response?.requiresConfirmation&&response?.confirmationId){
+    confirmationAgents.set(response.confirmationId,{session,conversationId:bound?.conversationId||''});
+    send({type:'approval',confirmationId:response.confirmationId,text:String(response.text||'در انتظار تأیید شما'),source:'MARIA',requiresConfirmation:true,createdAt:Date.now()});
+  }
   const out={...response,conversationId:bound?.conversationId||'',persisted:{assistant:assistantMessage}};sendAvatar('assistant:response',out);return out;
 });
 ipcMain.handle('agent:cancel',(_e,conversationId='')=>{const id=String(conversationId||''),session=id?chatAgents.get(id):agent;if(session)session.cancelCurrent();return {ok:true,cancelled:true};});
@@ -141,7 +182,7 @@ ipcMain.handle('brain:catalog',()=>agent.modelCatalog());
 ipcMain.handle('brain:settings',async()=>{if(!brainStore)brainStore=new BrainProviderStore();return brainStore.publicState();});
 ipcMain.handle('brain:save-provider',async(_e,payload)=>{if(!brainStore)brainStore=new BrainProviderStore();await brainStore.saveProvider(payload||{});return refreshBrainProviders();});
 ipcMain.handle('brain:remove-provider',async(_e,provider)=>{if(!brainStore)brainStore=new BrainProviderStore();await brainStore.removeProvider(String(provider||''));return refreshBrainProviders();});
-ipcMain.handle('brain:test-provider',async(_e,provider)=>{await refreshBrainProviders();const states=await agent.client.online.health();return {provider:String(provider||''),ok:Boolean(states?.[provider]),states};});
+ipcMain.handle('brain:test-provider',async(_e,provider)=>{provider=String(provider||'').toLowerCase();await refreshBrainProviders();const states=await agent.client.online.health();if(!states?.[provider]){try{const out=await agent.client.online.chat([{role:'user',content:'Reply with only: OK'}],[],{provider,model:'auto',profile:'chat'});return {provider,ok:Boolean(out?.message?.content),states,model:out?.model||null};}catch(error){return {provider,ok:false,states,error:String(error?.message||error).replace(/Bearer\s+\S+/gi,'Bearer [redacted]').slice(0,900)};}}return {provider,ok:true,states};});
 ipcMain.handle('brain:github-login',async()=>{if(!brainStore)brainStore=new BrainProviderStore();return brainStore.startGithubLogin();});
 ipcMain.handle('chatgpt:status',()=>chatgptPlan.status());
 ipcMain.handle('chatgpt:sign-in',async(_e,options={})=>{const state=await chatgptPlan.signIn(options||{});chatAgents.clear();return {state,status:await chatgptPlan.status(),catalog:await agent.modelCatalog()};});
@@ -186,6 +227,8 @@ ipcMain.handle('assistant:show-avatar',()=>{showAvatar();return true;});
 ipcMain.handle('assistant:hide-avatar',()=>{hideAvatar();return true;});
 ipcMain.handle('assistant:show-projects',()=>{showProjects();return true;});
 ipcMain.handle('assistant:hide-projects',()=>{hideProjects();return true;});
+ipcMain.handle('assistant:show-dev-session',()=>{showDevSession();return true;});
+ipcMain.handle('assistant:hide-dev-session',()=>{hideDevSession();return true;});
 ipcMain.handle('assistant:show-pins',()=>{showIslandModule('pins');return true;});
 ipcMain.handle('assistant:hide-pins',()=>{hideIsland();return true;});
 ipcMain.handle('assistant:show-reminders',()=>{showIslandModule('tasks');return true;});
@@ -198,7 +241,7 @@ ipcMain.handle('assistant:toggle-top',()=>toggleAlwaysOnTop());
 ipcMain.handle('assistant:window-state',()=>surfaceState());
 ipcMain.handle('assistant:set-ui-state',(_e,payload)=>setUiState(payload?.mode||'online',payload?.detail||''));
 ipcMain.handle('assistant:minimize-chat',()=>{const w=createChatWindow();w.minimize();return true;});
-ipcMain.handle('assistant:minimize-surface',(_e,surface)=>{if(surface==='pins'||surface==='reminders'){setIslandMode('peek');return true;}const w=surface==='projects'?projectsWin:surface==='motions'?motionsWin:surface==='wardrobe'?wardrobeWin:chatWin;if(w&&!w.isDestroyed())w.minimize();return true;});
+ipcMain.handle('assistant:minimize-surface',(_e,surface)=>{if(surface==='pins'||surface==='reminders'){setIslandMode('peek');return true;}const w=surface==='projects'?projectsWin:surface==='dev'?devWin:surface==='motions'?motionsWin:surface==='wardrobe'?wardrobeWin:chatWin;if(w&&!w.isDestroyed())w.minimize();return true;});
 ipcMain.handle('assistant:open-settings',(_e,section='general')=>{const w=showChat();sendWhenReady(w,'assistant:open-settings',{section:String(section||'general')});return true;});
 ipcMain.handle('assistant:prompt',(_e,text)=>{const w=showChat();sendWhenReady(w,'assistant:prefill-prompt',{text:String(text||''),submit:true});return true;});
 
@@ -241,6 +284,9 @@ ipcMain.handle('projects:open-folder',(_e,id)=>projectService.openFolder(String(
 ipcMain.handle('projects:git-status',(_e,id)=>projectService.gitStatus(String(id||'')));
 ipcMain.handle('projects:connect-github',(_e,id)=>projectService.connectGithub(String(id||'')));
 ipcMain.handle('projects:publish-github',(_e,payload)=>projectService.publishGithub(String(payload?.id||''),{message:payload?.message}));
+ipcMain.handle('dev:status',()=>devSnapshot());
+ipcMain.handle('dev:run-check',(_e,kind='test')=>runDevCheck(String(kind||'test')));
+ipcMain.handle('dev:open-vscode',()=>openDevVsCode());
 ipcMain.handle('browser:open-service',(_e,service)=>runTool('chrome_open_service',{service:String(service||'')}));
 ipcMain.handle('pins:list',()=>pinnedNotes.list({limit:500}));
 ipcMain.handle('pins:create',async(_e,payload)=>{const item=await pinnedNotes.create(payload||{});send({type:'data-changed',store:'pins'});return item;});
