@@ -19,10 +19,11 @@ export function pickBestLocalModel(models=[],profile='general'){return [...new S
 export async function internetAvailable(){const checks=await Promise.all(['https://www.msftconnecttest.com/connecttest.txt','https://www.google.com/generate_204'].map(u=>ping(u)));return checks.some(Boolean);}
 
 export class BrainRouter{
-  constructor({local=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:3072,temperature:.32,timeoutMs:60000,think:false,numPredict:360}),chatLocal=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:2048,temperature:.36,timeoutMs:45000,think:false,numPredict:240}),legacyLocal=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:3072,temperature:.32,timeoutMs:60000,think:false,numPredict:360}),researchLocal=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:3072,temperature:.20,timeoutMs:60000,think:false,numPredict:360}),codingLocal=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:4096,temperature:.24,timeoutMs:90000,think:false,numPredict:700}),online=onlineBrainPoolFromEnv(),networkTtlMs=15000}={}){
-    this.local=local;this.chatLocal=chatLocal;this.legacyLocal=legacyLocal;this.researchLocal=researchLocal;this.codingLocal=codingLocal;this.online=online;this.networkTtlMs=networkTtlMs;this.lastMode='local';this.lastProfile='general';this.networkState=null;this.networkCheckedAt=0;this.lastFallbackReason='';this.lastProvider=null;this.lastModel=local.model;this.adaptiveLocal=null;this.selectedLocals=new Map();
+  constructor({local=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:4096,temperature:.32,timeoutMs:45000,think:false,numPredict:460}),chatLocal=new OllamaClient({model:process.env.BLACK_CLOVER_CHAT_MODEL||'qwen2.5:1.5b',keepAlive:'30m',numCtx:768,temperature:.30,timeoutMs:12000,think:false,numPredict:160}),legacyLocal=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:4096,temperature:.32,timeoutMs:45000,think:false,numPredict:460}),researchLocal=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5:3b',keepAlive:'30m',numCtx:5120,temperature:.20,timeoutMs:60000,think:false,numPredict:560}),codingLocal=new OllamaClient({model:process.env.BLACK_CLOVER_MODEL||'qwen2.5-coder:3b',keepAlive:'30m',numCtx:5120,temperature:.24,timeoutMs:60000,think:false,numPredict:700}),online=onlineBrainPoolFromEnv(),chatgptPlan=null,networkTtlMs=15000}={}){
+    this.local=local;this.chatLocal=chatLocal;this.legacyLocal=legacyLocal;this.researchLocal=researchLocal;this.codingLocal=codingLocal;this.online=online;this.chatgptPlan=chatgptPlan;this.networkTtlMs=networkTtlMs;this.lastMode='local';this.lastProfile='general';this.networkState=null;this.networkCheckedAt=0;this.lastFallbackReason='';this.lastProvider=null;this.lastModel=local.model;this.adaptiveLocal=null;this.selectedLocals=new Map();
   }
   get model(){return this.lastModel||this.local.model;}
+  cancel(){for(const client of [this.local,this.chatLocal,this.legacyLocal,this.researchLocal,this.codingLocal,this.adaptiveLocal,...this.selectedLocals.values()])client?.cancel?.();this.online?.cancel?.();this.chatgptPlan?.cancel?.();}
   async network({fresh=false}={}){const now=Date.now();if(!fresh&&this.networkState!==null&&now-this.networkCheckedAt<this.networkTtlMs)return this.networkState;this.networkState=await internetAvailable();this.networkCheckedAt=now;return this.networkState;}
   cloneLocal(base,model){return new OllamaClient({baseUrl:base?.baseUrl,model,timeoutMs:base?.timeoutMs||120000,keepAlive:base?.keepAlive||'10m',numCtx:base?.numCtx||4096,temperature:base?.temperature??.4,think:false,numPredict:base?.numPredict||700});}
   async chooseLocal(profile,requestedModel='auto'){
@@ -64,13 +65,21 @@ export class BrainRouter{
         this.lastModel=client.model;
         return out;
       }catch(error){
-        errors.push(String(client.model||'ollama')+': '+errorMessage(error));
+        if(/Request cancelled/i.test(errorMessage(error)))throw error;
+        const message=errorMessage(error);errors.push(String(client.model||'ollama')+': '+message);
+        // Normal chat has a strict latency budget. If the fast chat model times out,
+        // do not spend another 45-60 seconds retrying a larger local model.
+        if(profile==='chat'&&/timed out/i.test(message))break;
       }
     }
     if(errors.length)throw new Error('Local brain unavailable: '+errors.join(' | '));
     throw new Error('No local Ollama chat model is installed. Install a local chat model or choose another provider.');
   }
-  async catalog(){const installed=await this.local.models(),descriptions={openai:'مدل‌های ابری قدرتمند OpenAI برای کار عمومی و کدنویسی',anthropic:'Claude برای تحلیل عمیق، متن طولانی و Coding',deepseek:'DeepSeek برای تحلیل و کدنویسی',qwen:'Qwen Cloud برای فارسی، ابزارها و کار عمومی',gemini:'Gemini برای متن و کار چندرسانه‌ای',groq:'Llama روی Groq با تمرکز روی پاسخ سریع',openrouter:'دسترسی به مجموعه بزرگی از مدل‌های Cloud',mistral:'مدل‌های سریع Mistral Cloud'},online=(this.online?.catalog?.()||[]).map(x=>({id:`online:${x.provider}`,provider:x.provider,model:x.model||'auto',label:`${x.label||x.provider}${x.model?` • ${x.model}`:''}`,description:descriptions[x.provider]||'مدل Cloud',available:Boolean(x.configured),configured:Boolean(x.configured)}));return [{id:'auto',provider:'auto',model:'auto',label:'Auto • Maria',description:'Maria بر اساس نوع کار سریع‌ترین و مناسب‌ترین مغز آماده را انتخاب می‌کند.',available:true,configured:true},...installed.map(model=>{const cloud=/:cloud$/i.test(model);return {id:cloud?`ollama-cloud:${model}`:`ollama:${model}`,provider:cloud?'ollama-cloud':'ollama',model,label:`${cloud?'Ollama Cloud':'Ollama'} • ${model}`,description:cloud?'مدل Cloud از مسیر Ollama؛ داده برای پاسخ به سرویس آنلاین فرستاده می‌شود.':'مدل محلی؛ داده روی همین سیستم می‌ماند.',available:true,configured:true};}),...online];}
+  async catalog(){
+    const installed=await this.local.models(),descriptions={openai:'مدل‌های ابری قدرتمند OpenAI برای کار عمومی و کدنویسی',anthropic:'Claude برای تحلیل عمیق، متن طولانی و Coding',deepseek:'DeepSeek برای تحلیل و کدنویسی',qwen:'Qwen Cloud برای فارسی، ابزارها و کار عمومی',gemini:'Gemini برای متن و کار چندرسانه‌ای',groq:'Groq برای پاسخ بسیار سریع',openrouter:'دسترسی به مجموعه مدل‌های Cloud',mistral:'مدل‌های سریع Mistral Cloud'},online=(this.online?.catalog?.()||[]).map(x=>({id:`online:${x.provider}`,provider:x.provider,model:x.model||'auto',label:`${x.label||x.provider}${x.model?` • ${x.model}`:''}`,description:descriptions[x.provider]||'مدل Cloud',available:Boolean(x.configured),configured:Boolean(x.configured)}));
+    let chatgpt=[];try{chatgpt=this.chatgptPlan?await this.chatgptPlan.catalog():[];}catch{}
+    return [{id:'auto',provider:'auto',model:'auto',label:'Auto • Maria',description:'Maria بر اساس نوع کار سریع‌ترین و مناسب‌ترین مغز آماده را انتخاب می‌کند.',available:true,configured:true},...chatgpt,...installed.map(model=>{const cloud=/:cloud$/i.test(model);return {id:cloud?`ollama-cloud:${model}`:`ollama:${model}`,provider:cloud?'ollama-cloud':'ollama',model,label:`${cloud?'Ollama Cloud':'Ollama'} • ${model}`,description:cloud?'مدل Cloud از مسیر Ollama؛ داده برای پاسخ به سرویس آنلاین فرستاده می‌شود.':'مدل محلی؛ داده روی همین سیستم می‌ماند.',available:true,configured:true};}),...online];
+  }
   async chat(messages,tools=[],{allowOnline=true,privacyReason='',profile='general',provider='auto',model='auto',modelOverride='auto',onDelta=null}={}){
     this.lastFallbackReason='';
     profile=inferProfile(tools,profile);
@@ -80,13 +89,25 @@ export class BrainRouter{
       if(selected.startsWith('ollama-cloud:')){provider='ollama-cloud';model=selected.slice(13);}
       else if(selected.startsWith('ollama:')){provider='ollama';model=selected.slice(7);}
       else if(selected.startsWith('online:')){provider=selected.slice(7);model='auto';}
+      else if(selected.startsWith('chatgpt:')){provider='chatgpt';model=selected.slice(8);}
     }
     provider=String(provider||'auto').toLowerCase();
     model=String(model||'auto');
     const forceLocal=provider==='ollama'||provider==='local';
     const forceOllamaCloud=provider==='ollama-cloud';
-    const forceOnline=!['auto','ollama','local','ollama-cloud'].includes(provider);
-    const policy=String(process.env.BLACK_CLOVER_BRAIN_POLICY||'local-first').toLowerCase();
+    const forceChatGPT=provider==='chatgpt';
+    const forceOnline=!['auto','ollama','local','ollama-cloud','chatgpt'].includes(provider);
+    const policy=String(process.env.BLACK_CLOVER_BRAIN_POLICY||'smart').toLowerCase();
+
+    if(forceChatGPT){
+      if(!allowOnline)this.lastFallbackReason='chatgpt-blocked-private';
+
+      else if(!await this.network())this.lastFallbackReason='chatgpt-offline';
+      else if(!this.chatgptPlan||!await this.chatgptPlan.available())this.lastFallbackReason='chatgpt-not-connected';
+      else try{const out=await this.chatgptPlan.chat(messages,{model,tools,onDelta:tools?.length?null:onDelta});this.lastMode='chatgpt-plan';this.lastProvider='chatgpt';this.lastModel=out.model;this.lastFallbackReason='';return out;}catch(error){if(/cancel/i.test(errorMessage(error)))throw error;this.lastFallbackReason='chatgpt-failed: '+errorMessage(error);}
+    }
+
+    if(forceChatGPT&&this.lastFallbackReason)throw new Error('مدل ChatGPT انتخاب شده آماده نیست: '+this.lastFallbackReason);
 
     if(forceOllamaCloud){
       if(!allowOnline)this.lastFallbackReason='ollama-cloud-blocked-private';
@@ -102,7 +123,7 @@ export class BrainRouter{
           this.lastFallbackReason='';
           return out;
         }catch(error){
-          this.lastFallbackReason='ollama-cloud-failed: '+errorMessage(error);
+          if(/Request cancelled/i.test(errorMessage(error)))throw error;this.lastFallbackReason='ollama-cloud-failed: '+errorMessage(error);
         }
       }
     }
@@ -120,12 +141,16 @@ export class BrainRouter{
           this.lastFallbackReason='';
           return out;
         }catch(error){
-          this.lastFallbackReason='online-failed: '+errorMessage(error);
+          if(/Request cancelled/i.test(errorMessage(error)))throw error;this.lastFallbackReason='online-failed: '+errorMessage(error);
         }
       }
     }
 
-    const wantsOnline=!forceLocal&&!forceOllamaCloud&&allowOnline&&this.online?.configured&&policy==='online-first';
+    const preferChatGPT=!forceLocal&&!forceOllamaCloud&&!forceOnline&&!forceChatGPT&&allowOnline&&policy!=='local-first'&&this.chatgptPlan;
+    if(preferChatGPT&&await this.network()&&await this.chatgptPlan.available().catch(()=>false)){
+      try{const out=await this.chatgptPlan.chat(messages,{model:'auto',tools,onDelta:tools?.length?null:onDelta});this.lastMode='chatgpt-plan';this.lastProvider='chatgpt';this.lastModel=out.model;this.lastFallbackReason='';return out;}catch(error){if(/cancel/i.test(errorMessage(error)))throw error;this.lastFallbackReason='chatgpt-failed: '+errorMessage(error);}
+    }
+    const wantsOnline=!forceLocal&&!forceOllamaCloud&&!forceChatGPT&&allowOnline&&this.online?.configured&&policy!=='local-first';
     if(wantsOnline){
       if(await this.network()){
         try{
@@ -136,7 +161,7 @@ export class BrainRouter{
           this.lastFallbackReason='';
           return out;
         }catch(error){
-          this.lastFallbackReason='online-failed: '+errorMessage(error);
+          if(/Request cancelled/i.test(errorMessage(error)))throw error;this.lastFallbackReason='online-failed: '+errorMessage(error);
         }
       }else{
         this.lastFallbackReason='internet-offline';

@@ -59,12 +59,17 @@ test('desktop UI keeps legacy pin/reminder migration APIs but moves their visibl
   assert.doesNotMatch(renderer,/import\('\.\/topIsland\.js'\)/);
   assert.doesNotMatch(renderer,/topIslandV3\.js/);
   assert.match(renderer,/chatSurfaceV2/);
-  assert.match(chat,/const queue=\[\]/);
+  assert.match(chat,/let busy=false,cancelled=false/);
   assert.doesNotMatch(chat,/input\.disabled\s*=\s*true/);
-  assert.match(chat,/modelOverride:selectedModel/);
-  assert.match(chat,/HISTORY_KEY/);
+  assert.match(chat,/conversationId:current/);
+  assert.match(chat,/modelOverride:state\.model/);
+  assert.match(chat,/const CHATGPT_AUTO='chatgpt:auto'/);
+  assert.match(chat,/listChats/);
+  assert.match(chat,/createChat/);
+  assert.match(chat,/cancelChat/);
+  assert.match(chat,/webSearch:state\.web/);
   assert.match(chat,/event\.type==='stream'/);
-  assert.match(chat,/voice\.speak\(response\.text\)/);
+  assert.match(chat,/voice\.speak\(message\.text\)/);
 });
 
 
