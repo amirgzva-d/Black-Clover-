@@ -43,3 +43,11 @@ Next: inspect existing topIslandV4.js, topIslandV4.css, main/preload IPC, QuickS
 - Test results: 217/217 node tests passed and npm.cmd run build succeeded.
 - Known remaining acceptance work: interactive manual verification of Electron drag/drop, hover/pin on real Windows desktop at multiple DPI; supplied character art not yet received; current arms are stylized CSS.
 - The stage is implemented and automatically tested but not yet end-to-end certified.
+
+## Isolated Electron UI smoke results (2026-10-10)
+- Fresh Electron instance with isolated dev user data and debugger port 9449 used, leaving the existing main MARIA session untouched.
+- Verified real renderer/preload bridge; shortcuts, Pins, Reminders contextual + buttons and corresponding dialogs; URL inference from main IPC.
+- Verified avatar includes two independent eyes and two animated arm elements.
+- Verified native hover expands from peek, mouse leave collapses, character click pins and unpins.
+- Inspected screenshots; fixed clipped head in idle/peek mode by overriding legacy toolbar height.
+- Remaining hands-on check: actual Windows Explorer file drag-drop and native file/folder dialog selections; real avatar art and facial detail await reference image.
