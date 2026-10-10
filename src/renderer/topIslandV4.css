@@ -942,45 +942,6 @@ body.top-island-v4-surface{display:grid;place-items:start center;direction:rtl;u
   .v4-shortcut-drop-hint span{margin-inline-start:0}
 }
 
-/* Phase 6: reference companion fidelity and ALWAYS VISIBLE header module actions.
-   Put selectable sections in the TOP toolbar of the rectangle, not in its body. */
-.v4-section-tools{
-  position:absolute!important;
-  left:50%!important;top:10px!important;
-  transform:translateX(-50%)!important;
-  display:flex!important;align-items:center!important;justify-content:center!important;
-  gap:7px!important;direction:rtl!important;
-  z-index:12!important;pointer-events:auto!important;
-  -webkit-app-region:no-drag!important;
-}
-.v4-section-button{
-  appearance:none!important;flex:0 0 auto!important;
-  display:flex!important;flex-direction:column!important;
-  align-items:center!important;justify-content:center!important;gap:2px!important;
-  width:70px!important;height:50px!important;
-  background:transparent!important;
-  border:1px solid transparent!important;border-radius:12px!important;
-  color:#9d9da9!important;cursor:pointer!important;
-  padding:4px 6px!important;
-  transition:background .15s ease,border-color .15s ease,color .15s ease!important;
-  -webkit-app-region:no-drag!important;
-}
-.v4-section-button svg{display:block!important;flex:none!important;width:19px!important;height:19px!important;fill:none!important;stroke:currentColor!important;stroke-width:1.75!important}
-.v4-section-button span{display:block!important;white-space:nowrap!important;font-size:10px!important;line-height:13px!important;font-weight:500!important}
-.v4-section-button:hover,.v4-section-button:focus-visible{
-  background:rgba(116,91,246,.15)!important;
-  border-color:rgba(142,123,255,.25)!important;color:#fff!important;
-}
-.v4-section-button.active{
-  background:rgba(130,108,255,.13)!important;
-  border-color:rgba(146,122,255,.23)!important;
-  color:#dbd3ff!important;
-}
-.maria-island-v4[data-mode=peek] .v4-section-tools{display:none!important}
-.maria-island-v4[data-mode=preview] .v4-section-tools,
-.maria-island-v4[data-mode=expanded] .v4-section-tools{display:flex!important}
-.maria-island-v4[data-mode=preview] .v4-right-tools{right:18px!important;flex-direction:row!important;gap:5px!important}
-.maria-island-v4[data-mode=preview] [data-panel-pin]{display:none!important}
 /* Clean original rounded rectangular face, soft amber halo, two floating oval hands. */
 .maria-island-v4[data-mode=preview] .v4-center{
   top:82px!important;height:124px!important;
@@ -1023,41 +984,75 @@ body.top-island-v4-surface{display:grid;place-items:start center;direction:rtl;u
 }
 /* The character follows the pointer without overlaying module buttons in expanded view. */
 .maria-island-v4[data-mode=expanded] .v4-center{display:none!important}
-@media(max-width:740px){
-  .v4-section-tools{left:51%!important;gap:2px!important}
-  .v4-section-button{width:44px!important;height:43px!important;padding:3px!important}
-  .v4-section-button svg{width:18px!important;height:18px!important}
-  .v4-section-button span{font-size:0!important;line-height:0!important}
-}
-@media(prefers-reduced-motion:reduce){
-  .v4-section-button{transition:none!important}
-}
 
-/* Readable section selectors on 900px and larger screens. */
-.maria-island-v4[data-mode=preview] .v4-section-button,
-.maria-island-v4[data-mode=expanded] .v4-section-button{
-  color:#c2bfcc!important;
-  background:rgba(255,255,255,.025)!important;
-  border-color:rgba(255,255,255,.055)!important;
+
+
+/* Phase 7 — one icon system: right-aligned with Settings and Sound.
+   Buttons match the existing Home/Chat/Gear 36x36 controls, icons 18x18. */
+.maria-island-v4[data-mode=preview] .v4-right-tools,
+.maria-island-v4[data-mode=expanded] .v4-right-tools{
+  right:18px!important;
+  left:auto!important;
+  top:50%!important;
+  display:flex!important;
+  flex-direction:row!important;
+  align-items:center!important;
+  justify-content:flex-end!important;
+  gap:3px!important;
+  flex-wrap:nowrap!important;
+  width:max-content!important;
+  z-index:14!important;
+  -webkit-app-region:no-drag!important;
 }
-.maria-island-v4[data-mode=preview] .v4-section-button svg,
-.maria-island-v4[data-mode=expanded] .v4-section-button svg{
-  width:21px!important;height:21px!important;stroke-width:1.95!important;
+.maria-island-v4[data-mode=preview] .v4-right-tools button,
+.maria-island-v4[data-mode=expanded] .v4-right-tools button{
+  width:36px!important;
+  height:36px!important;
+  min-width:36px!important;
+  padding:0!important;
+  display:grid!important;
+  place-items:center!important;
+  flex:0 0 36px!important;
+  border:0!important;
+  border-radius:11px!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  color:#9b9da7!important;
+  cursor:pointer!important;
+  opacity:1!important;
+  visibility:visible!important;
+  pointer-events:auto!important;
+  -webkit-app-region:no-drag!important;
 }
-.maria-island-v4[data-mode=preview] .v4-section-button span,
-.maria-island-v4[data-mode=expanded] .v4-section-button span{
-  font-size:10.5px!important;font-weight:600!important;color:inherit!important;
+.maria-island-v4[data-mode=preview] .v4-right-tools button svg,
+.maria-island-v4[data-mode=expanded] .v4-right-tools button svg{
+  width:18px!important;
+  height:18px!important;
+  stroke:currentColor!important;
+  stroke-width:1.7!important;
+  stroke-linecap:round!important;
+  stroke-linejoin:round!important;
+  fill:none!important;
 }
-.maria-island-v4[data-mode=preview] .v4-section-button:hover,
-.maria-island-v4[data-mode=expanded] .v4-section-button:hover{
-  color:#fff!important;background:rgba(123,100,255,.18)!important;
-  border-color:rgba(165,145,255,.34)!important;
+.maria-island-v4[data-mode=preview] .v4-right-tools button:hover,
+.maria-island-v4[data-mode=expanded] .v4-right-tools button:hover,
+.maria-island-v4[data-mode=preview] .v4-right-tools button:focus-visible,
+.maria-island-v4[data-mode=expanded] .v4-right-tools button:focus-visible{
+  background:rgba(255,255,255,.055)!important;
+  color:#f3f3f7!important;
 }
-.maria-island-v4[data-mode=expanded] .v4-section-button.active{
-  color:#f3eaff!important;background:rgba(125,99,245,.21)!important;
-  border-color:rgba(170,147,255,.34)!important;
+.maria-island-v4[data-mode=expanded] .v4-right-tools button.active{
+  background:rgba(255,255,255,.055)!important;
+  color:#e5e0ff!important;
 }
+.maria-island-v4[data-mode=peek] .v4-right-tools{display:none!important}
 @media(max-width:740px){
-  .maria-island-v4[data-mode=preview] .v4-section-button span,
-  .maria-island-v4[data-mode=expanded] .v4-section-button span{font-size:0!important;line-height:0!important}
+  .maria-island-v4[data-mode=preview] .v4-right-tools,
+  .maria-island-v4[data-mode=expanded] .v4-right-tools{
+    right:8px!important;gap:1px!important;
+  }
+  .maria-island-v4[data-mode=preview] .v4-right-tools button,
+  .maria-island-v4[data-mode=expanded] .v4-right-tools button{
+    width:31px!important;height:31px!important;min-width:31px!important;flex-basis:31px!important;
+  }
 }

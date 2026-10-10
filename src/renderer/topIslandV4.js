@@ -17,8 +17,8 @@ const I={
   sound:'<svg viewBox="0 0 24 24"><path d="M5 10h4l4-4v12l-4-4H5z"/><path d="M16 9c1.5 1.5 1.5 4.5 0 6M18.5 6.5c3.2 3 3.2 8 0 11"/></svg>',
   gear:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.7 5.7 7 7M17 17l1.3 1.3M18.3 5.7 17 7M7 17l-1.3 1.3"/></svg>',
   close:'<svg viewBox="0 0 24 24"><path d="m7 7 10 10M17 7 7 17"/></svg>',
-  launch:'<svg viewBox="0 0 24 24"><path d="M8 16 16 8M10 7h7v7"/><path d="M18 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h5"/></svg>',
-  report:'<svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M15 3v5h5M9 12h7M9 16h7"/></svg>',
+  launch:'<svg viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/></svg>',
+  report:'<svg viewBox="0 0 24 24"><rect x="5" y="3.5" width="14" height="17" rx="2"/><path d="M8.5 9h7M8.5 13h7M8.5 17H13"/></svg>',
   clock:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 8v5l3 2"/></svg>',
   reserved:'<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
   refresh:'<svg viewBox="0 0 24 24"><path d="M20 11a8 8 0 1 0-2 5"/><path d="M20 5v6h-6"/></svg>',
@@ -98,6 +98,12 @@ function syncChrome(){
   const root=$('.maria-island-v4');
   root?.classList.toggle('is-pinned',Boolean(prefs.pinned));
   root?.classList.toggle('is-muted',!prefs.sound);
+  $$('[data-page].v4-right-module').forEach(button=>{
+    const active=mode==='expanded'&&button.dataset.page===page;
+    button.classList.toggle('active',active);
+    if(active)button.setAttribute('aria-current','page');
+    else button.removeAttribute('aria-current');
+  });
   $('[data-panel-pin]')?.classList.toggle('active',Boolean(prefs.pinned));
   $('[data-panel-sound]')?.classList.toggle('active',Boolean(prefs.sound));
   $('[data-panel-pin]')?.setAttribute('aria-pressed',String(Boolean(prefs.pinned)));
@@ -617,19 +623,16 @@ export async function mountTopIslandV4(){
         <button data-open-chat class="v4-chat-launch" title="باز کردن گفتگوی ماریا" aria-label="باز کردن چت با ماریا">${I.chat}</button>
         <button class="plus" data-context-add title="افزودن">${I.plus}</button>
       </nav>
-      <nav class="v4-section-tools" aria-label="انتخاب بخش‌های ماریا">
-        ${PAGES.filter(x=>['shortcuts','pins','tasks','reports'].includes(x.id)).map(x=>`<button class="v4-section-button" type="button" data-page="${x.id}" aria-label="نمایش ${esc(x.label)}" title="${esc(x.label)}">${x.icon}<span>${esc(x.id==='tasks'?'یادآور':x.id==='shortcuts'?'میان‌بر':x.id==='reports'?'گزارش':x.label)}</span></button>`).join('')}
-      </nav>
       <section class="v4-center">
         <button class="v4-character" data-state="idle" data-character aria-label="باز کردن یا ثابت کردن MARIA"><i class="v4-arm left" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i><span class="face"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></span><i class="v4-arm right" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i></button>
         <div class="v4-peek-dots"><i></i><i></i><i></i></div>
         <div class="v4-status"><small>MARIA</small><b data-status>Online • آماده</b></div>
         <div class="v4-live-pills" data-live-pills></div>
       </section>
-      <nav class="v4-right-tools">
-        <button data-panel-pin title="پین کردن پنل" aria-label="پین کردن پنل">${I.pin}</button>
-        <button data-settings title="تنظیمات" aria-label="تنظیمات">${I.gear}</button>
-        <button data-panel-sound title="صدای پنل" aria-label="صدای پنل">${I.sound}</button>
+      <nav class="v4-right-tools" aria-label="بخش‌ها و تنظیمات ماریا">
+        ${PAGES.filter(x=>['shortcuts','pins','tasks','reports'].includes(x.id)).map(x=>`<button class="v4-right-module" type="button" data-page="${x.id}" aria-label="نمایش ${esc(x.label)}" title="${esc(x.label)}">${x.icon}</button>`).join('')}
+        <button data-settings type="button" title="تنظیمات" aria-label="تنظیمات">${I.gear}</button>
+        <button data-panel-sound type="button" title="صدای پنل" aria-label="صدای پنل">${I.sound}</button>
       </nav>
     </header>
     <section class="v4-preview" aria-label="نمای مستطیلی کاراکتر ماریا">
