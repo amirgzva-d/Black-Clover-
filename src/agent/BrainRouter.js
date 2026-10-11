@@ -106,7 +106,11 @@ export class BrainRouter{
       else try{const out=await this.chatgptPlan.chat(messages,{model,tools,onDelta:tools?.length?null:onDelta});this.lastMode='chatgpt-plan';this.lastProvider='chatgpt';this.lastModel=out.model;this.lastFallbackReason='';return out;}catch(error){if(/cancel/i.test(errorMessage(error)))throw error;this.lastFallbackReason='chatgpt-failed: '+errorMessage(error);}
     }
 
-    if(forceChatGPT&&this.lastFallbackReason)throw new Error('مدل ChatGPT انتخاب شده آماده نیست: '+this.lastFallbackReason);
+    // Private file/window/clipboard commands cannot be sent to any cloud model
+    // without specific consent. Use the LOCAL planner instead of failing the
+    // whole command when the user selected ChatGPT as their general chat model.
+    if(forceChatGPT&&this.lastFallbackReason&&allowOnline)
+      throw new Error('مدل ChatGPT انتخاب شده آماده نیست: '+this.lastFallbackReason);
 
     if(forceOllamaCloud){
       if(!allowOnline)this.lastFallbackReason='ollama-cloud-blocked-private';
@@ -166,7 +170,7 @@ export class BrainRouter{
         this.lastFallbackReason='internet-offline';
       }
     }
-    if(this.online?.configured&&!allowOnline)this.lastFallbackReason='privacy-local'+(privacyReason?': '+privacyReason:'');
+    if(this.online?.configured&&!allowOnline&&!forceChatGPT)this.lastFallbackReason='privacy-local'+(privacyReason?': '+privacyReason:'');
 
     let preferred;
     try{
@@ -177,6 +181,8 @@ export class BrainRouter{
     }
     const notice=this.lastFallbackReason==='internet-offline'
       ?'[HOST NOTICE: Internet is unavailable. Continue locally and never claim online research succeeded.]'
+      :this.lastFallbackReason==='chatgpt-blocked-private'||this.lastFallbackReason.startsWith('privacy-local')
+        ?'[HOST NOTICE: The user requested a cloud model, but this task contains private local context. This model is local/offline; no private data was sent to a cloud model. Never pretend ChatGPT/Gemini executed this task.]'
       :this.lastFallbackReason.startsWith('online-failed')
         ?'[HOST NOTICE: Online brains failed. Continue with the local brain.]'
         :this.lastFallbackReason.startsWith('ollama-cloud-')

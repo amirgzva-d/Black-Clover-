@@ -26,6 +26,7 @@ import { assessTaskOutcome } from './TaskOutcome.js';
 import { verifyFastAction,STRICT_VERIFY_TOOLS } from './FastActionVerifier.js';
 
 const MAX_TURNS=48,MAX_STEPS=32;
+const DISCOVERY_ONLY_TOOLS=new Set(['search_action_book','search_learned_skills','action_book_status','learning_status']);
 const cleanReply=text=>String(text??'').replace(/\n{3,}/g,'\n\n').trim();
 const fastResultText=(name,out,preferred='')=>{if(preferred)return preferred;if(name==='get_volume'&&Number.isFinite(Number(out?.data?.percent)))return `صدای سیستم ${Number(out.data.percent)}٪ است${out?.data?.muted?' و الان بی‌صداست.':'.'}`;if(name==='get_brightness'&&Number.isFinite(Number(out?.data?.percent)))return `روشنایی صفحه ${Number(out.data.percent)}٪ است.`;if(name==='get_battery_status'){const row=Array.isArray(out?.data)?out.data[0]:out?.data,pct=Number(row?.EstimatedChargeRemaining),st=Number(row?.BatteryStatus);if(Number.isFinite(pct))return `باتری ${pct}٪ است${st>=6&&st<=9?' و در حال شارژ است.':st===3?' و شارژ کامل است.':'.'}`;}return out?.message||'انجام شد.';};
 const memoryContext=items=>items?.length?`\n\n[LONG-TERM MEMORY — use only when relevant, never mention this block directly]\n${items.map(x=>`- ${x.text}`).join('\n')}`:'';
@@ -115,7 +116,18 @@ export class Agent{
     const outcome=assessTaskOutcome(turn.original,turn.trace,reply);
     if(!turn.private&&successes>=2&&failures===0&&outcome.complete===true){try{const learned=await skills.learnFromTrace(turn.original,turn.trace);if(learned)this.emit({type:'learning',action:'workflow-learned',title:learned.title});}catch{}}
     if(!turn.private&&soundsUnfamiliar(reply)){try{await skills.queueImprovement(turn.original,{error:'Model reported an unfamiliar or unsupported task'});this.emit({type:'learning',action:'gap-queued',title:turn.original});}catch{}}
-    const ok=failures===0&&outcome.complete!==false;return {ok,text:outcome.text||reply,complete:outcome.complete,brain:{mode:this.client.lastMode,model:this.client.model,provider:this.client.lastProvider,privacy:turn.private?'local/private-context':'online-eligible'},toolsRouted:turn.routeNames?.length||0,learned:!turn.private&&successes>=2&&failures===0&&outcome.complete===true,toolSummary:{successes,failures}};
+    // A cloud/local model's persuasive prose is NOT evidence of a completed
+    // Windows action. Only real tool results may establish execution.
+    const intendedAction=actionIntent(turn.original).action&&!turn.explanationOnly&&!turn.conditional;
+    const taskExecutions=turn.trace.filter(x=>x.success&&!DISCOVERY_ONLY_TOOLS.has(x.name)).length;
+    const noToolExecution=intendedAction&&Boolean(turn.routeNames?.length)&&taskExecutions===0;
+    const verifiedReply=noToolExecution
+      ?'هنوز هیچ دستوری روی ویندوز اجرا نشده است. '+(/(?:انجام شد|باز کردم|فرستادم|ذخیره کردم)/i.test(reply)
+        ?'مدل پاسخی تولید کرد اما هیچ نتیجهٔ ابزاری برای تأیید آن وجود ندارد.'
+        :'پاسخ مدل به تنهایی اجرای عملیات محسوب نمی‌شود. '+reply)
+      :outcome.text||reply;
+    const ok=!noToolExecution&&failures===0&&outcome.complete!==false;
+    return {ok,text:verifiedReply,complete:noToolExecution?false:outcome.complete,brain:{mode:this.client.lastMode,model:this.client.model,provider:this.client.lastProvider,privacy:turn.private?'local/private-context':'online-eligible'},toolsRouted:turn.routeNames?.length||0,learned:!turn.private&&successes>=2&&failures===0&&outcome.complete===true,toolSummary:{successes,failures,taskExecutions},executionVerified:!noToolExecution&&taskExecutions>0};
   }
   async drive({routeNames,turn,queuedCalls=[],startStep=0}={}){
     turn.routeNames=routeNames;let queue=[...queuedCalls];
@@ -152,8 +164,8 @@ export class Agent{
       // quoted another command, or set a future condition.
       const directAllowed=intentUnderstanding.guard.allowDirect&&!attachments.length&&!intentUnderstanding.needsClarification;
       const originalFast=directAllowed&&!sequence.multi
-        ?(matchFastCommand(original)||matchFastCommand(canonical)||matchFastCommand(normalized)):null;
-      const inferredFast=directAllowed&&intentUnderstanding.direct&&!sequence.multi
+        ?(matchFastCommand(original)||matchFastCommand(intentUnderstanding.corrected)||matchFastCommand(canonical)||matchFastCommand(normalized)):null;
+      const inferredFast=directAllowed&&intentUnderstanding.direct&&!intentUnderstanding.requiresTarget&&!sequence.multi
         ?(matchFastCommand(intentUnderstanding.canonical)
           ||(['restore_foreground_window','restart_pc'].includes(intentUnderstanding.tool)
              &&tools[intentUnderstanding.tool] ?{name:intentUnderstanding.tool,args:{}}:null))

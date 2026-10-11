@@ -13,7 +13,8 @@ import { resolveShortcutTarget,shortcutIdentity } from '../agent/ShortcutTargetR
 import { accountingReports } from '../agent/AccountingReportStore.js';
 import { AccountingMonitorService } from '../agent/AccountingMonitorService.js';
 import { attachmentIdAllocator } from '../agent/AttachmentIdAllocator.js';
-import { runTool } from '../agent/toolRegistry.js';
+import { runTool, tools } from '../agent/toolRegistry.js';
+import { summarizeCorpus } from '../agent/PersianActionCorpus.js';
 import { projectService } from '../agent/ProjectService.js';
 import { chats } from '../agent/ChatStore.js';
 import { Phase1DependencyManager } from './Phase1DependencyManager.js';
@@ -214,7 +215,7 @@ ipcMain.handle('agent:chat',async(_e,payload)=>{
     const visibleText=String(text??'');
     const session=await chatAgentFor(conversationId),userMessage=conversationId?await chats.appendMessage(conversationId,{role:'user',text:visibleText,meta:{attachments}}):null;
     const response=await session.chat(visibleText,{modelOverride:options.model||options.modelOverride||'auto',profile:options.profile||null,provider:options.provider||'auto',webSearch:Boolean(options.webSearch),attachments});
-    const assistantMessage=conversationId&&response?.text?await chats.appendMessage(conversationId,{role:'assistant',text:response.text,meta:{brain:response.brain||null,sources:response.sources||[]}}):null;
+    const assistantMessage=conversationId&&response?.text?await chats.appendMessage(conversationId,{role:'assistant',text:response.text,meta:{brain:response.brain||null,sources:response.sources||[],toolSummary:response.toolSummary||null,toolsRouted:response.toolsRouted||0,direct:response.direct===true,tool:response.tool||null,ok:response.ok!==false,complete:response.complete!==false}}):null;
     if(response?.requiresConfirmation&&response?.confirmationId){
       confirmationAgents.set(response.confirmationId,{session,conversationId});
       send({type:'approval',confirmationId:response.confirmationId,text:String(response.text||'در انتظار تأیید شما'),source:'MARIA',requiresConfirmation:true,createdAt:Date.now()});
@@ -235,6 +236,14 @@ ipcMain.handle('agent:confirm',async(_e,payload)=>{
 ipcMain.handle('agent:cancel',(_e,conversationId='')=>{const id=String(conversationId||''),session=id?chatAgents.get(id):agent;if(session)session.cancelCurrent();return {ok:true,cancelled:true};});
 ipcMain.handle('assistant:open-external',async(_e,raw)=>{const u=new URL(String(raw||''));if(!['http:','https:'].includes(u.protocol))throw new Error('Only http/https links are allowed');await shell.openExternal(u.href);return {ok:true};});
 ipcMain.handle('agent:status',()=>agent.status());
+ipcMain.handle('agent:capabilities',()=>({
+  registeredTools:Object.keys(tools).length,
+  generatedLanguageExamples:summarizeCorpus().totalExamples,
+  corpusIntentFamilies:summarizeCorpus().actionCount,
+  coreExecutableIntents:summarizeCorpus().coreIntentCount,
+  note:'ثبت یک ابزار یا نمونهٔ جمله به معنی آماده‌بودن اتصال خارجی، داشتن مجوز یا اجرای موفق نیست.',
+  groups:['کنترل ویندوز و برنامه‌ها','مدیریت فایل و پوشه','مرورگر و سایت‌ها','Excel و حسابداری','یادآور و پین','ترجمه و تصویر','پیام‌رسان‌ها','برنامه‌نویسی و مدیریت پروژه']
+}));
 ipcMain.handle('brain:catalog',()=>agent.modelCatalog());
 ipcMain.handle('brain:settings',async()=>{if(!brainStore)brainStore=new BrainProviderStore();return brainStore.publicState();});
 ipcMain.handle('brain:save-provider',async(_e,payload)=>{if(!brainStore)brainStore=new BrainProviderStore();await brainStore.saveProvider(payload||{});return refreshBrainProviders();});
@@ -271,7 +280,7 @@ ipcMain.handle('agent:replay',async(_e,payload)=>{
   const index=conversation.messages.findIndex(x=>x.id===messageId&&x.role==='user');if(index<0)throw new Error('User message not found');const target=conversation.messages[index];
   await chats.truncateAfter(conversationId,messageId,{include:false});const session=new Agent({emit:send,enableScheduler:false,client:new BrainRouter({chatgptPlan})});session.loadConversation(conversation.messages.slice(0,index));chatAgents.set(conversationId,session);
   const replayAttachments=(Array.isArray(target?.meta?.attachments)?target.meta.attachments:[]).filter(x=>x?.path);
-  setUiState('working','در حال بازسازی پاسخ');try{const response=await session.chat(target.text,{modelOverride:payload?.model||'auto',profile:payload?.profile||null,provider:payload?.provider||'auto',attachments:replayAttachments});const assistantMessage=response?.text?await chats.appendMessage(conversationId,{role:'assistant',text:response.text,meta:{brain:response.brain||null,sources:response.sources||[]}}):null;if(response?.requiresConfirmation&&response?.confirmationId)confirmationAgents.set(response.confirmationId,{session,conversationId});return {...response,conversationId,persisted:{assistant:assistantMessage}};}finally{if(uiState.mode!=='listening')setUiState('online','Online • آماده');}
+  setUiState('working','در حال بازسازی پاسخ');try{const response=await session.chat(target.text,{modelOverride:payload?.model||'auto',profile:payload?.profile||null,provider:payload?.provider||'auto',attachments:replayAttachments});const assistantMessage=response?.text?await chats.appendMessage(conversationId,{role:'assistant',text:response.text,meta:{brain:response.brain||null,sources:response.sources||[],toolSummary:response.toolSummary||null,toolsRouted:response.toolsRouted||0,direct:response.direct===true,tool:response.tool||null,ok:response.ok!==false,complete:response.complete!==false}}):null;if(response?.requiresConfirmation&&response?.confirmationId)confirmationAgents.set(response.confirmationId,{session,conversationId});return {...response,conversationId,persisted:{assistant:assistantMessage}};}finally{if(uiState.mode!=='listening')setUiState('online','Online • آماده');}
 });
 ipcMain.handle('assistant:toggle',()=>{toggleChat();return true;});
 ipcMain.handle('assistant:show-island',(_e,mode='compact')=>{showIsland(String(mode||'compact'));return true;});

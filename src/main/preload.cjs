@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('blackClover',{
   testChatGPTConnection:()=>ipcRenderer.invoke('chatgpt:test-response'),
   confirm:(id,approved)=>ipcRenderer.invoke('agent:confirm',{id,approved}),
   getStatus:()=>ipcRenderer.invoke('agent:status'),
+  skillCapabilities:()=>ipcRenderer.invoke('agent:capabilities'),
   openExternal:url=>ipcRenderer.invoke('assistant:open-external',url),
   toggle:()=>ipcRenderer.invoke('assistant:toggle'),
   showChat:()=>ipcRenderer.invoke('assistant:show-chat'),

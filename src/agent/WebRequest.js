@@ -19,7 +19,10 @@ export function parseWebRequest(input) {
   const text=normalize(input);if(!text||otherAction.test(text))return null;
   const website=/سایت|وب ?سایت|website/i.test(text);
   if(!searchVerb.test(text)&&!(website&&/(?:باز(?:ش)? کن|بیار(?:ش)?|بیاور|برو)/i.test(text)))return null;
-  if(/(?:فایل|پوشه|فولدر).*(?:سیستم|کامپیوتر|دسکتاپ|درایو|به نام)|(?:از|روی|توی|داخل)\s+(?:دسکتاپ|درایو|کامپیوتر)/i.test(text))return null;
+  // Unqualified requests for a local file or folder must not become web searches.
+  // Explicit Google/web wording is still allowed for finding a public resource.
+  if(/(?:فایل|پوشه|فولدر|پرونده|اکسل).*(?:سیستم|کامپیوتر|دسکتاپ|درایو|به نام)|(?:از|روی|توی|داخل)\s+(?:دسکتاپ|درایو|کامپیوتر)/i.test(text))return null;
+  if(/(?:فایل|پوشه|فولدر|پرونده|اکسل)/i.test(text)&&!/(?:گوگل|google|اینترنت|internet|آنلاین|online|وب|web|کروم|chrome|سایت|website|یوتیوب|youtube)/i.test(text))return null;
   const engine=/یوتیوب|youtube/i.test(text)?'youtube':/گوگل|google|کروم|chrome/i.test(text)?'google':'';
   const directNamedSite=text.match(/(?:سایت|وب ?سایت|website)\s+(?:رسمی\s+)?(.+?)(?=\s+(?:رو|را)?\s*(?:(?:در|تو|توی)\s+(?:گوگل|google|کروم|chrome)|(?:خود\s+)?سایت(?:ش)?|باز(?:ش)?\s*کن|بیار(?:ش)?|برو)(?:\s|$))/i);
   if(directNamedSite&&(/(?:خود\s+سایت|سایت(?:ش|شو))/i.test(text)||/(?:سایت|وب ?سایت|website).{1,120}?(?:باز(?:ش)?\s*کن|برو)(?:\s|$)/i.test(text))){

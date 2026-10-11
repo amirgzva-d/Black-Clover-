@@ -62,7 +62,8 @@ test('attached local files force private routing and enter hidden agent context'
   };
   const agent=new Agent({client,enableScheduler:false});
   const out=await agent.chat('این فایل را بررسی کن',{attachments:[{path:'C:\\Temp\\report.txt',name:'report.txt'}]});
-  assert.equal(out.ok,true);
+  assert.equal(out.ok,false); // No actual file tool ran: never claim a file was inspected.
+  assert.match(out.text,/هنوز هیچ دستوری/);
   assert.equal(seen?.options?.allowOnline,false);
   assert.ok(seen?.toolDefs?.length>0);
   assert.match(JSON.stringify(seen?.messages),/HOST ATTACHMENTS/);

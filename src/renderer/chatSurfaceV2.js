@@ -2,6 +2,7 @@ import './chatSurfaceV2.css';
 import {voice} from './voice.js';
 import {marked} from 'marked';
 import DOMPurify from 'dompurify';
+import {routeChosenChatModel,executionStatus} from './chatProviderSelection.js';
 
 const $=q=>document.querySelector(q);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -44,7 +45,7 @@ const markdown=s=>DOMPurify.sanitize(marked.parse(String(s||'')),{USE_PROFILES:{
 const safeUrl=raw=>{try{const u=new URL(raw);return /^https?:$/.test(u.protocol)?u.href:null;}catch{return null;}};
 const api=()=>window.blackClover;
 const state={id:null,chat:null,list:[],folders:[],folder:'all',search:'',model:CHATGPT_AUTO,connected:false,connecting:false,account:null,models:[],sidebar:true,web:false,deep:false,autoRead:localStorage.getItem(VOICE_READ_KEY)==='1',checking:false,testing:false,providerSettings:[],configuredProviders:[]};
-let busy=false,cancelled=false,activeChatId=null,streamContent='',activeStream=null,mic=null,toastTimer=null;
+let busy=false,cancelled=false,activeChatId=null,streamContent='',activeStream=null,mic=null,toastTimer=null,chatBootPromise=Promise.resolve();
 const button=(id,label,ico,extra='')=>'<button type="button" id="'+id+'" class="icon-btn" title="'+esc(label)+'" aria-label="'+esc(label)+'" '+extra+'>'+icon(ico)+'</button>';
 function notice(message){const n=$('#notice');if(!n)return;n.textContent=message;n.hidden=false;clearTimeout(toastTimer);toastTimer=setTimeout(()=>n.hidden=true,3800);}
 function setStatus(message){const x=$('#status');if(x)x.textContent=message;}
@@ -157,6 +158,17 @@ function sourceMarkup(message){
   const html=sources.slice(0,8).map((s,i)=>{const url=safeUrl(s?.url);return url?'<button type="button" class="source-chip" data-link="'+esc(url)+'">'+(i+1)+' · '+esc(s.title||new URL(url).host)+'</button>':'';}).join('');
   return html?'<div class="sources">'+html+'</div>':'';
 }
+function messageExecutionMarkup(message){
+  if(message.role!=='assistant'||!message.meta?.brain)return '';
+  const meta=message.meta;
+  const info=executionStatus({
+    ok:meta.ok,toolsRouted:meta.toolsRouted,toolSummary:meta.toolSummary,
+    direct:meta.direct,tool:meta.tool
+  });
+  const provider=String(meta.brain.provider||meta.brain.mode||'MARIA');
+  const kind=info.kind==='success'?'success':info.kind==='error'?'error':'info';
+  return '<div class="maria-execution-meta '+kind+'"><span class="maria-execution-dot"></span><span>'+esc(info.label)+'</span><small>'+esc(provider)+'</small></div>';
+}
 function renderMessages(){
   const root=$('#messages');if(!root)return;
   const rows=state.chat?.messages||[];
@@ -164,7 +176,7 @@ function renderMessages(){
     root.innerHTML='<div class="welcome"><div class="welcome-symbol">'+icon('spark',36)+'</div><h1>چطور می‌تونم کمکت کنم؟</h1><p>از MARIA سؤال بپرس یا ازش بخواه کاری روی کامپیوتر انجام بده.</p><div class="ideas"><button data-starter="سلام ماریا، خودت رو معرفی کن">گفتگوی دوستانه</button><button data-starter="صدای ویندوز را قطع کن">کنترل کامپیوتر</button><button data-starter="آخرین اخبار هوش مصنوعی را همراه منابع پیدا کن">جستجو و تحقیق</button></div></div>';
     scrollEnd();return;
   }
-  root.innerHTML=rows.map((m,i)=>'<article class="message '+(m.role==='user'?'user':'assistant')+'" data-id="'+esc(m.id)+'" data-index="'+i+'"><div class="message-line"><div class="bubble">'+markdown(m.text)+'</div></div>'+sourceMarkup(m)+'<div class="message-actions">'+messageButtons(m,i)+'</div></article>').join('');
+  root.innerHTML=rows.map((m,i)=>'<article class="message '+(m.role==='user'?'user':'assistant')+'" data-id="'+esc(m.id)+'" data-index="'+i+'"><div class="message-line"><div class="bubble">'+markdown(m.text)+'</div></div>'+sourceMarkup(m)+messageExecutionMarkup(m)+'<div class="message-actions">'+messageButtons(m,i)+'</div></article>').join('');
   scrollEnd();
 }
 function renderChats(){
@@ -204,17 +216,19 @@ function busyUI(){
 }
 async function sendMessage(text){
   const value=String(text||'').trim();if(!value||busy)return;
-  if(!state.connected&&state.model.startsWith('chatgpt:'))notice('حساب ChatGPT مجوز ندارد؛ می‌توانی از مدل‌های دیگر استفاده کنی.');
+  if(!state.connected&&state.model.startsWith('chatgpt:'))notice('ChatGPT اتصال مجاز ندارد. برای اجرای ابزارها Auto یا مدل آمادهٔ دیگر را انتخاب کن.');
+  await chatBootPromise;
   await ensureChat();busy=true;cancelled=false;activeChatId=state.id;busyUI();const start=performance.now();
   const current=state.id;const old=state.chat;
   $('#input').value='';grow();state.chat={...old,messages:[...(old.messages||[]),{id:'pending-'+Date.now(),role:'user',text:value}]};renderMessages();
   setStatus('در حال پاسخ…');try{
-    const response=await api().chat(value,{conversationId:current,modelOverride:state.model,provider:state.model.startsWith('online:')?state.model.slice(7):'chatgpt',profile:state.deep?'complex':'chat',webSearch:state.web});
+    const selected=routeChosenChatModel(state.model);
+    const response=await api().chat(value,{conversationId:current,...selected,profile:state.deep?'complex':'chat',webSearch:state.web});
     wipeStream();await loadChat(current);
     if(response?.requiresConfirmation&&response.confirmationId)confirmation(response.confirmationId,response.text);
     if(response?.cancelled){setStatus('متوقف شد');return;}
     if(response?.ok===false){notice(response.text||'درخواست انجام نشد.');setStatus('خطا در پاسخ');}
-    else {$('#latency').textContent=((performance.now()-start)/1000).toFixed(1)+'s';setStatus('آماده');if(response?.text&&state.autoRead&&voice.enabled)voice.speak(response.text);}
+    else {$('#latency').textContent=((performance.now()-start)/1000).toFixed(1)+'s';setStatus(executionStatus(response).label);if(response?.text&&state.autoRead&&voice.enabled)voice.speak(response.text);}
   }catch(e){wipeStream();await loadChat(current).catch(()=>{});withError(e);setStatus('خطا در اتصال');}
   finally{busy=false;activeChatId=null;busyUI();}
 }
@@ -223,7 +237,8 @@ async function stopResponse(){
 }
 async function retryMessage(userMessage){
   if(busy)return;const current=state.id;busy=true;cancelled=false;activeChatId=current;busyUI();setStatus('در حال بازنویسی…');
-  try{const r=await api().replayMessage({conversationId:current,messageId:userMessage.id,model:state.model,provider:state.model.startsWith('online:')?state.model.slice(7):'chatgpt',profile:state.deep?'complex':'chat'});
+  try{const selected=routeChosenChatModel(state.model);
+    const r=await api().replayMessage({conversationId:current,messageId:userMessage.id,model:selected.modelOverride,provider:selected.provider,profile:state.deep?'complex':'chat'});
     wipeStream();await loadChat(current);if(r?.requiresConfirmation)confirmation(r.confirmationId,r.text);if(r?.ok===false)notice(r?.text||'تولید دوباره موفق نبود.');
   }catch(e){withError(e);}finally{busy=false;activeChatId=null;busyUI();setStatus('آماده');}
 }
@@ -270,7 +285,7 @@ function template(){
     '<section class="messages" id="messages" aria-live="polite"></section>'+
     '<div id="confirm" class="confirm-box" hidden></div>'+
     '<footer class="composer-wrap"><form id="form" class="composer"><textarea id="input" placeholder="پیامی برای MARIA بنویس…" rows="1" aria-label="متن پیام"></textarea>'+
-      '<div class="composer-bottom"><div class="composer-left"><button type="button" id="webToggle" class="tool-chip" title="جستجوی منابع به‌روز">'+icon('globe',17)+'جستجو</button><button type="button" id="deepToggle" class="tool-chip" title="پاسخ دقیق‌تر">'+icon('spark',16)+'عمیق</button><button type="button" id="autoSpeak" class="tool-chip" title="خواندن خودکار جواب">'+icon('sound',16)+'صدا</button></div>'+
+      '<div class="composer-bottom"><div class="composer-left"><button type="button" id="webToggle" class="tool-chip" title="جستجوی منابع به‌روز">'+icon('globe',17)+'جستجو</button><button type="button" id="deepToggle" class="tool-chip" title="پاسخ دقیق‌تر">'+icon('spark',16)+'عمیق</button><button type="button" id="skillsInfo" class="tool-chip" title="مشاهده مهارت‌ها و وضعیت اجرای ماریا">'+icon('work',16)+'مهارت‌ها</button><button type="button" id="autoSpeak" class="tool-chip" title="خواندن خودکار جواب">'+icon('sound',16)+'صدا</button></div>'+
       '<div class="composer-right">'+button('mic','گفتن پیام با میکروفن','mic')+'<button type="submit" id="send" title="ارسال پیام" class="send-btn">'+icon('send',19)+'</button></div></div></form>'+
       '<small class="composer-hint">MARIA ممکن است اشتباه کند. نتیجه فرمان‌های مهم را بررسی کن.</small></footer>'+
   '</main></div>'+
@@ -305,8 +320,10 @@ export async function mountChatSurface(){
   $('#autoSpeak').classList.toggle('active',state.autoRead);$('#voiceEnabled').checked=voice.enabled;$('#voiceAutoRead').checked=state.autoRead;
   $('#voiceRate').value=voice.rate;$('#voiceRateValue').textContent=voice.rate.toFixed(2)+'×';
   $('#voicePitch').value=voice.pitch;$('#voicePitchValue').textContent=voice.pitch.toFixed(2)+'×';
-  await syncAccount();await syncProviders();await refreshList();await ensureChat();renderHeader();renderMessages();
-  $('#newChat').onclick=()=>createChat().catch(withError);
+  // Paint immediately: account/provider checks may be network-bound on Windows.
+  renderHeader();renderMessages();updateAccountUi();
+  $('#status').textContent='در حال آماده‌سازی گفتگو…';
+  $('#newChat').onclick=()=>chatBootPromise.then(()=>createChat()).catch(withError);
   $('#allChats').onclick=()=>{state.folder='all';refreshList().catch(withError);};
   $('#chatSearch').oninput=e=>{state.search=e.target.value;refreshList().catch(withError);};
   $('#newFolder').onclick=async()=>{const name=await showDialog({title:'پروژه جدید',description:'برای مرتب کردن گفتگوها یک پروژه بساز.',value:'',confirmText:'ساخت پروژه'});if(name){try{const folder=await api().createChatFolder(name);state.folder=folder.id;await refreshList();notice('پروژه ساخته شد.');}catch(e){withError(e);}}};
@@ -345,6 +362,16 @@ export async function mountChatSurface(){
   $('#sidebarToggle').onclick=()=>{state.sidebar=!state.sidebar;$('#sidebar').classList.toggle('collapsed',!state.sidebar);};
   $('#webToggle').onclick=()=>{state.web=!state.web;renderHeader();};
   $('#deepToggle').onclick=()=>{state.deep=!state.deep;renderHeader();};
+  $('#skillsInfo').onclick=async()=>{
+    try{
+      const c=await api().skillCapabilities();
+      const desc='ابزارهای ثبت‌شده: '+Number(c.registeredTools||0)+' • خانواده‌های دستورات فارسی: '+Number(c.corpusIntentFamilies||0)
+        +' • نمونه‌های تولیدی: '+Number(c.generatedLanguageExamples||0).toLocaleString('fa-IR')
+        +'\n\n'+(c.groups||[]).join(' · ')
+        +'\n\n'+String(c.note||'');
+      void showDialog({title:'مهارت‌ها و اجرای واقعی',description:desc,confirmText:'بستن'});
+    }catch(error){withError(error);}
+  };
   $('#autoSpeak').onclick=()=>{state.autoRead=!state.autoRead;localStorage.setItem(VOICE_READ_KEY,state.autoRead?'1':'0');$('#autoSpeak').classList.toggle('active',state.autoRead);$('#voiceAutoRead').checked=state.autoRead;};
   $('#mic').onclick=startMicrophone;
   $('#workMode').onclick=()=>api().showProjects().catch(withError);
@@ -392,5 +419,10 @@ export async function mountChatSurface(){
   api().onPrefillPrompt?.(payload=>{const text=payload?.text||'';if(text){$('#input').value=text;grow();if(payload.submit)sendMessage(text);}});
   const poll=setInterval(()=>{if(state.account?.session?.status==='connecting'&&!state.connecting)syncAccount().catch(()=>{});},3000);
   window.addEventListener('beforeunload',()=>clearInterval(poll),{once:true});
+  chatBootPromise=(async()=>{await refreshList();await ensureChat();renderHeader();renderMessages();setStatus('آماده');})();
+  chatBootPromise.catch(error=>{setStatus('خطا در بارگذاری گفتگو');withError(error);});
+  // Provider discovery is independent of chat loading and must not freeze the UI.
+  void syncAccount();
+  void syncProviders();
   busyUI();grow();$('#input').focus();
 }

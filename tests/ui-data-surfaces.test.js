@@ -62,7 +62,7 @@ test('desktop UI keeps legacy pin/reminder migration APIs but moves their visibl
   assert.match(chat,/let busy=false,cancelled=false/);
   assert.doesNotMatch(chat,/input\.disabled\s*=\s*true/);
   assert.match(chat,/conversationId:current/);
-  assert.match(chat,/modelOverride:state\.model/);
+  assert.match(chat,/routeChosenChatModel\(state.model\)/);
   assert.match(chat,/const CHATGPT_AUTO='auto'/);
   assert.match(chat,/listChats/);
   assert.match(chat,/createChat/);

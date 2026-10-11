@@ -300,3 +300,101 @@ body.chat-v3 .maria-provider-actions button:disabled{opacity:.4;cursor:not-allow
 body.chat-v3 .maria-avatar-return{background:#393342;border:1px solid #665575;border-radius:9px;color:#f0e7ff;font-size:12px;font-weight:600;padding:8px 12px;white-space:nowrap}body.chat-v3 .maria-avatar-return:hover{background:#524365} @media(max-width:700px){body.chat-v3 .maria-avatar-return{font-size:10px;padding:7px 8px}}
 
 body.chat-v3 .maria-free-gemini{border:1px solid #446b60;background:#18362e66;padding:13px;border-radius:12px;margin-bottom:14px}body.chat-v3 .maria-free-gemini strong{font-size:14px;color:#a8f2d6}body.chat-v3 .maria-free-gemini p{font-size:12px;line-height:1.8;color:#c5d7d0}body.chat-v3 .maria-free-gemini button{padding:9px 13px;border-radius:9px;border:1px solid #6da58e;background:#244c3d;color:#e3fff0}
+
+/* MARIA Phase 14 — Chat workspace in the existing Top Island violet/ink palette.
+   This styles the chat window only; never touches mini-island or its mascot. */
+body.chat-v3{
+  --m-bg:#0d0f16;--m-aside:#090b12;--m-panel:#1a1d29;
+  --m-hover:#212436;--m-line:rgba(170,157,255,.13);
+  --m-text:#f4f2fb;--m-muted:#a7a5b6;--m-dim:#797789;
+  --m-violet:#9787ff;--m-purple-soft:rgba(119,96,245,.17)
+}
+body.chat-v3 #app .pro-shell{
+  background:var(--m-bg);border:1px solid rgba(171,157,255,.15);
+  border-radius:17px;box-shadow:0 28px 96px rgba(0,0,0,.55)
+}
+body.chat-v3 .sidebar{
+  background:linear-gradient(160deg,#10121c,#090a10 90%);
+  border-left:1px solid rgba(160,146,246,.045)
+}
+body.chat-v3 .brand-icon{background:linear-gradient(135deg,#eae7ff,#9c8efe);color:#211b48;box-shadow:0 0 26px rgba(129,103,255,.18)}
+body.chat-v3 .brand strong{color:#f5f1ff}
+body.chat-v3 .new-chat{background:rgba(135,111,255,.105);border:1px solid rgba(158,137,255,.22)}
+body.chat-v3 .new-chat:hover{background:rgba(144,120,255,.20);border-color:rgba(180,163,255,.32)}
+body.chat-v3 .search-box{background:#121520;border:1px solid rgba(162,149,255,.1)}
+body.chat-v3 .search-box:focus-within{border-color:rgba(153,137,255,.5)}
+body.chat-v3 .chat-entry.selected{background:rgba(129,110,255,.16)}
+body.chat-v3 .chat-entry:hover,body.chat-v3 .side-foot button:hover,
+body.chat-v3 .folder-entry:hover{background:rgba(129,110,255,.10)}
+body.chat-v3 .workspace{
+  background:radial-gradient(ellipse at 50% 0%,rgba(109,85,219,.045),transparent 58%),var(--m-bg);
+}
+body.chat-v3 .topbar,body.chat-v3 .subbar{background:rgba(13,15,22,.97);border-color:rgba(152,135,255,.10)}
+body.chat-v3 #modelSelect{color:#e9e5ff}
+body.chat-v3 #modelSelect:hover{background:rgba(145,125,255,.10)}
+body.chat-v3 .account-chip{background:#171a25;border-color:rgba(152,135,255,.20);color:#c8c4d7}
+body.chat-v3 .account-chip.online{background:#12251e;border-color:rgba(81,194,145,.35)}
+body.chat-v3 .icon-btn:hover{background:rgba(139,115,255,.15);color:#fff}
+body.chat-v3 .messages{scrollbar-color:#39324f transparent}
+body.chat-v3 .message{margin-bottom:23px}
+body.chat-v3 .bubble{color:#f0eef7;font-size:14px;line-height:1.92}
+body.chat-v3 .message.user .bubble{
+  background:#222335;border:1px solid rgba(158,140,255,.14);
+  border-radius:19px 19px 6px 19px;box-shadow:0 4px 18px rgba(0,0,0,.10)
+}
+body.chat-v3 .message.assistant .bubble{max-width:790px}
+body.chat-v3 .bubble pre{background:#0b0d15;border-color:rgba(149,130,253,.19);border-radius:13px}
+body.chat-v3 .bubble code{background:rgba(158,143,255,.105);color:#eee9ff}
+body.chat-v3 .bubble pre code{background:transparent}
+body.chat-v3 .bubble a{color:#b3a9ff;text-decoration-color:rgba(173,156,255,.6)}
+body.chat-v3 .bubble blockquote{border-right:3px solid var(--m-violet)!important;background:rgba(122,98,242,.08)!important}
+body.chat-v3 .message-actions{opacity:.64}
+body.chat-v3 .message-actions button:hover{background:rgba(130,108,244,.16)}
+body.chat-v3 .welcome-symbol{color:#b5a9ff;filter:drop-shadow(0 0 22px rgba(131,107,255,.31))}
+body.chat-v3 .welcome h1{font-weight:550;color:#f3f1ff}
+body.chat-v3 .welcome p{color:#a29fb2}
+body.chat-v3 .ideas button{background:#171926;border:1px solid rgba(158,139,255,.15)}
+body.chat-v3 .ideas button:hover{background:#25243b;border-color:rgba(174,151,255,.4)}
+body.chat-v3 .composer{
+  background:#1b1d2a;border:1px solid rgba(156,141,255,.23);
+  border-radius:25px;box-shadow:0 14px 42px rgba(0,0,0,.25)
+}
+body.chat-v3 .composer:focus-within{border-color:#8d7cff;box-shadow:0 0 0 3px rgba(137,115,255,.08),0 14px 42px rgba(0,0,0,.28)}
+body.chat-v3 .tool-chip:hover{background:rgba(149,131,255,.12)}
+body.chat-v3 .tool-chip.active{background:rgba(139,118,255,.2);color:#e5dcff}
+body.chat-v3 .send-btn{background:#e8e2ff;color:#241c45!important}
+body.chat-v3 .send-btn:hover{background:#fff}
+body.chat-v3 .send-btn.danger{background:#934d77;color:#fff!important}
+body.chat-v3 .composer-hint{color:#88859a}
+body.chat-v3 .settings-panel{background:#151721;border:1px solid rgba(159,139,255,.22)}
+body.chat-v3 .settings-tabs button.active{border-bottom-color:#a995ff;color:#eee9ff}
+body.chat-v3 .account-identity{background:linear-gradient(135deg,#202237,#191c29);border:1px solid rgba(151,136,255,.15)}
+body.chat-v3 .account-symbol{background:#d3c9ff;color:#3b2573}
+body.chat-v3 .settings-actions .primary-button{background:#dcd4ff;color:#281b55;border-color:#dcd4ff}
+body.chat-v3 .maria-free-gemini{background:rgba(46,37,73,.6);border-color:rgba(156,136,255,.25)}
+body.chat-v3 .maria-free-gemini strong{color:#c7b9ff}
+body.chat-v3 .maria-free-gemini button{background:#3b3058;border-color:#6c589f}
+body.chat-v3 .action-dialog{background:#191a27;border-color:rgba(176,156,255,.28)}
+body.chat-v3 .toast{background:#232234;border-color:rgba(149,133,255,.33)}
+body.chat-v3 .maria-execution-meta{
+  display:flex;align-items:center;gap:7px;min-height:25px;max-width:790px;
+  font-size:10px;color:#a6a4b7;margin-top:7px
+}
+body.chat-v3 .maria-execution-dot{width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#9996a9}
+body.chat-v3 .maria-execution-meta.success .maria-execution-dot{background:#58c991;box-shadow:0 0 9px rgba(80,207,143,.30)}
+body.chat-v3 .maria-execution-meta.error .maria-execution-dot{background:#e38e95}
+body.chat-v3 .maria-execution-meta small{margin-inline-start:3px;color:#7e7a98;font-size:10px}
+body.chat-v3 .source-chip{background:#202036;border-color:rgba(154,140,255,.24)}
+body.chat-v3 .source-chip:hover{background:#2f2c48}
+@media(max-width:1000px){
+  body.chat-v3 .pro-shell{grid-template-columns:215px minmax(0,1fr)}
+  body.chat-v3 .sidebar.collapsed{margin-left:-215px}
+}
+@media(max-width:740px){
+  body.chat-v3 .top-right{gap:4px}
+  body.chat-v3 .account-chip{max-width:136px;text-overflow:ellipsis;overflow:hidden}
+  body.chat-v3 .messages{padding:18px 16px!important}
+  body.chat-v3 .composer-wrap{padding:0 12px 12px}
+  body.chat-v3 .tool-chip{padding:0 7px;font-size:10px}
+  body.chat-v3 .message.user .bubble{max-width:92%}
+}
