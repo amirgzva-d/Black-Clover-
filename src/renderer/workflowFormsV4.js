@@ -108,7 +108,7 @@ export function reportForm({openModal,field,esc,bridge,refresh},selectedPath='')
      <option value="invoice">حسابداری</option>
      <option value="transport">باربری</option>
    </select>`)}
-   <div class="v4-workflow-hint">حسابداری: پلاک C، مبلغ D و عکسِ لینک‌شده H از ردیف ۱۴؛ همه خودکار خوانده می‌شوند.</div>`,
+   <div class="v4-workflow-hint">حسابداری: تاریخ B، پیگیری/پلاک C، مبلغ D یا وزن E؛ شیت‌های فاکتور و ستون عکس به‌صورت خودکار تشخیص داده می‌شوند.</div>`,
   onSubmit:async fd=>{
    const workbook=String(fd.get('path')||'').trim();
    if(!/\.(xlsx|xlsm)$/i.test(workbook))throw new Error('اسکن مستقیم فقط برای xlsx و xlsm آماده است. فایل xls را ابتدا به xlsx تبدیل کن.');

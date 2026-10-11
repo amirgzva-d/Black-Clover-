@@ -2,6 +2,8 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import JSZip from 'jszip';
 import { accountingEvidenceResolver } from './AccountingEvidenceResolver.js';
+import { INVOICE_TEMPLATE_ID } from './AccountingWorkbookProfiles.js';
+import { hasInvoiceDate,chooseInvoiceSheets,scanInvoiceSheetRows } from './AccountingInvoiceSchema.js';
 
 const xmlDecode=s=>String(s??'').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'").replace(/&amp;/g,'&');
 const attr=(tag,name)=>{const m=String(tag).match(new RegExp('(?:^|\\s)'+name.replace(':','\\:')+'="([^"]*)"'));return m?xmlDecode(m[1]):'';};
@@ -24,9 +26,12 @@ const parseSharedStrings=xml=>{
 };
 const parseCells=(xml,shared)=>{
   const map=new Map();
-  for(const m of String(xml||'').matchAll(/<c\b([^>]*)>([\s\S]*?)<\/c>/g)){
+  // XLSX commonly stores empty cells as <c r="D25"/>. The previous
+  // expression consumed the following </c> and accidentally assigned E25's
+  // value to D25, silently dropping E25 (weight in accounting ledgers).
+  for(const m of String(xml||'').matchAll(/<c\b([^>]*?)(?:\s*\/>|>([\s\S]*?)<\/c>)/g)){
     const ref=attr(m[1],'r');if(!ref)continue;
-    const type=attr(m[1],'t'),body=m[2];
+    const type=attr(m[1],'t'),body=m[2]||'';
     const formula=(body.match(/<f\b[^>]*>([\s\S]*?)<\/f>/)||[])[1]||'';
     let raw=(body.match(/<v\b[^>]*>([\s\S]*?)<\/v>/)||[])[1];
     if(raw==null)raw=(body.match(/<t\b[^>]*>([\s\S]*?)<\/t>/)||[])[1];
@@ -92,6 +97,80 @@ function rowSourceSummary(cells,row,columns=[]){
 }
 
 export class AccountingWorkbookScanner{
+  async scanDatedInvoice({zip,shared,sheets,profile,identity,filePath,stat}){
+    const selected=chooseInvoiceSheets(sheets,profile);
+    const selectedNames=new Set(selected.map(s=>s.name));
+    const availableSheets=[],cached=new Map();
+    for(const sheet of sheets){
+      const entry=zip.file(sheet.target);
+      if(!entry){
+        availableSheets.push({name:sheet.name,selected:selectedNames.has(sheet.name),
+          suggested:selectedNames.has(sheet.name),dateRows:0,error:'sheet_xml_missing'});
+        continue;
+      }
+      const cells=parseCells(await entry.async('string'),shared);
+      cached.set(sheet.name,{sheet,cells});
+      const endRow=maxRowFromCells(cells);
+      let dateRows=0;
+      for(let r=14;r<=endRow;r++)if(hasInvoiceDate(cells.get('B'+r)?.value))dateRows++;
+      availableSheets.push({name:sheet.name,selected:selectedNames.has(sheet.name),
+        suggested:selectedNames.has(sheet.name),dateRows});
+    }
+    if(!selected.length)return {
+      ok:false,status:'sheet_not_found',...identity,path:filePath,
+      availableSheets,selectedSheets:[],total:0,registered:0,missing:0,
+      lastModified:stat.mtime.toISOString(),complete:false
+    };
+    const sheetResults=[];
+    let evidenceSummary=null,evidenceUnavailable=false;
+    for(const sheet of selected){
+      const entry=cached.get(sheet.name);
+      if(!entry){
+        sheetResults.push({sheet:sheet.name,status:'sheet_xml_missing',
+          total:0,registered:0,missing:0,missingRows:[],rowIssues:[]});
+        continue;
+      }
+      const {cells}=entry;
+      const ctx=await accountingEvidenceResolver.prepare({
+        zip,sheetTarget:sheet.target,cells,workbookPath:filePath,profile
+      });
+      if(ctx.summary){
+        evidenceSummary=ctx.summary;
+        if(ctx.summary.rootAvailable===false)evidenceUnavailable=true;
+      }
+      const inspected=scanInvoiceSheetRows(cells,{
+        startRow:Math.max(14,Number(profile.startRow)||14),
+        endRow:maxRowFromCells(cells)
+      });
+      sheetResults.push({
+        sheet:sheet.name,status:'ok',
+        ...inspected,validPhotoCount:inspected.verifiedPhotos,
+        evidenceSummary:ctx.summary||null
+      });
+    }
+    const sum=key=>sheetResults.reduce((n,s)=>n+Number(s[key]||0),0);
+    const total=sum('total'),registered=sum('registered'),missing=sum('missing');
+    const brokenLinks=sum('brokenLinks'),unverifiedLinks=sum('unverifiedLinks');
+    const result={
+      ok:!evidenceUnavailable,status:evidenceUnavailable?'evidence_unavailable':'ok',
+      ...identity,path:filePath,type:'invoice',
+      lastModified:stat.mtime.toISOString(),size:stat.size,
+      startRow:14,autoSelectedSheets:profile.sheetSelectionMode!=='manual',
+      availableSheets,selectedSheets:selected.map(s=>s.name),
+      total,receipts:sum('receipts'),plates:sum('plates'),
+      unclassified:sum('unclassified'),registered,missing,
+      missingAttachments:sheetResults.reduce((n,s)=>n+(s.rowIssues||[]).filter(i=>i.type==='photo_count_short').length,0),
+      brokenLinks,unverifiedLinks,duplicateIds:[],duplicateIdCount:0,
+      idMismatches:0,photoCount:sum('verifiedPhotos'),linkedPhotoCount:sum('linkedPhotos'),
+      complete:!evidenceUnavailable&&total>0&&missing===0,
+      completion:total?Math.round((registered/total)*100):0,
+      evidenceSummary,transportPhotoOnly:false,
+      sheets:sheetResults,
+      sourceFreshness:evidenceUnavailable?'stale_source':'disk_snapshot',
+      scannedAt:new Date().toISOString()
+    };
+    return result;
+  }
   async scan(monitor={}){
     const filePath=String(monitor.path||monitor.workbookPath||'');
     const ext=path.extname(filePath).toLowerCase(),identity=parseInvoiceIdentity(filePath);
@@ -107,6 +186,9 @@ export class AccountingWorkbookScanner{
       if(!workbook||!rels)throw new Error('Workbook structure is incomplete');
       const sheets=parseWorkbookSheets(await workbook.async('string'),await rels.async('string'));
       const profile=monitor.profile||{};
+      if((monitor.type||monitor.workbookKind||'invoice')==='invoice'&&profile.preset===INVOICE_TEMPLATE_ID){
+        return await this.scanDatedInvoice({zip,shared,sheets,profile,identity,filePath,stat});
+      }
       const configuredSheets=Array.isArray(profile.sheets)?profile.sheets:Array.isArray(profile.watchedSheets)?profile.watchedSheets:[];
       const selected=sheets.filter(s=>{
         const names=configuredSheets.filter(Boolean).map(x=>typeof x==='string'?x:x.name).filter(Boolean);

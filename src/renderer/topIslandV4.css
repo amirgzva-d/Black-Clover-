@@ -1370,3 +1370,22 @@ body.top-island-v4-surface{display:grid;place-items:start center;direction:rtl;u
 .v4-home-media>div button{height:36px;min-width:47px;background:rgba(119,96,225,.09);color:#e6e2f7;border:1px solid rgba(151,128,222,.19);border-radius:11px;font-size:17px;cursor:pointer}
 .v4-home-media>div button:hover{background:rgba(119,96,225,.21)}
 .v4-home-media>div button:disabled{opacity:.5;cursor:wait}
+
+/* Phase 12: Excel sheet-selection settings only. Original capsule, avatar,
+   and rectangular top bar styles are intentionally unchanged. */
+.v4-sheet-selection-summary{
+  font-size:11px;color:#bdb6de;padding:8px 10px;margin:7px 0 11px;
+  border:1px solid rgba(162,143,221,.14);border-radius:9px;
+}
+.v4-sheet-settings-list{display:grid;gap:8px;max-height:245px;overflow:auto;margin:12px 0}
+.v4-sheet-option{
+  display:flex;align-items:center;gap:12px;padding:10px 12px;
+  border:1px solid rgba(176,158,243,.15);border-radius:11px;
+  background:rgba(98,82,162,.055);cursor:pointer;direction:rtl;
+}
+.v4-sheet-option:hover{background:rgba(108,87,188,.11)}
+.v4-sheet-option input{min-width:16px;min-height:16px;accent-color:#b0a4ff}
+.v4-sheet-option span{display:flex;flex-direction:column;gap:4px;min-width:0}
+.v4-sheet-option b{font-size:12px;color:#e4e0f0;overflow-wrap:anywhere}
+.v4-sheet-option small{font-size:10px;color:#938daa}
+.v4-report .actions [data-monitor-sheets]{color:#bfb5eb}

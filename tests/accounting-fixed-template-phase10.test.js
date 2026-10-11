@@ -29,20 +29,26 @@ async function makeInvoice(file){
  zip.file('xl/worksheets/_rels/sheet1.xml.rels','<?xml version="1.0"?><Relationships><Relationship Id="photo14" Target="14.jpg" TargetMode="External"/><Relationship Id="photo16" Target="16.jpg" TargetMode="External"/><Relationship Id="photo17" Target="17.jpg" TargetMode="External"/></Relationships>');
  await fs.writeFile(file,await zip.generateAsync({type:'nodebuffer'}));
 }
-test('accounting template is exactly C14 plate D14 receipt price H14 linked photo',()=>{
+test('accounting template uses B dates, D receipts, E weights and per-sheet photo discovery',()=>{
  const p=accountingInvoiceProfile();
  assert.equal(p.startRow,14);
- assert.deepEqual(p.anchorColumns,['C','D']);
- assert.deepEqual(p.evidence.map(x=>[x.columns[0],x.mode,x.label]),[
-  ['C','value','پلاک'],['D','value','مبلغ فیش'],['H','hyperlink_existing','عکس / لینک مدرک']
- ]);
+ assert.deepEqual(p.anchorColumns,['B']);
+ assert.equal(p.dateColumn,'B');
+ assert.equal(p.trackingOrPlateColumn,'C');
+ assert.equal(p.receiptAmountColumn,'D');
+ assert.equal(p.plateWeightColumn,'E');
+ assert.equal(p.receiptPhotosRequired,1);
+ assert.equal(p.platePhotosRequired,2);
 });
-test('scanner extracts real invoice rows and detects missing H link, missing C/D, ignores rows 1..13',()=>inTemp(async dir=>{
+test('legacy per-column invoice scanning remains compatible with old configured profiles',()=>inTemp(async dir=>{
  const workbook=path.join(dir,'فاکتور 112.xlsx');
  await makeInvoice(workbook);
  for(const name of ['14.jpg','16.jpg','17.jpg'])await fs.writeFile(path.join(dir,name),'fake-image');
  const scanner=new AccountingWorkbookScanner();
- const result=await scanner.scan({path:workbook,type:'invoice',profile:accountingInvoiceProfile()});
+ const result=await scanner.scan({path:workbook,type:'invoice',profile:{startRow:14,anchorColumns:['C','D'],evidence:[
+  {columns:['C'],mode:'value',label:'پلاک'},
+  {columns:['D'],mode:'value',label:'مبلغ فیش'},
+  {columns:['H'],mode:'hyperlink_existing',label:'عکس / لینک مدرک'}]}});
  assert.equal(result.ok,true);
  assert.equal(result.total,4);
  assert.equal(result.registered,1);
@@ -85,7 +91,7 @@ test('older invoice settings upgrade with reversible backup without deleting sou
  assert.equal(result.updated,1);
  const updated=(await store.listMonitors())[0];
  assert.equal(updated.profile.startRow,14);
- assert.deepEqual(updated.profile.anchorColumns,['C','D']);
+ assert.deepEqual(updated.profile.anchorColumns,['B']);
  assert.equal(updated.profile.evidenceRoot,directory);
  assert.deepEqual(updated.profile.sheets,['Sheet1']);
  const previous=JSON.parse(await fs.readFile(result.backup,'utf8'));

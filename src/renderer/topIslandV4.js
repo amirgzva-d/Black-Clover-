@@ -318,7 +318,7 @@ function reportRow({monitor:m,result:r}){
   const transport=m.type==='transport';
   const photoOnly=transport&&r?.transportPhotoOnly;
   const completion=Number(r?.completion||0);
-  const issues=Number(r?.brokenLinks||0)+Number(r?.duplicateIdCount||0)+Number(r?.idMismatches||0);
+  const issues=Number(r?.brokenLinks||0)+Number(r?.unverifiedLinks||0)+Number(r?.missing||0)+Number(r?.duplicateIdCount||0)+Number(r?.idMismatches||0);
   return `<article class="v4-report ${r?.complete?'complete':''} ${r?.stale?'stale':''}" data-monitor="${esc(m.id)}">
     <button class="v4-star ${m.pinned?'on':''}" data-monitor-pin>${m.pinned?'★':'☆'}</button>
     <div class="identity"><b>${esc(r?.partyName||m.displayName||m.name||'Excel')}</b><small>${r?.invoiceNumber?`فاکتور ${esc(r.invoiceNumber)}`:transport?'باربری':'Excel'}</small></div>
@@ -326,7 +326,7 @@ function reportRow({monitor:m,result:r}){
     <div class="metric"><b>${photoOnly?'—':Number(r?.missing||0)}</b><small>${photoOnly?'Photo count':'ثبت‌نشده'}</small></div>
     <div class="metric issue"><b>${issues}</b><small>خطا</small></div>
     <div class="time"><b>${esc(reportStatus(r))}</b><small>بررسی: ${fmt(r?.scannedAt)}</small><small>بازشدن: ${fmt(m.lastOpenedByMaria)}</small></div>
-    <div class="actions"><button data-monitor-detail>${I.eye}</button><button class="open" data-monitor-open>${I.open}</button></div>
+    <div class="actions"><button data-monitor-sheets title="تنظیم شیت‌ها" aria-label="تنظیم شیت‌های فایل">${I.gear}</button><button data-monitor-detail title="جزئیات گزارش">${I.eye}</button><button class="open" data-monitor-open>${I.open}</button></div>
   </article>`;
 }
 async function renderReports(){
@@ -334,9 +334,9 @@ async function renderReports(){
   const rows=(await window.blackClover.accountingDashboard().catch(()=>[])).sort((a,b)=>Number(a.monitor?.type==='transport')-Number(b.monitor?.type==='transport')||rankReport(a)-rankReport(b));
   const visible=rows.filter(reportMatches);
   const missing=rows.reduce((n,x)=>n+Number(x.result?.missing||0),0);
-  const issues=rows.reduce((n,x)=>n+Number(x.result?.brokenLinks||0)+Number(x.result?.duplicateIdCount||0)+Number(x.result?.idMismatches||0),0);
+  const issues=rows.reduce((n,x)=>n+Number(x.result?.brokenLinks||0)+Number(x.result?.unverifiedLinks||0)+Number(x.result?.missing||0)+Number(x.result?.duplicateIdCount||0)+Number(x.result?.idMismatches||0),0);
   host.innerHTML=`
-    <header class="v4-page-head"><div><small>ACCOUNTING WATCH</small><h2>گزارش ثبت</h2><p>حسابداری: پلاک C، مبلغ فیش D، تصویر H از ردیف ۱۴؛ باربری در انتهای فهرست.</p></div><button class="v4-head-add" data-context-add>＋ افزودن گزارش</button><button class="v4-soft" data-report-refresh>${I.refresh}<span>بررسی</span></button></header>
+    <header class="v4-page-head"><div><small>ACCOUNTING WATCH</small><h2>گزارش ثبت</h2><p>حسابداری: تاریخ B؛ پیگیری/پلاک C؛ مبلغ D یا وزن E؛ عکس از ستون‌های شناسایی‌شده (G/H/I/J و گاهی C).</p></div><button class="v4-head-add" data-context-add>＋ افزودن گزارش</button><button class="v4-soft" data-report-refresh>${I.refresh}<span>بررسی</span></button></header>
     <section class="v4-report-summary">
       <article><b>${rows.length}</b><small>فایل فعال</small></article>
       <article><b>${rows.filter(x=>x.result?.complete).length}</b><small>کامل</small></article>
@@ -574,37 +574,52 @@ async function showReportDetails(id){
   const x=rows.find(y=>y.monitor.id===id),host=$('[data-report-detail]');if(!x||!host)return;
   const {monitor:m,result:r}=x;host.hidden=false;
   host.innerHTML=`<header><div><small>ACCOUNTING DETAILS</small><b>${esc(r?.displayName||m.name||'Excel')}</b></div><button data-detail-close>${I.close}</button></header>
-    <nav><button data-detail-config>تعریف سلول‌ها</button><button data-detail-refresh>${I.refresh} بررسی</button><button data-detail-open>${I.open} بازکردن</button></nav>
+    <nav><button data-detail-config>تنظیم شیت‌ها (${Number(r?.availableSheets?.length||0)})</button><button data-detail-refresh>${I.refresh} بررسی</button><button data-detail-open>${I.open} بازکردن</button></nav>
+    <div class="v4-sheet-selection-summary">شیت‌های انتخاب‌شده: ${esc((r?.selectedSheets||m.profile?.sheets||[]).join('، ')||'هنوز بررسی نشده')} • فیش: ${Number(r?.receipts||0)} • پلاک: ${Number(r?.plates||0)}</div>
     <div class="v4-evidence-stats"><span>فایل مدرک <b>${Number(r?.evidenceSummary?.fileCount||0)}</b></span><span>شماره بعدی <b>${r?.evidenceSummary?.nextCandidate??'—'}</b></span><span>لینک خراب <b>${Number(r?.brokenLinks||0)}</b></span><span>تکراری <b>${Number(r?.duplicateIdCount||0)}</b></span></div>
     ${r?.stale?'<div class="v4-stale">منبع فعلاً در دسترس نیست؛ آخرین نتیجه معتبر حفظ شده است.</div>':''}
     <div class="v4-sheet-list">${(r?.sheets||[]).map(s=>`<section><h4>${esc(s.sheet)} <span>${m.type==='transport'?`${Number(s.validPhotoCount||s.registered||0)} تخلیه‌شده`:`${Number(s.registered||0)}/${Number(s.total||0)} ثبت`}</span></h4>${s.missingRows?.length?`<div class="v4-issues">${s.missingRows.slice(0,250).map(row=>`<article><b>ردیف ${row.row}</b><span>${esc(row.sourceSummary||'')}</span><em>${esc((row.issues||[]).map(i=>i.label||i.type).join('، ')||row.missing.join('، '))}</em></article>`).join('')}</div>`:'<p class="v4-good">همه موارد قابل بررسی کامل هستند.</p>'}</section>`).join('')||'<div class="v4-empty">هنوز Scan معتبر نداریم.</div>'}</div>`;
   $('[data-detail-close]',host).onclick=()=>host.hidden=true;
   $('[data-detail-open]',host).onclick=()=>window.blackClover.openAccountingMonitor(id);
   $('[data-detail-refresh]',host).onclick=async()=>{await window.blackClover.refreshAccountingReports({force:true});await renderReports();};
-  $('[data-detail-config]',host).onclick=()=>editAccountingRules(m);
+  $('[data-detail-config]',host).onclick=()=>editAccountingSheets(m,r);
 }
-function editAccountingRules(m){
-  const p=m.profile||{},receipt=(p.rules||[]).find(r=>r.type==='receipt')||{},plate=(p.rules||[]).find(r=>r.type==='plate')||{},generic=(p.evidence||[])[0]||{};
-  openModal({
-    title:'تعریف دقیق سلول‌ها',kicker:'CELL RULE WIZARD',wide:true,
-    body:`<div class="v4-rule-note"><b>بدون حدس</b><span>ستون‌ها و Ruleها باید از فایل واقعی مشخص شوند. در اتصال محلی، انتخاب مستقیم Excel به همین Wizard اضافه می‌شود.</span></div>
-      <div class="v4-fields-2">${field('ستون رکورد',`<input name="anchors" value="${esc((p.anchorColumns||['C']).join(','))}">`)}${field('شروع ردیف',`<input name="start" type="number" value="${Number(p.startRow||2)}">`)}</div>
-      ${field('شیت‌ها',`<input name="sheets" value="${esc((p.sheets||[]).join(', '))}">`)}
-      <section class="v4-rule"><header><span class="green">${I.check}</span><div><b>Rule عمومی</b><small>وقتی نوع خاص تشخیص داده نشد</small></div></header><div class="v4-fields-2">${field('ستون مدرک',`<input name="genericCols" value="${esc((generic.columns||[]).join(','))}" placeholder="H یا H,I">`)}${field('تعداد لازم',`<input name="genericRequired" type="number" min="1" max="4" value="${Number(generic.required||1)}">`)}</div></section>
-      <section class="v4-rule receipt"><header><span class="amber">${I.link}</span><div><b>فیش</b><small>معمولاً یک عکس</small></div></header><div class="v4-fields-2">${field('ستون نوع',`<input name="receiptType" value="${esc(receipt.when?.column||'')}">`)}${field('متن تشخیص',`<input name="receiptKey" value="${esc(receipt.when?.includes||'')}" placeholder="فیش">`)}</div><div class="v4-fields-2">${field('ستون عکس',`<input name="receiptCols" value="${esc((receipt.evidence?.[0]?.columns||[]).join(','))}" placeholder="H">`)}${field('تعداد لازم',`<input name="receiptRequired" type="number" value="${Number(receipt.evidence?.[0]?.required||1)}">`)}</div></section>
-      <section class="v4-rule plate"><header><span class="blue">${I.eye}</span><div><b>پلاک</b><small>می‌تواند دو عکس لازم داشته باشد</small></div></header><div class="v4-fields-2">${field('ستون نوع',`<input name="plateType" value="${esc(plate.when?.column||'')}">`)}${field('متن تشخیص',`<input name="plateKey" value="${esc(plate.when?.includes||'')}" placeholder="پلاک">`)}</div><div class="v4-fields-2">${field('ستون‌های عکس',`<input name="plateCols" value="${esc((plate.evidence?.[0]?.columns||[]).join(','))}" placeholder="H,I">`)}${field('تعداد لازم',`<input name="plateRequired" type="number" value="${Number(plate.evidence?.[0]?.required||2)}">`)}</div></section>
-      <div class="v4-fields-2">${field('پوشه مدرک',`<input name="root" value="${esc(p.evidenceRoot||DEFAULT_EVIDENCE_ROOT)}">`)}${field('باربری',`<select name="transport"><option value="" ${!p.transportCountMode?'selected':''}>عادی</option><option value="photo_count" ${p.transportCountMode==='photo_count'?'selected':''}>هر عکس معتبر = تخلیه‌شده</option></select>`)}</div>`,
-    onSubmit:async fd=>{
-      const cols=v=>String(v||'').split(',').map(x=>x.trim().toUpperCase()).filter(Boolean),rules=[];
-      const genericCols=cols(fd.get('genericCols'));
-      const evidence=genericCols.length?[{label:'مدرک',columns:genericCols,required:Number(fd.get('genericRequired'))||1,mode:'verified_numeric_hyperlink'}]:[];
-      const add=(type,label,tcol,key,ecount,required)=>{const cc=cols(ecount),tc=String(tcol||'').trim().toUpperCase(),kk=String(key||'').trim();if(tc&&kk&&cc.length)rules.push({type,recordType:type,when:{column:tc,includes:kk},evidence:[{label,columns:cc,required:Number(required)||1,mode:'verified_numeric_hyperlink'}]})};
-      add('receipt','عکس فیش',fd.get('receiptType'),fd.get('receiptKey'),fd.get('receiptCols'),fd.get('receiptRequired'));
-      add('plate','عکس پلاک',fd.get('plateType'),fd.get('plateKey'),fd.get('plateCols'),fd.get('plateRequired'));
-      await window.blackClover.updateAccountingMonitor(m.id,{profile:{...p,startRow:Number(fd.get('start'))||2,dataStartRow:Number(fd.get('start'))||2,anchorColumns:cols(fd.get('anchors')).length?cols(fd.get('anchors')):['C'],sheets:String(fd.get('sheets')||'').split(',').map(x=>x.trim()).filter(Boolean),evidenceRoot:String(fd.get('root')||'').trim(),requireVerifiedAttachment:true,evidence,rules,transportCountMode:String(fd.get('transport')||'')}});
-      await window.blackClover.rebuildAccountingWatchers();await window.blackClover.refreshAccountingReports({force:true});await renderReports();
+function editAccountingSheets(m,r){
+  const listed=Array.isArray(r?.availableSheets)?r.availableSheets:[];
+  const selected=new Set(r?.selectedSheets||m.profile?.sheets||[]);
+  const manual=m.profile?.sheetSelectionMode==='manual'&&m.profile?.sheets?.length;
+  const modal=openModal({
+    title:'شیت‌های این فایل',kicker:'EXCEL • SHEET SELECTION',submit:'ذخیره و بررسی',
+    body:`<div class="v4-rule-note">
+      <b>${listed.length} شیت در فایل</b>
+      <span>در حالت پیش‌فرض دو شیت فاکتوردار انتخاب می‌شوند؛ Sheet1/Sheet2 تکراری را دوباره نمی‌شماریم.</span>
+    </div>
+    <label class="v4-workflow-check"><input name="selectionMode" type="radio" value="auto" ${!manual?'checked':''}>انتخاب خودکار ۲ شیت فاکتور</label>
+    <label class="v4-workflow-check"><input name="selectionMode" type="radio" value="manual" ${manual?'checked':''}>انتخاب دستی شیت‌ها</label>
+    <section class="v4-sheet-settings-list">
+      ${listed.map(s=>`<label class="v4-sheet-option">
+        <input type="checkbox" name="sheetName" value="${esc(s.name)}" ${selected.has(s.name)?'checked':''}>
+        <span><b>${esc(s.name)}</b><small>${Number(s.dateRows||0)} ردیف دارای تاریخ از ردیف ۱۴</small></span>
+      </label>`).join('')||'<p>نام شیت‌ها هنوز قابل خواندن نیست؛ ابتدا روی بررسی فایل بزن.</p>'}
+    </section>
+    <small class="v4-workflow-hint">برای افزودن شیت بیشتر یا حذف شیت کمکی، حالت دستی را انتخاب کن. هیچ تغییری در فایل Excel ایجاد نمی‌شود.</small>`,
+    onSubmit:async form=>{
+      const mode=String(form.get('selectionMode')||'auto');
+      const sheetNames=mode==='manual'?form.getAll('sheetName').map(String).filter(Boolean):[];
+      if(mode==='manual'&&!sheetNames.length)throw Error('دست‌کم یک شیت باید انتخاب شود.');
+      await window.blackClover.updateAccountingMonitor(m.id,{
+        profile:{...m.profile,sheets:sheetNames,sheetSelectionMode:mode}
+      });
+      await window.blackClover.rebuildAccountingWatchers();
+      await window.blackClover.refreshAccountingReports({force:true});
+      await renderReports();
     }
   });
+  modal.querySelectorAll('[name=sheetName]').forEach(el=>el.addEventListener('change',()=>{
+    const manualRadio=modal.querySelector('[name=selectionMode][value=manual]');
+    if(manualRadio)manualRadio.checked=true;
+  }));
+  return modal;
 }
 
 function bindPageActions(){
@@ -631,7 +646,8 @@ function bindPageActions(){
     const monitor=e.target.closest('[data-monitor]');
     if(monitor){
       const id=monitor.dataset.monitor;
-      if(e.target.closest('[data-monitor-open]')){await window.blackClover.openAccountingMonitor(id);await renderReports();return;}
+      if(e.target.closest('[data-monitor-sheets]')){const rows=await window.blackClover.accountingDashboard();const r=rows.find(x=>x.monitor.id===id);if(r)editAccountingSheets(r.monitor,r.result);return;}
+    if(e.target.closest('[data-monitor-open]')){await window.blackClover.openAccountingMonitor(id);await renderReports();return;}
       if(e.target.closest('[data-monitor-detail]')){await showReportDetails(id);return;}
       if(e.target.closest('[data-monitor-pin]')){const x=(await window.blackClover.accountingDashboard()).find(y=>y.monitor.id===id);if(x)await window.blackClover.updateAccountingMonitor(id,{pinned:!x.monitor.pinned});await renderReports();return;}
     }

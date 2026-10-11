@@ -60,6 +60,7 @@ export class AccountingReportStore{
       dataStartRow:Math.max(1,Number(profile.dataStartRow||profile.startRow)||2),
       anchorColumns:Array.isArray(profile.anchorColumns)?profile.anchorColumns.map(x=>clean(x,8).toUpperCase()):Array.isArray(profile.anchor?.columns)?profile.anchor.columns.map(x=>clean(x,8).toUpperCase()):['C'],
       sheets:Array.isArray(profile.sheets)?clone(profile.sheets):[],
+      sheetSelectionMode:profile.sheetSelectionMode==='manual'&&Array.isArray(profile.sheets)&&profile.sheets.length?'manual':'auto',
       watchedSheets:Array.isArray(profile.watchedSheets)?clone(profile.watchedSheets):[],
       evidence:Array.isArray(profile.evidence)?clone(profile.evidence):[],
       attachmentRules:Array.isArray(profile.attachmentRules)?clone(profile.attachmentRules):[],
@@ -133,7 +134,7 @@ export class AccountingReportStore{
     if(!targets.length)return {updated:0};
     // Reversible one-time migration: save the original monitor definitions,
     // including custom rules and existing results, before changing them.
-    const backup=this.file+'.before-invoice-template-v1.backup';
+    const backup=this.file+'.before-invoice-template-v2.backup';
     try{await fs.access(backup);}catch(e){
       if(e.code!=='ENOENT')throw e;
       await fs.mkdir(this.directory,{recursive:true});
@@ -142,7 +143,9 @@ export class AccountingReportStore{
     for(const monitor of targets){
       monitor.profile=this.normalizeProfile(accountingInvoiceProfile({
         evidenceRoot:monitor.profile?.evidenceRoot,
-        sheets:monitor.profile?.sheets
+        sheets:monitor.profile?.sheets,
+        sheetSelectionMode:monitor.profile?.sheetSelectionMode==='manual'||monitor.profile?.sheets?.length?'manual':'auto',
+        hyperlinkBasePath:monitor.profile?.hyperlinkBasePath
       }));
       monitor.archiveWhenComplete=false;
       monitor.updatedAt=new Date().toISOString();
