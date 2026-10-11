@@ -68,6 +68,7 @@ contextBridge.exposeInMainWorld('blackClover',{
   minimizeChat:()=>ipcRenderer.invoke('assistant:minimize-chat'),
   minimizeSurface:surface=>ipcRenderer.invoke('assistant:minimize-surface',surface),
   openSettings:(section='general')=>ipcRenderer.invoke('assistant:open-settings',section),
+  takePendingSettings:()=>ipcRenderer.invoke('assistant:take-pending-settings'),
   prompt:text=>ipcRenderer.invoke('assistant:prompt',text),
   listLocalAssets:()=>ipcRenderer.invoke('assets:list-local'),
   readLocalAsset:name=>ipcRenderer.invoke('assets:read-local',name),

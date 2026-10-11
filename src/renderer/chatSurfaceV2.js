@@ -356,9 +356,9 @@ export async function mountChatSurface(){
   $('#accountChip').onclick=()=>openSettings('account');
   $('#bannerConnect').onclick=()=>openSettings('account');
   $('#settings').onclick=()=>openSettings('account');
-  $('#setupClose').onclick=()=>{$('#setup').hidden=true;};
-  $('#setup').onclick=e=>{if(e.target===$('#setup'))$('#setup').hidden=true;};
-  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#setup').hidden){$('#setup').hidden=true;}});
+  $('#setupClose').onclick=e=>{e.preventDefault();e.stopPropagation();$('#setup').hidden=true;$('#settings')?.focus();};
+  $('#setup').onclick=e=>{if(e.target===$('#setup')){$('#setup').hidden=true;$('#settings')?.focus();}};
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#setup').hidden){e.preventDefault();$('#setup').hidden=true;$('#settings')?.focus();}});
   for(const tab of ['account','providers','voice','privacy'])$('#tab-'+tab).onclick=()=>chooseSettingsTab(tab);
   $('#connectChatGPT').onclick=connectChatGPT;
   $('#cancelChatGPTSignIn').onclick=cancelChatGPTSignIn;
@@ -387,6 +387,8 @@ export async function mountChatSurface(){
   });
   api().onFocusInput?.(()=>$('#input').focus());
   api().onOpenSettings?.(payload=>openSettings(payload?.section==='voice'?'voice':'account'));
+  // Recover first-open settings requests delivered before async ChatSurface mount.
+  api().takePendingSettings?.().then(payload=>{if(payload?.section)openSettings(payload.section==='voice'?'voice':'account');}).catch(withError);
   api().onPrefillPrompt?.(payload=>{const text=payload?.text||'';if(text){$('#input').value=text;grow();if(payload.submit)sendMessage(text);}});
   const poll=setInterval(()=>{if(state.account?.session?.status==='connecting'&&!state.connecting)syncAccount().catch(()=>{});},3000);
   window.addEventListener('beforeunload',()=>clearInterval(poll),{once:true});

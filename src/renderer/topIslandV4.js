@@ -57,6 +57,7 @@ let timer=null;
 let hoverController=null;
 let events=[];
 let filter='all';
+let reportSearch='';
 let audio=null;
 let greetingTimer=null;
 let shortcutIconObserver=null;
@@ -159,7 +160,9 @@ function openModal({title,kicker='',body='',submit='ذخیره',onSubmit=null,wi
     <form data-modal-form><div class="v4-dialog-body">${body}</div><footer><button type="button" data-modal-close>لغو</button>${onSubmit?`<button class="accent" type="submit">${esc(submit)}</button>`:''}</footer></form>
   </section>`;
   $('.maria-island-v4').append(wrap);
-  $$('[data-modal-close]',wrap).forEach(x=>x.onclick=()=>wrap.remove());
+  const dismiss=()=>{wrap.remove();hoverController?.refresh();};
+  $$('[data-modal-close]',wrap).forEach(x=>x.onclick=e=>{e.preventDefault();e.stopPropagation();dismiss();});
+  wrap.addEventListener('click',e=>{if(e.target===wrap)dismiss();});
   if(onSubmit)$('[data-modal-form]',wrap).onsubmit=async e=>{
     e.preventDefault();
     const b=e.submitter;if(b)b.disabled=true;
@@ -319,14 +322,14 @@ function reportRow({monitor:m,result:r}){
   const photoOnly=transport&&r?.transportPhotoOnly;
   const completion=Number(r?.completion||0);
   const issues=Number(r?.brokenLinks||0)+Number(r?.unverifiedLinks||0)+Number(r?.missing||0)+Number(r?.duplicateIdCount||0)+Number(r?.idMismatches||0);
-  return `<article class="v4-report ${r?.complete?'complete':''} ${r?.stale?'stale':''}" data-monitor="${esc(m.id)}">
+  return `<article class="v4-report ${r?.complete?'complete':''} ${r?.stale?'stale':''}" data-monitor="${esc(m.id)}" data-report-search-text="${esc([m.name,m.displayName,m.path,r?.partyName,r?.invoiceNumber].filter(Boolean).join(' ').toLocaleLowerCase('fa-IR'))}">
     <button class="v4-star ${m.pinned?'on':''}" data-monitor-pin>${m.pinned?'★':'☆'}</button>
     <div class="identity"><b>${esc(r?.partyName||m.displayName||m.name||'Excel')}</b><small>${r?.invoiceNumber?`فاکتور ${esc(r.invoiceNumber)}`:transport?'باربری':'Excel'}</small></div>
     <div class="progress"><div><i style="width:${completion}%"></i></div><span>${photoOnly?`${Number(r?.photoCount||0)} تخلیه‌شده`:`${Number(r?.registered||0)} / ${Number(r?.total||0)} ثبت`}</span></div>
     <div class="metric"><b>${photoOnly?'—':Number(r?.missing||0)}</b><small>${photoOnly?'Photo count':'ثبت‌نشده'}</small></div>
     <div class="metric issue"><b>${issues}</b><small>خطا</small></div>
     <div class="time"><b>${esc(reportStatus(r))}</b><small>بررسی: ${fmt(r?.scannedAt)}</small><small>بازشدن: ${fmt(m.lastOpenedByMaria)}</small></div>
-    <div class="actions"><button data-monitor-sheets title="تنظیم شیت‌ها" aria-label="تنظیم شیت‌های فایل">${I.gear}</button><button data-monitor-detail title="جزئیات گزارش">${I.eye}</button><button class="open" data-monitor-open>${I.open}</button></div>
+    <div class="actions"><button type="button" data-monitor-sheets title="تنظیم شیت‌ها" aria-label="تنظیم شیت‌های فایل">${I.gear}</button><button type="button" data-monitor-detail title="جزئیات گزارش">${I.eye}</button><button type="button" class="open" data-monitor-open title="بازکردن Excel">${I.open}</button><button type="button" class="v4-report-remove" data-monitor-remove title="حذف فقط از MARIA" aria-label="حذف فایل از فهرست MARIA">${I.trash}</button></div>
   </article>`;
 }
 async function renderReports(){
@@ -344,8 +347,27 @@ async function renderReports(){
       <article class="bad"><b>${issues}</b><small>نیاز به بررسی</small></article>
     </section>
     <nav class="v4-filter">${[['all','همه'],['pinned','پین‌شده'],['incomplete','ناقص'],['issues','خطا'],['complete','کامل']].map(([id,l])=>`<button class="${filter===id?'active':''}" data-report-filter="${id}">${l}</button>`).join('')}</nav>
-    <section class="v4-report-list">${visible.map(reportRow).join('')||'<div class="v4-empty">موردی نیست.</div>'}</section>
+    <div class="v4-report-search-bar"><label>${I.search}<input type="search" data-report-search placeholder="جستجوی نام یا شمارهٔ فاکتور" autocomplete="off" value="${esc(reportSearch)}"></label><small data-report-visible-count></small></div>
+    <section class="v4-report-list">${visible.map(reportRow).join('')||'<div class="v4-empty">موردی نیست.</div>'}<div class="v4-empty" data-report-search-empty hidden>فایلی با این نام پیدا نشد.</div></section>
     <aside class="v4-detail" data-report-detail hidden></aside>`;
+  const searchInput=$('[data-report-search]',host);
+  searchInput?.addEventListener('input',e=>{reportSearch=String(e.target.value||'');applyReportSearch(host);});
+  applyReportSearch(host);
+}
+function applyReportSearch(host=$('[data-page-body]')){
+  if(!host)return;
+  const query=reportSearch.trim().toLocaleLowerCase('fa-IR');
+  let shown=0,all=0;
+  for(const article of $$('[data-report-search-text]',host)){
+    all++;
+    const matches=!query||article.dataset.reportSearchText?.includes(query);
+    article.hidden=!matches;
+    if(matches)shown++;
+  }
+  const count=$('[data-report-visible-count]',host);
+  if(count)count.textContent=shown+' فایل';
+  const empty=$('[data-report-search-empty]',host);
+  if(empty)empty.hidden=!query||shown>0||all===0;
 }
 function pinCard(x){
   return `<article class="v4-pin-card" data-pin-id="${esc(x.id)}"><span class="kind">${esc(x.icon||'◆')}</span><div><small>${esc(x.type||'text')}</small><b>${esc(x.title||'پین')}</b><p>${esc(x.body||x.text||'')}</p></div><footer><button data-pin-favorite title="مهم">${x.favorite?'★':'☆'}</button><button data-pin-copy>کپی</button><button data-pin-edit>ویرایش</button></footer></article>`;
@@ -569,12 +591,31 @@ function editTask(item=null){
 function addAccounting(){
   return reportForm({openModal,field,esc,bridge:window.blackClover,refresh:renderReports,defaultRoot:DEFAULT_EVIDENCE_ROOT});
 }
+function confirmRemoveAccounting(monitor){
+  if(!monitor?.id)throw Error('فایل حسابداری پیدا نشد.');
+  const name=monitor.displayName||monitor.name||monitor.path||'Excel';
+  const body='<div class="v4-report-unlink-confirm"><b>'+esc(name)+'</b>'
+    +'<p>این فایل از فهرست MARIA حذف می‌شود و بررسی خودکار آن متوقف خواهد شد.</p>'
+    +'<strong>فایل Excel، شیت‌ها، عکس‌ها و پوشه‌های اصلی ویندوز حذف یا تغییر نمی‌کنند.</strong></div>';
+  const modal=openModal({
+    title:'حذف فایل از فهرست MARIA',kicker:'ACCOUNTING • UNLINK ONLY',
+    submit:'حذف از فهرست',body,
+    onSubmit:async()=>{
+      const removed=await window.blackClover.removeAccountingMonitor(monitor.id);
+      if(!removed)throw Error('حذف از فهرست انجام نشد. دوباره تلاش کن.');
+      await renderReports();
+      pushEvent({type:'accounting',text:'«'+name+'» فقط از فهرست MARIA حذف شد.'});
+    }
+  });
+  modal.querySelector('button[type=submit]')?.classList.add('v4-danger');
+  return modal;
+}
 async function showReportDetails(id){
   const rows=await window.blackClover.accountingDashboard();
   const x=rows.find(y=>y.monitor.id===id),host=$('[data-report-detail]');if(!x||!host)return;
   const {monitor:m,result:r}=x;host.hidden=false;
   host.innerHTML=`<header><div><small>ACCOUNTING DETAILS</small><b>${esc(r?.displayName||m.name||'Excel')}</b></div><button data-detail-close>${I.close}</button></header>
-    <nav><button data-detail-config>تنظیم شیت‌ها (${Number(r?.availableSheets?.length||0)})</button><button data-detail-refresh>${I.refresh} بررسی</button><button data-detail-open>${I.open} بازکردن</button></nav>
+    <nav><button data-detail-config>تنظیم شیت‌ها (${Number(r?.availableSheets?.length||0)})</button><button data-detail-refresh>${I.refresh} بررسی</button><button data-detail-open>${I.open} بازکردن</button><button data-detail-remove>${I.trash} حذف از فهرست</button></nav>
     <div class="v4-sheet-selection-summary">شیت‌های انتخاب‌شده: ${esc((r?.selectedSheets||m.profile?.sheets||[]).join('، ')||'هنوز بررسی نشده')} • فیش: ${Number(r?.receipts||0)} • پلاک: ${Number(r?.plates||0)}</div>
     <div class="v4-evidence-stats"><span>فایل مدرک <b>${Number(r?.evidenceSummary?.fileCount||0)}</b></span><span>شماره بعدی <b>${r?.evidenceSummary?.nextCandidate??'—'}</b></span><span>لینک خراب <b>${Number(r?.brokenLinks||0)}</b></span><span>تکراری <b>${Number(r?.duplicateIdCount||0)}</b></span></div>
     ${r?.stale?'<div class="v4-stale">منبع فعلاً در دسترس نیست؛ آخرین نتیجه معتبر حفظ شده است.</div>':''}
@@ -583,6 +624,7 @@ async function showReportDetails(id){
   $('[data-detail-open]',host).onclick=()=>window.blackClover.openAccountingMonitor(id);
   $('[data-detail-refresh]',host).onclick=async()=>{await window.blackClover.refreshAccountingReports({force:true});await renderReports();};
   $('[data-detail-config]',host).onclick=()=>editAccountingSheets(m,r);
+  $('[data-detail-remove]',host).onclick=()=>confirmRemoveAccounting(m);
 }
 function editAccountingSheets(m,r){
   const listed=Array.isArray(r?.availableSheets)?r.availableSheets:[];
@@ -646,6 +688,12 @@ function bindPageActions(){
     const monitor=e.target.closest('[data-monitor]');
     if(monitor){
       const id=monitor.dataset.monitor;
+      if(e.target.closest('[data-monitor-remove]')){
+        const rows=await window.blackClover.accountingDashboard();
+        const target=rows.find(x=>x.monitor.id===id);
+        if(target)confirmRemoveAccounting(target.monitor);
+        return;
+      }
       if(e.target.closest('[data-monitor-sheets]')){const rows=await window.blackClover.accountingDashboard();const r=rows.find(x=>x.monitor.id===id);if(r)editAccountingSheets(r.monitor,r.result);return;}
     if(e.target.closest('[data-monitor-open]')){await window.blackClover.openAccountingMonitor(id);await renderReports();return;}
       if(e.target.closest('[data-monitor-detail]')){await showReportDetails(id);return;}
@@ -718,6 +766,21 @@ function bindGlobalActions(){
     if(button){
       e.preventDefault();
       hoverController?.clickModule(moduleId(button));
+      return;
+    }
+    if(e.target.closest('[data-panel-close]')){
+      e.preventDefault();
+      e.stopPropagation();
+      $('.v4-modal')?.remove();
+      const details=$('[data-report-detail]');
+      if(details)details.hidden=true;
+      workbarPinned=false;
+      hoverController?.collapseNow();
+      return;
+    }
+    if(e.target.closest('[data-modal-close]')){
+      $('.v4-modal')?.remove();
+      hoverController?.refresh();
       return;
     }
     if(e.target.closest('[data-workflow-lock]')){
@@ -812,6 +875,14 @@ export async function mountTopIslandV4(){
   pinbar.className='v4-workflow-lock';
   pinbar.innerHTML='<button type="button" data-workflow-lock aria-pressed="false" title="برای نگه‌داشتن صفحه هنگام درگ و انتخاب فایل">📌 ثابت نگه دار</button>';
   $('.v4-expanded')?.append(pinbar);
+  const panelClose=document.createElement('button');
+  panelClose.type='button';
+  panelClose.className='v4-expanded-close';
+  panelClose.dataset.panelClose='';
+  panelClose.title='بستن پنل و بازگشت به حالت کوچک';
+  panelClose.setAttribute('aria-label','بستن پنل MARIA');
+  panelClose.innerHTML=I.close;
+  $('.v4-expanded')?.append(panelClose);
   hoverController?.destroy();
   hoverController=new IslandHoverController({
     getMode:()=>mode,

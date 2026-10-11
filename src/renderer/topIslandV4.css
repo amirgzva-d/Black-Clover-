@@ -1389,3 +1389,43 @@ body.top-island-v4-surface{display:grid;place-items:start center;direction:rtl;u
 .v4-sheet-option b{font-size:12px;color:#e4e0f0;overflow-wrap:anywhere}
 .v4-sheet-option small{font-size:10px;color:#938daa}
 .v4-report .actions [data-monitor-sheets]{color:#bfb5eb}
+
+/* Phase 13: report unlink, report search, accessible close for expanded pages.
+   The mini character and approved topbar styling remain unchanged. */
+.v4-expanded-close{
+  position:absolute;top:3px;left:5px;z-index:31;
+  width:28px;height:28px;display:grid;place-items:center;
+  border:1px solid rgba(151,143,218,.22);border-radius:9px;
+  background:rgba(18,19,29,.94);color:#beb7da;cursor:pointer;
+}
+.v4-expanded-close svg{width:15px;height:15px}
+.v4-expanded-close:hover,.v4-expanded-close:focus-visible{background:rgba(121,97,206,.22);color:#fff}
+.v4-report{grid-template-columns:27px minmax(100px,1.05fr) minmax(116px,.95fr) 53px 45px minmax(90px,.75fr) 118px;gap:6px}
+.v4-report .actions{display:flex;gap:3px}
+.v4-report .actions button{min-width:24px;height:30px}
+.v4-report .actions button svg{width:15px;height:15px}
+.v4-report .actions .v4-report-remove{color:#d29aa6}
+.v4-report .actions .v4-report-remove:hover{background:rgba(202,78,99,.13);color:#ff98a7}
+.v4-report-search-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:5px 0 9px}
+.v4-report-search-bar>label{display:flex;align-items:center;gap:8px;flex:1;max-width:350px;min-height:34px;
+  padding:0 12px;background:rgba(255,255,255,.024);border:1px solid rgba(255,255,255,.065);border-radius:10px;color:#a499d5}
+.v4-report-search-bar svg{width:15px;height:15px;flex-shrink:0}
+.v4-report-search-bar input{width:100%;border:0;outline:0;background:transparent;color:#ece9f8;font-size:11px}
+.v4-report-search-bar small{font-size:10px;color:#9994ad;white-space:nowrap}
+.v4-report-list .v4-report[hidden],.v4-empty[data-report-search-empty][hidden]{display:none!important}
+.v4-report-unlink-confirm{display:grid;gap:11px;line-height:1.9;color:#b9b4ce;font-size:12px}
+.v4-report-unlink-confirm>b{color:#f4f1ff;font-size:14px;overflow-wrap:anywhere}
+.v4-report-unlink-confirm>p{margin:0}
+.v4-report-unlink-confirm>strong{font-weight:500;color:#79d1a9}
+.v4-modal .accent.v4-danger{background:#9e394e!important;border-color:#d46b80!important;color:#fff!important}
+.v4-detail [data-detail-remove]{color:#e19ca8}
+@media(max-width:940px){
+  .v4-report{grid-template-columns:25px minmax(90px,1fr) minmax(100px,1fr) 44px 114px}
+  .v4-report .metric.issue,.v4-report .time{display:none}
+  .v4-report .actions{display:flex}
+}
+@media(max-width:760px){
+  .v4-report{grid-template-columns:24px minmax(110px,1fr) minmax(90px,1fr) 110px}
+  .v4-report .metric{display:none}
+  .v4-report .actions{display:flex}
+}

@@ -44,7 +44,7 @@ if(isDev){
 app.commandLine.appendSwitch('autoplay-policy','no-user-gesture-required');
 let avatarVisiblePreference=false;
 const avatarVisibilityPrefs=()=>new AvatarVisibilityPreferences(path.join(app.getPath('userData'),'avatar-visibility.json'));
-let avatarWin=null,chatWin=null,islandWin=null,pinsWin=null,remindersWin=null,projectsWin=null,motionsWin=null,wardrobeWin=null,devWin=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false,brainStore=null,uiState={mode:'online',detail:'Online • آماده',updatedAt:Date.now()};
+let avatarWin=null,chatWin=null,islandWin=null,pinsWin=null,remindersWin=null,projectsWin=null,motionsWin=null,wardrobeWin=null,devWin=null,tray=null,quitting=false,reminderTimer=null,learningTimer=null,autoProvisionStarted=false,provisioning=false,brainStore=null,pendingChatSettings=null,uiState={mode:'online',detail:'Online • آماده',updatedAt:Date.now()};
 const avatarLockPath=()=>path.join(app.getPath('userData'),'avatar-lock.json');
 function avatarLockState(){try{const x=JSON.parse(fs.readFileSync(avatarLockPath(),'utf8'));if(isRemovedAvatar(x))return setAvatarLockState({locked:false,name:''});return {locked:Boolean(x?.locked),name:String(x?.name||'')};}catch{return {locked:false,name:''};}}
 function setAvatarLockState(payload={}){const next={locked:Boolean(payload.locked),name:String(payload.name||'')};fs.mkdirSync(path.dirname(avatarLockPath()),{recursive:true});fs.writeFileSync(avatarLockPath(),JSON.stringify(next,null,2),'utf8');return next;}
@@ -301,7 +301,20 @@ ipcMain.handle('assistant:window-state',()=>surfaceState());
 ipcMain.handle('assistant:set-ui-state',(_e,payload)=>setUiState(payload?.mode||'online',payload?.detail||''));
 ipcMain.handle('assistant:minimize-chat',()=>{const w=createChatWindow();w.minimize();return true;});
 ipcMain.handle('assistant:minimize-surface',(_e,surface)=>{if(surface==='pins'||surface==='reminders'){setIslandMode('peek');return true;}const w=surface==='projects'?projectsWin:surface==='dev'?devWin:surface==='motions'?motionsWin:surface==='wardrobe'?wardrobeWin:chatWin;if(w&&!w.isDestroyed())w.minimize();return true;});
-ipcMain.handle('assistant:open-settings',(_e,section='general')=>{const w=showChat();sendWhenReady(w,'assistant:open-settings',{section:String(section||'general')});return true;});
+ipcMain.handle('assistant:open-settings',(_e,section='general')=>{
+  const request={section:String(section||'general')};
+  // did-finish-load can precede async ChatSurface initialization; the
+  // renderer consumes this one-shot request after its event listeners mount.
+  pendingChatSettings=request;
+  const w=showChat();
+  sendWhenReady(w,'assistant:open-settings',request);
+  return true;
+});
+ipcMain.handle('assistant:take-pending-settings',()=>{
+  const request=pendingChatSettings;
+  pendingChatSettings=null;
+  return request;
+});
 ipcMain.handle('assistant:prompt',(_e,text)=>{const w=showChat();sendWhenReady(w,'assistant:prefill-prompt',{text:String(text||''),submit:true});return true;});
 
 const inspectShortcut=target=>resolveShortcutTarget(target,{readLink:link=>shell.readShortcutLink(link)});

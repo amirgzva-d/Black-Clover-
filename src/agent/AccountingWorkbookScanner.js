@@ -26,9 +26,6 @@ const parseSharedStrings=xml=>{
 };
 const parseCells=(xml,shared)=>{
   const map=new Map();
-  // XLSX commonly stores empty cells as <c r="D25"/>. The previous
-  // expression consumed the following </c> and accidentally assigned E25's
-  // value to D25, silently dropping E25 (weight in accounting ledgers).
   for(const m of String(xml||'').matchAll(/<c\b([^>]*?)(?:\s*\/>|>([\s\S]*?)<\/c>)/g)){
     const ref=attr(m[1],'r');if(!ref)continue;
     const type=attr(m[1],'t'),body=m[2]||'';
