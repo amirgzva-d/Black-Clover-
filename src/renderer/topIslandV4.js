@@ -1,6 +1,8 @@
 import './topIslandV4.css';
 import './companionPremium.css';
 import {createCompanionSystem,COMPANION_STATES,COMPANION_OUTFITS} from './companionMotion.js';
+import {normalizeDropTarget,dropPinPayload,dropAskPrompt} from './dropActions.js';
+import {MARIA_FEATURES,FEATURE_STATUS,filterFeatures} from './featureCatalog.js';
 import { createSmartShortcutEditor } from './shortcutEditorV4.js';
 import { IslandHoverController } from './islandHoverController.js';
 import {taskForm,pinForm,reportForm} from './workflowFormsV4.js';
@@ -46,6 +48,7 @@ const PAGES=[
   {id:'pins',label:'پین‌ها',sub:'Pinned',icon:I.pin},
   {id:'tasks',label:'یادآور و اجرا',sub:'Automations',icon:I.clock},
   {id:'motion',label:'کاراکتر و حرکت',sub:'Motion Studio',icon:I.eye},
+  {id:'updates',label:'قابلیت‌ها و تغییرات',sub:'Feature Catalog',icon:I.report},
   {id:'reserved',label:'بخش بعدی',sub:'Reserved',icon:I.reserved}
 ];
 
@@ -61,6 +64,8 @@ let hoverController=null;
 let events=[];
 let filter='all';
 let reportSearch='';
+let featureSearch='';
+let featureStatus='all';
 let audio=null;
 let greetingTimer=null;
 let shortcutIconObserver=null;
@@ -458,12 +463,38 @@ function renderMotionStudio(){
     target.append(preview);
   }
 }
+function renderFeatureCatalog(){
+  const host=$('[data-page-body]');if(!host)return;
+  const items=filterFeatures(featureSearch,featureStatus);
+  host.innerHTML=`<section class="v4-features" dir="rtl">
+    <header class="v4-page-head"><div><small>MARIA · VERIFIED CAPABILITY MAP</small><h2>قابلیت‌ها و تغییرات</h2><p>ویژگی‌های قابل استفاده، درحال ارتقا و آینده را از هم جدا ببین.</p></div></header>
+    <div class="v4-feature-toolbar">
+      <input data-feature-search aria-label="جستجو میان قابلیت‌ها" placeholder="جستجوی قابلیت‌ها…" value="${esc(featureSearch)}">
+      <select data-feature-status aria-label="فیلتر وضعیت قابلیت"><option value="all" ${featureStatus==='all'?'selected':''}>همه</option><option value="active" ${featureStatus==='active'?'selected':''}>فعال</option><option value="improving" ${featureStatus==='improving'?'selected':''}>در حال بهبود</option><option value="planned" ${featureStatus==='planned'?'selected':''}>برنامه‌ریزی‌شده</option></select>
+    </div>
+    <div class="v4-feature-cards">${items.map(x=>`<article class="v4-feature-card" data-feature-id="${esc(x.id)}" data-feature-status="${x.status}">
+      <div><span class="v4-feature-indicator"></span><h3>${esc(x.label)}</h3><small>${esc(FEATURE_STATUS[x.status])}</small></div>
+      <p>${esc(x.description)}</p>
+      ${x.status!=='planned'&&(x.page||x.action)?`<button type="button" data-feature-open="${esc(x.id)}">${x.page?'باز کردن بخش':'باز کردن پنجره'} ←</button>`:'<span class="v4-feature-planned">هنوز در این نسخه ارائه نشده</span>'}
+    </article>`).join('')||'<div class="v4-empty">موردی با این فیلتر پیدا نشد.</div>'}</div>
+    <p class="v4-motion-hint">وجود یک قابلیت در این فهرست به معنی فعال بودن سرویس‌های خارجی نیست. اتصال‌های آنلاین به حساب و تنظیمات مربوطه نیاز دارند.</p>
+  </section>`;
+  $('[data-feature-search]',host)?.addEventListener('input',e=>{
+    featureSearch=e.currentTarget.value;
+    const field=e.currentTarget;
+    const start=field.selectionStart;
+    renderFeatureCatalog();
+    const next=$('[data-feature-search]',host);next?.focus();next?.setSelectionRange(start,start);
+  });
+  $('[data-feature-status]',host)?.addEventListener('change',e=>{featureStatus=e.currentTarget.value;renderFeatureCatalog();});
+}
 function renderSettings(){
   const host=$('[data-page-body]');if(!host)return;
   host.innerHTML=`
     <header class="v4-page-head"><div><small>TOP ISLAND SETTINGS</small><h2>تنظیمات پنل</h2><p>فقط تنظیمات همین پنل بالای صفحه.</p></div></header>
     <section class="v4-settings">
       <button data-motion-lab class="v4-motion-launch" type="button"><span>${I.eye} کاراکتر، لباس و انیمیشن‌های حرفه‌ای</span><strong>←</strong></button>
+      <button data-feature-catalog class="v4-motion-launch" type="button"><span>${I.report} قابلیت‌ها، وضعیت توسعه و تغییرات</span><strong>←</strong></button>
       <button data-setting-pin><span>${I.pin}</span><div><b>پین پنل</b><small>${workbarPinned?'ثابت است؛ تا آزاد نکنی جمع نمی‌شود':'پنل را برای درگ و کار با فایل ثابت کن'}</small></div><i class="${workbarPinned?'on':''}"></i></button>
       <button data-setting-avatar aria-pressed="${avatarVisibilityState.enabled?'true':'false'}"><span>${I.eye}</span><div><b>کاراکتر بزرگ روی دسکتاپ</b><small>${avatarVisibilityState.enabled?'نمایش فعال است؛ برای پنهان‌کردن کلیک کن':'به‌صورت پیش‌فرض پنهان است؛ با کلیک نمایش بده'}</small></div><i class="${avatarVisibilityState.enabled?'on':''}"></i></button>
       <button data-setting-sound><span>${I.sound}</span><div><b>صدای پنل</b><small>مستقل از صدای Windows و MARIA Voice</small></div><i class="${prefs.sound?'on':''}"></i></button>
@@ -484,6 +515,7 @@ async function renderPage(){
   else if(page==='tasks')await renderTasks();
   else if(page==='settings')renderSettings();
   else if(page==='motion')renderMotionStudio();
+  else if(page==='updates')renderFeatureCatalog();
   else renderReserved();
   if(body)body.scrollTop=0;
   requestAnimationFrame(()=>body?.classList.remove('switching'));
@@ -551,6 +583,39 @@ async function quickAddShortcut(input){
     showShortcutNotice(String(error?.message||error),{error:true});
     throw error;
   }
+}
+function openContextDropMenu(item){
+  if(!item?.target)return;
+  selectPage('home',{pin:true});
+  const modal=openModal({title:'انتخاب کار برای فایل',kicker:'SMART FILE DROP',body:`
+    <div class="v4-drop-choice-premium" dir="rtl">
+      <div class="v4-drop-file-identity"><span>${I.folder||I.pin}</span><div><b>${esc(item.label)}</b><small dir="auto">${esc(item.target)}</small></div></div>
+      <p>فایل اصلی تغییر نمی‌کند. فقط عملیاتی که انتخاب کنی اجرا می‌شود.</p>
+      <div class="v4-drop-action-grid">
+        <button type="button" data-drop-action="ask">${I.chat} <b>پرسیدن از MARIA</b><small>مسیر را به گفت‌وگو منتقل کن</small></button>
+        <button type="button" data-drop-action="shortcut">${I.launch} <b>ساخت میان‌بر</b><small>بازکردن سریع همین فایل یا لینک</small></button>
+        <button type="button" data-drop-action="pin">${I.pin} <b>افزودن به پین‌ها</b><small>نگهداری مرجع فایل برای بعد</small></button>
+      </div>
+      <div class="v4-drop-action-feedback" data-drop-feedback role="status" hidden></div>
+    </div>`});
+  for(const button of $$('[data-drop-action]',modal))button.onclick=async event=>{
+    event.preventDefault();event.stopPropagation();
+    const kind=button.dataset.dropAction;
+    $$('[data-drop-action]',modal).forEach(b=>b.disabled=true);
+    try{
+      if(kind==='ask')await window.blackClover.prompt(dropAskPrompt(item));
+      else if(kind==='pin')await window.blackClover.createPin(dropPinPayload(item));
+      else if(kind==='shortcut'){
+        selectPage('shortcuts',{pin:true});
+        await quickAddShortcut(item.target);
+      }
+      modal.remove();
+      if(kind==='pin')selectPage('pins',{pin:true});
+    }catch(error){
+      const host=$('[data-drop-feedback]',modal);
+      if(host){host.textContent=String(error?.message||error);host.hidden=false;host.classList.add('error');}
+    }finally{$$('[data-drop-action]',modal).forEach(b=>b.disabled=false);}
+  };
 }
 function openShortcutQuickMenu(){
   if(mode!=='expanded')setMode('expanded');
@@ -828,6 +893,16 @@ function bindGlobalActions(){
       return;
     }
     if(e.target.closest('[data-motion-lab]')){selectPage('motion',{pin:true});return;}
+    if(e.target.closest('[data-feature-catalog]')){selectPage('updates',{pin:true});return;}
+    const feature=e.target.closest('[data-feature-open]');
+    if(feature){
+      const entry=MARIA_FEATURES.find(x=>x.id===feature.dataset.featureOpen);
+      if(!entry||entry.status==='planned')return;
+      if(entry.page)selectPage(entry.page,{pin:true});
+      else if(entry.action==='chat')void window.blackClover.showChat().catch(error=>pushEvent({type:'error',text:String(error)}));
+      else if(entry.action==='avatar')void window.blackClover.showAvatar().catch(error=>pushEvent({type:'error',text:String(error)}));
+      return;
+    }
     if(e.target.closest('[data-motion-state]')){
       const target=e.target.closest('[data-motion-state]').dataset.motionState;
       companionSystem?.preview(target);renderMotionStudio();return;
@@ -1037,7 +1112,9 @@ export async function mountTopIslandV4(){
       })();
       return;
     }
-    if(location)openModal({title:'فایل دریافت شد',kicker:'CONTEXT DROP',body:'<div class="v4-drop-choice"><b>'+esc(file.name)+'</b><p>برای ساخت میان‌بر وارد بخش میان‌برها شو و فایل را رها کن.</p></div>'});
+    const dropped=normalizeDropTarget({path:location,url,name:file?.name||''});
+    if(dropped)openContextDropMenu(dropped);
+    else pushEvent({type:'warning',text:'فایل یا لینک معتبری برای این عملیات دریافت نشد'});
   });
 
   bindPageActions();bindGlobalActions();

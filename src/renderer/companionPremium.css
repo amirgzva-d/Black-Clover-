@@ -326,3 +326,73 @@
 .maria-island-v4[data-motion-level=none] .v4-expanded :is(.v4-shortcut,.v4-pin-card,.v4-task-card,.v4-report){
   transition:none!important;translate:none!important
 }
+
+/* Capability map — release note cards linked to real app modules */
+.v4-features{display:grid;gap:12px;padding:8px 4px 22px}
+.v4-feature-toolbar{display:flex;gap:10px;align-items:center}
+.v4-feature-toolbar input,.v4-feature-toolbar select{
+ height:40px;color:#f2f1ff;background:#171a2c;border:1px solid rgba(161,148,231,.25);
+ border-radius:11px;padding:0 13px;min-width:0;font-size:12px;
+}
+.v4-feature-toolbar input{flex:1;direction:rtl}
+.v4-feature-toolbar select{flex:0 0 185px}
+.v4-feature-toolbar :is(input,select):focus-visible{outline:2px solid #aa9cff;outline-offset:2px}
+.v4-feature-cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.v4-feature-card{
+ display:flex;flex-direction:column;gap:10px;min-height:145px;
+ padding:15px;border:1px solid rgba(151,140,204,.18);border-radius:15px;
+ background:linear-gradient(130deg,rgba(54,49,90,.15),rgba(14,18,30,.64));
+ box-shadow:inset 0 1px rgba(255,255,255,.038)
+}
+.v4-feature-card>div{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.v4-feature-card h3{font-size:13px;font-weight:650;color:#f1effe;margin:0;flex:1}
+.v4-feature-card small{font-size:10px;color:#a5e0bd}
+.v4-feature-card .v4-feature-indicator{width:8px;height:8px;border-radius:50%;background:#68dba4;box-shadow:0 0 11px rgba(104,219,164,.3)}
+.v4-feature-card[data-feature-status=improving] small{color:#e8c287}
+.v4-feature-card[data-feature-status=improving] .v4-feature-indicator{background:#e8c287;box-shadow:0 0 10px #e8c28744}
+.v4-feature-card[data-feature-status=planned] small{color:#adb0bf}
+.v4-feature-card[data-feature-status=planned] .v4-feature-indicator{background:#81879b;box-shadow:none}
+.v4-feature-card p{font-size:11px;line-height:1.75;color:#aaa9be;margin:0;flex:1}
+.v4-feature-card button{
+ align-self:flex-start;min-height:30px;border-radius:9px;
+ border:1px solid rgba(159,141,251,.27);color:#e2d9ff;
+ background:rgba(131,100,223,.12);padding:4px 13px;font-size:11px;cursor:pointer
+}
+.v4-feature-card button:hover,.v4-feature-card button:focus-visible{
+ background:rgba(137,111,237,.26);border-color:#a797fb
+}
+.v4-feature-planned{font-size:10px;color:#878a9f}
+@media(max-width:700px){
+ .v4-feature-cards{grid-template-columns:1fr}
+ .v4-feature-toolbar{flex-wrap:wrap}
+ .v4-feature-toolbar select{flex:1 1 160px}
+}
+@media(prefers-reduced-motion:reduce){.v4-feature-card *{animation:none!important;transition:none!important}}
+
+/* Native file drop: buttons are full-width actions, never inline overlapping text. */
+.v4-drop-choice-premium{min-width:0;display:grid;gap:14px;color:#ebeafa}
+.v4-drop-file-identity{display:grid;grid-template-columns:36px minmax(0,1fr);gap:12px;align-items:center;min-width:0}
+.v4-drop-file-identity>span{width:36px;height:36px;display:grid;place-items:center;border-radius:11px;background:rgba(135,112,225,.15);color:#beb3ff}
+.v4-drop-file-identity>span svg{width:18px;height:18px}
+.v4-drop-file-identity>div{min-width:0;display:grid;gap:5px}
+.v4-drop-file-identity b{font-size:13px;color:#f4f1ff;overflow-wrap:anywhere}
+.v4-drop-file-identity small{font-size:11px;line-height:1.7;color:#a9a7bb;overflow-wrap:anywhere;word-break:break-all}
+.v4-drop-choice-premium>p{font-size:11px;color:#adaabb;line-height:1.8;margin:0}
+.v4-drop-action-grid{display:grid;grid-template-columns:1fr;gap:9px;width:100%}
+.v4-drop-action-grid button{
+ width:100%;min-height:61px;display:grid;grid-template-columns:23px minmax(0,1fr);
+ grid-template-rows:auto auto;column-gap:12px;row-gap:4px;align-items:center;
+ padding:11px 14px;border:1px solid rgba(153,139,218,.21);border-radius:12px;
+ background:linear-gradient(120deg,rgba(103,85,196,.12),rgba(49,56,94,.1));
+ text-align:right;color:#e9e6fb;cursor:pointer
+}
+.v4-drop-action-grid button>svg{grid-row:1/3;grid-column:1;width:21px;height:21px;color:#b3aaff}
+.v4-drop-action-grid button>b{grid-column:2;font-weight:650;font-size:12px}
+.v4-drop-action-grid button>small{grid-column:2;font-size:10px;color:#a8a3bb}
+.v4-drop-action-grid button:hover,.v4-drop-action-grid button:focus-visible{
+ border-color:#a89cf4;background:rgba(116,96,218,.23)
+}
+.v4-drop-action-grid button:disabled{opacity:.56;cursor:wait}
+.v4-drop-action-feedback{font-size:11px;line-height:1.8;color:#abdaba}
+.v4-drop-action-feedback.error{color:#ffadb7}
+@media(max-width:560px){.v4-drop-choice-premium{gap:10px}.v4-drop-action-grid button{min-height:56px}}
