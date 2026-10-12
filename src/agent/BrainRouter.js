@@ -101,7 +101,6 @@ export class BrainRouter{
 
     if(forceChatGPT){
       if(!allowOnline)this.lastFallbackReason='chatgpt-blocked-private';
-
       else if(!await this.network())this.lastFallbackReason='chatgpt-offline';
       else if(!this.chatgptPlan||!await this.chatgptPlan.available())this.lastFallbackReason='chatgpt-not-connected';
       else try{const out=await this.chatgptPlan.chat(messages,{model,tools,onDelta:tools?.length?null:onDelta});this.lastMode='chatgpt-plan';this.lastProvider='chatgpt';this.lastModel=out.model;this.lastFallbackReason='';return out;}catch(error){if(/cancel/i.test(errorMessage(error)))throw error;this.lastFallbackReason='chatgpt-failed: '+errorMessage(error);}
@@ -150,7 +149,7 @@ export class BrainRouter{
     if(preferChatGPT&&await this.network()&&await this.chatgptPlan.available().catch(()=>false)){
       try{const out=await this.chatgptPlan.chat(messages,{model:'auto',tools,onDelta:tools?.length?null:onDelta});this.lastMode='chatgpt-plan';this.lastProvider='chatgpt';this.lastModel=out.model;this.lastFallbackReason='';return out;}catch(error){if(/cancel/i.test(errorMessage(error)))throw error;this.lastFallbackReason='chatgpt-failed: '+errorMessage(error);}
     }
-    const wantsOnline=!forceLocal&&!forceOllamaCloud&&!forceChatGPT&&allowOnline&&this.online?.configured&&policy!=='local-first';
+    const wantsOnline=!forceLocal&&!forceOllamaCloud&&(!forceChatGPT||Boolean(tools?.length))&&allowOnline&&this.online?.configured&&policy!=='local-first';
     if(wantsOnline){
       if(await this.network()){
         try{
