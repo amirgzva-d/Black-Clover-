@@ -30,6 +30,12 @@ const groups={
   scheduler:['get_time','create_reminder','create_scheduled_action','list_reminders','cancel_reminder','search_action_book'],
   wellbeing:['wellbeing_status','remind_eye_break','remind_move_body','remind_posture','remind_hydration','remind_meal_break','remind_sleep_wind_down','remind_focus_reset','remind_breathing_pause','remind_wrist_stretch','remind_neck_stretch','remind_back_stretch','remind_screen_distance','remind_brightness_comfort','remind_audio_comfort','remind_ventilation','remind_workspace_reset','remind_deep_work_pace','remind_long_session_break','remind_late_night_pause','remind_quiet_pause'],
   permissions:['permission_status','set_permission_profile','protect_resource','unprotect_resource'],
+  identitySecurity:['windows_signin_status','windows_signin_options_open','windows_pin_change_handoff','windows_hello_face_setup_handoff','face_identity_backend_status'],
+  remoteWake:['wake_capabilities_inspect','wake_on_lan_send'],
+  explorerView:['explorer_view_set','explorer_extensions_show','explorer_hidden_items_show'],
+  shareScreen:['screen_share_prepare','list_windows','inspect_ui','vision_inspect_screen','invoke_ui_element','press_key'],
+  bulkMessaging:['telegram_folder_prepare','recipient_set_preview','messenger_open','messenger_delivery_checkpoint','messenger_verify_delivery','inspect_ui','vision_inspect_screen','invoke_ui_element','type_text','press_key'],
+  imageSearch:['google_image_search','chrome_open_url','live_web_search','read_web_page'],
   workflowBridge:['search_action_book','search_learned_skills','resolve_resource','open_resource','find_any_app','launch_any_app','global_find_files','open_named_file','list_windows','focus_window','inspect_ui','vision_inspect_screen','invoke_ui_element','set_ui_value','type_text','press_key','copy_files_to_clipboard','chrome_open_url','chrome_search','chrome_open_service','open_url','web_search','research_topic']
 };
 const patterns=[
@@ -59,6 +65,12 @@ const patterns=[
   ['diagnosticsCore',/(خراب|مشکل ویندوز|مشکل برنامه|سیستم کند|بهبود سیستم|سلامت سیستم|تعمیر ویندوز|repair|عیب.?یابی|خطاهای سیستم|لاگ خطا)/i],
   ['windowsAdmin',/(defender|ویندوز دیفندر|فایروال|firewall|سرویس|service|startup|استارت.?آپ|event log|دیسک|disk health|شبکه.*مشکل|dns|task manager|device manager|سطل.?زباله|recycle.?bin|فایل.?موقت|temporary|temp|sfc|dism|power plan)/i],
   ['permissions',/(مجوز|دسترسی|permission|محافظت|حذف نکن|پاک نکن)/i],
+  ['identitySecurity',/(پین ویندوز|رمز ویندوز|windows pin|sign.?in|windows hello|هلو ویندوز|تشخیص چهره|صورت من|چهره من|face id|face recognition)/i],
+  ['remoteWake',/(wake.?on.?lan|wol|روشن.*از راه دور|سیستم.*روشن.*شبکه|remote wake)/i],
+  ['explorerView',/(نمای فایل|نمای پوشه|file explorer.*view|explorer.*view|details.*فایل|آیکون.*بزرگ|پسوند فایل|فایل مخفی|hidden items|file extensions)/i],
+  ['shareScreen',/(اشتراک.*صفحه|صفحه.*share|screen.?share|share.*screen|اشتراک.*پنجره|اشتراک.*مانیتور)/i],
+  ['bulkMessaging',/(پوشه.*تلگرام|فولدر.*تلگرام|telegram.*folder|چند.*مخاطب|همه.*گروه|فوروارد.*گروه.*پوشه|bulk.*send|multi.?recipient)/i],
+  ['imageSearch',/(گوگل ایمیج|google images|عکس.*گوگل|تصویر.*گوگل|سرچ.*عکس|جستجوی.*تصویر)/i],
   ['system',/(سیستم|رم|پردازنده|process|فرایند|زمان|ساعت|تاریخ|cpu|gpu)/i]
 ];
 const MODE_TO_GROUPS={audio:['audio'],display:['display','settings'],media:['media','audio','storage','files'],apps:['apps','screen'],web:['web','screen'],files:['storage','files'],spreadsheet:['spreadsheet','storage','screen'],social:['social','screen','files','web'],creative:['creative','files','screen','web'],coding:['coding','apps','files','web'],software:['apps','windowsAdmin','web','screen'],diagnostics:['diagnosticsCore','apps','web','screen'],personalization:['personalization','files','screen'],settings:['settings','screen'],power:['power'],scheduler:['scheduler'],ui:['screen'],ai:['aiBrains','web','screen']};

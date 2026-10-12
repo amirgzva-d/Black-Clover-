@@ -43,14 +43,20 @@ test('private context never auto-routes to ChatGPT plan',async()=>{
   assert.equal(brain.lastProvider,'ollama');
 });
 
-test('tool-using turns forward allowlisted tools to connected ChatGPT plan',async()=>{
-  const local=localClient('ابزار محلی'),plan=chatgptStub();
-  const brain=new BrainRouter({local,chatLocal:local,legacyLocal:local,researchLocal:local,codingLocal:local,online:{configured:false,catalog(){return[];},cancel(){}},chatgptPlan:plan,networkTtlMs:0});
+test('tool-using turns can use connected ChatGPT for allowlisted intent interpretation while host keeps execution authority',async()=>{
+  const local=localClient('ابزار محلی'),plan=chatgptStub(),online={
+    configured:true,calls:0,provider:'gemini',model:'gemini-test',
+    catalog(){return[{provider:'gemini',configured:true,model:'gemini-test'}];},cancel(){},
+    async chat(messages,tools){this.calls++;return {message:{role:'assistant',content:'',tool_calls:[{id:'1',type:'function',function:{name:tools[0].function.name,arguments:'{}'}}]},provider:'gemini',model:'gemini-test'};}
+  };
+  plan.chat=async function(messages,{model='auto',tools=[]}={}){this.calls.push({messages,model,tools});return {message:{role:'assistant',content:tools.length?JSON.stringify({name:tools[0].function.name,arguments:{}}):'پاسخ سنگین'},provider:'chatgpt',model:model==='auto'?'gpt-test':model};};
+  const brain=new BrainRouter({local,chatLocal:local,legacyLocal:local,researchLocal:local,codingLocal:local,online,chatgptPlan:plan,networkTtlMs:0});
   brain.network=async()=>true;
   const tools=[{type:'function',function:{name:'set_volume',description:'x',parameters:{type:'object',properties:{}}}}];
-  const out=await brain.chat([{role:'user',content:'صدا را کم کن'}],tools,{allowOnline:true,profile:'general'});
-  assert.equal(out.message.content,'پاسخ سنگین');
+  const out=await brain.chat([{role:'user',content:'صدا را کم کن'}],tools,{allowOnline:true,profile:'general',modelOverride:'chatgpt:auto'});
+  assert.match(out.message.content,/set_volume/);
   assert.equal(plan.calls.length,1);
+  assert.equal(online.calls,0);
   assert.equal(brain.lastProvider,'chatgpt');
 });
 
