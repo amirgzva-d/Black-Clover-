@@ -21,7 +21,7 @@ test('professional chat surface exposes ChatGPT-like conversation controls',asyn
   assert.match(chat,/openExternal/);
   assert.match(chat,/voice\.speak\(message\.text\)/);
   assert.match(chat,/api\(\)\.cancelChat/);
-  assert.match(chat,/const CHATGPT_AUTO='chatgpt:auto'/);
+  assert.match(chat,/const CHATGPT_AUTO='auto'/);
   assert.doesNotMatch(chat,/MODEL_ID='ollama:qwen2\.5:3b'/);
   assert.match(css,/\.sidebar/);
   assert.match(css,/\.sources/);
@@ -39,7 +39,8 @@ test('official ChatGPT connection stays in main process and exposes safe account
   assert.match(service,/safeStorage/);
   assert.match(service,/auth\.openai\.com/);
   assert.match(service,/streamResponse/);
-  assert.match(service,/storageDir:path\.join\(app\.getPath\('userData'\),'chatgpt'\)/);
+  assert.match(service,/migrateChatGPTStorage\(path\.join\(sharedIdentityRoot\(\),'chatgpt'\)\)/);
+  assert.match(service,/protectBuffer|safeStorage\.encryptString/);
   assert.doesNotMatch(preload,/accessToken|refreshToken|credentialsForRequest/);
   for(const channel of ["'chatgpt:status'","'chatgpt:sign-in'","'chatgpt:disconnect'","'chatgpt:usage'"])assert.ok(main.includes(channel),channel);
   for(const token of ['signInChatGPT','disconnectChatGPT','openChatGPTUsage','chatgptStatus'])assert.ok(preload.includes(token),token);
