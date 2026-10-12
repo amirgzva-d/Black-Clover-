@@ -1,4 +1,6 @@
 import './topIslandV4.css';
+import './companionPremium.css';
+import {createCompanionSystem,COMPANION_STATES,COMPANION_OUTFITS} from './companionMotion.js';
 import { createSmartShortcutEditor } from './shortcutEditorV4.js';
 import { IslandHoverController } from './islandHoverController.js';
 import {taskForm,pinForm,reportForm} from './workflowFormsV4.js';
@@ -43,12 +45,13 @@ const PAGES=[
   {id:'reports',label:'گزارش ثبت',sub:'Accounting Watch',icon:I.report},
   {id:'pins',label:'پین‌ها',sub:'Pinned',icon:I.pin},
   {id:'tasks',label:'یادآور و اجرا',sub:'Automations',icon:I.clock},
+  {id:'motion',label:'کاراکتر و حرکت',sub:'Motion Studio',icon:I.eye},
   {id:'reserved',label:'بخش بعدی',sub:'Reserved',icon:I.reserved}
 ];
 
 function loadPrefs(){
-  try{return {autoHideSeconds:60,collapseDelayMs:5000,pinned:false,sound:true,lastPage:'home',...(JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{})};}
-  catch{return {autoHideSeconds:60,collapseDelayMs:5000,pinned:false,sound:true,lastPage:'home'};}
+  try{return {autoHideSeconds:60,collapseDelayMs:5000,pinned:false,sound:true,lastPage:'home',motionQuality:'full',companionOutfit:'classic',...(JSON.parse(localStorage.getItem(PREF_KEY)||'{}')||{})};}
+  catch{return {autoHideSeconds:60,collapseDelayMs:5000,pinned:false,sound:true,lastPage:'home',motionQuality:'full',companionOutfit:'classic'};}
 }
 let prefs=loadPrefs();
 let page=PAGES.some(x=>x.id===prefs.lastPage)?prefs.lastPage:'home';
@@ -117,10 +120,13 @@ function syncChrome(){
   $('[data-panel-pin]')?.setAttribute('aria-pressed',String(Boolean(prefs.pinned)));
   $('[data-panel-sound]')?.setAttribute('aria-pressed',String(Boolean(prefs.sound)));
 }
+let companionSystem=null;
 function setCharacter(state='idle'){
+  if(companionSystem)return companionSystem.setState(state,{force:state==='idle',reason:'legacy-event'});
   $('.v4-character')?.setAttribute('data-state',state);
 }
 function greetCharacter(){
+  if(companionSystem)return companionSystem.greet();
   const avatar=$('[data-character]');if(!avatar)return;
   if(['thinking','executing','error','offline'].includes(avatar.dataset.state))return;
   clearTimeout(greetingTimer);
@@ -401,11 +407,63 @@ function renderReserved(){
   const host=$('[data-page-body]');if(!host)return;
   host.innerHTML='<section class="v4-reserved"><span>03</span><small>RESERVED MODULE</small><h2>این صفحه برای قابلیت بعدی آماده است</h2><p>بدون تغییر ساختار Top Island، قابلیت بعدی اینجا اضافه می‌شود.</p></section>';
 }
+function renderMotionStudio(){
+  const host=$('[data-page-body]');if(!host)return;
+  const current=companionSystem?.machine?.state||'idle';
+  const outfit=prefs.companionOutfit||'classic';
+  const quality=prefs.motionQuality||'full';
+  const statuses=Object.entries(COMPANION_STATES).filter(([state])=>state!=='offline');
+  const outfits=Object.entries(COMPANION_OUTFITS);
+  host.innerHTML=`
+    <section class="v4-motion-studio" dir="rtl">
+      <header class="v4-motion-head">
+        <div><small>MOTION DIRECTOR • LAMÉ 2.7</small><h2>استودیو حرکت و شخصیت MARIA</h2><p>پیش‌نمایش حالت‌ها مستقل از عملیات واقعی است؛ در اجرای واقعی، وضعیت را ابزارهای MARIA تعیین می‌کنند.</p></div>
+        <button class="v4-head-add" data-settings type="button">بازگشت به تنظیمات</button>
+      </header>
+      <section class="v4-motion-stage" aria-label="پیش‌نمایش زنده شخصیت">
+        <div class="v4-motion-stage-scene" data-motion-preview></div>
+        <div class="v4-motion-stage-info"><small>MARIA · EXPRESSIVE COMPANION</small><h3>شخصیت زنده و هوشمند</h3><p>یک شخصیت سه‌بعدی‌نما با هندسه Superellipse 2.7، چشم متحرک، تغییر لباس و واکنش به وضعیت واقعی ابزارها.</p><div class="v4-stage-pipeline"><span>تشخیص</span><i>→</i><span>اجرا</span><i>→</i><span>تأیید</span></div><strong data-motion-stage-status>${esc(COMPANION_STATES[current]?.label||'آماده')}</strong></div>
+      </section>
+      <article class="v4-motion-group">
+        <h3>حالت‌های شخصیت • ${statuses.length} حرکت</h3>
+        <div class="v4-motion-palette">${statuses.map(([state,item])=>`<button type="button" data-motion-state="${esc(state)}" aria-pressed="${state===current}" title="${esc(item.label)}">${esc(item.label)}</button>`).join('')}</div>
+        <p class="v4-motion-live" role="status">وضعیت پیش‌نمایش: <b>${esc(COMPANION_STATES[current]?.label||'آماده')}</b></p>
+      </article>
+      <article class="v4-motion-group">
+        <h3>کمد لباس شخصیت • مستقل از واکنش‌ها</h3>
+        <div class="v4-motion-palette">${outfits.map(([key,label])=>`<button type="button" data-motion-outfit="${esc(key)}" aria-pressed="${key===outfit}">${esc(label)}</button>`).join('')}</div>
+        <p class="v4-motion-hint">انتخاب لباس ذخیره می‌شود و با تغییر حالت‌های عملیات از بین نمی‌رود. مدل‌های سه‌بعدی قبلی MARIA دست‌نخورده باقی می‌مانند.</p>
+      </article>
+      <article class="v4-motion-group">
+        <h3>شدت انیمیشن و مصرف منابع</h3>
+        <div class="v4-motion-palette">
+          <button type="button" data-motion-level="full" aria-pressed="${quality==='full'}">کامل</button>
+          <button type="button" data-motion-level="subtle" aria-pressed="${quality==='subtle'}">ملایم و کم‌مصرف</button>
+          <button type="button" data-motion-level="none" aria-pressed="${quality==='none'}">بدون حرکت تزئینی</button>
+        </div>
+        <p class="v4-motion-hint">تنظیم Reduce Motion سیستم همیشه اولویت دارد. رنگ‌ها، متن‌ها و آیکون وضعیت حتی بدون انیمیشن قابل تشخیص‌اند.</p>
+      </article>
+    </section>`;
+  const target=host.querySelector('[data-motion-preview]');
+  const original=$('[data-character]');
+  if(target&&original){
+    const preview=document.createElement('div');
+    preview.className='v4-character v4-stage-avatar';
+    preview.dataset.companionPreview='';
+    preview.dataset.companionState=current;
+    preview.dataset.state=current==='working'?'executing':current;
+    preview.setAttribute('role','img');
+    preview.setAttribute('aria-label','پیش‌نمایش زنده کاراکتر MARIA');
+    preview.innerHTML=original.innerHTML;
+    target.append(preview);
+  }
+}
 function renderSettings(){
   const host=$('[data-page-body]');if(!host)return;
   host.innerHTML=`
     <header class="v4-page-head"><div><small>TOP ISLAND SETTINGS</small><h2>تنظیمات پنل</h2><p>فقط تنظیمات همین پنل بالای صفحه.</p></div></header>
     <section class="v4-settings">
+      <button data-motion-lab class="v4-motion-launch" type="button"><span>${I.eye} کاراکتر، لباس و انیمیشن‌های حرفه‌ای</span><strong>←</strong></button>
       <button data-setting-pin><span>${I.pin}</span><div><b>پین پنل</b><small>${workbarPinned?'ثابت است؛ تا آزاد نکنی جمع نمی‌شود':'پنل را برای درگ و کار با فایل ثابت کن'}</small></div><i class="${workbarPinned?'on':''}"></i></button>
       <button data-setting-avatar aria-pressed="${avatarVisibilityState.enabled?'true':'false'}"><span>${I.eye}</span><div><b>کاراکتر بزرگ روی دسکتاپ</b><small>${avatarVisibilityState.enabled?'نمایش فعال است؛ برای پنهان‌کردن کلیک کن':'به‌صورت پیش‌فرض پنهان است؛ با کلیک نمایش بده'}</small></div><i class="${avatarVisibilityState.enabled?'on':''}"></i></button>
       <button data-setting-sound><span>${I.sound}</span><div><b>صدای پنل</b><small>مستقل از صدای Windows و MARIA Voice</small></div><i class="${prefs.sound?'on':''}"></i></button>
@@ -425,6 +483,7 @@ async function renderPage(){
   else if(page==='pins')await renderPins();
   else if(page==='tasks')await renderTasks();
   else if(page==='settings')renderSettings();
+  else if(page==='motion')renderMotionStudio();
   else renderReserved();
   if(body)body.scrollTop=0;
   requestAnimationFrame(()=>body?.classList.remove('switching'));
@@ -768,6 +827,21 @@ function bindGlobalActions(){
       hoverController?.clickModule(moduleId(button));
       return;
     }
+    if(e.target.closest('[data-motion-lab]')){selectPage('motion',{pin:true});return;}
+    if(e.target.closest('[data-motion-state]')){
+      const target=e.target.closest('[data-motion-state]').dataset.motionState;
+      companionSystem?.preview(target);renderMotionStudio();return;
+    }
+    if(e.target.closest('[data-motion-outfit]')){
+      const outfit=e.target.closest('[data-motion-outfit]').dataset.motionOutfit;
+      if(companionSystem?.setOutfit(outfit)){savePrefs({companionOutfit:outfit});renderMotionStudio();}
+      return;
+    }
+    if(e.target.closest('[data-motion-level]')){
+      const quality=e.target.closest('[data-motion-level]').dataset.motionLevel;
+      if(companionSystem?.setMotion(quality)){savePrefs({motionQuality:quality});renderMotionStudio();}
+      return;
+    }
     if(e.target.closest('[data-panel-close]')){
       e.preventDefault();
       e.stopPropagation();
@@ -850,7 +924,7 @@ export async function mountTopIslandV4(){
         <button class="plus" data-context-add title="افزودن">${I.plus}</button>
       </nav>
       <section class="v4-center">
-        <button class="v4-character" data-state="idle" data-character aria-label="باز کردن یا ثابت کردن MARIA"><i class="v4-arm left" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i><span class="face"><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></span><i class="v4-arm right" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i></button>
+        <button class="v4-character" data-state="idle" data-character aria-label="باز کردن یا ثابت کردن MARIA"><i class="v4-arm left" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i><span class="v4-accessory" aria-hidden="true"></span><span class="face"><i class="v4-specular" aria-hidden="true"></i><i class="v4-blush left" aria-hidden="true"></i><i class="v4-blush right" aria-hidden="true"></i><i class="eye left"></i><i class="eye right"></i><i class="mouth"></i></span><span class="v4-state-symbol" aria-hidden="true"></span><span class="v4-companion-badge" data-companion-badge hidden></span><i class="v4-arm right" aria-hidden="true"><i class="v4-limb"></i><i class="v4-palm"></i></i></button>
         <div class="v4-peek-dots"><i></i><i></i><i></i></div>
         <div class="v4-status"><small>MARIA</small><b data-status>Online • آماده</b></div>
         <div class="v4-live-pills" data-live-pills></div>
@@ -867,10 +941,16 @@ export async function mountTopIslandV4(){
     <section class="v4-expanded">
       <section class="v4-page" data-page-body></section>
     </section>
+    <div class="v4-companion-announcement" data-companion-announcement aria-live="polite" aria-atomic="true" style="position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)"></div>
     <div class="v4-drop" aria-live="polite"><b data-drop-title>فایل را رها کن</b><span data-drop-subtitle>Ask MARIA • Pin • Translate • Send • Convert</span></div>
   </main>`;
 
   const root=$('.maria-island-v4');
+  companionSystem?.destroy();
+  companionSystem=createCompanionSystem(root,{
+    prefersReducedMotion:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true,
+    motion:prefs.motionQuality||'full',outfit:prefs.companionOutfit||'classic'
+  });
   const pinbar=document.createElement('div');
   pinbar.className='v4-workflow-lock';
   pinbar.innerHTML='<button type="button" data-workflow-lock aria-pressed="false" title="برای نگه‌داشتن صفحه هنگام درگ و انتخاب فایل">📌 ثابت نگه دار</button>';
@@ -969,19 +1049,19 @@ export async function mountTopIslandV4(){
     if(!workbarPinned&&!draggingIntoIsland&&!$('.v4-modal')&&!nativeShortcutPickerOpen&&mode!=='peek')hoverController?.collapseNow();
   });
   window.blackClover.onEvent?.(e=>{
+    companionSystem?.onEvent(e);
     if(e?.type==='ui-state'){
       const status=e.detail||e.mode||'MARIA';
       $('[data-status]').textContent=status;
       if($('[data-preview-status]'))$('[data-preview-status]').textContent=status;
-      setCharacter(e.mode==='working'?'thinking':e.mode==='error'?'error':e.mode==='offline'?'offline':'idle');
       pushEvent(e);
     }
     else if(e?.type==='avatar-visibility-changed'){
       avatarVisibilityState={enabled:Boolean(e.enabled),visible:Boolean(e.enabled)};
       if(page==='settings'&&mode==='expanded')renderSettings();
     }
-    else if(e?.type==='thinking'){setCharacter('thinking');pushEvent(e);}
-    else if(e?.type==='tool'){setCharacter('executing');pushEvent(e);}
+    else if(e?.type==='thinking'){pushEvent(e);}
+    else if(e?.type==='tool'){pushEvent(e);}
     else if(e?.type==='scheduled-action'||e?.type==='reminder'){pushEvent(e);if(page==='tasks')renderTasks();}
     else if(e?.type==='accounting-report-updated'){pushEvent({type:'accounting',text:'گزارش حسابداری بروزرسانی شد'});if(page==='reports')renderReports();}
     else if(e?.type==='accounting-watch-unavailable'){pushEvent({type:'warning',text:'مسیر حسابداری در دسترس نیست'});}
