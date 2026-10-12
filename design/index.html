@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="dark">
+<title>MARIA Motion Lab — 2026</title>
+<link rel="stylesheet" href="./motion-lab.css">
+<script src="./motion-lab.js" defer></script>
+</head>
+<body>
+<div class="container">
+  <header class="topline">
+    <div class="branding"><div class="brand-icon">M</div><div><h1>MARIA <small>MOTION LAB</small></h1><p>آزمایشگاه حرفه‌ای حرکت، شخصیت و تجربهٔ کاربری</p></div></div>
+    <div class="top-actions"><span class="preview-label">نسخهٔ آزمایشی / دادهٔ نمایشی</span><button id="motionToggle" class="button subtle" type="button" aria-pressed="false">کاهش حرکت: خاموش</button><button id="exportPreset" class="button" type="button">دریافت تنظیمات طراحی <span aria-hidden="true">↓</span></button></div>
+  </header>
+  <div class="layout">
+    <aside class="sidebar pane">
+      <span class="kicker">MARIA WORKSPACE</span><h2>فضاهای کاری</h2><p>هر بخش برای یک کار واقعی طراحی می‌شود، نه یک صفحهٔ تزئینی.</p>
+      <nav id="sections" class="section-nav" aria-label="انتخاب فضای کاری"></nav>
+      <div class="sidebar-note"><strong>ایمن و مستقل</strong><span>این نمونه هیچ داده‌ای از MARIA اصلی نمی‌خواند و هیچ تنظیم فعلی را تغییر نمی‌دهد.</span></div>
+    </aside>
+    <main class="content">
+      <section class="stage pane" id="stage">
+        <header class="stage-header"><div><span class="kicker accent">MOTION CORE / 02</span><h2>شخصیت زنده؛ عملکرد معنی‌دار</h2><p>ساختار سوپربیضی دقیق، نورپردازی حالت‌محور و حرکات کنترل‌شدهٔ موس</p></div><div class="stage-tag">کلیک برای باز/بسته‌شدن</div></header>
+        <div class="visual-stage">
+          <div class="atmosphere" aria-hidden="true"></div>
+          <div class="notch" id="notch">
+            <button class="notch-avatar" id="notchToggle" type="button" aria-label="باز و بسته‌کردن پنل">M</button>
+            <div class="notch-state"><b>MARIA</b><span id="notchStatus">آماده</span></div>
+            <span class="status-light" aria-hidden="true"></span>
+            <div id="notchActions" class="notch-actions"></div>
+          </div>
+          <div id="avatarScene" class="avatar-scene" data-emotion="idle" data-costume="none">
+            <div class="avatar-glow"></div>
+            <div class="avatar-emblem">MARIA / SUPERELLIPSE <span id="shapeBadge">n=2.7</span></div>
+            <div id="stageQuickActions" class="stage-quick" aria-label="عملیات سریع"></div>
+            <svg id="avatar" viewBox="0 0 320 265" width="320" height="265" role="img" aria-label="کاراکتر ماریا با دو چشم واکنش‌گرا، دو دست و صورت سوپربیضی">
+              <defs>
+                <radialGradient id="bodyGradient" cx="44%" cy="23%" r="83%"><stop offset="0" stop-color="#fff"/><stop offset=".52" stop-color="#f9f8ff"/><stop offset="1" stop-color="#d8ddef"/></radialGradient>
+                <linearGradient id="handGradient" x1=".15" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#d9def1"/></linearGradient>
+                <radialGradient id="specGradient"><stop offset="0" stop-color="#fff" stop-opacity=".5"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+              </defs>
+              <ellipse cx="160" cy="239" rx="74" ry="11" fill="#02040a" opacity=".19"/>
+              <g id="floatingAvatar">
+                <g id="leftHand"><ellipse cx="46" cy="169" rx="12" ry="14" fill="url(#handGradient)" transform="rotate(-21 46 169)"/></g>
+                <g id="rightHand"><ellipse cx="273" cy="117" rx="13" ry="16" fill="url(#handGradient)" transform="rotate(18 273 117)"/></g>
+                <g id="headPose">
+                  <path id="bodyPath" stroke="rgba(255,255,255,.72)" stroke-width="1" fill="url(#bodyGradient)"/>
+                  <path id="innerContour" fill="none" stroke="rgba(154,164,195,.16)" stroke-width="1"/>
+                  <ellipse cx="195" cy="101" rx="46" ry="30" fill="url(#specGradient)" opacity=".7"/>
+                  <ellipse id="blushLeft" cx="112" cy="163" rx="19" ry="6" fill="#ef8fa4" opacity=".1"/>
+                  <ellipse id="blushRight" cx="208" cy="163" rx="19" ry="6" fill="#ef8fa4" opacity=".1"/>
+                  <g id="eyeGroup"><ellipse id="eyeLeft" cx="125" cy="149" rx="7.5" ry="9.2" fill="#161923"/><ellipse id="eyeRight" cx="195" cy="149" rx="7.5" ry="9.2" fill="#161923"/></g>
+                  <path id="mouth" d="M151 179 Q160 185 169 179" stroke="#3c3c4b" stroke-width="2.3" stroke-linecap="round" fill="none" opacity="0"/>
+                  <g id="headBadge" transform="translate(98 69)"><rect x="-17" y="-11" width="34" height="22" rx="11" fill="#6752b8" stroke="#aa9efb" stroke-width="1"/><circle cx="-7" cy="0" r="2" fill="#fff"/><circle cx="0" cy="0" r="2" fill="#fff"/><circle cx="7" cy="0" r="2" fill="#fff"/></g>
+                  <g id="costumeWitch" class="costume"><path d="M100 87 L138 30 Q144 18 153 30 L186 87Z" fill="#6930b6" stroke="#9159dc" stroke-width="2"/><ellipse cx="144" cy="86" rx="70" ry="11" fill="#7b36cb"/><path d="M115 68H174" stroke="#ecbb61" stroke-width="8" stroke-linecap="round"/></g>
+                  <g id="costumeCrown" class="costume"><path d="M98 87 L94 45 127 59 155 28 184 59 213 45 207 87Z" fill="#f9c855" stroke="#ffe0a4" stroke-width="3"/><circle cx="157" cy="66" r="6" fill="#b37dff"/></g>
+                  <g id="costumeBeanie" class="costume"><path d="M97 91 Q90 40 157 40 Q219 40 221 91Z" fill="#80baf1"/><path d="M95 88 Q157 105 223 88" stroke="#397dd4" stroke-width="10" fill="none"/><circle cx="157" cy="39" r="12" fill="#e6f6ff"/></g>
+                </g>
+              </g>
+            </svg>
+            <div class="avatar-caption"><b id="emotionLabel">Idle</b><span id="emotionHint">آماده و آرام</span></div>
+          </div>
+        </div>
+        <div class="stage-tokens"><span>هندسه: <b id="shapeValue">n = 2.7</b></span><span>Motion: <b>Spring + Inertia</b></span><span>Renderer: <b>SVG / GPU fallback</b></span><span>Accessibility: <b>Reduced motion</b></span></div>
+        <div class="live-line"><i></i><span id="liveMessage">نمونهٔ تعامل — نه اجرای عملیات روی سیستم</span></div>
+      </section>
+      <section class="pane module">
+        <div class="module-heading"><div><span class="kicker">WORKFLOW PREVIEW</span><h2 id="moduleTitle">خانه و فعالیت‌ها</h2><p id="moduleSubtitle">هر حالت دارای ورودی، اقدام، نتیجه و خطا است.</p></div><button type="button" id="moduleAdd" class="button primary">+ افزودن برای این بخش</button></div>
+        <div id="moduleBody"></div>
+      </section>
+    </main>
+    <aside class="inspector pane">
+      <span class="kicker">LIVE MOTION INSPECTOR</span><h2>کنترل دقیق شخصیت</h2><p>در آزمایشگاه می‌توان هندسه، حالات و اکسسوری را مستقل تنظیم و تست کرد.</p>
+      <div class="divider"></div>
+      <div class="setting"><label for="shapeN">فرم سوپربیضی <output id="outputN">2.7</output></label><input id="shapeN" type="range" min="2" max="4.5" step=".1" value="2.7"></div>
+      <div class="setting"><label for="gazePower">واکنش چشم به موس <output id="outputGaze">5px</output></label><input id="gazePower" type="range" min="0" max="9" step="1" value="5"></div>
+      <div class="setting"><label for="motionPower">شدت حرکت <output id="outputPower">1.0×</output></label><input id="motionPower" type="range" min=".35" max="1.65" step=".05" value="1"></div>
+      <label class="field-label" for="costumePicker">WARDROBE / لایه‌های جدا</label><select id="costumePicker"><option value="none">صورت اصلی</option><option value="witch">کلاه جادوگری</option><option value="crown">تاج</option><option value="beanie">کلاه آبی</option></select>
+      <div class="divider"></div><span class="kicker">EMOTION STATE MACHINE</span><div id="emotionButtons" class="emotion-buttons"></div>
+      <label class="toggle"><span>پلک و شناوری طبیعی</span><input type="checkbox" id="blinkControl" checked></label>
+      <label class="toggle"><span>نور و رنگ وضعیت</span><input type="checkbox" id="colorControl" checked></label>
+      <div class="divider"></div><span class="kicker">EVENT TRAIL / DEMO</span><div id="eventTrail" class="event-trail" aria-live="polite"></div>
+    </aside>
+  </div>
+  <footer>این یک نمونهٔ مستقلِ پژوهشی است. اتصال واقعی ChatGPT، Gmail، GitHub، مدل VRM، فایل‌ها و عملیات ویندوز در این صفحه غیرفعال است. هدف طراحی و ارزیابی قبل از ادغام ایمن در MARIA است.</footer>
+</div>
+<dialog id="editor" class="editor">
+  <h2 id="editorTitle">افزودن آیتم آزمایشی</h2><p id="editorHelp"></p>
+  <form id="editorForm" method="dialog"><input id="draftTitle" maxlength="100" placeholder="عنوان" required><textarea id="draftDescription" rows="3" placeholder="توضیح کوتاه (اختیاری)"></textarea>
+  <div class="editor-actions"><button type="button" id="cancelEditor" class="button">انصراف</button><button type="submit" class="button primary">ذخیره در همین آزمایشگاه</button></div></form>
+</dialog>
+</body>
+</html>
