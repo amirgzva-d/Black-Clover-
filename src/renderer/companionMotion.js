@@ -3,6 +3,8 @@
  * A deterministic, UI-only state coordinator: business operations remain in Electron.
  * "success" requires independently confirmed completion; preview mode is explicitly local.
  */
+import {decorateFilm1030Character,renderFilm1030Character} from './companionFilm1030.js';
+
 export const COMPANION_STATES=Object.freeze({
   idle:{label:'آماده',accent:'#dce7ff',priority:0,ttl:0},
   greeting:{label:'سلام!',accent:'#f5dcc1',priority:1,ttl:1700},
@@ -17,6 +19,7 @@ export const COMPANION_STATES=Object.freeze({
   question:{label:'یک سؤال',accent:'#69e4ea',priority:2,ttl:2200},
   shy:{label:'خجالتی',accent:'#ffb5d8',priority:1,ttl:2200},
   happy:{label:'خوشحال',accent:'#8ae5b0',priority:1,ttl:1800},
+  affection:{label:'محبت',accent:'#f89cbe',priority:1,ttl:2800},
   surprised:{label:'متعجب',accent:'#c2b4ff',priority:1,ttl:1600},
   dizzy:{label:'سرگیجه',accent:'#e9a8de',priority:2,ttl:1800},
   dancing:{label:'رقص شادی',accent:'#f6c77e',priority:1,ttl:2700},
@@ -133,14 +136,18 @@ export function createCompanionSystem(root,{prefersReducedMotion=false,outfit='c
   if(!root)throw new TypeError('Companion root is required');
   const avatar=root.querySelector('[data-character]');
   if(!avatar)throw new TypeError('Companion character is required');
+  decorateFilm1030Character(avatar);
   let lastAnnouncement='';
   const announcer=root.querySelector('[data-companion-announcement]');
   const machine=new CompanionStateMachine({onChange:(state)=>{
     root.dataset.companionState=state;
     root.style.setProperty('--maria-state-accent',COMPANION_STATES[state].accent);
-    for(const view of [avatar,...root.querySelectorAll('[data-companion-preview]')]){
+    // The studio preview is deliberately isolated from live backend events and hover gestures.
+    // Only the real compact companion follows agent state; studio shots are design previews.
+    for(const view of [avatar]){
       view.dataset.state=state==='working'?'executing':state;
       view.dataset.companionState=state;
+      renderFilm1030Character(view,state);
       const badge=view.querySelector('[data-companion-badge]');
       if(badge){badge.textContent=state==='idle'?'':COMPANION_STATES[state].label;badge.hidden=state==='idle';}
     }

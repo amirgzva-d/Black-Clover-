@@ -1,5 +1,7 @@
 import './topIslandV4.css';
 import './companionPremium.css';
+import './companionFilm1030.css';
+import {FILM_1030_DURATION,FILM_1030_SHOTS,decorateFilm1030Character,renderFilm1030Character,createFilm1030Timeline} from './companionFilm1030.js';
 import {createCompanionSystem,COMPANION_STATES,COMPANION_OUTFITS} from './companionMotion.js';
 import {normalizeDropTarget,dropPinPayload,dropAskPrompt} from './dropActions.js';
 import {MARIA_FEATURES,FEATURE_STATUS,filterFeatures} from './featureCatalog.js';
@@ -66,6 +68,9 @@ let filter='all';
 let reportSearch='';
 let featureSearch='';
 let featureStatus='all';
+let studioPreviewState='idle';
+let studioPreviewScene=null;
+let film1030Player=null;
 let audio=null;
 let greetingTimer=null;
 let shortcutIconObserver=null;
@@ -412,9 +417,38 @@ function renderReserved(){
   const host=$('[data-page-body]');if(!host)return;
   host.innerHTML='<section class="v4-reserved"><span>03</span><small>RESERVED MODULE</small><h2>این صفحه برای قابلیت بعدی آماده است</h2><p>بدون تغییر ساختار Top Island، قابلیت بعدی اینجا اضافه می‌شود.</p></section>';
 }
+function setStudioFilmPreview(state='idle',scene=null,timeMs=0){
+  if(!COMPANION_STATES[state])state='idle';
+  studioPreviewState=state;
+  studioPreviewScene=scene;
+  const stage=$('[data-film-state]');
+  if(stage){stage.dataset.filmState=state;stage.dataset.filmScene=scene||state;}
+  const preview=$('[data-companion-preview]');
+  if(preview){renderFilm1030Character(preview,state,{scene});preview.dataset.state=state==='working'?'executing':state;}
+  const status=$('[data-motion-stage-status]');
+  if(status)status.textContent=COMPANION_STATES[state].label;
+  const live=$('.v4-motion-live b');
+  if(live)live.textContent=COMPANION_STATES[state].label;
+  for(const button of $$('[data-motion-state]'))button.setAttribute('aria-pressed',String(button.dataset.motionState===state));
+  const progress=$('[data-film-progress]');
+  if(progress)progress.style.setProperty('--film-progress',Math.min(100,Math.max(0,100*timeMs/FILM_1030_DURATION)).toFixed(1)+'%');
+  const caption=$('[data-film-caption]');
+  if(caption)caption.textContent=FILM_1030_SHOTS.find(x=>x.scene===scene)?.description||'پیش‌نمایش مستقل از وضعیت واقعی ابزارها';
+}
+function getFilm1030Player(){
+  if(!film1030Player)film1030Player=createFilm1030Timeline({
+    onFrame:shot=>setStudioFilmPreview(shot.state,shot.scene,shot.at),
+    onEnd:()=>{
+      setStudioFilmPreview('idle','neutral',FILM_1030_DURATION);
+      const start=$('[data-film1030-play]');if(start)start.disabled=false;
+      const stop=$('[data-film1030-stop]');if(stop)stop.disabled=true;
+    }
+  });
+  return film1030Player;
+}
 function renderMotionStudio(){
   const host=$('[data-page-body]');if(!host)return;
-  const current=companionSystem?.machine?.state||'idle';
+  const current=studioPreviewState;
   const outfit=prefs.companionOutfit||'classic';
   const quality=prefs.motionQuality||'full';
   const statuses=Object.entries(COMPANION_STATES).filter(([state])=>state!=='offline');
@@ -425,10 +459,17 @@ function renderMotionStudio(){
         <div><small>MOTION DIRECTOR • LAMÉ 2.7</small><h2>استودیو حرکت و شخصیت MARIA</h2><p>پیش‌نمایش حالت‌ها مستقل از عملیات واقعی است؛ در اجرای واقعی، وضعیت را ابزارهای MARIA تعیین می‌کنند.</p></div>
         <button class="v4-head-add" data-settings type="button">بازگشت به تنظیمات</button>
       </header>
-      <section class="v4-motion-stage" aria-label="پیش‌نمایش زنده شخصیت">
+      <section class="v4-motion-stage" aria-label="پیش‌نمایش مستقل شخصیت" data-film-state="${esc(current)}" data-film-scene="${esc(studioPreviewScene||current)}">
         <div class="v4-motion-stage-scene" data-motion-preview></div>
         <div class="v4-motion-stage-info"><small>MARIA · EXPRESSIVE COMPANION</small><h3>شخصیت زنده و هوشمند</h3><p>یک شخصیت سه‌بعدی‌نما با هندسه Superellipse 2.7، چشم متحرک، تغییر لباس و واکنش به وضعیت واقعی ابزارها.</p><div class="v4-stage-pipeline"><span>تشخیص</span><i>→</i><span>اجرا</span><i>→</i><span>تأیید</span></div><strong data-motion-stage-status>${esc(COMPANION_STATES[current]?.label||'آماده')}</strong></div>
       </section>
+      <article class="v4-motion-group v4-film1030-panel">
+        <h3>ویدیوی 1000311030 · توالی تخصصی ۱۲٫۱ ثانیه</h3>
+        <p class="v4-motion-hint">حرکت‌ها به‌صورت پیش‌نمایش اجرا می‌شوند و نتیجه ساختگی برای کارهای واقعی نشان نمی‌دهند.</p>
+        <div class="v4-film1030-controls"><button type="button" data-film1030-play>▶ پخش توالی ویدیو</button><button type="button" data-film1030-stop disabled>■ توقف</button><small>۱۲ صحنه · سلام، فکر، کار، هشدار، موفقیت، قلب‌ها</small></div>
+        <div class="v4-film1030-timeline" data-film-progress><span></span></div>
+        <div class="v4-film1030-caption" data-film-caption>انتخاب هر حالت، فقط کاراکتر پیش‌نمایش را تغییر می‌دهد.</div>
+      </article>
       <article class="v4-motion-group">
         <h3>حالت‌های شخصیت • ${statuses.length} حرکت</h3>
         <div class="v4-motion-palette">${statuses.map(([state,item])=>`<button type="button" data-motion-state="${esc(state)}" aria-pressed="${state===current}" title="${esc(item.label)}">${esc(item.label)}</button>`).join('')}</div>
@@ -460,7 +501,9 @@ function renderMotionStudio(){
     preview.setAttribute('role','img');
     preview.setAttribute('aria-label','پیش‌نمایش زنده کاراکتر MARIA');
     preview.innerHTML=original.innerHTML;
+    decorateFilm1030Character(preview);
     target.append(preview);
+    setStudioFilmPreview(current,studioPreviewScene);
   }
 }
 function renderFeatureCatalog(){
@@ -522,6 +565,7 @@ async function renderPage(){
 }
 function selectPage(id,{pin=false}={}){
   if(id!=='settings'&&!PAGES.some(x=>x.id===id))return;
+  if(page==='motion'&&id!=='motion')film1030Player?.stop({restore:false});
   const unchanged=page===id&&mode==='expanded';
   if(pin)setPanelPinned(true);
   page=id;setMode('expanded');
@@ -903,9 +947,25 @@ function bindGlobalActions(){
       else if(entry.action==='avatar')void window.blackClover.showAvatar().catch(error=>pushEvent({type:'error',text:String(error)}));
       return;
     }
+    if(e.target.closest('[data-film1030-play]')){
+      getFilm1030Player().play();
+      e.target.closest('button').disabled=true;
+      const stop=$('[data-film1030-stop]');if(stop)stop.disabled=false;
+      return;
+    }
+    if(e.target.closest('[data-film1030-stop]')){
+      getFilm1030Player().stop();
+      const start=$('[data-film1030-play]');if(start)start.disabled=false;
+      e.target.closest('button').disabled=true;
+      return;
+    }
     if(e.target.closest('[data-motion-state]')){
+      getFilm1030Player().stop({restore:false});
       const target=e.target.closest('[data-motion-state]').dataset.motionState;
-      companionSystem?.preview(target);renderMotionStudio();return;
+      setStudioFilmPreview(target);
+      const start=$('[data-film1030-play]');if(start)start.disabled=false;
+      const stop=$('[data-film1030-stop]');if(stop)stop.disabled=true;
+      return;
     }
     if(e.target.closest('[data-motion-outfit]')){
       const outfit=e.target.closest('[data-motion-outfit]').dataset.motionOutfit;

@@ -60,8 +60,9 @@ try{
  assert.ok(results.studio.heading.includes('استودیو'));assert.ok(results.studio.states>=14);assert.equal(results.studio.outfits,8);
  await snapshot('03-motion-studio');
  await run("document.querySelector('[data-motion-state=uploading]').click();true");
- results.upload=await run("({state:document.querySelector('.maria-island-v4')?.dataset.companionState,badge:document.querySelector('[data-companion-badge]')?.textContent})");
- assert.equal(results.upload.state,'uploading');assert.ok(results.upload.badge.includes('بارگذاری'));
+ results.upload=await run("({state:document.querySelector('.v4-motion-stage').dataset.filmState,real:document.querySelector('[data-character]').dataset.companionState,label:document.querySelector('[data-motion-stage-status]').textContent})");
+ assert.equal(results.upload.state,'uploading');assert.ok(results.upload.label.includes('بارگذاری'));
+ assert.ok(['idle','greeting'].includes(results.upload.real));
  await snapshot('04-upload-motion');
  await run("document.querySelector('[data-motion-outfit=wizard]').click();true");
  results.outfit=await run("({outfit:document.querySelector('.maria-island-v4')?.dataset.outfit,pref:JSON.parse(localStorage.getItem('maria:top-island-v4:ui')).companionOutfit})");
