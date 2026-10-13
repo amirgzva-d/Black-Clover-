@@ -2,7 +2,7 @@ import './style.css';
 import './avatarPicker.css';
 import './setup.css';
 import './brain.css';
-import { mountAvatar } from './avatar.js';
+// The VRM/Three.js renderer is intentionally loaded only for the avatar surface.
 import { importMotionPack, listMotions } from './motionStorage.js';
 import { voice } from './voice.js';
 import { detectEmotion, emotionDuration } from './emotion.js';
@@ -78,7 +78,7 @@ let brainCatalog=[],brainSettings=null;
 const DEFAULT_MODEL_ID='auto';
 if(!localStorage.getItem('blackClover:selectedModel'))localStorage.setItem('blackClover:selectedModel',DEFAULT_MODEL_ID);
 
-const avatarControllerPromise = IS_AVATAR ? mountAvatar(avatarRoot) : Promise.resolve(null);
+const avatarControllerPromise = IS_AVATAR ? import('./avatar.js').then(({mountAvatar})=>mountAvatar(avatarRoot)) : Promise.resolve(null);
 let diagnostics = null;
 let lastMotionAt = 0;
 let localRecording = null;

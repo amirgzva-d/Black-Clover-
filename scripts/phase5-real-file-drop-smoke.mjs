@@ -1,0 +1,55 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs/promises';
+import path from 'node:path';
+const url='http://127.0.0.1:'+String(process.env.MARIA_CDP_PORT||9552)+'/json/list';
+const pages=await(await fetch(url)).json();
+const island=pages.find(x=>x.url.includes('surface=island'));
+if(!island)throw Error('No isolated island');
+const ws=new WebSocket(island.webSocketDebuggerUrl);
+await new Promise((ok,bad)=>{ws.onopen=ok;ws.onerror=bad});
+let seq=0;const pending=new Map();
+ws.onmessage=e=>{const d=JSON.parse(e.data);if(pending.has(d.id)){pending.get(d.id)(d);pending.delete(d.id)}};
+const send=(method,params={})=>new Promise((ok,bad)=>{
+ const i=++seq;pending.set(i,ok);ws.send(JSON.stringify({id:i,method,params}));
+ setTimeout(()=>{if(pending.has(i)){pending.delete(i);bad(Error('Timeout '+method))}},14000).unref();
+});
+const evaluate=async expression=>{
+ const msg=await send('Runtime.evaluate',{expression,awaitPromise:true,returnByValue:true});
+ if(msg.error||msg.result?.exceptionDetails)throw Error(JSON.stringify(msg.error||msg.result?.exceptionDetails));
+ return msg.result?.result?.value;
+};
+const sleep=ms=>new Promise(ok=>setTimeout(ok,ms));
+const file=process.env.MARIA_TEST_FILE||path.resolve('.runtime-data-phase5','گزارش-نمونه.xlsx');
+await fs.mkdir(path.dirname(file),{recursive:true});
+if(!await fs.stat(file).catch(()=>null))await fs.writeFile(file,'temporary MARIA fixture');
+const originalBytes=await fs.readFile(file);
+try{
+ await evaluate("document.querySelector('[data-character]').click();true");
+ await sleep(100);
+ await evaluate("document.querySelector('[data-page=shortcuts]').click();true");
+ await sleep(220);
+ await evaluate("(()=>{const el=document.createElement('input');el.type='file';el.id='phase5-os-file';el.style.position='absolute';el.style.left='-10000px';document.body.append(el);return true;})()");
+ const doc=await send('DOM.getDocument',{depth:-1});
+ const node=await send('DOM.querySelector',{nodeId:doc.result.root.nodeId,selector:'#phase5-os-file'});
+ if(!node.result.nodeId)throw Error('Temporary file input missing');
+ await send('DOM.setFileInputFiles',{files:[file],nodeId:node.result.nodeId});
+ const extracted=await evaluate("window.blackClover.getDroppedFilePath(document.getElementById('phase5-os-file').files[0])");
+ assert.equal(extracted,file,'Electron webUtils did not preserve the Windows original path');
+ const fired=await evaluate("(()=>{const f=document.getElementById('phase5-os-file').files[0];const dt=new DataTransfer();dt.items.add(f);const ev=new DragEvent('drop',{bubbles:true,cancelable:true,dataTransfer:dt});document.querySelector('[data-shortcut-drop-area]').dispatchEvent(ev);return ev.defaultPrevented;})()");
+ assert.equal(fired,true,'Drop event was not accepted by MARIA shortcut panel');
+ await sleep(260);
+ const state=await evaluate("({modal:!!document.querySelector('.v4-modal'),type:document.querySelector('[data-shortcut-kind]')?.textContent,info:document.querySelector('[data-shortcut-meta]')?.textContent})");
+ assert.equal(state.modal,true);
+ assert.match(state.info,/\.XLSX/);
+ assert.match(state.info,/گزارش-نمونه/);
+ await evaluate("document.querySelector('[data-modal-form]').requestSubmit();true");
+ await sleep(330);
+ const entries=await evaluate('window.blackClover.listShortcuts()');
+ const match=entries.find(x=>x.target===file);
+ assert.ok(match,'File dropped into MARIA was not saved as a shortcut');
+ assert.equal(match.kind,'file');
+ await evaluate("window.blackClover.removeShortcut("+JSON.stringify(match.id)+")");
+ assert.deepEqual(await fs.readFile(file),originalBytes,'Deleting shortcut unexpectedly changed original file');
+ await evaluate("document.getElementById('phase5-os-file')?.remove();true");
+ console.log(JSON.stringify({success:true,file,realPathPreserved:extracted===file,dropAccepted:fired,preview:state,shortcutSaved:true,originalLeftUntouched:true},null,2));
+}finally{ws.close()}

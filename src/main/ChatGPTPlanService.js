@@ -3,15 +3,18 @@ import fs from 'node:fs';
 import {spawn} from 'node:child_process';
 import {app,safeStorage,shell} from 'electron';
 import {createChatGPT,CHATGPT_USAGE_URL,ChatGPTError} from '@siwc/local';
+import {sharedIdentityRoot,migrateChatGPTStorage} from './StableIdentityStore.js';
+import {dpapiAvailable,protectBuffer,unprotectBuffer} from './WindowsDpapi.js';
 
 function credentialEncryption(){
-  const isAvailable=()=>app.isReady()&&safeStorage.isEncryptionAvailable()&&(process.platform!=='linux'||['gnome_libsecret','kwallet','kwallet5','kwallet6'].includes(safeStorage.getSelectedStorageBackend()));
+  const safeAvailable=()=>app.isReady()&&safeStorage.isEncryptionAvailable()&&(process.platform!=='linux'||['gnome_libsecret','kwallet','kwallet5','kwallet6'].includes(safeStorage.getSelectedStorageBackend()));
+  const isAvailable=()=>dpapiAvailable()||safeAvailable();
   const requireAvailable=()=>{if(!isAvailable())throw new Error('OS credential encryption is unavailable.');};
   return {
     id:'electron-safe-storage-v1',
     isAvailable,
-    encrypt(plaintext){requireAvailable();return safeStorage.encryptString(String(plaintext));},
-    decrypt(ciphertext){requireAvailable();return safeStorage.decryptString(Buffer.from(ciphertext));}
+    encrypt(plaintext){requireAvailable();return dpapiAvailable()?protectBuffer(String(plaintext)):safeStorage.encryptString(String(plaintext));},
+    decrypt(ciphertext){requireAvailable();if(dpapiAvailable()){try{const value=unprotectBuffer(ciphertext);if(value!==null)return value;}catch{}}if(safeAvailable())return safeStorage.decryptString(Buffer.from(ciphertext));throw new Error('Credential decryption failed.');}
   };
 }
 const cleanError=error=>{
@@ -21,17 +24,22 @@ const cleanError=error=>{
 };
 const usableSession=s=>Boolean(s?.status==='connected'&&s?.sharing===true&&!s?.error);
 const publicSession=s=>({status:String(s?.status||'disconnected'),sharing:Boolean(s?.sharing),profileId:s?.profileId||null,profileLabel:s?.profileLabel||null,identity:s?.identity?{name:s.identity.name||null,email:s.identity.email||null}:null,error:s?.error?{code:s.error.code||'',message:s.error.message||'',retryable:Boolean(s.error.retryable),status:s.error.status||null}:null});
+function migrateLegacyCipher(storageDir){
+  if(!dpapiAvailable()||!safeStorage.isEncryptionAvailable())return false;const file=path.join(storageDir,'chatgpt-auth.json');
+  try{const data=JSON.parse(fs.readFileSync(file,'utf8'));if(data?.provider!=='electron-safe-storage-v1'||!data?.ciphertext)return false;const cipher=Buffer.from(data.ciphertext,'base64');if(cipher.toString('utf8').startsWith('MARIADPAPI1:'))return true;const plaintext=safeStorage.decryptString(cipher);const next={...data,ciphertext:protectBuffer(plaintext).toString('base64')};fs.writeFileSync(file,JSON.stringify(next,null,2),'utf8');return true;}catch{return false;}
+}
 
 export class ChatGPTPlanService{
   constructor(){this.client=null;this.controllers=new Set();this.modelsCache=[];this.modelsAt=0;}
   ensure(){
     if(this.client)return this.client;
     if(!app.isReady())throw new Error('ChatGPT sign-in is available after MARIA starts.');
+    const storageDir=migrateChatGPTStorage(path.join(sharedIdentityRoot(),'chatgpt'));migrateLegacyCipher(storageDir);
     this.client=createChatGPT({
       appName:'MARIA Black Clover',
       appId:'black-clover-maria',
       redirectPort:0,
-      storageDir:path.join(app.getPath('userData'),'chatgpt'),
+      storageDir,
       credentialEncryption:credentialEncryption(),
       sendHostId:true,
       openBrowser:async raw=>{

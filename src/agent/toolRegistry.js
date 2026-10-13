@@ -28,9 +28,10 @@ import { windowsUpdateTools } from './windowsUpdateTools.js';
 import { resourceResolverTools } from './resourceResolverTools.js';
 import { fileWorkflowTools } from './fileWorkflowTools.js';
 import { incidentTools } from './IncidentStore.js';
+import { extensionTools } from './extensionTools.js';
 
 const safeNotes=Object.fromEntries(Object.entries(noteTools).filter(([,t])=>t?.risk!=='critical'));
-export const tools=Object.freeze({...coreTools,...powerTools,...researchTools,...groundedKnowledgeTools,...memoryTools,...automationTools,...codingTools,...codingWorkspaceTools,...schedulerTools,...policyTools,...nativeWindowsTools,...windowsAdvancedTools,...visionTools,...learningTools,...storageTools,...spreadsheetTools,...messengerSupportTools,...safeNotes,...wellbeingTools,...aiPortalTools,...appDiscoveryTools,...desktopManagementTools,...browserTools,...actionBookTools,...adobeTools,...downloadTools,...windowsUpdateTools,...resourceResolverTools,...fileWorkflowTools,...incidentTools});
+export const tools=Object.freeze({...coreTools,...powerTools,...researchTools,...groundedKnowledgeTools,...memoryTools,...automationTools,...codingTools,...codingWorkspaceTools,...schedulerTools,...policyTools,...nativeWindowsTools,...windowsAdvancedTools,...visionTools,...learningTools,...storageTools,...spreadsheetTools,...messengerSupportTools,...safeNotes,...wellbeingTools,...aiPortalTools,...appDiscoveryTools,...desktopManagementTools,...browserTools,...actionBookTools,...adobeTools,...downloadTools,...windowsUpdateTools,...resourceResolverTools,...fileWorkflowTools,...incidentTools,...extensionTools});
 export function ollamaTools(names=null){
   const allow=Array.isArray(names)?new Set(names):null;
   if(allow&&(allow.has('vision_inspect_screen')||allow.has('launch_any_app'))){allow.add('adobe_status');allow.add('photoshop_open_document');allow.add('illustrator_open_document');}
