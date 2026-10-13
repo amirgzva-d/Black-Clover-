@@ -5,7 +5,7 @@ import {BrainRouter} from '../src/agent/BrainRouter.js';
 
 const read=file=>fs.readFile(new URL('../'+file,import.meta.url),'utf8');
 
-test('Maria Auto default and optional explicit model selector',async()=>{const ui=await read('src/renderer/chatSurfaceV2.js');assert.match(ui,/const CHATGPT_AUTO='auto'/);assert.match(ui,/state.configuredProviders.map/);assert.match(ui,/routeChosenChatModel\(state.model\)/);assert.match(ui,/\.\.\.selected/);});
+test('Maria Auto default and explicit model selections use the authoritative route helper',async()=>{const ui=await read('src/renderer/chatSurfaceV2.js');const {routeChosenChatModel}=await import('../src/renderer/chatProviderSelection.js');assert.match(ui,/const CHATGPT_AUTO='auto'/);assert.match(ui,/state.configuredProviders.map/);assert.match(ui,/routeChosenChatModel\(state.model\)/);assert.match(ui,/conversationId:current,\.\.\.selected/);assert.deepEqual({...routeChosenChatModel('auto')}.provider,'auto');assert.equal(routeChosenChatModel('chatgpt:auto').provider,'chatgpt');assert.equal(routeChosenChatModel('online:gemini').provider,'gemini');});
 
 test('voice controls map to actual persisted voice settings and speech preview',async()=>{
   const s=await read('src/renderer/chatSurfaceV2.js');

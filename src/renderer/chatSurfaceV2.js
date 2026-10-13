@@ -1,4 +1,5 @@
 import './chatSurfaceV2.css';
+import './chatPremium.css';
 import {voice} from './voice.js';
 import {marked} from 'marked';
 import DOMPurify from 'dompurify';

@@ -1,6 +1,6 @@
 {
   "name": "black-clover-desktop-agent",
-  "version": "0.7.6",
+  "version": "0.8.0-beta.3",
   "private": true,
   "type": "module",
   "description": "Maria / Black Clover — hybrid local-first Windows AI desktop companion and agent",
@@ -47,7 +47,8 @@
         "nsis"
       ],
       "requestedExecutionLevel": "asInvoker",
-      "artifactName": "Black-Clover-Maria-Setup-${version}.${ext}"
+      "artifactName": "Black-Clover-Maria-Setup-${version}.${ext}",
+      "icon": "build-resources/maria-icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -55,7 +56,7 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Black Clover Maria",
-      "runAfterFinish": true,
+      "runAfterFinish": "false",
       "deleteAppDataOnUninstall": false
     }
   }
