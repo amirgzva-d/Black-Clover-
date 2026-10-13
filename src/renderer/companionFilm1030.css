@@ -1,0 +1,254 @@
+/* VIDEO 1000311030: reference-directed, originally drawn MARIA companion.
+   Color and emotion are meaningful; the effects never assert task success.
+   All visual overlays are pointer-events:none and are isolated from controls. */
+.maria-island-v4 .v4-character{
+  --film-color:236,235,246;
+  --film-halo-alpha:.07;
+  --film-shape:1;
+}
+.maria-island-v4 .v4-character[data-film-scene=greet]{--film-color:255,246,240;--film-halo-alpha:.21}
+.maria-island-v4 .v4-character[data-film-scene=blush]{--film-color:174,129,248;--film-halo-alpha:.34}
+.maria-island-v4 .v4-character[data-film-scene=thinking]{--film-color:144,106,252;--film-halo-alpha:.37}
+.maria-island-v4 .v4-character[data-film-scene=working]{--film-color:65,169,252;--film-halo-alpha:.33}
+.maria-island-v4 .v4-character[data-film-scene=approval]{--film-color:245,175,60;--film-halo-alpha:.32}
+.maria-island-v4 .v4-character[data-film-scene=success]{--film-color:61,210,153;--film-halo-alpha:.34}
+.maria-island-v4 .v4-character[data-film-scene=affection]{--film-color:81,211,163;--film-halo-alpha:.34}
+.maria-island-v4 .v4-character .maria-film-glow{
+  position:absolute;z-index:0;pointer-events:none;
+  top:50%;left:50%;width:115%;height:145%;
+  border-radius:50%;
+  background:radial-gradient(ellipse,rgba(var(--film-color),var(--film-halo-alpha)) 0%,rgba(var(--film-color),.07) 38%,transparent 73%);
+  filter:blur(14px);
+  transform:translate(-50%,-44%) scale(1.6);
+  opacity:1;transition:background .4s ease,opacity .32s ease
+}
+.maria-island-v4 .v4-character .maria-film-ring{
+  position:absolute;pointer-events:none;z-index:1;
+  top:50%;left:50%;
+  width:112%;height:125%;
+  border:1px solid rgba(var(--film-color),.32);
+  border-radius:50%;transform:translate(-50%,-49%) scale(.84);
+  opacity:0;transition:opacity .28s ease,transform .36s ease;
+}
+.maria-island-v4 .v4-character:is([data-film-scene=blush],[data-film-scene=thinking],[data-film-scene=working],[data-film-scene=approval],[data-film-scene=success],[data-film-scene=affection]) .maria-film-ring{
+  opacity:.8;transform:translate(-50%,-49%) scale(1);
+}
+.maria-island-v4 .v4-character:is([data-film-scene=blush],[data-film-scene=thinking],[data-film-scene=working],[data-film-scene=approval],[data-film-scene=success],[data-film-scene=affection]) .face{
+  filter:drop-shadow(0 5px 12px rgba(var(--film-color),.32))!important;
+}
+.maria-island-v4 .v4-character .face{z-index:3;background:
+  radial-gradient(ellipse at 30% 17%,rgba(255,255,255,.95) 0%,rgba(255,255,255,.63) 34%,transparent 62%),
+  linear-gradient(148deg,#fff 5%,#f7f8fb 50%,#d9dbe5 100%)!important;
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar .face{
+  border-radius:32% 32% 36% 36%!important;
+}
+.maria-island-v4 .v4-character .eye{
+  background:#101015!important;box-shadow:none!important;
+  transform:translateX(var(--look-x,0px)) translateY(var(--look-y,0px)) scaleY(1);
+}
+.maria-island-v4 .v4-character[data-film-scene=greet] .eye,
+.maria-island-v4 .v4-character[data-film-scene=success] .eye{
+  background:transparent!important;height:14%!important;
+  border-top:3px solid #131217;border-radius:100% 100% 0 0;
+  animation:none!important
+}
+.maria-island-v4 .v4-character[data-film-scene=affection] .eye{
+  background:transparent!important;border:0!important;
+  overflow:visible!important;
+  animation:none!important
+}
+.maria-island-v4 .v4-character[data-film-scene=affection] .eye:before{
+  content:"♥";display:block;position:absolute;left:-56%;top:-42%;color:#f23b8b;
+  font-family:Arial,sans-serif;font-style:normal;font-weight:800;
+  font-size:clamp(11px,2vw,26px);line-height:1;
+  text-shadow:0 2px 4px rgba(232,24,112,.21)
+}
+.maria-island-v4 .v4-character:is([data-film-scene=blush],[data-film-scene=approval],[data-film-scene=affection]) .v4-blush{opacity:1!important}
+.maria-island-v4 .v4-character[data-film-scene=affection] .v4-blush{opacity:.92!important}
+.maria-island-v4 .v4-character[data-film-scene=neutral] .mouth,
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar .mouth{opacity:0!important}
+.maria-island-v4 .v4-character[data-film-scene=greet] .face{
+  animation:mariaFilmGreet .75s cubic-bezier(.16,.95,.24,1) both;
+}
+.maria-island-v4 .v4-character[data-film-scene=blush] .face{
+  animation:mariaFilmHover 2.5s ease-in-out infinite;
+}
+.maria-island-v4 .v4-character[data-film-scene=thinking] .face{
+  animation:mariaFilmThink 1.7s ease-in-out infinite;
+}
+.maria-island-v4 .v4-character[data-film-scene=working] .face{
+  animation:mariaFilmWork .94s ease-in-out infinite;
+}
+.maria-island-v4 .v4-character[data-film-scene=approval] .face{
+  animation:mariaFilmApproval .44s ease-in-out 1;
+}
+.maria-island-v4 .v4-character[data-film-scene=success] .face{
+  animation:mariaFilmSuccess .8s cubic-bezier(.15,.9,.2,1) 1;
+}
+.maria-island-v4 .v4-character[data-film-scene=affection] .face{
+  animation:mariaFilmHover 2.2s ease-in-out infinite;
+}
+.maria-island-v4 .v4-character .maria-film-fx{
+  position:absolute;inset:0;z-index:8;pointer-events:none;
+  border-radius:50%;
+}
+.maria-island-v4 .v4-character .maria-film-particle{
+  position:absolute;left:50%;top:28%;width:3px;height:3px;
+  border-radius:50%;opacity:0;
+  background:rgba(var(--film-color),.95);
+  box-shadow:0 0 9px rgba(var(--film-color),.9);
+}
+.maria-island-v4 .v4-character:is([data-film-scene=greet],[data-film-scene=success]) .maria-film-particle{
+  animation:mariaFilmSparks 1.08s ease-out backwards;
+  animation-delay:calc(var(--i) * 38ms);
+}
+.maria-island-v4 .v4-character[data-film-scene=success] .maria-film-particle{
+  width:4px;height:4px;
+  clip-path:polygon(50% 0,62% 37%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);
+}
+.maria-island-v4 .v4-character .maria-film-heart{
+  position:absolute;opacity:0;left:calc(36% + var(--i) * 5%);
+  top:24%;font-style:normal;pointer-events:none;color:#ef4c98;
+  font-size:clamp(8px,1.2vw,15px);line-height:1;
+}
+.maria-island-v4 .v4-character[data-film-scene=affection] .maria-film-heart{
+  animation:mariaFilmHeartFloat 1.65s ease-out infinite;
+  animation-delay:calc(var(--i) * 210ms);
+}
+.maria-island-v4 .v4-character[data-film-scene=affection] .v4-state-symbol{background:#80e6bf}
+.maria-island-v4 .v4-character[data-film-scene=approval] .v4-state-symbol{
+  background:#f7a933;color:#141017;border:2px solid #181820;
+}
+.maria-island-v4 .v4-character[data-film-scene=thinking] .v4-state-symbol{background:#9761f2;border:2px solid #18172c;color:white}
+.maria-island-v4 .v4-character[data-film-scene=working] .v4-state-symbol{background:#44aff7;border:2px solid #172333;color:white}
+.maria-island-v4 .v4-character[data-film-scene=success] .v4-state-symbol{
+  background:#48d69e;border:2px solid #143127;color:#0c2119;border-radius:50%
+}
+.maria-island-v4 .v4-character[data-film-scene=affection] .v4-state-symbol{opacity:0}
+.maria-island-v4 .v4-motion-stage[data-film-state]{
+  --film-stage-rgb:140,139,178;
+  transition:background .42s ease;
+}
+.maria-island-v4 .v4-motion-stage[data-film-state=thinking]{--film-stage-rgb:121,80,216}
+.maria-island-v4 .v4-motion-stage[data-film-state=working]{--film-stage-rgb:50,141,212}
+.maria-island-v4 .v4-motion-stage[data-film-state=approval]{--film-stage-rgb:178,120,42}
+.maria-island-v4 .v4-motion-stage[data-film-state=success]{--film-stage-rgb:45,150,107}
+.maria-island-v4 .v4-motion-stage[data-film-state=affection]{--film-stage-rgb:31,137,98}
+.maria-island-v4 .v4-motion-stage[data-film-state=shy]{--film-stage-rgb:121,75,166}
+.maria-island-v4 .v4-motion-stage[data-film-state]{
+  background:radial-gradient(ellipse at 22% 52%,rgba(var(--film-stage-rgb),.24),transparent 47%),
+    linear-gradient(110deg,#151622,#0d0e17);
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar{
+  --look-x:0px;--look-y:0px;filter:drop-shadow(0 17px 16px rgba(0,0,0,.24));
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar .maria-film-glow{
+  width:190px;height:175px;filter:blur(27px);transform:translate(-50%,-41%) scale(1.2);
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar .maria-film-ring{
+  width:198px;height:165px;transform:translate(-50%,-48%) scale(.8);
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar:is([data-film-scene=thinking],[data-film-scene=blush],[data-film-scene=working],[data-film-scene=approval],[data-film-scene=success],[data-film-scene=affection]) .maria-film-ring{
+  transform:translate(-50%,-48%) scale(1);opacity:.75
+}
+.v4-film1030-controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.v4-film1030-controls button{
+ min-height:34px;border-radius:11px;padding:7px 14px;cursor:pointer;
+ border:1px solid rgba(163,150,233,.36);
+ background:linear-gradient(150deg,rgba(112,97,206,.21),rgba(54,62,110,.18));
+ color:#f7f4ff;font-weight:600;font-size:11px
+}
+.v4-film1030-controls button:hover,.v4-film1030-controls button:focus-visible{background:rgba(126,112,219,.34);border-color:#bcb0ff}
+.v4-film1030-controls button:disabled{opacity:.4;cursor:not-allowed}
+.v4-film1030-controls small{color:#a49cb8;font-size:10px}
+.v4-film1030-timeline{height:4px;border-radius:8px;background:#29283e;overflow:hidden}
+.v4-film1030-timeline>span{display:block;height:100%;width:var(--film-progress,0%);background:linear-gradient(90deg,#a891f9,#53b8f0,#76e2aa);transition:width .24s linear}
+.v4-film1030-caption{font-size:11px;color:#c4bdd6;line-height:1.6}
+@keyframes mariaFilmHover{0%,100%{translate:0 0}50%{translate:0 -4px}}
+@keyframes mariaFilmGreet{0%{scale:.88;translate:0 4px}48%{scale:1.10;translate:0 -5px}100%{scale:1;translate:0 0}}
+@keyframes mariaFilmThink{0%,100%{translate:0 0;rotate:-2deg}50%{translate:0 -3px;rotate:2deg}}
+@keyframes mariaFilmWork{0%,100%{scale:1}50%{scale:.962;translate:0 1px}}
+@keyframes mariaFilmApproval{0%,100%{translate:0 0}25%{translate:-2px 0}75%{translate:2px 0}}
+@keyframes mariaFilmSuccess{0%{scale:.93}43%{translate:0 -7px;scale:1.08}100%{translate:0 0;scale:1}}
+@keyframes mariaFilmSparks{
+  0%{opacity:0;transform:rotate(var(--angle)) translateY(0) scale(.3)}
+  20%{opacity:1}
+  100%{opacity:0;transform:rotate(var(--angle)) translateY(calc(-1 * var(--spread))) scale(1.3)}
+}
+@keyframes mariaFilmHeartFloat{
+  0%{opacity:0;transform:translateY(8px) scale(.65) rotate(-14deg)}
+  22%{opacity:.95}
+  75%{opacity:.85}
+  100%{opacity:0;transform:translate(calc((var(--i) - 3) * 3px),-38px) scale(1.14) rotate(12deg)}
+}
+/* Guard the actual idle silhouette and the existing compact character hit area. */
+.maria-island-v4[data-mode=peek] .v4-character .maria-film-fx,
+.maria-island-v4[data-mode=peek] .v4-character .maria-film-ring{display:none}
+.maria-island-v4[data-motion-level=none] .maria-film-heart,
+.maria-island-v4[data-motion-level=none] .maria-film-particle{animation:none!important;opacity:0!important}
+.maria-island-v4[data-motion-level=none] .v4-character .face,
+.maria-island-v4[data-motion-level=none] .v4-character .eye{animation:none!important}
+.maria-island-v4[data-motion-level=subtle] .v4-character .maria-film-fx{opacity:.35}
+.maria-island-v4[data-motion-level=subtle] .v4-character .face{animation-duration:2.8s!important}
+@media(prefers-reduced-motion:reduce){
+ .maria-island-v4 .v4-character .maria-film-heart,
+ .maria-island-v4 .v4-character .maria-film-particle{animation:none!important;opacity:0!important}
+ .maria-island-v4 .v4-character .maria-film-glow,
+ .maria-island-v4 .v4-character .maria-film-ring{transition:none!important}
+ .maria-island-v4 .v4-motion-stage{transition:none!important}
+ .v4-film1030-timeline>span{transition:none!important}
+}
+
+/* Isolated studio preview symbols; actual agent status is never overwritten. */
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar .v4-state-symbol{
+  position:absolute;opacity:0;scale:.35;transition:scale .22s ease,opacity .22s ease;
+  right:auto;left:13px;top:25px;width:29px;height:29px;border-radius:50%;
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar:is([data-film-scene=thinking],[data-film-scene=working],[data-film-scene=approval],[data-film-scene=success]) .v4-state-symbol{
+  opacity:1;scale:1
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=thinking] .v4-state-symbol::before{content:"•••"}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=working] .v4-state-symbol::before{content:"•••"}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=approval] .v4-state-symbol::before{content:"!"}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=success] .v4-state-symbol::before{content:"✓"}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=affection] .v4-blush{opacity:1!important}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=affection] .eye:before{font-size:26px}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=approval] .v4-state-symbol{
+  border:2px solid #29202c;background:#f4ab36;color:#201922
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=success] .v4-state-symbol{
+  border:2px solid #123124;background:#4cdda9;color:#123124
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=thinking] .v4-state-symbol{
+  border:2px solid #1d1231;background:#8a5de0;color:white
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=working] .v4-state-symbol{
+  border:2px solid #15253b;background:#399cda;color:white
+}
+
+/* 1030 video: hands emerge during greeting, retract for ordinary task phases. */
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar .v4-arm{
+ opacity:0!important;scale:.62!important;transition:opacity .2s ease,scale .3s cubic-bezier(.2,.9,.25,1)
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=greet] .v4-arm{
+ opacity:1!important;scale:1!important
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar .v4-companion-badge{
+ display:none!important
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=affection] .eye{
+ top:45%!important;background:transparent!important
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=affection] .eye:before{
+ content:"♥"!important;font-style:normal!important;color:#f43e91!important;
+ display:block!important;font-size:26px!important;line-height:1!important;
+ transform:none!important
+}
+.maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=affection] .maria-film-heart{
+ animation:mariaFilmHeartFloat 1.65s ease-out infinite!important
+}
+@media(prefers-reduced-motion:reduce){
+ .maria-island-v4 .v4-motion-stage .v4-stage-avatar .v4-arm{transition:none!important}
+ .maria-island-v4 .v4-motion-stage .v4-stage-avatar[data-film-scene=affection] .maria-film-heart{animation:none!important}
+}

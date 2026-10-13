@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+const f='src/renderer/chatSurfaceV2.js';let s=fs.readFileSync(f,'utf8');
+const needle="  const details=$('#accountDetails');";if(!s.includes(needle))throw Error('missing account details');
+const diagnostic="  const diagnostic=$('#chatgptDiagnosis');if(diagnostic){const c=String(s.error?.code||'');diagnostic.textContent=usable?'ChatGPT: connected and authorized':inProgress?'Waiting for browser authorization':blocked?'OpenAI denied plan sharing for this app/workspace. Plus alone does not guarantee eligibility.':s.status==='connected'?'Signed in, but plan sharing is not granted':'ChatGPT plan sharing is not connected';if(c)diagnostic.textContent+=' | Error code: '+c;}\n";
+s=s.replace(needle,diagnostic+needle);
+const a="      '<p class=\"settings-note\">";const i=s.indexOf(a,s.indexOf('id=\"panel-account\"'));if(i<0)throw Error('missing settings note');
+s=s.slice(0,i)+"      '<p id=\"chatgptDiagnosis\" class=\"settings-note\" role=\"status\"></p>'+\n"+s.slice(i);
+const old="    state.model=previous;\n    select.value=state.model;";if(!s.includes(old))throw Error('missing model picker');
+s=s.replace(old,"    state.model=previous;\n    if(!Array.from(select.options).some(o=>o.value===state.model))state.model=CHATGPT_AUTO;\n    select.value=state.model;");
+fs.writeFileSync(f,s);console.log('ChatGPT diagnostics added');
