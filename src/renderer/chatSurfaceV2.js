@@ -1,11 +1,12 @@
 import './chatSurfaceV2.css';
+import './chatPremium.css';
 import {voice} from './voice.js';
 import {marked} from 'marked';
 import DOMPurify from 'dompurify';
 
 const $=q=>document.querySelector(q);
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const CHATGPT_AUTO='chatgpt:auto';
+const CHATGPT_AUTO='auto';
 const PROVIDERS=['gemini','anthropic','deepseek','github','groq','openrouter','qwen','mistral','openai'];
 const PROVIDER_NAMES={gemini:'Gemini',anthropic:'Claude',deepseek:'DeepSeek',github:'GitHub Models',groq:'Groq',openrouter:'OpenRouter',qwen:'Qwen',mistral:'Mistral',openai:'OpenAI API'};
 const VOICE_READ_KEY='maria:chat:autoRead';
@@ -82,10 +83,10 @@ function updateAccountUi(){
   const disconnect=$('#disconnectChatGPT');if(disconnect)disconnect.hidden=!usable;
   const usage=$('#chatgptUsage');if(usage)usage.hidden=!usable;
   const model=$('#modelSelect');if(model)model.disabled=false;
-  const banner=$('#connectBanner');if(banner)banner.hidden=usable||state.model!==CHATGPT_AUTO&& !state.model.startsWith('chatgpt:');
+  const banner=$('#connectBanner');if(banner)banner.hidden=usable||!state.model.startsWith('chatgpt:');
   const select=$('#modelSelect');if(select){
     const previous=state.model;
-    select.innerHTML='<option value="'+CHATGPT_AUTO+'">ChatGPT · خودکار'+(usable?'':' (نیازمند مجوز)')+'</option>'+state.models.map(m=>'<option value="chatgpt:'+esc(m.slug)+'">'+esc(m.displayName||m.slug)+'</option>').join('')+state.configuredProviders.map(p=>'<option value="online:'+esc(p.provider)+'">'+esc(PROVIDER_NAMES[p.provider]||p.label)+' · '+esc(p.model)+'</option>').join('');
+    select.innerHTML='<option value="auto">Auto • Maria</option><option value="chatgpt:auto">ChatGPT • Auto'+(usable?'':' (نیازمند اتصال)')+'</option>'+state.models.map(m=>'<option value="chatgpt:'+esc(m.slug)+'">'+esc(m.displayName||m.slug)+'</option>').join('')+state.configuredProviders.map(p=>'<option value="online:'+esc(p.provider)+'">'+esc(PROVIDER_NAMES[p.provider]||p.label)+' · '+esc(p.model)+'</option>').join('');
     state.model=previous;
     if(!Array.from(select.options).some(o=>o.value===state.model))state.model=CHATGPT_AUTO;
     select.value=state.model;
@@ -356,9 +357,9 @@ export async function mountChatSurface(){
   $('#accountChip').onclick=()=>openSettings('account');
   $('#bannerConnect').onclick=()=>openSettings('account');
   $('#settings').onclick=()=>openSettings('account');
-  $('#setupClose').onclick=()=>{$('#setup').hidden=true;};
-  $('#setup').onclick=e=>{if(e.target===$('#setup'))$('#setup').hidden=true;};
-  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#setup').hidden){$('#setup').hidden=true;}});
+  $('#setupClose').onclick=e=>{e.preventDefault();e.stopPropagation();$('#setup').hidden=true;$('#settings')?.focus();};
+  $('#setup').onclick=e=>{if(e.target===$('#setup')){$('#setup').hidden=true;$('#settings')?.focus();}};
+  window.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#setup').hidden){e.preventDefault();$('#setup').hidden=true;$('#settings')?.focus();}});
   for(const tab of ['account','providers','voice','privacy'])$('#tab-'+tab).onclick=()=>chooseSettingsTab(tab);
   $('#connectChatGPT').onclick=connectChatGPT;
   $('#cancelChatGPTSignIn').onclick=cancelChatGPTSignIn;
@@ -387,6 +388,8 @@ export async function mountChatSurface(){
   });
   api().onFocusInput?.(()=>$('#input').focus());
   api().onOpenSettings?.(payload=>openSettings(payload?.section==='voice'?'voice':'account'));
+  // Recover first-open settings requests delivered before async ChatSurface mount.
+  api().takePendingSettings?.().then(payload=>{if(payload?.section)openSettings(payload.section==='voice'?'voice':'account');}).catch(withError);
   api().onPrefillPrompt?.(payload=>{const text=payload?.text||'';if(text){$('#input').value=text;grow();if(payload.submit)sendMessage(text);}});
   const poll=setInterval(()=>{if(state.account?.session?.status==='connecting'&&!state.connecting)syncAccount().catch(()=>{});},3000);
   window.addEventListener('beforeunload',()=>clearInterval(poll),{once:true});

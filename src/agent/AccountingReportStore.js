@@ -2,6 +2,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import os from 'node:os';
 import crypto from 'node:crypto';
+import {accountingInvoiceProfile,transportPendingProfile,supportedAccountingExtension,INVOICE_TEMPLATE_ID} from './AccountingWorkbookProfiles.js';
 
 const defaultDir=()=>process.env.BLACK_CLOVER_DATA_DIR||path.join(process.env.APPDATA||path.join(os.homedir(),'.black-clover'),'BlackClover');
 const clone=v=>structuredClone(v);
@@ -59,6 +60,7 @@ export class AccountingReportStore{
       dataStartRow:Math.max(1,Number(profile.dataStartRow||profile.startRow)||2),
       anchorColumns:Array.isArray(profile.anchorColumns)?profile.anchorColumns.map(x=>clean(x,8).toUpperCase()):Array.isArray(profile.anchor?.columns)?profile.anchor.columns.map(x=>clean(x,8).toUpperCase()):['C'],
       sheets:Array.isArray(profile.sheets)?clone(profile.sheets):[],
+      sheetSelectionMode:profile.sheetSelectionMode==='manual'&&Array.isArray(profile.sheets)&&profile.sheets.length?'manual':'auto',
       watchedSheets:Array.isArray(profile.watchedSheets)?clone(profile.watchedSheets):[],
       evidence:Array.isArray(profile.evidence)?clone(profile.evidence):[],
       attachmentRules:Array.isArray(profile.attachmentRules)?clone(profile.attachmentRules):[],
@@ -101,12 +103,55 @@ export class AccountingReportStore{
   }
   async createMonitor(input={}){
     await this.load();
-    const now=new Date().toISOString(),base=this.normalizeMonitor({...input,createdAt:now,updatedAt:now,order:Number.isFinite(Number(input.order))?input.order:this.state.monitors.length});
-    if(!base.path)throw new Error('Workbook path is required');
+    const kind=input.type==='transport'?'transport':'invoice';
+    const filePath=clean(input.path||input.workbookPath);
+    if(!filePath)throw new Error('Workbook path is required');
+    if(!supportedAccountingExtension(filePath))throw new Error('فعلاً فقط فایل‌های Excel با پسوند xlsx یا xlsm قابل اسکن هستند.');
+    const identity=process.platform==='win32'?path.win32.normalize(filePath).toLowerCase():path.resolve(filePath);
+    const duplicate=this.state.monitors.find(x=>x.enabled!==false&&
+      (process.platform==='win32'?path.win32.normalize(x.path).toLowerCase():path.resolve(x.path))===identity);
+    if(duplicate){
+      // Reuse its original ID and history; never create duplicate report cards.
+      if(duplicate.type!==kind)throw new Error('این فایل قبلاً با نوع دیگری ثبت شده است.');
+      return clone(duplicate);
+    }
+    const preset=kind==='invoice'?accountingInvoiceProfile():transportPendingProfile();
+    const now=new Date().toISOString();
+    const base=this.normalizeMonitor({
+      ...input,type:kind,path:filePath,profile:preset,
+      archiveWhenComplete:false,
+      createdAt:now,updatedAt:now,
+      order:this.state.monitors.length
+    });
     const item={...base,id:crypto.randomUUID()};
     this.state.monitors.push(item);
     await this.save();
     return clone(item);
+  }
+  async applyFixedInvoiceTemplateToExisting(){
+    await this.load();
+    const targets=this.state.monitors.filter(m=>m.type==='invoice'&&m.profile?.preset!==INVOICE_TEMPLATE_ID);
+    if(!targets.length)return {updated:0};
+    // Reversible one-time migration: save the original monitor definitions,
+    // including custom rules and existing results, before changing them.
+    const backup=this.file+'.before-invoice-template-v2.backup';
+    try{await fs.access(backup);}catch(e){
+      if(e.code!=='ENOENT')throw e;
+      await fs.mkdir(this.directory,{recursive:true});
+      await fs.writeFile(backup,JSON.stringify(this.state,null,2),'utf8');
+    }
+    for(const monitor of targets){
+      monitor.profile=this.normalizeProfile(accountingInvoiceProfile({
+        evidenceRoot:monitor.profile?.evidenceRoot,
+        sheets:monitor.profile?.sheets,
+        sheetSelectionMode:monitor.profile?.sheetSelectionMode==='manual'||monitor.profile?.sheets?.length?'manual':'auto',
+        hyperlinkBasePath:monitor.profile?.hyperlinkBasePath
+      }));
+      monitor.archiveWhenComplete=false;
+      monitor.updatedAt=new Date().toISOString();
+    }
+    await this.save();
+    return {updated:targets.length,backup};
   }
   async updateMonitor(id,patch={}){
     await this.load();
@@ -155,7 +200,7 @@ export class AccountingReportStore{
       if(r?.complete)return 5;
       return 4;
     };
-    return rows.sort((a,b)=>rank(a)-rank(b)||(a.monitor.order??9999)-(b.monitor.order??9999));
+    return rows.sort((a,b)=>Number(a.monitor.type==='transport')-Number(b.monitor.type==='transport')||rank(a)-rank(b)||(a.monitor.order??9999)-(b.monitor.order??9999));
   }
 }
 export const accountingReports=new AccountingReportStore();
