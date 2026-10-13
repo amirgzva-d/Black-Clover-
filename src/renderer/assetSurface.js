@@ -1,3 +1,5 @@
+import {mountMochiStudio} from './mochiStudio.js';
+import {CompanionStateMachine} from './companionMotion.js';
 import './assetSurface.css';
 import {listMotions} from './motionStorage.js';
 import {mountAvatar} from './avatar.js';
@@ -9,7 +11,7 @@ const unique=(items,key=x=>x.name)=>{const seen=new Set();return (items||[]).fil
 
 async function catalog(){
   const [base,local]=await Promise.all([
-    fetch('/library/catalog.json').then(r=>r.ok?r.json():{}).catch(()=>({})),
+    fetch(new URL('./library/catalog.json',document.baseURI)).then(r=>r.ok?r.json():{}).catch(()=>({})),
     window.blackClover.listLocalAssets().catch(()=>({root:null,items:[]}))
   ]);
   return {...base,localRoot:local?.root||null,localAssets:local?.items||[]};
@@ -167,5 +169,15 @@ async function mountWardrobe(shell,data){
 
 export async function mountAssetSurface(surface){
   const shell=makeShell(surface),data=await catalog();shell.querySelector('.asset-root').textContent=data.localRoot||'پوشه Asset پیدا نشد';setupSearch(shell);
-  if(surface==='motions')await mountMotions(shell,data);else await mountWardrobe(shell,data);
+  if(surface==='motions'){await mountMotions(shell,data);return;}
+  let studio=null;const machine=new CompanionStateMachine();const stopEvents=window.blackClover.onEvent?.(e=>machine.dispatch(e));
+  const showStudio=()=>{
+    shell.classList.add('mochi-asset-surface');
+    const content=shell.querySelector('.asset-content');
+    studio=mountMochiStudio(content,{getLive:()=>({state:machine.state,history:machine.history}),
+      onModels:async()=>{studio?.destroy();shell.classList.remove('mochi-asset-surface');await mountWardrobe(shell,data);
+        const back=document.createElement('button');back.className='asset-use';back.textContent='بازگشت به موچی';back.onclick=()=>{location.reload();};shell.querySelector('.asset-tabs').append(back);},
+      onMotions:()=>window.blackClover.showMotions()});
+  };
+  showStudio();window.addEventListener('beforeunload',()=>{studio?.destroy();machine.destroy();stopEvents?.();},{once:true});
 }

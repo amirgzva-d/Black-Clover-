@@ -20,7 +20,7 @@ test('all film reaction names and eight outfit choices are represented',()=>{
    'error','success','dancing','approval','offline','listening','speaking','searching']){
    assert.ok(COMPANION_STATES[name],name);
  }
- assert.equal(Object.keys(COMPANION_OUTFITS).length,8);
+ for(const outfit of ['classic','beanie','santa','party','crown','wizard','sunglasses','glasses','scarf','pumpkin','bow','headphones','studio','night'])assert.ok(COMPANION_OUTFITS[outfit],outfit);
  assert.equal(normalizeCompanionState('executing'),'working');
  assert.equal(normalizeCompanionState('dance'),'dancing');
  assert.equal(normalizeCompanionState('invalid'),'idle');

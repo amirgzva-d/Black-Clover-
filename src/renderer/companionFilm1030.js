@@ -1,3 +1,4 @@
+import {renderMochi} from './mochiCharacter.js';
 /**
  * MARIA / reference video 1000311030 — expressive mascot direction.
  *
@@ -66,6 +67,7 @@ export function renderFilm1030Character(view,state,{scene=null}={}){
  if(!view)return;
  const phase=scene||FILM_1030_SCENES[state]||'neutral';
  view.dataset.filmScene=phase;
+ renderMochi(view,state,phase);
  view.dataset.companionState=state||'idle';
  const badge=view.querySelector('[data-companion-badge]');
  if(badge&&view.hasAttribute('data-companion-preview')){

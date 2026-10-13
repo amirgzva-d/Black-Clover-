@@ -1,0 +1,86 @@
+/* One renderer for the desktop notch, wardrobe, gallery and animation studio. */
+.mochi-ready{--mochi-color:#e2e1e8;position:relative;isolation:isolate;overflow:visible!important}
+.mochi-ready>.mochi-scene{display:block;position:absolute;inset:0;pointer-events:none;overflow:visible}
+.mochi-ready>.mochi-scene>.mochi-svg{display:block;width:100%!important;height:100%!important;max-width:none;overflow:visible;fill:initial;stroke:none}
+.maria-island-v4 .v4-character.mochi-ready>:not(.mochi-scene){display:none!important}
+.maria-island-v4 .v4-character.mochi-ready::before,.maria-island-v4 .v4-character.mochi-ready::after{display:none!important}
+.maria-island-v4 .v4-character.mochi-ready{background:none!important;box-shadow:none!important;border:0!important;filter:none!important;animation:none!important;clip-path:none!important}
+.maria-island-v4 .v4-character.mochi-ready>.mochi-scene{inset:-42% -10% -34%}
+.mochi-float{transform-origin:120px 175px;animation:mochi-breathe 4.6s ease-in-out infinite}
+.mochi-tilt{transform:rotate(var(--mochi-tilt,0deg));transform-origin:120px 126px;transition:transform .16s ease-out}
+.mochi-look{transform:translate(var(--mochi-look-x,0px),var(--mochi-look-y,0px));transition:transform .13s ease-out}
+.mochi-body,.mochi-tint{transition:d .5s cubic-bezier(.22,.8,.25,1)}
+.mochi-aura{opacity:.15;transition:opacity .5s}
+.mochi-orbit{opacity:0;transform-origin:120px 123px}
+.mochi-tint{opacity:0;transition:opacity .5s}
+.mochi-cheek{opacity:0;transition:opacity .3s}
+.mochi-eyes{display:none}
+.mochi-eyes-dots{display:block;transform-origin:120px 133px;animation:mochi-blink 6.8s infinite}
+.mochi-hand,.mochi-badge,.mochi-file,.mochi-upload-slot,.mochi-pumpkin,.mochi-yawn,.mochi-sparks,.mochi-hearts,.mochi-gear{display:none}
+.mochi-badge-orb,.mochi-badge-label{display:none}
+.mochi-badge-dots circle{animation:mochi-dot 1.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
+.mochi-badge-dots circle:nth-child(2){animation-delay:.15s}.mochi-badge-dots circle:nth-child(3){animation-delay:.3s}
+.mochi-ready:is([data-mochi-state=thinking],[data-mochi-state=searching],[data-mochi-state=working],[data-mochi-state=listening],[data-mochi-state=speaking]) .mochi-badge{display:block}
+.mochi-ready:is([data-mochi-state=approval],[data-mochi-state=question],[data-mochi-state=error],[data-mochi-state=success],[data-mochi-state=proud],[data-mochi-state=ratelimit],[data-mochi-state=affection]) .mochi-badge{display:block}
+.mochi-ready:is([data-mochi-state=approval],[data-mochi-state=question],[data-mochi-state=error],[data-mochi-state=success],[data-mochi-state=proud],[data-mochi-state=ratelimit],[data-mochi-state=affection]) :is(.mochi-badge-pill,.mochi-badge-dots){display:none}
+.mochi-ready:is([data-mochi-state=approval],[data-mochi-state=question],[data-mochi-state=error],[data-mochi-state=success],[data-mochi-state=proud],[data-mochi-state=ratelimit],[data-mochi-state=affection]) .mochi-badge-orb{display:block}
+.mochi-ready:is([data-mochi-state=approval],[data-mochi-state=question]) .mochi-badge-label{display:block}
+.mochi-ready:is([data-mochi-state=thinking],[data-mochi-state=searching],[data-mochi-state=working],[data-mochi-state=approval],[data-mochi-state=question],[data-mochi-state=error],[data-mochi-state=success],[data-mochi-state=proud],[data-mochi-state=ratelimit],[data-mochi-state=affection],[data-mochi-state=shy],[data-mochi-state=dizzy],[data-mochi-state=listening],[data-mochi-state=speaking]) .mochi-tint{opacity:.84}
+.mochi-ready:not([data-mochi-state=idle]) .mochi-aura{opacity:.95}
+.mochi-ready:is([data-mochi-state=thinking],[data-mochi-state=success],[data-mochi-state=approval]) .mochi-orbit{opacity:.28;animation:mochi-orbit 3.4s ease-in-out infinite}
+.mochi-ready:is([data-mochi-state=greeting],[data-mochi-state=happy],[data-mochi-state=success],[data-mochi-state=proud],[data-mochi-state=dancing]) .mochi-eyes-dots{display:none}
+.mochi-ready:is([data-mochi-state=greeting],[data-mochi-state=happy],[data-mochi-state=success],[data-mochi-state=proud],[data-mochi-state=dancing]) .mochi-eyes-smile{display:block}
+.mochi-ready:is([data-mochi-state=greeting],[data-mochi-state=dancing]) .mochi-hand{display:block}
+.mochi-ready[data-mochi-state=greeting] .mochi-float{animation:mochi-greet 1.1s cubic-bezier(.2,.8,.3,1) both}
+.mochi-ready[data-mochi-state=greeting] .mochi-hand-right{transform-origin:188px 119px;animation:mochi-wave .38s ease-in-out 4 alternate}
+.mochi-ready[data-mochi-state=greeting] .mochi-hand-left{transform-origin:50px 149px;animation:mochi-wave .6s ease-in-out 3 alternate-reverse}
+.mochi-ready:is([data-mochi-state=success],[data-mochi-state=proud],[data-mochi-state=greeting]) .mochi-sparks{display:block}
+.mochi-sparks>g{animation:mochi-spark 2s ease-out infinite;animation-delay:calc(var(--i)*.13s);transform-origin:center;transform-box:fill-box}
+.mochi-ready[data-mochi-state=affection] .mochi-eyes-dots{display:none}.mochi-ready[data-mochi-state=affection] .mochi-eyes-heart{display:block}
+.mochi-ready[data-mochi-state=affection] .mochi-hearts{display:block}.mochi-hearts>path{animation:mochi-heart 2.4s ease-out infinite;animation-delay:calc(var(--i)*.24s);transform-box:fill-box;transform-origin:center}
+.mochi-ready:is([data-mochi-state=affection],[data-mochi-state=shy],[data-mochi-state=approval],[data-mochi-state=proud]) .mochi-cheek{opacity:.72}
+.mochi-ready:is([data-mochi-state=error],[data-mochi-state=ratelimit],[data-mochi-state=offline]) .mochi-eyes-dots{display:none}
+.mochi-ready:is([data-mochi-state=error],[data-mochi-state=ratelimit],[data-mochi-state=offline]) .mochi-eyes-flat{display:block}
+.mochi-ready:is([data-mochi-state=sleeping],[data-mochi-state=yawn]) .mochi-eyes-dots{display:none}.mochi-ready:is([data-mochi-state=sleeping],[data-mochi-state=yawn]) .mochi-eyes-sleep{display:block}
+.mochi-ready[data-mochi-state=sleeping] .mochi-float{animation:mochi-sleep 4s ease-in-out infinite}
+.mochi-ready[data-mochi-state=yawn] .mochi-yawn{display:block;transform-origin:120px 153px;animation:mochi-yawn 2s ease-in-out infinite}
+.mochi-ready[data-mochi-state=wink] .mochi-eyes-dots{display:none}.mochi-ready[data-mochi-state=wink] .mochi-eyes-wink{display:block}
+.mochi-ready[data-mochi-state=dizzy] .mochi-eyes-dots{display:none}.mochi-ready[data-mochi-state=dizzy] .mochi-eyes-dizzy{display:block}
+.mochi-ready[data-mochi-state=dizzy] .mochi-float{animation:mochi-dizzy .9s ease-in-out infinite}
+.mochi-ready:is([data-mochi-state=annoyed],[data-mochi-state=slap]) .mochi-eyes-dots{display:none}.mochi-ready:is([data-mochi-state=annoyed],[data-mochi-state=slap]) .mochi-eyes-angry{display:block}
+.mochi-ready[data-mochi-state=slap] .mochi-float{animation:mochi-slap .65s cubic-bezier(.2,.8,.3,1) both}
+.mochi-ready[data-mochi-state=surprised] .mochi-eyes-dots{transform:scale(1.14);animation:none}
+.mochi-ready[data-mochi-state=question] .mochi-float{transform:rotate(-9deg);animation:mochi-question 2.6s ease-in-out infinite}
+.mochi-ready[data-mochi-state=uploading] :is(.mochi-file,.mochi-upload-slot){display:block}
+.mochi-ready[data-mochi-state=uploading] .mochi-file{animation:mochi-file 1.8s ease-in infinite}
+.mochi-ready[data-mochi-state=uploading] .mochi-float{animation:mochi-upload 1.8s ease-in-out infinite}
+.mochi-ready[data-mochi-state=dancing] .mochi-float{animation:mochi-dance .72s ease-in-out infinite}
+.mochi-ready[data-mochi-state=searching] .mochi-look{animation:mochi-search 3.3s ease-in-out infinite}
+.mochi-ready[data-mochi-state=error] .mochi-float{animation:mochi-error .6s ease both}
+.mochi-ready[data-mochi-head=beanie] .mochi-gear-beanie,.mochi-ready[data-mochi-head=santa] .mochi-gear-santa,.mochi-ready[data-mochi-head=party] .mochi-gear-party,.mochi-ready[data-mochi-head=crown] .mochi-gear-crown,.mochi-ready[data-mochi-head=wizard] .mochi-gear-wizard,.mochi-ready[data-mochi-head=bow] .mochi-gear-bow,.mochi-ready[data-mochi-head=studio] .mochi-gear-studio,.mochi-ready[data-mochi-head=night] .mochi-gear-night,.mochi-ready[data-mochi-face=sunglasses] .mochi-gear-sunglasses,.mochi-ready[data-mochi-face=glasses] .mochi-gear-glasses,.mochi-ready[data-mochi-face=headphones] .mochi-gear-headphones,.mochi-ready[data-mochi-neck=scarf] .mochi-gear-scarf,.mochi-ready[data-mochi-body=pumpkin] .mochi-pumpkin{display:block}
+.mochi-ready[data-mochi-face=sunglasses] .mochi-badge{transform:translate(0,-8px)}
+.mochi-ready[data-mochi-head]:not([data-mochi-head=""]) .mochi-badge{transform:translate(-12px,10px)}
+@keyframes mochi-breathe{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+@keyframes mochi-blink{0%,43%,47%,93%,97%,100%{transform:scaleY(1)}45%,95%{transform:scaleY(.12)}}
+@keyframes mochi-dot{0%,70%,100%{opacity:.5;transform:scale(.86)}35%{opacity:1;transform:scale(1.05)}}
+@keyframes mochi-orbit{0%,100%{transform:scale(.93);opacity:.15}50%{transform:scale(1.08);opacity:.32}}
+@keyframes mochi-greet{0%{transform:scale(.94,1.04)}25%{transform:translateY(-14px) rotate(-5deg)}55%{transform:translateY(-7px) rotate(5deg)}100%{transform:translateY(0)}}
+@keyframes mochi-wave{to{transform:rotate(-24deg) translateY(-3px)}}
+@keyframes mochi-spark{0%{opacity:0;scale:.4}30%{opacity:.9;scale:1}100%{opacity:0;translate:0 -13px;scale:.35}}
+@keyframes mochi-heart{0%{opacity:0;translate:0 14px;scale:.7}25%{opacity:1}100%{opacity:0;translate:0 -26px;scale:.4}}
+@keyframes mochi-sleep{50%{transform:translateY(6px) scale(1.035,.97)}}
+@keyframes mochi-yawn{0%,100%{transform:scale(.3)}50%{transform:scale(1)}}
+@keyframes mochi-dizzy{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(7deg)}}
+@keyframes mochi-slap{0%{transform:scale(1)}20%{transform:translateX(13px) rotate(13deg) scale(.79,1.09)}48%{transform:translateX(-8px) rotate(-6deg) scale(1.08,.91)}100%{transform:none}}
+@keyframes mochi-question{0%,100%{transform:rotate(-7deg)}50%{transform:rotate(-4deg) translateY(-4px)}}
+@keyframes mochi-file{0%{opacity:0;translate:0 -10px;scale:.8}20%{opacity:1;scale:1}65%{opacity:1;translate:0 21px}85%,100%{opacity:0;translate:0 44px;scale:.6}}
+@keyframes mochi-upload{0%,65%,100%{transform:none}78%{transform:scale(1.06,.92)}}
+@keyframes mochi-dance{0%,100%{transform:translateX(-7px) rotate(-8deg)}25%{transform:translateY(-9px) scale(.97,1.02)}50%{transform:translateX(7px) rotate(8deg)}75%{transform:translateY(-9px)}}
+@keyframes mochi-search{0%,100%{transform:translateX(-5px)}50%{transform:translateX(5px)}}
+@keyframes mochi-error{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+.mochi-ready[data-mochi-motion=subtle] :is(.mochi-float,.mochi-orbit){animation-duration:6s}
+.mochi-ready[data-mochi-motion=subtle] :is(.mochi-hearts,.mochi-sparks){display:none}
+.mochi-ready[data-mochi-motion=none] *,.maria-island-v4[data-motion-level=none] .mochi-ready *{animation:none!important;transition:none!important}
+@media(prefers-reduced-motion:reduce){.mochi-ready *{animation:none!important;transition:none!important}.mochi-sparks,.mochi-hearts{display:none!important}}
+
+.mochi-ready[data-mochi-state=uploading] .mochi-gear{display:none}

@@ -3,6 +3,7 @@
  * A deterministic, UI-only state coordinator: business operations remain in Electron.
  * "success" requires independently confirmed completion; preview mode is explicitly local.
  */
+import {MOCHI_OUTFITS,mountMochi,applyMochiEquipment,readAppearance,destroyMochi,MOCHI_PREF_KEY} from './mochiCharacter.js';
 import {decorateFilm1030Character,renderFilm1030Character} from './companionFilm1030.js';
 
 export const COMPANION_STATES=Object.freeze({
@@ -25,12 +26,17 @@ export const COMPANION_STATES=Object.freeze({
   dancing:{label:'رقص شادی',accent:'#f6c77e',priority:1,ttl:2700},
   success:{label:'با موفقیت انجام شد',accent:'#6bdf9a',priority:5,ttl:2400},
   error:{label:'عملیات ناموفق',accent:'#fa8b98',priority:8,ttl:4400},
+  sleeping:{label:'خواب',accent:'#dce7ff',priority:0,ttl:0},
+  ratelimit:{label:'کمی صبر کن',accent:'#e8a65f',priority:6,ttl:0},
+  proud:{label:'افتخار',accent:'#63dfb4',priority:1,ttl:2200},
+  wink:{label:'چشمک',accent:'#dce7ff',priority:1,ttl:1400},
+  yawn:{label:'خمیازه',accent:'#dce7ff',priority:1,ttl:2200},
+  annoyed:{label:'دلخوری',accent:'#dce7ff',priority:1,ttl:1800},
+  slap:{label:'واکنش به لمس',accent:'#dce7ff',priority:1,ttl:900},
   offline:{label:'اتصال قطع است',accent:'#a3a8bb',priority:9,ttl:0}
 });
-export const COMPANION_OUTFITS=Object.freeze({
- classic:'ساده',studio:'استودیو',wizard:'جادوگر',crown:'تاج',headphones:'هدفون',beanie:'کلاه',party:'جشن',night:'شب'
-});
-const ALIAS=Object.freeze({hello:'greeting',executing:'working',finished:'success',dance:'dancing',upload:'uploading',slap:'surprised',sleep:'waiting'});
+export const COMPANION_OUTFITS=Object.freeze(Object.fromEntries(Object.entries(MOCHI_OUTFITS).map(([key,item])=>[key,item.label])));
+const ALIAS=Object.freeze({hello:'greeting',executing:'working',finished:'success',dance:'dancing',upload:'uploading',sleep:'sleeping',love:'affection','rate limit':'ratelimit'});
 export function normalizeCompanionState(state){
   const key=String(state||'idle').trim().toLowerCase();
   const canonical=ALIAS[key]||key;
@@ -64,6 +70,8 @@ export function mapCompanionEvent(event={}){
   const description=[event.action,event.tool,event.name,event.detail,event.message]
     .filter(v=>typeof v==='string').join(' ').toLowerCase();
   if(type==='avatar-visibility-changed'||type==='data-changed'||type==='accounting-report-updated')return null;
+  if(type==='rate-limit'||type==='ratelimit'||event.status===429)return {state:'ratelimit',origin:'system',force:true};
+  if(type==='question'||type==='clarification')return {state:'question',origin:'system',force:true};
   if(type==='error'||type==='failure'||type==='tool-error'||mode==='error'||mode==='failed'||event.ok===false){
     return {state:'error',origin:'system'};
   }
@@ -137,6 +145,7 @@ export function createCompanionSystem(root,{prefersReducedMotion=false,outfit='c
   const avatar=root.querySelector('[data-character]');
   if(!avatar)throw new TypeError('Companion character is required');
   decorateFilm1030Character(avatar);
+  const savedAppearance=readAppearance();
   let lastAnnouncement='';
   const announcer=root.querySelector('[data-companion-announcement]');
   const machine=new CompanionStateMachine({onChange:(state)=>{
@@ -161,15 +170,21 @@ export function createCompanionSystem(root,{prefersReducedMotion=false,outfit='c
   const reduceMotion=Boolean(prefersReducedMotion);
   root.dataset.motionLevel=reduceMotion?'none':motion;
   root.dataset.outfit=Object.hasOwn(COMPANION_OUTFITS,outfit)?outfit:'classic';
+  mountMochi(avatar,{equipment:savedAppearance?.equipment||outfit,motion:reduceMotion?'none':savedAppearance?.motion||motion});
+  const syncAppearance=()=>{const saved=readAppearance();if(!saved)return;applyMochiEquipment(avatar,saved.equipment);root.dataset.motionLevel=reduceMotion?'none':saved.motion;avatar.dataset.mochiMotion=root.dataset.motionLevel;};
+  const storageChanged=e=>{if(e.key===MOCHI_PREF_KEY)syncAppearance();};
+  window.addEventListener('storage',storageChanged);window.addEventListener('maria:appearance',syncAppearance);
+  syncAppearance();
   const methods={
     machine,
     setState:(state,options)=>machine.set(state,options),
     onEvent:event=>machine.dispatch(event),
     greet:()=>machine.set('greeting',{origin:'preview'}),
     preview:state=>machine.preview(state),
-    setOutfit:next=>{if(!Object.hasOwn(COMPANION_OUTFITS,next))return false;root.dataset.outfit=next;return true;},
-    setMotion:next=>{if(!['full','subtle','none'].includes(next))return false;root.dataset.motionLevel=reduceMotion?'none':next;return true;},
-    destroy:()=>machine.destroy()
+    setOutfit:next=>{if(!Object.hasOwn(COMPANION_OUTFITS,next))return false;root.dataset.outfit=next;applyMochiEquipment(avatar,next);return true;},
+    setEquipment:next=>applyMochiEquipment(avatar,next),
+    setMotion:next=>{if(!['full','subtle','none'].includes(next))return false;root.dataset.motionLevel=reduceMotion?'none':next;avatar.dataset.mochiMotion=root.dataset.motionLevel;return true;},
+    destroy:()=>{machine.destroy();destroyMochi(avatar);window.removeEventListener('storage',storageChanged);window.removeEventListener('maria:appearance',syncAppearance);}
   };
   machine.set('idle',{force:true});
   return methods;

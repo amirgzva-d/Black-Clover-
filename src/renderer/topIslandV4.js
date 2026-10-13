@@ -1,3 +1,8 @@
+import './mochiActivity.css';
+import {createMochiActivity} from './mochiActivity.js';
+import './mochiCharacter.css';
+import {mountMochiStudio} from './mochiStudio.js';
+import {mountMochi,readAppearance,renderMochi,applyMochiEquipment} from './mochiCharacter.js';
 import './topIslandV4.css';
 import './companionPremium.css';
 import './companionFilm1030.css';
@@ -71,6 +76,8 @@ let featureStatus='all';
 let studioPreviewState='idle';
 let studioPreviewScene=null;
 let film1030Player=null;
+let mochiStudio=null;
+let mochiActivity=null;
 let audio=null;
 let greetingTimer=null;
 let shortcutIconObserver=null;
@@ -109,7 +116,7 @@ function wake(){
   if(mode!=='peek'&&!hoverController?.inside)armIdle();
 }
 function protectedPanel(){
-  return Boolean(workbarPinned||draggingIntoIsland||nativeShortcutPickerOpen||$('.v4-modal')||$('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus'));
+  return Boolean(mochiStudio?.playing||workbarPinned||draggingIntoIsland||nativeShortcutPickerOpen||$('.v4-modal')||$('input:focus,textarea:focus,select:focus,[contenteditable="true"]:focus'));
 }
 function setPanelPinned(pinned){
   savePrefs({pinned:Boolean(pinned)});
@@ -448,63 +455,14 @@ function getFilm1030Player(){
 }
 function renderMotionStudio(){
   const host=$('[data-page-body]');if(!host)return;
-  const current=studioPreviewState;
-  const outfit=prefs.companionOutfit||'classic';
-  const quality=prefs.motionQuality||'full';
-  const statuses=Object.entries(COMPANION_STATES).filter(([state])=>state!=='offline');
-  const outfits=Object.entries(COMPANION_OUTFITS);
-  host.innerHTML=`
-    <section class="v4-motion-studio" dir="rtl">
-      <header class="v4-motion-head">
-        <div><small>MOTION DIRECTOR • LAMÉ 2.7</small><h2>استودیو حرکت و شخصیت MARIA</h2><p>پیش‌نمایش حالت‌ها مستقل از عملیات واقعی است؛ در اجرای واقعی، وضعیت را ابزارهای MARIA تعیین می‌کنند.</p></div>
-        <button class="v4-head-add" data-settings type="button">بازگشت به تنظیمات</button>
-      </header>
-      <section class="v4-motion-stage" aria-label="پیش‌نمایش مستقل شخصیت" data-film-state="${esc(current)}" data-film-scene="${esc(studioPreviewScene||current)}">
-        <div class="v4-motion-stage-scene" data-motion-preview></div>
-        <div class="v4-motion-stage-info"><small>MARIA · EXPRESSIVE COMPANION</small><h3>شخصیت زنده و هوشمند</h3><p>یک شخصیت سه‌بعدی‌نما با هندسه Superellipse 2.7، چشم متحرک، تغییر لباس و واکنش به وضعیت واقعی ابزارها.</p><div class="v4-stage-pipeline"><span>تشخیص</span><i>→</i><span>اجرا</span><i>→</i><span>تأیید</span></div><strong data-motion-stage-status>${esc(COMPANION_STATES[current]?.label||'آماده')}</strong></div>
-      </section>
-      <article class="v4-motion-group v4-film1030-panel">
-        <h3>ویدیوی 1000311030 · توالی تخصصی ۱۲٫۱ ثانیه</h3>
-        <p class="v4-motion-hint">حرکت‌ها به‌صورت پیش‌نمایش اجرا می‌شوند و نتیجه ساختگی برای کارهای واقعی نشان نمی‌دهند.</p>
-        <div class="v4-film1030-controls"><button type="button" data-film1030-play>▶ پخش توالی ویدیو</button><button type="button" data-film1030-stop disabled>■ توقف</button><small>۱۲ صحنه · سلام، فکر، کار، هشدار، موفقیت، قلب‌ها</small></div>
-        <div class="v4-film1030-timeline" data-film-progress><span></span></div>
-        <div class="v4-film1030-caption" data-film-caption>انتخاب هر حالت، فقط کاراکتر پیش‌نمایش را تغییر می‌دهد.</div>
-      </article>
-      <article class="v4-motion-group">
-        <h3>حالت‌های شخصیت • ${statuses.length} حرکت</h3>
-        <div class="v4-motion-palette">${statuses.map(([state,item])=>`<button type="button" data-motion-state="${esc(state)}" aria-pressed="${state===current}" title="${esc(item.label)}">${esc(item.label)}</button>`).join('')}</div>
-        <p class="v4-motion-live" role="status">وضعیت پیش‌نمایش: <b>${esc(COMPANION_STATES[current]?.label||'آماده')}</b></p>
-      </article>
-      <article class="v4-motion-group">
-        <h3>کمد لباس شخصیت • مستقل از واکنش‌ها</h3>
-        <div class="v4-motion-palette">${outfits.map(([key,label])=>`<button type="button" data-motion-outfit="${esc(key)}" aria-pressed="${key===outfit}">${esc(label)}</button>`).join('')}</div>
-        <p class="v4-motion-hint">انتخاب لباس ذخیره می‌شود و با تغییر حالت‌های عملیات از بین نمی‌رود. مدل‌های سه‌بعدی قبلی MARIA دست‌نخورده باقی می‌مانند.</p>
-      </article>
-      <article class="v4-motion-group">
-        <h3>شدت انیمیشن و مصرف منابع</h3>
-        <div class="v4-motion-palette">
-          <button type="button" data-motion-level="full" aria-pressed="${quality==='full'}">کامل</button>
-          <button type="button" data-motion-level="subtle" aria-pressed="${quality==='subtle'}">ملایم و کم‌مصرف</button>
-          <button type="button" data-motion-level="none" aria-pressed="${quality==='none'}">بدون حرکت تزئینی</button>
-        </div>
-        <p class="v4-motion-hint">تنظیم Reduce Motion سیستم همیشه اولویت دارد. رنگ‌ها، متن‌ها و آیکون وضعیت حتی بدون انیمیشن قابل تشخیص‌اند.</p>
-      </article>
-    </section>`;
-  const target=host.querySelector('[data-motion-preview]');
-  const original=$('[data-character]');
-  if(target&&original){
-    const preview=document.createElement('div');
-    preview.className='v4-character v4-stage-avatar';
-    preview.dataset.companionPreview='';
-    preview.dataset.companionState=current;
-    preview.dataset.state=current==='working'?'executing':current;
-    preview.setAttribute('role','img');
-    preview.setAttribute('aria-label','پیش‌نمایش زنده کاراکتر MARIA');
-    preview.innerHTML=original.innerHTML;
-    decorateFilm1030Character(preview);
-    target.append(preview);
-    setStudioFilmPreview(current,studioPreviewScene);
-  }
+  mochiStudio?.destroy();
+  mochiStudio=mountMochiStudio(host,{
+    equipment:prefs.companionOutfit||'classic',motion:prefs.motionQuality||'full',
+    getLive:()=>({state:companionSystem?.machine.state,history:companionSystem?.machine.history}),
+    onApply:appearance=>{companionSystem?.setEquipment(appearance.equipment);companionSystem?.setMotion(appearance.motion);savePrefs({motionQuality:appearance.motion});},
+    onModels:()=>window.blackClover.showWardrobe(),onMotions:()=>window.blackClover.showMotions(),
+    onBack:()=>selectPage('settings',{pin:true})
+  });
 }
 function renderFeatureCatalog(){
   const host=$('[data-page-body]');if(!host)return;
@@ -565,7 +523,7 @@ async function renderPage(){
 }
 function selectPage(id,{pin=false}={}){
   if(id!=='settings'&&!PAGES.some(x=>x.id===id))return;
-  if(page==='motion'&&id!=='motion')film1030Player?.stop({restore:false});
+  if(page==='motion'&&id!=='motion'){film1030Player?.stop({restore:false});mochiStudio?.destroy();mochiStudio=null;}
   const unchanged=page===id&&mode==='expanded';
   if(pin)setPanelPinned(true);
   page=id;setMode('expanded');
@@ -1067,6 +1025,7 @@ export async function mountTopIslandV4(){
       </section>
       <nav class="v4-right-tools" aria-label="بخش‌ها و تنظیمات ماریا">
         ${PAGES.filter(x=>['shortcuts','pins','tasks','reports'].includes(x.id)).map(x=>`<button class="v4-right-module" type="button" data-page="${x.id}" aria-label="نمایش ${esc(x.label)}" title="${esc(x.label)}">${x.icon}</button>`).join('')}
+        <button data-motion-lab type="button" title="کاراکتر و تجهیزات" aria-label="کاراکتر و تجهیزات">${I.eye}</button>
         <button data-settings type="button" title="تنظیمات" aria-label="تنظیمات">${I.gear}</button>
         <button data-panel-sound type="button" title="صدای پنل" aria-label="صدای پنل">${I.sound}</button>
       </nav>
@@ -1087,6 +1046,8 @@ export async function mountTopIslandV4(){
     prefersReducedMotion:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true,
     motion:prefs.motionQuality||'full',outfit:prefs.companionOutfit||'classic'
   });
+  mochiActivity?.destroy();
+  mochiActivity=createMochiActivity(root,{getState:()=>({state:companionSystem.machine.state,label:COMPANION_STATES[companionSystem.machine.state].label}),onOpen:()=>selectPage('home',{pin:true})});
   const pinbar=document.createElement('div');
   pinbar.className='v4-workflow-lock';
   pinbar.innerHTML='<button type="button" data-workflow-lock aria-pressed="false" title="برای نگه‌داشتن صفحه هنگام درگ و انتخاب فایل">📌 ثابت نگه دار</button>';
@@ -1184,10 +1145,11 @@ export async function mountTopIslandV4(){
   window.blackClover.onIslandWindowBlur?.(()=>{
     // A click in another application releases the floating panel.
     // Dialogs and native pickers are protected from accidental closure.
-    if(!workbarPinned&&!draggingIntoIsland&&!$('.v4-modal')&&!nativeShortcutPickerOpen&&mode!=='peek')hoverController?.collapseNow();
+    if(!protectedPanel()&&mode!=='peek')hoverController?.collapseNow();
   });
   window.blackClover.onEvent?.(e=>{
     companionSystem?.onEvent(e);
+    mochiActivity?.update(e);
     if(e?.type==='ui-state'){
       const status=e.detail||e.mode||'MARIA';
       $('[data-status]').textContent=status;

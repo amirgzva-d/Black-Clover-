@@ -1,0 +1,22 @@
+/** Timing observations from all nine user-supplied films; previews never emit agent events. */
+const shot=(at,state,equipment,mode='portrait')=>({at,state,equipment,mode});
+export const MOCHI_SEQUENCES=Object.freeze([
+ {id:'1000311258',title:'معرفی شخصیت',duration:12118,shots:[shot(0,'idle'),shot(520,'greeting'),shot(2150,'shy'),shot(2800,'thinking'),shot(4530,'working'),shot(5550,'approval'),shot(6830,'success'),shot(8430,'affection'),shot(10300,'idle'),shot(11000,'wink')]},
+ {id:'1000311259',title:'گالری حالت‌ها و تجهیزات',duration:8124,shots:[shot(0,'idle'),shot(520,'working'),shot(1050,'thinking'),shot(1580,'question'),shot(2100,'error'),shot(2610,'success'),shot(3100,'sleeping'),shot(3610,'dizzy'),shot(4130,'greeting'),shot(4640,'affection'),shot(5140,'uploading'),shot(5650,'dancing'),shot(6150,'idle','beanie'),shot(6650,'happy','santa'),shot(7170,'idle','wizard'),shot(7700,'idle','bow')]},
+ {id:'1000311260',title:'طراحی و کمد',duration:10121,shots:[shot(0,'working','wizard','activity'),shot(1500,'happy','crown','activity'),shot(3160,'approval','beanie','activity'),shot(4650,'question','party','activity'),shot(5870,'question','sunglasses','activity'),shot(7230,'success','santa','activity'),shot(8650,'idle','pumpkin','activity')]},
+ {id:'1000311261',title:'انتقال وضعیت‌ها',duration:12118,shots:[shot(0,'idle'),shot(1000,'working'),shot(2550,'thinking'),shot(4000,'searching'),shot(5000,'approval'),shot(6000,'question'),shot(7000,'error'),shot(8800,'success'),shot(9700,'ratelimit'),shot(10800,'dizzy')]},
+ {id:'1000311262',title:'انیمیشن و واکنش‌ها',duration:20129,shots:[shot(0,'idle'),shot(1300,'greeting'),shot(3000,'working'),shot(4700,'thinking'),shot(6350,'uploading'),shot(9400,'slap'),shot(11000,'dizzy'),shot(13000,'question'),shot(14700,'error'),shot(16400,'success'),shot(18200,'dancing')]},
+ {id:'1000311263',title:'جزیرهٔ دسکتاپ',duration:10121,shots:[shot(0,'idle',undefined,'compact'),shot(1100,'greeting',undefined,'preview'),shot(3200,'working',undefined,'preview'),shot(5600,'working',undefined,'compact'),shot(6900,'working',undefined,'activity'),shot(8500,'thinking',undefined,'activity')]},
+ {id:'1000311264',title:'لباس فصلی و جشن',duration:12118,shots:[shot(0,'idle','wizard'),shot(700,'happy','wizard'),shot(8400,'proud','wizard'),shot(10100,'success','wizard'),shot(11300,'idle','wizard')]},
+ {id:'1000311253',title:'فعالیت، خطا و بازیابی',duration:19455,shots:[shot(0,'working',undefined,'activity'),shot(2700,'error',undefined,'activity'),shot(6200,'working',undefined,'activity'),shot(10600,'waiting',undefined,'activity'),shot(12100,'working',undefined,'activity'),shot(14600,'success',undefined,'activity'),shot(16900,'question',undefined,'activity')]},
+ {id:'1000311265',title:'چرخهٔ کامل دسکتاپ',duration:53055,shots:[shot(0,'greeting',undefined,'preview'),shot(2400,'working',undefined,'preview'),shot(5800,'working',undefined,'compact'),shot(8000,'working',undefined,'activity'),shot(12000,'thinking',undefined,'activity'),shot(15000,'working',undefined,'compact'),shot(18000,'error',undefined,'compact'),shot(21200,'error',undefined,'activity'),shot(24900,'uploading',undefined,'activity'),shot(27800,'dancing',undefined,'activity'),shot(31100,'working',undefined,'activity'),shot(35900,'question',undefined,'activity'),shot(38900,'working',undefined,'compact'),shot(42000,'success',undefined,'compact'),shot(45200,'idle',undefined,'preview'),shot(48000,'waiting',undefined,'activity'),shot(50800,'idle',undefined,'compact')]}
+]);
+export function sequenceFrame(sequence,time){let current=sequence.shots[0];for(const s of sequence.shots){if(s.at>Math.max(0,Number(time)||0))break;current=s;}return current;}
+export function createMochiSequence({onFrame=()=>{},onEnd=()=>{},now=()=>performance.now(),schedule=(fn,ms)=>setTimeout(fn,ms),cancel=id=>clearTimeout(id)}={}){
+ let timer=null,started=0,sequence=null,generation=0,last=-1;
+ const stop=()=>{generation++;cancel(timer);timer=null;sequence=null;last=-1;};
+ const play=value=>{stop();sequence=value;started=now();const token=generation;
+  const tick=()=>{if(token!==generation||!sequence)return;const elapsed=Math.min(sequence.duration,now()-started),frame=sequenceFrame(sequence,elapsed);onFrame(frame,elapsed,sequence);last=frame.at;
+   if(elapsed>=sequence.duration){stop();onEnd();return;}timer=schedule(tick,80);};tick();};
+ return {play,stop,get running(){return !!sequence;}};
+}
