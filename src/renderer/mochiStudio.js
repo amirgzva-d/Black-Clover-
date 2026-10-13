@@ -5,13 +5,13 @@ import {MOCHI_SEQUENCES,createMochiSequence} from './mochiSequences.js';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function mountMochiStudio(host,{equipment='classic',motion='full',onApply=()=>{},onModels=null,onMotions=null,getLive=()=>null,onBack=null}={}){
  const appearance=readAppearance();let draft=normalizeEquipment(appearance?.equipment||equipment),saved=normalizeEquipment(draft),quality=appearance?.motion||motion,savedQuality=quality,state='idle',tab='expressions',filter='',disposed=false;
- const expressions=new Map(MOCHI_EXPRESSIONS);let liveTimer=null;
+ const expressions=new Map(MOCHI_EXPRESSIONS);let liveTimer=null,thumbnailObserver=null;
  host.innerHTML=`<section class="mochi-studio" data-mochi-studio>
   <header class="mochi-studio-head" dir="rtl"><div><small>MARIA / CHARACTER STUDIO</small><h2>کاراکتر و تجهیزات</h2></div><div class="mochi-head-actions">${onModels?'<button data-mochi-models>مدل‌های سه‌بعدی</button>':''}${onMotions?'<button data-mochi-motions>حرکت‌های VRM</button>':''}${onBack?'<button data-mochi-back aria-label="بازگشت">بازگشت</button>':''}</div></header>
   <div class="mochi-studio-layout"><aside class="mochi-preview-panel">
    <div class="mochi-preview-top"><span>MOCHI</span><span class="mochi-preview-label">پیش‌نمایش</span></div>
    <div class="mochi-preview-stage" data-mochi-stage data-preview-mode="portrait"><div class="mochi-stage-avatar" data-companion-preview role="img" aria-label="پیش‌نمایش موچی"></div><div class="mochi-demo-activity" dir="rtl"><b data-demo-title>در حال کار</b><span>نمونهٔ نمای فعالیت</span><i></i></div></div>
-   <div class="mochi-preview-caption" dir="rtl"><h3 data-motion-stage-status>آماده</h3><p data-mochi-caption>اشاره‌گر را حرکت بده؛ موچی نگاهت می‌کند.</p></div>
+   <div class="mochi-preview-caption" dir="rtl"><h3 data-motion-stage-status role="status" aria-live="polite" aria-atomic="true">آماده</h3><p data-mochi-caption>اشاره‌گر را حرکت بده؛ موچی نگاهت می‌کند.</p></div>
    <div class="mochi-slot-list" dir="rtl" data-mochi-slots></div>
    <div class="mochi-save-row"><button class="mochi-primary" data-mochi-apply>اعمال روی ماریا</button><button data-mochi-reset title="بازگشت به ظاهر ذخیره‌شده">بازگردانی</button></div><p class="mochi-save-status" data-mochi-save-status role="status" dir="rtl">ظاهر ذخیره‌شده</p>
   </aside><section class="mochi-browser">
@@ -21,6 +21,8 @@ export function mountMochiStudio(host,{equipment='classic',motion='full',onApply
    <footer class="mochi-studio-footer" dir="rtl"><span>شدت حرکت</span><div>${[['full','کامل'],['subtle','ملایم'],['none','خاموش']].map(([key,label])=>`<button data-mochi-quality="${key}" aria-pressed="${quality===key}">${label}</button>`).join('')}</div><small>واکنش‌ها با وضعیت واقعی ماریا هماهنگ‌اند.</small></footer>
   </section></div></section>`;
  const $=s=>host.querySelector(s),$$=s=>[...host.querySelectorAll(s)],preview=$('[data-companion-preview]');
+ const onVisibility=()=>{const panel=$('.mochi-studio');if(panel)panel.dataset.mochiDocHidden=String(document.hidden);};
+ document.addEventListener('visibilitychange',onVisibility);onVisibility();
  mountMochi(preview,{equipment:draft,motion:quality});
  const status=text=>{$('[data-mochi-save-status]').textContent=text;};
  const updateSlots=()=>{
@@ -29,11 +31,17 @@ export function mountMochiStudio(host,{equipment='classic',motion='full',onApply
   $('[data-mochi-apply]').disabled=JSON.stringify(saved)===JSON.stringify(draft)&&quality===savedQuality;
  };
  const setState=(next,{fromTimeline=false,mode='portrait'}={})=>{
-  state=next;renderMochi(preview,next);preview.dataset.companionState=next;
+  // Timeline ticks update progress frequently, but facial SVG/state and live text
+  // change only at actual sequence boundaries. Avoid needless DOM/layout work.
+  const changed=state!==next;
+  state=next;
+  if(changed){
+   renderMochi(preview,next);preview.dataset.companionState=next;
+   $('[data-motion-stage-status]').textContent=expressions.get(next)||({waiting:'بازیابی',offline:'آفلاین'}[next])||next;
+   $('[data-demo-title]').textContent=$('[data-motion-stage-status]').textContent;
+   for(const button of $$('[data-motion-state]'))button.setAttribute('aria-pressed',String(button.dataset.motionState===next));
+  }
   $('[data-mochi-stage]').dataset.previewMode=mode;
-  $('[data-motion-stage-status]').textContent=expressions.get(next)||({waiting:'بازیابی',offline:'آفلاین'}[next])||next;
-  $('[data-demo-title]').textContent=$('[data-motion-stage-status]').textContent;
-  for(const button of $$('[data-motion-state]'))button.setAttribute('aria-pressed',String(button.dataset.motionState===next));
   if(!fromTimeline)$('[data-mochi-caption]').textContent=next==='uploading'?'تبدیل نرم به جعبه و دریافت فایل':next==='dancing'?'حرکت ریتمیک و مستقل از فعالیت واقعی':'اشاره‌گر را حرکت بده؛ موچی نگاهت می‌کند.';
  };
  const timeline=createMochiSequence({onFrame:(frame,time,seq)=>{
@@ -51,6 +59,7 @@ export function mountMochiStudio(host,{equipment='classic',motion='full',onApply
  };
  const render=()=>{
   clearInterval(liveTimer);liveTimer=null;
+  thumbnailObserver?.disconnect();thumbnailObserver=null;
   for(const button of $$('[data-mochi-tab]'))button.setAttribute('aria-selected',String(button.dataset.mochiTab===tab));
   const title={expressions:'حالت چشم‌ها و حرکت‌ها',equipment:'انتخاب تجهیزات؛ ترکیب سر، صورت، گردن و بدنه',sequences:'توالی حرکت‌های مرجع',live:'وضعیت و تاریخچهٔ واقعی'};
   $('[data-mochi-section-title]').textContent=title[tab];$('[data-mochi-search]').hidden=!['expressions','equipment'].includes(tab);
@@ -59,7 +68,16 @@ export function mountMochiStudio(host,{equipment='classic',motion='full',onApply
   else if(tab==='equipment')content.innerHTML='<div class="mochi-card-grid mochi-equipment-grid">'+Object.entries(MOCHI_OUTFITS).map(([key,item])=>card(key,item.label,'outfit',item.en)).join('')+'</div>';
   else if(tab==='sequences')content.innerHTML=`<div class="mochi-sequence-list" dir="rtl">${MOCHI_SEQUENCES.map((seq,i)=>`<article><span>${String(i+1).padStart(2,'0')}</span><div><b>${seq.title}</b><small dir="ltr">${seq.id} · ${(seq.duration/1000).toFixed(1)}s</small></div><button data-mochi-play="${seq.id}" aria-label="پخش ${seq.title}">پخش <span>▷</span></button></article>`).join('')}</div><div class="mochi-playback"><button data-mochi-stop disabled>توقف</button><progress data-mochi-progress value="0" max="100"></progress><small data-mochi-clock>0.0s</small></div>`;
   else{renderLive();liveTimer=setInterval(()=>{if(!disposed&&host.isConnected)renderLive();},1200);}
-  for(const node of $$('[data-card-state]'))mountMochi(node,{state:node.dataset.cardState,equipment:node.dataset.cardOutfit,motion:'none',track:false});
+  const thumbnails=$$('[data-card-state]');
+  for(const node of thumbnails)mountMochi(node,{state:node.dataset.cardState,equipment:node.dataset.cardOutfit,motion:'none',track:false});
+  // Keep reusable scenes but suspend offscreen preview work. The native scrolling
+  // container is the observer root; disconnect before each filter/tab rerender.
+  if(thumbnails.length&&typeof IntersectionObserver==='function'){
+   thumbnailObserver=new IntersectionObserver(entries=>{
+    for(const entry of entries)entry.target.dataset.mochiVisible=String(entry.isIntersecting);
+   },{root:$('[data-mochi-content]'),rootMargin:'64px 0px'});
+   for(const node of thumbnails){node.dataset.mochiVisible='false';thumbnailObserver.observe(node);}
+  }
   for(const node of $$('[data-search]'))node.hidden=!!filter&&!node.dataset.search.includes(filter);
   syncPlayback();
  };
@@ -83,5 +101,5 @@ export function mountMochiStudio(host,{equipment='classic',motion='full',onApply
  const onKeys=e=>{const btn=e.target.closest('[data-mochi-tab]');if(!btn||!['ArrowLeft','ArrowRight','Home','End'].includes(e.key))return;e.preventDefault();const all=$$('[data-mochi-tab]'),idx=all.indexOf(btn),next=e.key==='Home'?0:e.key==='End'?all.length-1:(idx+(e.key==='ArrowLeft'?1:-1)+all.length)%all.length;all[next].click();all[next].focus();};
  host.addEventListener('keydown',onKeys);
  render();updateSlots();
- return {setState,stop,get playing(){return timeline.running;},destroy(){disposed=true;stop();clearInterval(liveTimer);destroyMochi(preview);host.removeEventListener('click',handle);host.removeEventListener('keydown',onKeys);}};
+ return {setState,stop,get playing(){return timeline.running;},destroy(){disposed=true;stop();clearInterval(liveTimer);thumbnailObserver?.disconnect();document.removeEventListener('visibilitychange',onVisibility);destroyMochi(preview);host.removeEventListener('click',handle);host.removeEventListener('keydown',onKeys);}};
 }

@@ -60,7 +60,7 @@ export function mochiMarkup(){
  <linearGradient id="${id}-tint" x1=".3" y1="0" x2=".55" y2="1"><stop stop-color="var(--mochi-color)" stop-opacity="0"/><stop offset="1" stop-color="var(--mochi-color)" stop-opacity=".75"/></linearGradient>
  <radialGradient id="${id}-aura"><stop stop-color="var(--mochi-color)" stop-opacity=".23"/><stop offset="1" stop-color="var(--mochi-color)" stop-opacity="0"/></radialGradient>
  <radialGradient id="${id}-shadow"><stop stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient>
- <radialGradient id="${id}-blush"><stop stop-color="#f68da9" stop-opacity=".8"/><stop offset="1" stop-color="#f68da9" stop-opacity="0"/></radialGradient>
+ <radialGradient id="${id}-blush"><stop stop-color="#f68da9" stop-opacity=".8"/><stop offset="1" stop-color="#f68da9" stop-opacity="0"/></radialGradient><radialGradient id="${id}-specular"><stop stop-color="#fff" stop-opacity=".65"/><stop offset=".55" stop-color="#fff" stop-opacity=".13"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><clipPath id="${id}-head-clip"><path d="${superellipsePath()}"/></clipPath>
  <linearGradient id="${id}-violet" x2=".9" y2="1"><stop stop-color="#a154f6"/><stop offset=".55" stop-color="#7024c4"/><stop offset="1" stop-color="#351070"/></linearGradient>
  <linearGradient id="${id}-gold" x2=".7" y2="1"><stop stop-color="#fff5b2"/><stop offset=".55" stop-color="#e9bd44"/><stop offset="1" stop-color="#a87312"/></linearGradient>
  <linearGradient id="${id}-blue" x2=".6" y2="1"><stop stop-color="#79b6fa"/><stop offset="1" stop-color="#2f65cc"/></linearGradient>
@@ -75,10 +75,10 @@ export function mochiMarkup(){
  <g class="mochi-hand mochi-hand-left"><ellipse cx="40" cy="150" rx="12" ry="11" fill="url(#${id}-body)"/></g>
  <g class="mochi-hand mochi-hand-right"><ellipse cx="201" cy="108" rx="12" ry="11" fill="url(#${id}-body)"/></g>
  <path class="mochi-body" d="${superellipsePath()}" fill="url(#${id}-body)"/>
- <path class="mochi-tint" d="${superellipsePath()}" fill="url(#${id}-tint)"/>
+ <path class="mochi-tint" d="${superellipsePath()}" fill="url(#${id}-tint)"/><ellipse class="mochi-specular" cx="153" cy="92" rx="45" ry="29" fill="url(#${id}-specular)" clip-path="url(#${id}-head-clip)"/>
  <g class="mochi-pumpkin"><path d="${superellipsePath(2.7,70,54)}" fill="url(#${id}-pumpkin)"/><path d="M86 81Q62 124 86 172M155 81Q178 125 155 172M109 77Q99 123 109 178M131 77Q143 123 131 178" stroke="#b65b15" stroke-opacity=".3" stroke-width="2" fill="none"/><path d="M118 73q-4-15 8-19l4 4q-7 6-5 16" fill="#64943f"/></g>
  <path class="mochi-upload-slot" d="M64 76H176Q180 76 178 82L174 88H66L62 82Q60 76 64 76Z" fill="#14151b"/>
- <g class="mochi-look"><ellipse class="mochi-cheek" cx="79" cy="147" rx="17" ry="9" fill="url(#${id}-blush)"/><ellipse class="mochi-cheek" cx="161" cy="147" rx="17" ry="9" fill="url(#${id}-blush)"/>
+ <g class="mochi-cheeks"><ellipse class="mochi-cheek" cx="79" cy="147" rx="17" ry="9" fill="url(#${id}-blush)"/><ellipse class="mochi-cheek" cx="161" cy="147" rx="17" ry="9" fill="url(#${id}-blush)"/></g><g class="mochi-look">
  <g class="mochi-eyes mochi-eyes-dots" fill="#181619"><ellipse cx="94" cy="133" rx="5.5" ry="7"/><ellipse cx="146" cy="133" rx="5.5" ry="7"/></g>
  <g class="mochi-eyes mochi-eyes-smile" fill="none" stroke="#201c20" stroke-width="5" stroke-linecap="round"><path d="M83 135q11-19 22 0M135 135q11-19 22 0"/></g>
  <g class="mochi-eyes mochi-eyes-flat" fill="none" stroke="#201c20" stroke-width="5" stroke-linecap="round"><path d="M88 133h12m40 0h12"/></g>
@@ -101,6 +101,8 @@ export function mountMochi(view,{state='idle',equipment='classic',motion='full',
  if(!view)return null;
  view.classList.add('mochi-ready');
  if(!view.querySelector(':scope > .mochi-scene'))view.insertAdjacentHTML('beforeend',mochiMarkup());
+ // Deterministic per-instance blink cadence prevents dozens of gallery faces blinking in sync.
+ view.style.setProperty('--mochi-blink-period',(5.8+(serial%7)*.41).toFixed(2)+'s');
  view.dataset.mochiMotion=motion;
  renderMochi(view,state);applyMochiEquipment(view,equipment);
  if(track&&!view._mochiCleanup){

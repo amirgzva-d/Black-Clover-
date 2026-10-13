@@ -15,7 +15,7 @@
 .mochi-tint{opacity:0;transition:opacity .5s}
 .mochi-cheek{opacity:0;transition:opacity .3s}
 .mochi-eyes{display:none}
-.mochi-eyes-dots{display:block;transform-origin:120px 133px;animation:mochi-blink 6.8s infinite}
+.mochi-eyes-dots{display:block;transform-origin:120px 133px;animation:mochi-blink var(--mochi-blink-period,6.8s) infinite}
 .mochi-hand,.mochi-badge,.mochi-file,.mochi-upload-slot,.mochi-pumpkin,.mochi-yawn,.mochi-sparks,.mochi-hearts,.mochi-gear{display:none}
 .mochi-badge-orb,.mochi-badge-label{display:none}
 .mochi-badge-dots circle{animation:mochi-dot 1.2s ease-in-out infinite;transform-box:fill-box;transform-origin:center}
@@ -84,3 +84,10 @@
 @media(prefers-reduced-motion:reduce){.mochi-ready *{animation:none!important;transition:none!important}.mochi-sparks,.mochi-hearts{display:none!important}}
 
 .mochi-ready[data-mochi-state=uploading] .mochi-gear{display:none}
+
+/* Material highlights follow the head, never the moving eyes or cheek marks. */
+.mochi-specular{opacity:.48;pointer-events:none}
+.mochi-cheeks{pointer-events:none}
+.mochi-ready[data-mochi-state=uploading] .mochi-specular{opacity:.2}
+.mochi-ready[data-mochi-motion=none] .mochi-specular{opacity:.38}
+@media(prefers-reduced-motion:reduce){.mochi-specular{transition:none!important}}

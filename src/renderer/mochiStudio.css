@@ -68,3 +68,66 @@
 @media(max-width:810px){.mochi-card-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.mochi-tabs small{display:none}.mochi-studio-layout{grid-template-columns:230px minmax(0,1fr)}.mochi-studio-footer>small{display:none}.mochi-browser-toolbar>span{max-width:160px}.mochi-equipment-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(max-width:630px){.mochi-studio-layout{grid-template-columns:1fr}.mochi-preview-stage{height:190px}.mochi-slot-list{grid-template-columns:repeat(4,1fr)}.mochi-studio-head{align-items:flex-start}.mochi-head-actions{flex-wrap:wrap;justify-content:flex-end}.mochi-card-grid{grid-template-columns:repeat(5,minmax(0,1fr))}}
 @media(prefers-reduced-motion:reduce){.mochi-studio *{scroll-behavior:auto;transition:none!important}}
+
+/* 2026-10-13 premium reference pass: readable Persian UI and controlled motion.
+   Keep controls functional and visible at 100–200% Windows DPI. */
+.mochi-studio{
+  --mochi-outline:rgba(164,151,206,.2);
+  --mochi-accent:#aaa0dc;
+  --mochi-motion-quick:170ms;
+  --mochi-motion-enter:290ms;
+}
+.mochi-studio .mochi-card{
+  min-height:137px;
+  transition:background var(--mochi-motion-quick) ease,
+    border-color var(--mochi-motion-quick) ease,
+    box-shadow var(--mochi-motion-quick) ease,
+    transform var(--mochi-motion-quick) cubic-bezier(.2,.75,.25,1);
+}
+.mochi-studio .mochi-card:hover{
+  transform:translateY(-2px);
+  background:linear-gradient(145deg,#22212b,#16171e);
+  border-color:var(--mochi-outline);
+  box-shadow:0 10px 24px rgba(0,0,0,.16);
+}
+.mochi-studio .mochi-card:active{transform:translateY(0) scale(.985)}
+.mochi-studio .mochi-card[aria-pressed=true]{
+  box-shadow:inset 0 0 0 1px rgba(157,144,238,.12),
+    0 6px 20px rgba(86,68,162,.13);
+}
+.mochi-studio .mochi-card b{font-size:11.5px;font-weight:560}
+.mochi-studio .mochi-card small{font-size:9.5px}
+.mochi-studio .mochi-tabs button{font-size:12px;min-height:38px}
+.mochi-studio .mochi-head-actions button{font-size:11px;min-height:34px}
+.mochi-studio .mochi-browser-toolbar{font-size:11px}
+.mochi-studio .mochi-browser-toolbar input{font-size:11px;min-height:34px}
+.mochi-studio .mochi-preview-caption p{font-size:11.5px}
+.mochi-studio .mochi-save-row button{font-size:12px;min-height:36px}
+.mochi-studio .mochi-slot-list button{font-size:10.5px;min-height:31px}
+.mochi-studio .mochi-save-status{font-size:11px}
+.mochi-studio .mochi-sequence-list b{font-size:12px}
+.mochi-studio .mochi-sequence-list button{font-size:11px;min-height:34px}
+.mochi-studio .mochi-live-panel li{font-size:11.5px}
+.mochi-studio [role=tab]:focus-visible,
+.mochi-studio .mochi-card:focus-visible,
+.mochi-studio [data-mochi-apply]:focus-visible{
+  outline:2px solid #a7bfff;
+  outline-offset:2px;
+}
+.mochi-studio .mochi-card-preview[data-mochi-visible=false] *,
+.mochi-studio[data-mochi-doc-hidden=true] .mochi-card-preview *{
+  animation-play-state:paused!important;
+}
+.mochi-studio[data-mochi-doc-hidden=true] .mochi-stage-avatar *{
+  animation-play-state:paused!important;
+}
+@media(max-width:680px){
+  .mochi-studio .mochi-card{min-height:120px}
+  .mochi-studio .mochi-card b{font-size:10.5px}
+  .mochi-studio .mochi-tabs button{font-size:10.5px}
+}
+@media(prefers-reduced-motion:reduce){
+  .mochi-studio .mochi-card,
+  .mochi-studio .mochi-card:hover,
+  .mochi-studio .mochi-card:active{transition:none!important;transform:none!important}
+}
