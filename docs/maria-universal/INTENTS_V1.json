@@ -1,0 +1,163 @@
+{
+  "schemaVersion": 1,
+  "status": "design_only",
+  "pipeline": [
+    "normalize",
+    "recover_typo_and_stt",
+    "semantic_intent",
+    "resolve_slots",
+    "resolve_context_and_selection",
+    "assess_risk",
+    "plan",
+    "execute",
+    "verify",
+    "undo_or_report"
+  ],
+  "domains": {
+    "shortcuts": [
+      "shortcut.create",
+      "shortcut.detect_type",
+      "shortcut.open",
+      "shortcut.validate",
+      "shortcut.update",
+      "shortcut.remove",
+      "shortcut.reorder"
+    ],
+    "pins": [
+      "pins.create",
+      "pins.update",
+      "pins.remove"
+    ],
+    "reminders": [
+      "reminder.create",
+      "reminder.cancel",
+      "schedule.action.create"
+    ],
+    "audio": [
+      "audio.volume.set",
+      "audio.volume.increase",
+      "audio.volume.decrease",
+      "audio.mute",
+      "audio.unmute",
+      "audio.app.set",
+      "audio.app.mute",
+      "media.pause",
+      "media.play"
+    ],
+    "display": [
+      "display.brightness.set",
+      "display.brightness.increase",
+      "display.brightness.decrease"
+    ],
+    "filesystem": [
+      "files.create",
+      "files.open",
+      "files.copy",
+      "files.move",
+      "files.rename",
+      "files.delete",
+      "files.archive.zip",
+      "files.archive.extract",
+      "files.convert"
+    ],
+    "apps": [
+      "apps.find",
+      "apps.install",
+      "apps.update",
+      "system.diagnose"
+    ],
+    "browser": [
+      "web.search",
+      "browser.open",
+      "browser.tab.pin",
+      "browser.tab.unpin",
+      "browser.history.search",
+      "browser.download"
+    ],
+    "messenger": [
+      "message.send",
+      "message.forward",
+      "message.schedule"
+    ],
+    "windows": [
+      "windows.lock",
+      "windows.sleep",
+      "windows.restart",
+      "windows.shutdown",
+      "desktop.arrange"
+    ],
+    "office": [
+      "excel.open",
+      "excel.cell.set",
+      "excel.hyperlink.set"
+    ],
+    "selection": [
+      "selection.capture",
+      "selection.copy",
+      "selection.explain",
+      "selection.translate",
+      "screen.ocr",
+      "screen.translate"
+    ],
+    "ai": [
+      "webapp.chat.open",
+      "webapp.chat.send",
+      "webapp.chat.read"
+    ],
+    "future": [
+      "presence.face.detect",
+      "gesture.action.trigger"
+    ]
+  },
+  "examples": [
+    {
+      "input": "همین فایل رو بنداز تو میانبر",
+      "intent": "shortcut.create",
+      "needs": [
+        "selectedPath"
+      ]
+    },
+    {
+      "input": "اینو ول کنم اینجا خودش میانبر شه",
+      "intent": "shortcut.create_from_drop",
+      "needs": [
+        "dropPayload"
+      ]
+    },
+    {
+      "input": "صدای همین فیلمو کم کن نه کل سیستم",
+      "intent": "audio.app.set",
+      "needs": [
+        "activeMediaSession"
+      ],
+      "negative": [
+        "master volume"
+      ]
+    },
+    {
+      "input": "این صفحه رو کلاً به فارسی ترجمه کن",
+      "intent": "screen.translate",
+      "needs": [
+        "activeWindow",
+        "sourceContent"
+      ]
+    },
+    {
+      "input": "فردا این پیامو برای این گروه بفرست",
+      "intent": "message.schedule",
+      "needs": [
+        "destination",
+        "content",
+        "dueAt",
+        "timezone"
+      ]
+    },
+    {
+      "input": "همونو انجام نده",
+      "intent": "schedule.action.cancel",
+      "needs": [
+        "precedingTask"
+      ]
+    }
+  ]
+}
